@@ -414,7 +414,6 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
       "coco",
       // OCR / misspellings
       "coconu t",
-      "coconut",
     ],
     allergenCode: "coconut",
     relation: "contains",

@@ -5,10 +5,7 @@ import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
     requireHouseholdId(context);
@@ -30,10 +27,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
     requireHouseholdId(context);

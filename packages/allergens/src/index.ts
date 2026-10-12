@@ -13,3 +13,12 @@ export {
   matchIngredient,
   type IngredientAllergenMapping,
 } from "./ingredient-mapping";
+
+export {
+  checkIngredientAgainstRule,
+  checkIngredientsAgainstRules,
+  type RuleCheckContext,
+  type IngredientCheckInput,
+  type RuleCheckFinding,
+  type RuleCheckResult,
+} from "./rule-checker";
