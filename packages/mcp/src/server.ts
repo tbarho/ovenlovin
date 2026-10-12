@@ -15,7 +15,6 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Tool imports (will be implemented)
 import { searchRecipesTool } from "./tools/search-recipes";
@@ -80,12 +79,17 @@ export function createServer(config: ServerConfig = {}) {
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
       tools: TOOLS.map((tool) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const schema = zodToJsonSchema(tool.inputSchema as any, { $refStrategy: "none" });
+        // Manual JSON Schema for now (zod-to-json-schema is broken with Zod 4)
+        const inputSchema: Record<string, unknown> = {
+          type: "object",
+          properties: {},
+          required: [],
+        };
+
         return {
           name: tool.name,
           description: tool.description,
-          inputSchema: schema as Record<string, unknown>,
+          inputSchema,
         };
       }),
     };

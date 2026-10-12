@@ -55,9 +55,7 @@ export class StreamableHTTPClientTransport implements Transport {
       }
     } catch (error) {
       if (this.onerrorCallback) {
-        this.onerrorCallback(
-          error instanceof Error ? error : new Error(String(error))
-        );
+        this.onerrorCallback(error instanceof Error ? error : new Error(String(error)));
       }
       throw error;
     }

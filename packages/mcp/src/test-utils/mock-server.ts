@@ -5,7 +5,6 @@
 import { createServer as createHTTPServer } from "http";
 
 export async function createMockServer(port: number, apiKey: string) {
-
   const httpServer = createHTTPServer(async (req, res) => {
     // CORS headers for testing
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -148,8 +147,7 @@ export async function createMockServer(port: number, apiKey: string) {
             // Check if any ingredient contains tree nuts
             const hasAlmonds = recipe.ingredients.some(
               (ing: any) =>
-                ing.ingredient === "almonds" ||
-                ing.rawText.toLowerCase().includes("almond")
+                ing.ingredient === "almonds" || ing.rawText.toLowerCase().includes("almond")
             );
 
             const findings = {

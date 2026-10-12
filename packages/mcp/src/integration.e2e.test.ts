@@ -17,7 +17,6 @@ import type { PersonRule } from "@ovenlovin/core";
 
 describe("MCP Integration E2E", () => {
   it("should detect tree-nut allergen when checking meal plan", async () => {
-
     // Create ingredients from a nut-containing recipe
     const ingredients: IngredientCheckInput[] = [
       {
