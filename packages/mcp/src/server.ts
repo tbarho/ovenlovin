@@ -18,21 +18,21 @@ import {
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Tool imports (will be implemented)
-import { searchRecipesTool } from "./tools/search-recipes.js";
-import { getRecipeTool } from "./tools/get-recipe.js";
-import { importRecipeTool } from "./tools/import-recipe.js";
-import { getHouseholdContextTool } from "./tools/get-household-context.js";
-import { getPersonRulesTool } from "./tools/get-person-rules.js";
-import { checkMealPlanTool } from "./tools/check-meal-plan.js";
-import { exportShoppingListTool } from "./tools/export-shopping-list.js";
-import { saveMealPlanTool } from "./tools/save-meal-plan.js";
-import { getMealPlanTool } from "./tools/get-meal-plan.js";
+import { searchRecipesTool } from "./tools/search-recipes";
+import { getRecipeTool } from "./tools/get-recipe";
+import { importRecipeTool } from "./tools/import-recipe";
+import { getHouseholdContextTool } from "./tools/get-household-context";
+import { getPersonRulesTool } from "./tools/get-person-rules";
+import { checkMealPlanTool } from "./tools/check-meal-plan";
+import { exportShoppingListTool } from "./tools/export-shopping-list";
+import { saveMealPlanTool } from "./tools/save-meal-plan";
+import { getMealPlanTool } from "./tools/get-meal-plan";
 
 // Resource implementations (will be implemented)
-import { listResources, readResource } from "./resources/index.js";
+import { listResources, readResource } from "./resources/index";
 
 // Auth (stub for now)
-import type { AuthContext } from "./auth/index.js";
+import type { AuthContext } from "./auth/index";
 
 /**
  * Tool registry with schemas

@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import type { AuthContext } from "../auth/index.js";
+import type { AuthContext } from "../auth/index";
 
 export const checkMealPlanSchema = z.object({
   plan: z.object({

@@ -7,7 +7,7 @@
  * - Schedule templates
  */
 
-import type { AuthContext } from "../auth/index.js";
+import type { AuthContext } from "../auth/index";
 
 export interface MCPResource {
   uri: string;
