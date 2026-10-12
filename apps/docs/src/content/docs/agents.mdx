@@ -1,0 +1,350 @@
+---
+title: Connect Your Agent
+description: Set up Grok Bot, ChatGPT, Claude Desktop, or any MCP client
+---
+
+OvenLovin provides multiple interfaces for AI agents:
+
+- **MCP Server** - Model Context Protocol for structured tool access
+- **REST API** - OpenAPI-compliant HTTP endpoints
+- **CLI** - Command-line interface for scripting
+
+## Prerequisites
+
+Before connecting an agent, you'll need:
+
+- OvenLovin deployed to Vercel or running locally
+- An API key from your OvenLovin dashboard (Settings → API Keys)
+- For MCP: Node.js 20 or later
+
+## Grok Bot (xAI)
+
+Grok Bot connects via MCP HTTP transport using Streamable HTTP.
+
+### Configuration
+
+In your Grok Bot MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "ovenlovin": {
+      "transport": "http",
+      "url": "https://your-app.vercel.app/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Replace:
+- `your-app.vercel.app` with your deployment URL
+- `YOUR_API_KEY` with your OvenLovin API key
+
+### Test It
+
+Ask Grok: `"Search for recipes containing chicken"`
+
+Grok will use the `search_recipes` MCP tool and return results from your instance.
+
+## Claude Desktop / Claude Code
+
+Claude supports MCP via stdio (local) and HTTP (remote) transports.
+
+### Stdio Transport (Local Development)
+
+Edit Claude's config file:
+
+**macOS/Linux:** `~/.config/claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "ovenlovin": {
+      "command": "npx",
+      "args": ["@ovenlovin/mcp"],
+      "env": {
+        "DATABASE_URL": "postgresql://...",
+        "API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "ovenlovin": {
+      "command": "npx",
+      "args": ["@ovenlovin/mcp"],
+      "env": {
+        "DATABASE_URL": "postgresql://...",
+        "API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+### HTTP Transport (Production)
+
+For deployed instances:
+
+```json
+{
+  "mcpServers": {
+    "ovenlovin": {
+      "transport": "http",
+      "url": "https://your-app.vercel.app/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+### Test It
+
+Restart Claude Desktop and ask: `"Get the household context from OvenLovin"`
+
+Claude will call the `get_household_context` tool and show your household members and dietary rules.
+
+## ChatGPT Custom GPTs
+
+ChatGPT connects via the REST API using Actions (OpenAPI).
+
+### Create a Custom GPT
+
+1. Go to [ChatGPT Custom GPT Builder](https://chatgpt.com/gpts/editor)
+2. Create a new GPT named "OvenLovin Assistant"
+3. Add this description:
+
+```text
+Helps with recipe management, meal planning, and grocery lists using OvenLovin.
+Can search recipes, check allergen rules, create meal plans, and generate shopping lists.
+```
+
+### Configure Actions
+
+In the "Actions" section:
+
+1. **Schema**: Import from URL
+   ```
+   https://your-app.vercel.app/api/v1/openapi.json
+   ```
+
+2. **Authentication**: API Key
+   - Header name: `Authorization`
+   - API Key: `Bearer YOUR_API_KEY`
+
+3. **Privacy policy URL** (if publishing):
+   ```
+   https://your-app.vercel.app/privacy
+   ```
+
+### Test It
+
+In ChatGPT: `"Search my recipes for pasta and check if any would be safe for everyone in my household"`
+
+## Generic MCP Client
+
+Any MCP-compatible client can connect to OvenLovin.
+
+### Environment Variables
+
+For local development with stdio transport:
+
+```bash
+export DATABASE_URL="postgresql://..."
+export API_KEY="your-api-key"
+export AI_GATEWAY_API_KEY="your-vercel-ai-gateway-key"
+```
+
+### Stdio Transport
+
+```json
+{
+  "command": "npx",
+  "args": ["@ovenlovin/mcp"]
+}
+```
+
+### HTTP Transport
+
+```json
+{
+  "transport": "http",
+  "url": "https://your-app.vercel.app/mcp",
+  "headers": {
+    "Authorization": "Bearer YOUR_API_KEY"
+  }
+}
+```
+
+## REST API Direct Access
+
+If your agent doesn't support MCP, use the REST API directly.
+
+### Authentication
+
+Include your API key in the `Authorization` header:
+
+#### curl
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://your-app.vercel.app/api/v1/recipes
+```
+
+#### TypeScript
+
+```typescript
+const response = await fetch(
+  'https://your-app.vercel.app/api/v1/recipes',
+  {
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+    },
+  }
+);
+const data = await response.json();
+```
+
+#### Python
+
+```python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {API_KEY}'
+}
+response = requests.get(
+    'https://your-app.vercel.app/api/v1/recipes',
+    headers=headers
+)
+data = response.json()
+```
+
+### OpenAPI Spec
+
+Download the OpenAPI specification:
+
+```bash
+# JSON
+curl https://your-app.vercel.app/api/v1/openapi.json > openapi.json
+
+# YAML
+curl https://your-app.vercel.app/api/v1/openapi.yaml > openapi.yaml
+```
+
+## Available MCP Tools
+
+Once connected, agents can use these tools:
+
+### Recipe Management
+
+- `search_recipes` - Search recipes by text, cuisine, prep time, tags, etc.
+- `get_recipe` - Get full recipe details by ID
+- `import_recipe` - Import recipe from URL, text, or photo
+
+### Household Context
+
+- `get_household_context` - Get household members, dietary rules, and constraints
+- `get_person_rules` - Get detailed rules for a specific person
+
+### Meal Planning
+
+- `save_meal_plan` - Create or update a weekly meal plan
+- `get_meal_plan` - Retrieve meal plan details
+- `check_meal_plan` - Run allergen and dietary rule checks
+
+### Shopping
+
+- `export_shopping_list` - Generate aggregated shopping list with quantities and warnings
+
+## Example Workflows
+
+### Sunday Meal Planning
+
+```text
+User: "Plan my meals for next week"
+
+Bot:
+1. Calls get_household_context() to learn dietary rules
+2. Searches recipes with appropriate filters
+3. Creates draft meal plan with save_meal_plan()
+4. Checks for allergen conflicts with check_meal_plan()
+5. Generates shopping list with export_shopping_list()
+
+Returns:
+- Meal plan for the week
+- Shopping list by grocery section
+- Any allergen warnings
+```
+
+### Recipe Import
+
+```text
+User: "Import this recipe: https://example.com/cookies"
+
+Bot:
+1. Calls import_recipe(url)
+2. Retrieves imported recipe details
+3. Checks safety for household members
+4. Suggests substitutions if needed
+
+Returns:
+- Recipe details
+- Safety check results
+- Substitution suggestions
+```
+
+## Troubleshooting
+
+### MCP Connection Issues
+
+Verify the MCP endpoint is accessible:
+
+```bash
+curl https://your-app.vercel.app/mcp
+```
+
+Should return MCP server metadata. If not, check:
+- Deployment is live on Vercel
+- Environment variables are set correctly
+- API key is valid
+
+### Authentication Errors (401)
+
+Verify:
+- API key format: `Authorization: Bearer olvn_key_...`
+- Key hasn't expired in dashboard
+- Key has required scopes for the operation
+
+### Stdio Transport Not Working
+
+For local development, ensure `@ovenlovin/mcp` is accessible:
+
+```bash
+npx @ovenlovin/mcp
+```
+
+Or use absolute path:
+
+```json
+{
+  "command": "node",
+  "args": ["/path/to/ovenlovin/packages/mcp/dist/server.js"]
+}
+```
+
+## Next Steps
+
+- [API Reference](/docs/api) - Explore REST endpoints and MCP tools
+- [CLI Reference](/docs/cli) - Use the command-line interface
