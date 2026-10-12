@@ -1,10 +1,29 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import postgres, { Sql } from "postgres";
 import * as schema from "./schema";
 
-export function createDbClient(connectionString: string) {
-  const client = postgres(connectionString);
-  return drizzle(client, { schema });
+type DbClient = PostgresJsDatabase<typeof schema> & { $client: Sql };
+
+let dbInstance: DbClient | null = null;
+
+export function getDatabase(): DbClient {
+  if (!dbInstance) {
+    // eslint-disable-next-line no-undef
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error(
+        "DATABASE_URL environment variable is not set. See .env.example for setup instructions."
+      );
+    }
+    const client = postgres(connectionString);
+    dbInstance = drizzle(client, { schema }) as DbClient;
+  }
+  return dbInstance;
 }
 
-export type DbClient = ReturnType<typeof createDbClient>;
+export function createDbClient(connectionString: string): DbClient {
+  const client = postgres(connectionString);
+  return drizzle(client, { schema }) as DbClient;
+}
+
+export type { DbClient };

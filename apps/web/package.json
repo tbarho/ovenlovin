@@ -13,6 +13,7 @@
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@ovenlovin/core": "workspace:*",
+    "@ovenlovin/db": "workspace:^",
     "next": "^15.1.4",
     "openapi3-ts": "^4.6.1",
     "react": "^19.0.0",
