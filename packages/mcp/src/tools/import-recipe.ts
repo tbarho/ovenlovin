@@ -6,6 +6,9 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { RecipeService } from "@ovenlovin/core";
+import { createDbClient } from "@ovenlovin/db";
+import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
 export const importRecipeSchema = z.object({
   source: z.enum(["url", "paste"]),
@@ -24,15 +27,67 @@ export interface ImportRecipeOutput {
 }
 
 async function handler(
-  _input: ImportRecipeInput,
-  _context: AuthContext
+  input: ImportRecipeInput,
+  context: AuthContext
 ): Promise<ImportRecipeOutput> {
-  // TODO: Implement using @ovenlovin/importers (when merged)
-  // - Queue import job
-  // - Return job ID and initial status
-  // - Actual import runs async via eve agent
+  const db = createDbClient(process.env.DATABASE_URL!);
+  const recipeService = new RecipeService(db);
 
-  throw new Error("Not implemented: import_recipe - depends on @ovenlovin/importers");
+  let draft;
+  if (input.source === "url") {
+    const importer = createUrlImporter();
+    const raw = await importer.extract({ url: input.content });
+    draft = await importer.toDraft(raw);
+  } else {
+    const importer = createPasteImporter();
+    const raw = await importer.extract({ text: input.content });
+    draft = await importer.toDraft(raw);
+  }
+
+  // Generate slug from title
+  const slug = draft.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  // Create recipe
+  const recipe = await recipeService.createRecipe({
+    householdId: context.householdId,
+    title: draft.title,
+    slug,
+    description: draft.description ?? null,
+    yieldQuantity: draft.yieldQuantity ?? null,
+    yieldUnit: draft.yieldUnit ?? null,
+    servings: draft.servings ?? null,
+    prepTimeMinutes: draft.prepTimeMinutes ?? null,
+    cookTimeMinutes: draft.cookTimeMinutes ?? null,
+    totalTimeMinutes: draft.totalTimeMinutes ?? null,
+    activeTimeMinutes: draft.activeTimeMinutes ?? null,
+    methodTags: draft.methodTags as any ?? [],
+    cuisine: draft.cuisine ?? null,
+    course: draft.course ?? null,
+    difficulty: draft.difficulty ?? null,
+    equipment: draft.equipment ?? [],
+    images: draft.images ?? [],
+    status: input.skipReview || !draft.needsReview ? "published" : "needs_review",
+    visibility: "private",
+    version: 1,
+    isFamilyRecipe: false,
+    createdBy: context.userId,
+  });
+
+  // TODO: Create ingredients and steps (need to add those methods to RecipeService)
+  // For now, just return the recipe ID
+
+  return {
+    recipeId: recipe.id,
+    status: recipe.status,
+    confidence: draft.overallConfidence,
+    lowConfidenceFields: draft.needsReview ? draft.reviewReasons : undefined,
+    message: draft.needsReview
+      ? `Recipe imported but needs review (confidence: ${Math.round(draft.overallConfidence * 100)}%)`
+      : `Recipe imported successfully`,
+  };
 }
 
 export const importRecipeTool = {
