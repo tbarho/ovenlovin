@@ -55,8 +55,14 @@ const personRuleArb: fc.Arbitrary<PersonRule> = fc.record({
   treatCoconutAsTreeNut: fc.boolean(),
   label: fc.oneof(fc.constant(null), fc.string({ minLength: 1, maxLength: 100 })),
   note: fc.oneof(fc.constant(null), fc.string({ minLength: 1, maxLength: 200 })),
-  activeFrom: fc.oneof(fc.constant(null), validDateArb.map((d) => d.toISOString())),
-  activeUntil: fc.oneof(fc.constant(null), validDateArb.map((d) => d.toISOString())),
+  activeFrom: fc.oneof(
+    fc.constant(null),
+    validDateArb.map((d) => d.toISOString())
+  ),
+  activeUntil: fc.oneof(
+    fc.constant(null),
+    validDateArb.map((d) => d.toISOString())
+  ),
   setBy: fc.string({ minLength: 1, maxLength: 36 }),
   createdAt: validDateArb.map((d) => d.toISOString()),
   updatedAt: validDateArb.map((d) => d.toISOString()),
@@ -89,9 +95,7 @@ const ingredientArb: fc.Arbitrary<IngredientCheckInput> = fc.record({
   confidence: fc.option(fc.double({ min: 0, max: 1 }), { nil: undefined }),
 });
 
-const personNameArb = fc
-  .string({ minLength: 1, maxLength: 50 })
-  .filter((s) => s.trim().length > 0);
+const personNameArb = fc.string({ minLength: 1, maxLength: 50 }).filter((s) => s.trim().length > 0);
 
 // Property tests
 
@@ -517,9 +521,7 @@ describe("Property Tests: Severity Grouping", () => {
             result.findings.warn.map((f) => `${f.personId}-${f.ruleId}-${f.ingredientName}`)
           );
           const avoidIds = new Set(
-            result.findings.prefer_avoid.map(
-              (f) => `${f.personId}-${f.ruleId}-${f.ingredientName}`
-            )
+            result.findings.prefer_avoid.map((f) => `${f.personId}-${f.ruleId}-${f.ingredientName}`)
           );
 
           // Check no overlap
