@@ -1,0 +1,21 @@
+title: OvenLovin Documentation
+description: LLM-optimized recipe and family meal-planning platform
+baseurl: "/ovenlovin"
+url: "https://tbarho.github.io"
+
+theme: jekyll-theme-cayman
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+
+plugins:
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: false
+
+exclude:
+  - research/
