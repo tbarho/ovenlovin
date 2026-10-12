@@ -52,7 +52,8 @@ const recipeSchema = z.object({
 });
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
-  const visionModelId = config.visionModelId || process.env.RK_MODEL_VISION || "spacexai/grok-4.7";
+  const visionModelId =
+    config.visionModelId || process.env.RK_MODEL_VISION || "xai/grok-vision-beta";
 
   return {
     name: "photo-importer",
