@@ -1,2 +1,6 @@
-drizzle/
+# Ignore drizzle/ except migrations
+drizzle/*
+!drizzle/meta/
+!drizzle/*.sql
+
 .env
