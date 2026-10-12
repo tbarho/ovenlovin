@@ -67,8 +67,7 @@ export interface GetRecipeOutput {
   };
 }
 
-async function handler(
-  _input: GetRecipeInput, _context: AuthContext): Promise<GetRecipeOutput> {
+async function handler(_input: GetRecipeInput, _context: AuthContext): Promise<GetRecipeOutput> {
   // TODO: Implement using @ovenlovin/core service
   // - Fetch recipe by ID
   // - Check household access
