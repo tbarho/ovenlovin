@@ -3,11 +3,13 @@ title: Quickstart
 description: Get OvenLovin running in minutes
 ---
 
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://github.com/tbarho/ovenlovin&project-name=ovenlovin&repository-name=ovenlovin)
+
 ## Deploy to Vercel
 
-The fastest way to get started is to deploy OvenLovin to Vercel with one click:
-
-[Deploy to Vercel →](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin)
+The fastest way to get started is to deploy OvenLovin to Vercel with one click using the button above.
 
 The one-click deploy will:
 
@@ -40,57 +42,153 @@ You'll need to obtain API keys for the following services:
 
 ### Installation
 
-#### Using pnpm
+<Tabs items={['pnpm', 'npm', 'yarn']}>
+  <Tab value="pnpm">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/tbarho/ovenlovin.git
+    cd ovenlovin
 
-```bash
-# Clone the repository
-git clone https://github.com/tbarho/ovenlovin.git
-cd ovenlovin
+    # Install dependencies
+    pnpm install
 
-# Install dependencies
-pnpm install
+    # Set up environment variables
+    cp .env.example .env.local
+    # Edit .env.local with your API keys
 
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your API keys
+    # Run database migrations
+    pnpm --filter @ovenlovin/db migrate
 
-# Run database migrations
-pnpm --filter @ovenlovin/db migrate
+    # Start development server
+    pnpm dev
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/tbarho/ovenlovin.git
+    cd ovenlovin
 
-# Start development server
-pnpm dev
-```
+    # Install dependencies
+    npm install
+
+    # Set up environment variables
+    cp .env.example .env.local
+    # Edit .env.local with your API keys
+
+    # Run database migrations
+    npm run --workspace @ovenlovin/db migrate
+
+    # Start development server
+    npm run dev
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/tbarho/ovenlovin.git
+    cd ovenlovin
+
+    # Install dependencies
+    yarn install
+
+    # Set up environment variables
+    cp .env.example .env.local
+    # Edit .env.local with your API keys
+
+    # Run database migrations
+    yarn workspace @ovenlovin/db migrate
+
+    # Start development server
+    yarn dev
+    ```
+  </Tab>
+</Tabs>
 
 The app will be available at `http://localhost:3000`.
 
 ### Development Commands
 
-```bash
-# Run all workspaces in dev mode
-pnpm dev
+<Tabs items={['pnpm', 'npm', 'yarn']}>
+  <Tab value="pnpm">
+    ```bash
+    # Run all workspaces in dev mode
+    pnpm dev
 
-# Run specific workspace
-pnpm --filter @ovenlovin/web dev
-pnpm --filter @ovenlovin/core test:watch
+    # Run specific workspace
+    pnpm --filter @ovenlovin/web dev
+    pnpm --filter @ovenlovin/core test:watch
 
-# Build
-pnpm build
+    # Build
+    pnpm build
 
-# Test
-pnpm test
-pnpm test:watch
+    # Test
+    pnpm test
+    pnpm test:watch
 
-# Lint & format
-pnpm lint
-pnpm format
-pnpm typecheck
+    # Lint & format
+    pnpm lint
+    pnpm format
+    pnpm typecheck
 
-# Clean
-pnpm clean
-```
+    # Clean
+    pnpm clean
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    # Run all workspaces in dev mode
+    npm run dev
+
+    # Run specific workspace
+    npm run --workspace @ovenlovin/web dev
+    npm run --workspace @ovenlovin/core test:watch
+
+    # Build
+    npm run build
+
+    # Test
+    npm test
+    npm run test:watch
+
+    # Lint & format
+    npm run lint
+    npm run format
+    npm run typecheck
+
+    # Clean
+    npm run clean
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    # Run all workspaces in dev mode
+    yarn dev
+
+    # Run specific workspace
+    yarn workspace @ovenlovin/web dev
+    yarn workspace @ovenlovin/core test:watch
+
+    # Build
+    yarn build
+
+    # Test
+    yarn test
+    yarn test:watch
+
+    # Lint & format
+    yarn lint
+    yarn format
+    yarn typecheck
+
+    # Clean
+    yarn clean
+    ```
+  </Tab>
+</Tabs>
 
 ## Next Steps
 
-- [Connect Your Agent](/docs/agents) - Set up Grok Bot, ChatGPT, or Claude Desktop
-- [Learn Concepts](/docs/concepts) - Understand households, rules, and meal planning
-- [API Reference](/docs/api) - Explore the REST API and MCP tools
+- [Connect Your Agent](./agents) - Set up Grok Bot, ChatGPT, or Claude Desktop
+- [Learn Concepts](./concepts) - Understand households, rules, and meal planning
+- [API Reference](./api) - Explore the REST API and MCP tools
