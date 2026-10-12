@@ -116,7 +116,7 @@ export const recipeSourceSchema = baseEntitySchema.extend({
   importerName: z.string().max(100).nullable().optional(),
   importerVersion: z.string().max(50).nullable().optional(),
   modelUsed: z.string().max(100).nullable().optional(),
-  rawExtractionJson: z.record(z.unknown()).nullable().optional(),
+  rawExtractionJson: z.record(z.string(), z.unknown()).nullable().optional(),
   licenseNote: z.string().nullable().optional(),
 });
 

@@ -82,7 +82,7 @@ export function createServer(config: ServerConfig = {}) {
       tools: TOOLS.map((tool) => ({
         name: tool.name,
         description: tool.description,
-        inputSchema: zodToJsonSchema(tool.inputSchema),
+        inputSchema: zodToJsonSchema(tool.inputSchema as any),
       })),
     };
   });
