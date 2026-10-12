@@ -66,13 +66,17 @@ jobs:
             # Remove /ovenlovin prefix and query params/anchors
             file_path=$(echo "$link" | sed 's|^/ovenlovin||' | sed 's|[?#].*||')
             
-            # Add .html if it's a directory-style link
-            if [[ "$file_path" != *.* ]]; then
-              file_path="${file_path}.html"
+            # Handle root path (empty after removing basePath)
+            if [[ -z "$file_path" || "$file_path" == "/" ]]; then
+              file_path="index.html"
+            else
+              # Add .html if it's a directory-style link
+              if [[ "$file_path" != *.* ]]; then
+                file_path="${file_path}.html"
+              fi
+              # Remove leading slash for file check
+              file_path=${file_path#/}
             fi
-            
-            # Remove leading slash for file check
-            file_path=${file_path#/}
             
             if [[ ! -f "$file_path" ]] && [[ ! -d "${file_path%.html}" ]]; then
               echo "❌ Broken link: $link (expected file: $file_path)"
