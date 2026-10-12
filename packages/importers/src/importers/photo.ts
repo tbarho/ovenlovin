@@ -105,7 +105,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         sourceType: "photo",
         sourceBlobs: input.images.map((img) => img.blob),
         rawData: {
-          ...result.object,
+          ...(result.object as object),
           isHandwritten: input.isHandwritten,
           imageCount: input.images.length,
         } as Record<string, unknown>,
