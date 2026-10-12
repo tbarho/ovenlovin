@@ -1,8 +1,8 @@
 // @ts-nocheck -- skip type checking
-import * as docs_3 from "../src/content/docs/quickstart.mdx?collection=docs&hash=1791840927618";
-import * as docs_2 from "../src/content/docs/index.mdx?collection=docs&hash=1791840927618";
-import * as docs_1 from "../src/content/docs/concepts.mdx?collection=docs&hash=1791840927618";
-import * as docs_0 from "../src/content/docs/agents.mdx?collection=docs&hash=1791840927618";
+import * as docs_3 from "../src/content/docs/quickstart.mdx?collection=docs&hash=1791842928816";
+import * as docs_2 from "../src/content/docs/index.mdx?collection=docs&hash=1791842928816";
+import * as docs_1 from "../src/content/docs/concepts.mdx?collection=docs&hash=1791842928816";
+import * as docs_0 from "../src/content/docs/agents.mdx?collection=docs&hash=1791842928816";
 import { _runtime } from "fumadocs-mdx";
 import * as _source from "../source.config";
 export const docs = _runtime.doc<typeof _source.docs>([
