@@ -2,6 +2,8 @@
 
 > **LLM-optimized recipe and family meal-planning platform**
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://github.com/tbarho/ovenlovin/blob/main/docs/bot-setup.md&project-name=ovenlovin&repository-name=ovenlovin&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://github.com/tbarho/ovenlovin&demo-image=https://vercel.com/api/www/avatar?u=ovenlovin&s=128&integration-ids=oac_nEXJBbvUWwjlcyqXeFz6ybeh)
+
 An open-source Next.js template for Vercel that provides a bot-first backend for recipe management, meal planning, and grocery lists. Built for AI agents (Grok Bot, ChatGPT, Claude) to help families manage weekly meal planning with per-person dietary rules and allergy checking.
 
 ## Status
