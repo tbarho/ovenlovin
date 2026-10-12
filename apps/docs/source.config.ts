@@ -1,7 +1,8 @@
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
 import { rehypeCode } from "fumadocs-core/mdx-plugins";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Disable any lint because fumadocs-mdx generated types are incompatible
+// eslint-disable-next-line
 export const { docs, meta }: any = defineDocs({
   dir: "src/content/docs",
 });

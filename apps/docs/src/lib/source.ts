@@ -2,8 +2,10 @@ import { loader } from "fumadocs-core/source";
 import { createMDXSource } from "fumadocs-mdx";
 import { docs, meta } from "../../.source";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Disable any lint because fumadocs-mdx generated types are incompatible
+// eslint-disable-next-line
 export const source: any = loader({
   baseUrl: "/docs",
+  // eslint-disable-next-line
   source: createMDXSource(docs as any, meta as any),
 });
