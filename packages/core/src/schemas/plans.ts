@@ -38,7 +38,7 @@ export const mealPlanSchema = baseEntitySchema.merge(createdBySchema).extend({
   status: mealPlanStatusSchema.default("draft"),
   generator: z.string().max(255).nullable().optional(),
   generatorModel: z.string().max(100).nullable().optional(),
-  latestCheckReport: z.record(z.unknown()).nullable().optional(),
+  latestCheckReport: z.record(z.string(), z.unknown()).nullable().optional(),
   checkedAt: z.string().datetime().nullable().optional(),
   contentHash: z.string().max(64).nullable().optional(),
   acknowledgedWarnings: z.array(z.string()).default([]),
@@ -67,7 +67,7 @@ export const checkFindingSchema = z.object({
   ruleId: uuidSchema.nullable().optional(),
   severity: checkFindingSeveritySchema,
   message: z.string(),
-  evidence: z.record(z.unknown()).optional(),
+  evidence: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const checkResultSchema = baseEntitySchema.extend({
@@ -77,7 +77,7 @@ export const checkResultSchema = baseEntitySchema.extend({
   personRuleId: uuidSchema.nullable().optional(),
   severity: z.string().max(50),
   message: z.string(),
-  evidence: z.record(z.unknown()).nullable().optional(),
+  evidence: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const checkReportSchema = z.object({
