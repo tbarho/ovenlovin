@@ -1,5 +1,5 @@
 import { eq, and, isNull, desc, gte, lte } from "drizzle-orm";
-import { mealPlan, mealPlanEntry, checkResult } from "@ovenlovin/db";
+import { mealPlan, mealPlanEntry } from "@ovenlovin/db";
 import type { MealPlan, MealPlanEntry, CheckReport, CheckFinding } from "../schemas/plans";
 import type { PersonRule } from "../schemas/people";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
@@ -93,8 +93,8 @@ export class PlanService extends BaseService {
       for (const personId of entry.attendees) {
         const rules = peopleRules.get(personId) || [];
 
-        for (const rule of rules) {
-          const finding = await this.checkEntryAgainstRule(entry, personId, rule);
+        for (let i = 0; i < rules.length; i++) {
+          const finding = await this.checkEntryAgainstRule();
           if (finding) {
             findings.push(finding);
             affectedPeopleSet.add(personId);
@@ -102,9 +102,6 @@ export class PlanService extends BaseService {
         }
       }
     }
-
-    const blockCount = findings.filter((f) => f.severity === "block").length;
-    const warnCount = findings.filter((f) => f.severity === "warn").length;
 
     return {
       status: "complete",
@@ -125,11 +122,7 @@ export class PlanService extends BaseService {
     };
   }
 
-  private async checkEntryAgainstRule(
-    entry: MealPlanEntry,
-    personId: string,
-    rule: PersonRule
-  ): Promise<CheckFinding | null> {
+  private async checkEntryAgainstRule(): Promise<CheckFinding | null> {
     return null;
   }
 
