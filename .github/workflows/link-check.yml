@@ -1,0 +1,94 @@
+name: Link Check
+
+on:
+  pull_request:
+    paths:
+      - "apps/docs/**"
+      - ".github/workflows/link-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/docs/**"
+      - ".github/workflows/link-check.yml"
+
+jobs:
+  link-check:
+    name: Check Documentation Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: pnpm/action-setup@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Build documentation
+        run: pnpm --filter @ovenlovin/docs build
+      
+      - name: Check for basePath issues
+        run: |
+          echo "Checking for links without basePath prefix..."
+          
+          # Check for href="/" without /ovenlovin prefix (excluding external links)
+          if grep -r 'href="/"' apps/docs/out/docs/ --include="*.html"; then
+            echo "❌ ERROR: Found links with href='/' that should use basePath '/ovenlovin'"
+            exit 1
+          fi
+          
+          # Check for src="/" without /ovenlovin prefix
+          if grep -r 'src="/"' apps/docs/out/docs/ --include="*.html" | grep -v 'https://'; then
+            echo "❌ ERROR: Found src attributes with src='/' that should use basePath '/ovenlovin'"
+            exit 1
+          fi
+          
+          echo "✅ All internal links use correct basePath"
+      
+      - name: Check for broken internal links
+        run: |
+          echo "Checking for broken internal links..."
+          
+          cd apps/docs/out
+          
+          # Extract all internal links (starting with /ovenlovin)
+          grep -roh 'href="/ovenlovin[^"]*"' docs/ --include="*.html" | \
+            sed 's/href="//;s/"$//' | \
+            sort -u > /tmp/all-links.txt
+          
+          # Check if each linked file exists
+          BROKEN_LINKS=0
+          while IFS= read -r link; do
+            # Remove /ovenlovin prefix and query params/anchors
+            file_path=$(echo "$link" | sed 's|^/ovenlovin||' | sed 's|[?#].*||')
+            
+            # Add .html if it's a directory-style link
+            if [[ "$file_path" != *.* ]]; then
+              file_path="${file_path}.html"
+            fi
+            
+            # Remove leading slash for file check
+            file_path=${file_path#/}
+            
+            if [[ ! -f "$file_path" ]] && [[ ! -d "${file_path%.html}" ]]; then
+              echo "❌ Broken link: $link (expected file: $file_path)"
+              BROKEN_LINKS=$((BROKEN_LINKS + 1))
+            fi
+          done < /tmp/all-links.txt
+          
+          if [ $BROKEN_LINKS -gt 0 ]; then
+            echo "❌ Found $BROKEN_LINKS broken links"
+            exit 1
+          fi
+          
+          echo "✅ All internal links are valid"
+      
+      - name: Summary
+        run: |
+          echo "## Link Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All documentation links are valid" >> $GITHUB_STEP_SUMMARY
+          echo "✅ basePath '/ovenlovin' is correctly applied" >> $GITHUB_STEP_SUMMARY
