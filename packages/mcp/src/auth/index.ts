@@ -81,8 +81,8 @@ async function parseClerkToken(token: string): Promise<AuthContext> {
 
     const userId = verifiedToken.sub;
 
-    const orgId = (verifiedToken as any).org_id;
-    const orgRole = (verifiedToken as any).org_role;
+    const orgId = (verifiedToken as Record<string, unknown>).org_id as string | undefined;
+    const orgRole = (verifiedToken as Record<string, unknown>).org_role as string | undefined;
 
     if (!orgId) {
       throw {
@@ -115,7 +115,7 @@ async function parseClerkToken(token: string): Promise<AuthContext> {
       membershipRole: role ?? "member",
     };
   } catch (error) {
-    if ((error as any).code) {
+    if (error && typeof error === "object" && "code" in error) {
       throw error;
     }
     throw {

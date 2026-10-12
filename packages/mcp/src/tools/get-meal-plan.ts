@@ -118,11 +118,18 @@ async function handler(input: GetMealPlanInput, context: AuthContext): Promise<G
   );
 
   // Build check report summary if available
-  const checkReport = plan.latestCheckReport
+  const latestReport = plan.latestCheckReport as
+    | {
+        status?: "complete" | "incomplete";
+        overallSummary?: { blockingIssues?: number; warnings?: number };
+      }
+    | undefined;
+
+  const checkReport = latestReport
     ? {
-        status: (plan.latestCheckReport as any).status ?? "incomplete",
-        blockingIssues: (plan.latestCheckReport as any).overallSummary?.blockingIssues ?? 0,
-        warnings: (plan.latestCheckReport as any).overallSummary?.warnings ?? 0,
+        status: (latestReport.status ?? "incomplete") as "complete" | "incomplete",
+        blockingIssues: latestReport.overallSummary?.blockingIssues ?? 0,
+        warnings: latestReport.overallSummary?.warnings ?? 0,
         checkedAt: plan.checkedAt ?? new Date().toISOString(),
       }
     : undefined;

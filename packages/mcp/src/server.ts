@@ -79,11 +79,15 @@ export function createServer(config: ServerConfig = {}) {
   // List available tools
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
-      tools: TOOLS.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: zodToJsonSchema(tool.inputSchema as any),
-      })),
+      tools: TOOLS.map((tool) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const schema = zodToJsonSchema(tool.inputSchema as any, { $refStrategy: "none" });
+        return {
+          name: tool.name,
+          description: tool.description,
+          inputSchema: schema as Record<string, unknown>,
+        };
+      }),
     };
   });
 

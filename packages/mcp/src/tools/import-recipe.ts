@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { RecipeService } from "@ovenlovin/core";
+import { RecipeService, type RecipeMethodTag } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
@@ -63,7 +63,7 @@ async function handler(
     cookTimeMinutes: draft.cookTimeMinutes ?? null,
     totalTimeMinutes: draft.totalTimeMinutes ?? null,
     activeTimeMinutes: draft.activeTimeMinutes ?? null,
-    methodTags: (draft.methodTags as any) ?? [],
+    methodTags: ((draft.methodTags ?? []) as RecipeMethodTag[]),
     cuisine: draft.cuisine ?? null,
     course: draft.course ?? null,
     difficulty: draft.difficulty ?? null,

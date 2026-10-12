@@ -106,8 +106,8 @@ async function handler(
 
       // Filter by method tags if provided
       if (input.methodTags && input.methodTags.length > 0) {
-        const recipeTags = recipe.methodTags || [];
-        const hasMatchingTag = input.methodTags.some((tag) => recipeTags.includes(tag as any));
+        const recipeTags = (recipe.methodTags || []) as string[];
+        const hasMatchingTag = input.methodTags.some((tag) => recipeTags.includes(tag));
         if (!hasMatchingTag) {
           return null;
         }
