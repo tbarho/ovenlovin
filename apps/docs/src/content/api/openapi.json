@@ -1,0 +1,45 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "OvenLovin API",
+    "description": "LLM-optimized recipe & family meal-planning API. Bot-first interfaces for Grok, ChatGPT, Claude, and other AI agents.",
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/tbarho/ovenlovin/blob/main/LICENSE"
+    },
+    "contact": {
+      "name": "OvenLovin",
+      "url": "https://github.com/tbarho/ovenlovin"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://ovenlovin.dev/api/v1",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Local development"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Clerk JWT token for authenticated users"
+      },
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key for bot clients. Format: `ApiKey <key>`"
+      }
+    },
+    "schemas": {},
+    "parameters": {}
+  },
+  "paths": {}
+}

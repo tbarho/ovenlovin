@@ -1,0 +1,166 @@
+---
+title: get_person_rules
+description: Get detailed dietary rules and restrictions for one or more people
+---
+
+Get comprehensive per-person rules including allergies, dietary restrictions, and preferences with severity levels and matching options. Use for detailed rule inspection and understanding safety requirements.
+
+## Input Schema
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `personIds` | array of strings | Yes | - | Person IDs to get rules for (minimum 1) |
+| `includeInactive` | boolean | No | `false` | Include rules outside their active date range |
+
+## Output Schema
+
+```typescript
+{
+  people: Array<{
+    id: string,
+    displayName: string,
+    rules: Array<{
+      id: string,
+      kind: "allergen" | "ingredient" | "ingredient_category" | "diet" | "tag" | "custom",
+      target: string,
+      severity: "block" | "warn" | "prefer_avoid",
+      label?: string,
+      note?: string,
+      options: {
+        includeMayContain: boolean,
+        includeCrossContact: boolean,
+        sharedFacility: "block" | "warn" | "ignore",
+        includeDescendants: boolean,
+        treatCoconutAsTreeNut?: boolean
+      }
+    }>,
+    labelNotes?: Array<{
+      note: string,
+      ingredientName?: string,
+      category?: string
+    }>
+  }>
+}
+```
+
+## Rule Types
+
+### kind
+
+- **allergen**: Named allergen from standard taxonomy (e.g., "peanuts", "tree_nuts", "dairy")
+- **ingredient**: Specific ingredient name (e.g., "cilantro", "mushrooms")
+- **ingredient_category**: Broad category (e.g., "red_meat", "seafood")
+- **diet**: Dietary pattern (e.g., "vegetarian", "vegan", "kosher", "halal")
+- **tag**: Recipe method or cuisine tag (e.g., "spicy", "fried")
+- **custom**: Free-form custom rule with admin-defined matching
+
+### severity
+
+- **block**: Must not be present. For life-threatening allergies or strict religious/ethical restrictions
+- **warn**: Should review before serving. For sensitivities or moderate preferences
+- **prefer_avoid**: Soft preference. For dislikes or nutritional goals
+
+### options
+
+- **includeMayContain**: Match "may contain" warnings on packaged foods
+- **includeCrossContact**: Match shared equipment warnings
+- **sharedFacility**: How to handle "manufactured in a facility with..." warnings
+- **includeDescendants**: For categories, match child ingredients (e.g., "tree nuts" matches "almonds")
+- **treatCoconutAsTreeNut**: Special case for coconut allergy classification
+
+## Example Call
+
+```json
+{
+  "personIds": ["person-001", "person-002"],
+  "includeInactive": false
+}
+```
+
+## Example Result
+
+```json
+{
+  "people": [
+    {
+      "id": "person-001",
+      "displayName": "Child A",
+      "rules": [
+        {
+          "id": "rule-abc-123",
+          "kind": "allergen",
+          "target": "peanuts",
+          "severity": "block",
+          "label": "Severe peanut allergy (anaphylaxis risk)",
+          "note": "Carries EpiPen. Avoid any trace exposure.",
+          "options": {
+            "includeMayContain": true,
+            "includeCrossContact": true,
+            "sharedFacility": "block",
+            "includeDescendants": false
+          }
+        },
+        {
+          "id": "rule-def-456",
+          "kind": "allergen",
+          "target": "tree_nuts",
+          "severity": "block",
+          "label": "Tree nut allergy",
+          "options": {
+            "includeMayContain": true,
+            "includeCrossContact": true,
+            "sharedFacility": "warn",
+            "includeDescendants": true,
+            "treatCoconutAsTreeNut": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "person-002",
+      "displayName": "Parent B",
+      "rules": [
+        {
+          "id": "rule-ghi-789",
+          "kind": "diet",
+          "target": "vegetarian",
+          "severity": "prefer_avoid",
+          "note": "Prefers plant-based meals but flexible",
+          "options": {
+            "includeMayContain": false,
+            "includeCrossContact": false,
+            "sharedFacility": "ignore",
+            "includeDescendants": true
+          }
+        },
+        {
+          "id": "rule-jkl-012",
+          "kind": "ingredient",
+          "target": "cilantro",
+          "severity": "prefer_avoid",
+          "note": "Strong dislike",
+          "options": {
+            "includeMayContain": false,
+            "includeCrossContact": false,
+            "sharedFacility": "ignore",
+            "includeDescendants": false
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Usage Notes
+
+1. **Safety labels**: The `label` field provides human-readable context (e.g., "Severe peanut allergy") for quick identification
+2. **Active vs inactive**: By default, only currently active rules are returned; use `includeInactive: true` to see historical or future rules
+3. **Rule matching**: The `options` control how strictly each rule is matched during checking
+4. **Bulk lookup**: Pass multiple person IDs to minimize round trips when planning meals for a group
+
+## Related Tools
+
+- [get_household_context](/docs/reference/mcp/get-household-context) - Get rule summaries for all household members
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Check recipes against these rules
+- [search_recipes](/docs/reference/mcp/search-recipes) - Search with automatic rule filtering

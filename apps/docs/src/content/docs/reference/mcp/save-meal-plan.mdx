@@ -1,0 +1,151 @@
+---
+title: save_meal_plan
+description: Save a meal plan to the database with check report
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="warn" title="Requires Check Report">
+This tool requires the complete output from `check_meal_plan` in the `checkReportJson` field. Always run [check_meal_plan](/docs/reference/mcp/check-meal-plan) before saving.
+</Callout>
+
+Save a meal plan to the database with its safety check report. Plans with blocking issues must include `acknowledgedWarnings` to confirm household admin review.
+
+## Input Schema
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `weekStart` | string (date) | Yes | - | ISO 8601 date (YYYY-MM-DD) for week start |
+| `entries` | array | Yes | - | Array of meal plan entries |
+| `entries[].date` | string (date) | Yes | - | Meal date (YYYY-MM-DD) |
+| `entries[].meal` | string | Yes | - | Meal slot (e.g., "dinner", "lunch") |
+| `entries[].recipeId` | string (UUID) | Yes | - | Recipe ID |
+| `entries[].servings` | number | Yes | - | Number of servings (positive integer) |
+| `entries[].attendees` | array of strings | Yes | - | Person IDs attending this meal |
+| `entries[].prepAheadNotes` | string | No | - | Optional prep-ahead instructions |
+| `checkReportJson` | object | Yes | - | Complete output from `check_meal_plan` |
+| `acknowledgedWarnings` | array of strings | No | `[]` | Finding IDs that have been acknowledged |
+| `status` | enum | No | `"draft"` | Plan status: `"draft"` or `"approved"` |
+
+## Output Schema
+
+```typescript
+{
+  planId: string,
+  status: "draft" | "approved" | "archived",
+  weekStart: string,
+  entriesCount: number,
+  message: string
+}
+```
+
+## Example Call
+
+```json
+{
+  "weekStart": "2024-01-15",
+  "entries": [
+    {
+      "date": "2024-01-15",
+      "meal": "dinner",
+      "recipeId": "550e8400-e29b-41d4-a716-446655440000",
+      "servings": 4,
+      "attendees": ["person-001", "person-002"],
+      "prepAheadNotes": "Marinate chicken night before"
+    },
+    {
+      "date": "2024-01-16",
+      "meal": "dinner",
+      "recipeId": "660e8400-e29b-41d4-a716-446655440001",
+      "servings": 4,
+      "attendees": ["person-001", "person-002", "person-003"]
+    }
+  ],
+  "checkReportJson": {
+    "status": "complete",
+    "overallSummary": {
+      "totalEntries": 2,
+      "blockingIssues": 0,
+      "warnings": 0,
+      "preferAvoidances": 1
+    },
+    "entries": [
+      {
+        "date": "2024-01-15",
+        "meal": "dinner",
+        "recipeTitle": "Grilled Chicken Salad",
+        "findings": []
+      },
+      {
+        "date": "2024-01-16",
+        "meal": "dinner",
+        "recipeTitle": "Vegetarian Pasta",
+        "findings": [
+          {
+            "personId": "person-003",
+            "personName": "Parent B",
+            "ruleId": "rule-xyz-456",
+            "severity": "prefer_avoid",
+            "message": "Contains dairy (lactose preference)",
+            "evidence": {
+              "ingredient": "parmesan cheese",
+              "matchType": "contains",
+              "confidence": 1.0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "acknowledgedWarnings": [],
+  "status": "draft"
+}
+```
+
+## Example Result
+
+```json
+{
+  "planId": "plan-abc-123",
+  "status": "draft",
+  "weekStart": "2024-01-15",
+  "entriesCount": 2,
+  "message": "Meal plan saved with 2 entries"
+}
+```
+
+## Status Workflow
+
+### draft
+- Initial save state
+- Can have warnings or blocking issues
+- Can be edited freely
+
+### approved
+- Requires zero blocking issues OR explicit acknowledgment of each blocking finding
+- Ready for shopping list export and execution
+- Should not be modified without re-checking
+
+### archived
+- Historical plans
+- No longer active
+
+## Acknowledgment Rules
+
+When `checkReportJson.overallSummary.blockingIssues > 0`:
+- Must provide `acknowledgedWarnings` array
+- Each blocking finding's rule ID must be included
+- Typically requires household admin authorization
+
+## Usage Notes
+
+1. **Always check first**: Call `check_meal_plan` with identical plan data before saving
+2. **Include full report**: Pass the complete `check_meal_plan` output as `checkReportJson`
+3. **Store prep notes**: Use `prepAheadNotes` for time-saving instructions
+4. **Draft by default**: Save as `"draft"` first, then update to `"approved"` after household review
+
+## Related Tools
+
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Required before saving
+- [get_meal_plan](/docs/reference/mcp/get-meal-plan) - Retrieve a saved plan
+- [export_shopping_list](/docs/reference/mcp/export-shopping-list) - Generate shopping list from plan

@@ -1,0 +1,159 @@
+---
+title: export_shopping_list
+description: Export a shopping list for a meal plan in various formats
+---
+
+Export a shopping list for a saved meal plan with automatic ingredient aggregation, unit conversion, and per-person rule warnings. Supports multiple export formats for different use cases.
+
+## Input Schema
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `planId` | string (UUID) | Yes | - | Meal plan ID to generate shopping list for |
+| `format` | enum | No | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"` |
+| `groupBy` | enum | No | `"aisle"` | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"` |
+| `includePantryItems` | boolean | No | `false` | Include pantry staples (salt, pepper, oil, etc.) |
+| `includeRuleWarnings` | boolean | No | `true` | Include per-person rule warnings for shoppers |
+
+## Output Schema
+
+```typescript
+{
+  format: string,
+  content: string,
+  itemCount: number,
+  warnings: Array<{
+    ingredient: string,
+    personName: string,
+    note: string
+  }>
+}
+```
+
+## Format Examples
+
+### Markdown (default)
+
+```markdown
+# Shopping List
+
+## Ingredients
+
+- 2 lbs chicken breast (Grilled Chicken Salad)
+- 1 lb pasta (Vegetarian Pasta Primavera)
+- 2 cups cherry tomatoes (Grilled Chicken Salad)
+- 1 head romaine lettuce (Grilled Chicken Salad)
+- 1/2 cup parmesan cheese (Vegetarian Pasta Primavera)
+
+## ⚠️ Warnings
+
+- **Child B**: parmesan cheese - Contains dairy (lactose intolerant preference)
+```
+
+### JSON
+
+```json
+{
+  "ingredients": [
+    {
+      "text": "2 lbs chicken breast",
+      "quantity": 2,
+      "unit": "lbs",
+      "recipeTitle": "Grilled Chicken Salad"
+    },
+    {
+      "text": "1 lb pasta",
+      "quantity": 1,
+      "unit": "lb",
+      "recipeTitle": "Vegetarian Pasta Primavera"
+    }
+  ],
+  "warnings": [
+    {
+      "ingredient": "parmesan cheese",
+      "personName": "Child B",
+      "note": "Contains dairy (lactose intolerant preference)"
+    }
+  ]
+}
+```
+
+### CSV
+
+```csv
+Ingredient,Quantity,Unit,Recipe
+"chicken breast",2,"lbs","Grilled Chicken Salad"
+"pasta",1,"lb","Vegetarian Pasta Primavera"
+"cherry tomatoes",2,"cups","Grilled Chicken Salad"
+```
+
+### Text
+
+```
+- 2 lbs chicken breast (Grilled Chicken Salad)
+- 1 lb pasta (Vegetarian Pasta Primavera)
+- 2 cups cherry tomatoes (Grilled Chicken Salad)
+
+WARNINGS:
+⚠️  Child B: parmesan cheese - Contains dairy (lactose intolerant preference)
+```
+
+## Example Call
+
+```json
+{
+  "planId": "plan-abc-123",
+  "format": "markdown",
+  "groupBy": "recipe",
+  "includePantryItems": false,
+  "includeRuleWarnings": true
+}
+```
+
+## Example Result
+
+```json
+{
+  "format": "markdown",
+  "content": "# Shopping List\n\n## Grilled Chicken Salad\n\n- 2 lbs chicken breast...",
+  "itemCount": 15,
+  "warnings": [
+    {
+      "ingredient": "parmesan cheese",
+      "personName": "Child B",
+      "note": "Contains dairy (lactose intolerant preference)"
+    }
+  ]
+}
+```
+
+## Grouping Strategies
+
+### aisle
+- Groups by grocery store aisle (produce, dairy, meat, etc.)
+- Best for efficient shopping
+- Not yet fully implemented (falls back to simple list)
+
+### recipe
+- Groups by recipe
+- Helps with recipe-by-recipe shopping
+- Good for meal kit-style shopping
+
+### category
+- Groups by ingredient category (vegetables, proteins, grains, etc.)
+- Balanced between organization and flexibility
+- Not yet fully implemented (falls back to simple list)
+
+## Usage Notes
+
+1. **Automatic aggregation**: Duplicate ingredients across recipes are combined when possible
+2. **Unit conversion**: Common unit conversions are applied (e.g., 3 tsp = 1 tbsp)
+3. **Safety warnings**: Inline warnings alert shoppers to dietary restrictions and allergens
+4. **Pantry items**: Enable `includePantryItems: true` to include staples like salt and oil
+5. **Parse confidence**: Low-confidence parsed ingredients may show in `rawText` form
+
+## Related Tools
+
+- [get_meal_plan](/docs/reference/mcp/get-meal-plan) - Get the plan details
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Verify safety before shopping
+- [save_meal_plan](/docs/reference/mcp/save-meal-plan) - Save plan before export

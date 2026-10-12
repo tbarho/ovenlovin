@@ -1,0 +1,246 @@
+---
+title: REST API Overview
+description: Bot-optimized REST API with OpenAPI 3.1 specification
+---
+
+OvenLovin provides a REST API optimized for AI agents and bot clients. All endpoints follow REST conventions with JSON request/response bodies.
+
+## Base URL
+
+**Production**: `https://ovenlovin.dev/api/v1`
+
+**Local Development**: `http://localhost:3000/api/v1`
+
+## Authentication
+
+### User Authentication (Clerk JWT)
+
+For authenticated user requests:
+
+```bash
+curl -H "Authorization: Bearer <jwt-token>" \
+  https://ovenlovin.dev/api/v1/recipes
+```
+
+### Bot Authentication (API Key)
+
+For bot client requests:
+
+```bash
+curl -H "Authorization: ApiKey <api-key>" \
+  https://ovenlovin.dev/api/v1/recipes
+```
+
+## Response Formats
+
+### Success Response
+
+Standard JSON response:
+
+```json
+{
+  "id": "abc-123",
+  "title": "Recipe Title",
+  ...
+}
+```
+
+### Paginated Response
+
+List endpoints return cursor-based pagination:
+
+```json
+{
+  "items": [...],
+  "nextCursor": "cursor-token",
+  "hasMore": true
+}
+```
+
+### Error Response (RFC 9457)
+
+All errors follow problem+json format:
+
+```json
+{
+  "type": "https://ovenlovin.dev/problems/not-found",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Recipe with id abc-123 not found",
+  "instance": "/api/v1/recipes/abc-123"
+}
+```
+
+## Available Endpoints
+
+### Health
+
+- `GET /health` - Health check and API version
+
+### Recipes
+
+- `GET /recipes` - List recipes with pagination and search
+- `POST /recipes` - Create a new recipe
+- `GET /recipes/{id}` - Get recipe details
+- `PATCH /recipes/{id}` - Update a recipe
+- `DELETE /recipes/{id}` - Delete a recipe (soft delete)
+
+### People
+
+- `GET /people` - List household members
+- `POST /people` - Add a person to household
+- `GET /people/{id}` - Get person details
+- `PATCH /people/{id}` - Update person information
+- `DELETE /people/{id}` - Remove person from household
+
+### Person Rules
+
+- `GET /people/{id}/rules` - List dietary rules for a person
+- `POST /people/{id}/rules` - Add a new rule
+- `GET /people/{id}/rules/{ruleId}` - Get rule details
+- `PATCH /people/{id}/rules/{ruleId}` - Update a rule
+- `DELETE /people/{id}/rules/{ruleId}` - Delete a rule
+
+### Meal Plans
+
+- `GET /meal-plans` - List meal plans
+- `POST /meal-plans` - Create a meal plan
+- `GET /meal-plans/{id}` - Get meal plan details
+- `PATCH /meal-plans/{id}` - Update meal plan
+- `DELETE /meal-plans/{id}` - Delete meal plan
+- `POST /meal-plans/{id}/check` - Check plan against rules
+- `GET /meal-plans/{id}/shopping-list` - Generate shopping list
+
+### Households
+
+- `GET /households` - List households (user must be a member)
+- `POST /households` - Create a new household
+- `GET /households/{id}` - Get household details
+
+## Pagination
+
+All list endpoints support cursor pagination:
+
+```bash
+GET /recipes?limit=20&cursor=<cursor-token>
+```
+
+Parameters:
+- `limit`: Number of items per page (default: 20, max: 100)
+- `cursor`: Continuation token from previous response
+
+Response includes:
+- `items`: Array of results
+- `nextCursor`: Token for next page (null if no more results)
+- `hasMore`: Boolean indicating more results available
+
+## Filtering and Search
+
+Many endpoints support filtering:
+
+### Recipes
+```bash
+GET /recipes?search=chicken&status=published
+```
+
+### Meal Plans
+```bash
+GET /meal-plans?weekStart=2024-01-15&weekEnd=2024-01-21
+```
+
+## Idempotency
+
+Write operations (POST, PATCH, DELETE) support idempotency keys:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Idempotency-Key: <uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My Recipe"}' \
+  https://ovenlovin.dev/api/v1/recipes
+```
+
+Idempotency keys:
+- Must be UUIDs
+- Prevent duplicate operations
+- Cached for 24 hours
+- Return original response for duplicate requests
+
+## Rate Limiting
+
+- User endpoints: 100 requests/minute
+- Bot endpoints: 500 requests/minute
+- Rate limit headers included in responses
+
+## OpenAPI Specification
+
+Full OpenAPI 3.1 specification available at:
+
+```bash
+curl https://ovenlovin.dev/api/v1/openapi.json
+```
+
+## Code Examples
+
+### TypeScript (Fetch)
+
+```typescript
+const response = await fetch('https://ovenlovin.dev/api/v1/recipes', {
+  headers: {
+    'Authorization': `Bearer ${jwtToken}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+### cURL
+
+```bash
+curl -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  https://ovenlovin.dev/api/v1/recipes
+```
+
+### Python
+
+```python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {jwt_token}',
+    'Content-Type': 'application/json'
+}
+
+response = requests.get(
+    'https://ovenlovin.dev/api/v1/recipes',
+    headers=headers
+)
+
+data = response.json()
+```
+
+## Error Handling
+
+Common status codes:
+
+- `200 OK` - Success
+- `201 Created` - Resource created
+- `400 Bad Request` - Invalid input
+- `401 Unauthorized` - Missing or invalid auth
+- `403 Forbidden` - Insufficient permissions
+- `404 Not Found` - Resource not found
+- `409 Conflict` - Idempotency key conflict
+- `422 Unprocessable Entity` - Validation error
+- `429 Too Many Requests` - Rate limit exceeded
+- `500 Internal Server Error` - Server error
+
+All errors include problem+json body with details.
+
+## Multi-Tenant Security
+
+- All requests are scoped to the authenticated user's household
+- Cross-household access is prevented at the database level
+- Row-level security enforced via Clerk authentication

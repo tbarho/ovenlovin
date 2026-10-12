@@ -1,0 +1,182 @@
+---
+title: get_recipe
+description: Get full recipe details including ingredients, steps, and nutrition
+---
+
+Get complete recipe details including ingredient list with quantities, step-by-step instructions, nutrition facts, and optional source attribution.
+
+## Input Schema
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `id` | string (UUID) | Yes | - | Recipe ID |
+| `includeNutrition` | boolean | No | `true` | Include nutrition facts if available |
+| `includeSource` | boolean | No | `false` | Include source attribution (URL, author) |
+
+## Output Schema
+
+```typescript
+{
+  id: string,
+  title: string,
+  description?: string,
+  yieldQuantity?: number,
+  yieldUnit?: string,
+  servings?: number,
+  prepTimeMinutes?: number,
+  cookTimeMinutes?: number,
+  totalTimeMinutes?: number,
+  activeTimeMinutes?: number,
+  methodTags: string[],
+  cuisine?: string,
+  course?: string,
+  difficulty?: string,
+  equipment: string[],
+  images: string[],
+  ingredients: Array<{
+    id: string,
+    groupName?: string,
+    order: number,
+    rawText: string,
+    quantity?: { min: number, max?: number },
+    unit?: string,
+    ingredientName?: string,
+    preparation?: string,
+    isOptional: boolean,
+    substitutionNotes?: string
+  }>,
+  steps: Array<{
+    id: string,
+    order: number,
+    text: string,
+    timers?: Array<{ duration: number, label?: string }>,
+    image?: string
+  }>,
+  nutrition?: {
+    perServing: boolean,
+    calories?: number,
+    protein?: number,
+    carbohydrates?: number,
+    fat?: number,
+    fiber?: number
+  },
+  source?: {
+    type: string,
+    url?: string,
+    author?: string,
+    attribution?: string
+  }
+}
+```
+
+## Example Call
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "includeNutrition": true,
+  "includeSource": false
+}
+```
+
+## Example Result
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "title": "Classic Marinara Sauce",
+  "description": "Simple, flavorful tomato sauce perfect for pasta or pizza",
+  "servings": 6,
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 30,
+  "totalTimeMinutes": 40,
+  "activeTimeMinutes": 15,
+  "methodTags": ["stovetop", "italian"],
+  "cuisine": "Italian",
+  "course": "sauce",
+  "difficulty": "easy",
+  "equipment": ["large pot", "wooden spoon"],
+  "images": ["https://example.com/marinara.jpg"],
+  "ingredients": [
+    {
+      "id": "ing-001",
+      "order": 1,
+      "rawText": "2 cans (28 oz each) crushed tomatoes",
+      "quantity": { "min": 2 },
+      "unit": "can",
+      "ingredientName": "crushed tomatoes",
+      "isOptional": false
+    },
+    {
+      "id": "ing-002",
+      "order": 2,
+      "rawText": "4 cloves garlic, minced",
+      "quantity": { "min": 4 },
+      "unit": "clove",
+      "ingredientName": "garlic",
+      "preparation": "minced",
+      "isOptional": false
+    },
+    {
+      "id": "ing-003",
+      "order": 3,
+      "rawText": "1/4 cup olive oil",
+      "quantity": { "min": 0.25 },
+      "unit": "cup",
+      "ingredientName": "olive oil",
+      "isOptional": false
+    },
+    {
+      "id": "ing-004",
+      "order": 4,
+      "rawText": "1 tsp dried basil",
+      "quantity": { "min": 1 },
+      "unit": "tsp",
+      "ingredientName": "dried basil",
+      "isOptional": true,
+      "substitutionNotes": "Or use 2 tbsp fresh basil"
+    }
+  ],
+  "steps": [
+    {
+      "id": "step-001",
+      "order": 1,
+      "text": "Heat olive oil in a large pot over medium heat. Add minced garlic and sauté until fragrant, about 1-2 minutes.",
+      "timers": [{ "duration": 120, "label": "sauté garlic" }]
+    },
+    {
+      "id": "step-002",
+      "order": 2,
+      "text": "Add crushed tomatoes and basil. Stir to combine and bring to a simmer.",
+      "timers": []
+    },
+    {
+      "id": "step-003",
+      "order": 3,
+      "text": "Reduce heat to low and simmer uncovered for 30 minutes, stirring occasionally, until sauce thickens.",
+      "timers": [{ "duration": 1800, "label": "simmer sauce" }]
+    }
+  ],
+  "nutrition": {
+    "perServing": true,
+    "calories": 120,
+    "protein": 3,
+    "carbohydrates": 12,
+    "fat": 9,
+    "fiber": 3
+  }
+}
+```
+
+## Usage Notes
+
+1. **Ingredient parsing**: The `ingredientName`, `quantity`, and `unit` fields are parsed automatically but may be incomplete for complex ingredient descriptions
+2. **Raw text fallback**: Always display `rawText` as the primary ingredient representation; use parsed fields for programmatic operations
+3. **Optional ingredients**: Check `isOptional` when building shopping lists or checking rules
+4. **Timers**: The `timers` array provides structured timing data for automation; durations are in seconds
+
+## Related Tools
+
+- [search_recipes](/docs/reference/mcp/search-recipes) - Find recipes by search criteria
+- [import_recipe](/docs/reference/mcp/import-recipe) - Import a new recipe
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Check recipe ingredients against dietary rules
