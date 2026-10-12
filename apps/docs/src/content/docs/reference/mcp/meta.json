@@ -1,0 +1,14 @@
+{
+  "title": "MCP Tools",
+  "pages": [
+    "get-household-context",
+    "search-recipes",
+    "get-recipe",
+    "check-meal-plan",
+    "get-person-rules",
+    "save-meal-plan",
+    "get-meal-plan",
+    "export-shopping-list",
+    "import-recipe"
+  ]
+}

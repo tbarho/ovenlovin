@@ -1,0 +1,163 @@
+---
+title: check_meal_plan
+description: Check a meal plan against household rules and schedule constraints
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="error" title="Safety-Critical Tool">
+This tool performs allergy and dietary restriction checking. **Always** call this before saving a meal plan. Warnings must be explicitly acknowledged by a household admin before a plan with blocking issues can be approved.
+</Callout>
+
+Check a meal plan against per-person rules (allergies, dietary restrictions) and schedule constraints. Returns per-entry, per-person findings with severity levels.
+
+## Input Schema
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `plan.weekStart` | string (date) | Yes | ISO 8601 date (YYYY-MM-DD) for week start |
+| `plan.entries` | array | Yes | Array of meal plan entries |
+| `plan.entries[].date` | string (date) | Yes | Meal date (YYYY-MM-DD) |
+| `plan.entries[].meal` | string | Yes | Meal slot (e.g., "dinner", "lunch") |
+| `plan.entries[].recipeId` | string (UUID) | Yes | Recipe ID to check |
+| `plan.entries[].servings` | number | Yes | Number of servings (positive integer) |
+| `plan.entries[].attendees` | array of strings | Yes | Person IDs who will attend this meal |
+
+## Output Schema
+
+```typescript
+{
+  status: "complete" | "incomplete",
+  overallSummary: {
+    totalEntries: number,
+    blockingIssues: number,
+    warnings: number,
+    preferAvoidances: number
+  },
+  entries: Array<{
+    date: string,
+    meal: string,
+    recipeTitle: string,
+    findings: Array<{
+      personId: string,
+      personName: string,
+      ruleId: string,
+      severity: "block" | "warn" | "prefer_avoid",
+      message: string,
+      evidence: {
+        ingredient: string,
+        matchType: "contains" | "may_contain" | "cross_contact" | "derived_from",
+        confidence: number
+      }
+    }>,
+    scheduleIssues?: Array<{
+      type: "time_budget" | "method_mismatch" | "attendance",
+      message: string
+    }>
+  }>,
+  nutritionSummary?: {
+    coverage: string,
+    notes: string[]
+  },
+  incompleteReason?: string
+}
+```
+
+## Severity Levels
+
+- **block**: Recipe contains a blocked allergen or ingredient. Must not be served to this person.
+- **warn**: Recipe may contain an allergen or ingredient based on uncertainty. Household admin should review.
+- **prefer_avoid**: Preference-level avoidance (e.g., dislikes, ethical choices). Softer than allergies.
+
+## Example Call
+
+```json
+{
+  "plan": {
+    "weekStart": "2024-01-15",
+    "entries": [
+      {
+        "date": "2024-01-15",
+        "meal": "dinner",
+        "recipeId": "550e8400-e29b-41d4-a716-446655440000",
+        "servings": 4,
+        "attendees": ["person-id-1", "person-id-2"]
+      },
+      {
+        "date": "2024-01-16",
+        "meal": "dinner",
+        "recipeId": "660e8400-e29b-41d4-a716-446655440001",
+        "servings": 4,
+        "attendees": ["person-id-1", "person-id-2", "person-id-3"]
+      }
+    ]
+  }
+}
+```
+
+## Example Result
+
+```json
+{
+  "status": "complete",
+  "overallSummary": {
+    "totalEntries": 2,
+    "blockingIssues": 1,
+    "warnings": 0,
+    "preferAvoidances": 1
+  },
+  "entries": [
+    {
+      "date": "2024-01-15",
+      "meal": "dinner",
+      "recipeTitle": "Peanut Butter Cookies",
+      "findings": [
+        {
+          "personId": "person-id-1",
+          "personName": "Child A",
+          "ruleId": "rule-abc-123",
+          "severity": "block",
+          "message": "Contains peanuts (tree nut allergy)",
+          "evidence": {
+            "ingredient": "peanut butter",
+            "matchType": "contains",
+            "confidence": 0.98
+          }
+        }
+      ]
+    },
+    {
+      "date": "2024-01-16",
+      "meal": "dinner",
+      "recipeTitle": "Grilled Chicken Salad",
+      "findings": [
+        {
+          "personId": "person-id-3",
+          "personName": "Parent B",
+          "ruleId": "rule-xyz-456",
+          "severity": "prefer_avoid",
+          "message": "Contains chicken (prefers vegetarian)",
+          "evidence": {
+            "ingredient": "chicken breast",
+            "matchType": "contains",
+            "confidence": 1.0
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Usage Notes
+
+1. **Always check before saving**: Call `check_meal_plan` before `save_meal_plan`
+2. **Blocking issues require acknowledgment**: Plans with `severity: "block"` findings must be explicitly acknowledged by a household admin
+3. **Report incomplete status**: If `status: "incomplete"`, the check could not complete fully (e.g., missing ingredient data). Include the `incompleteReason` in your response
+4. **Per-person warnings**: All findings name the affected person and provide context for the household admin
+
+## Related Tools
+
+- [get_person_rules](/docs/reference/mcp/get-person-rules) - Get detailed rules for a person
+- [save_meal_plan](/docs/reference/mcp/save-meal-plan) - Save a checked plan (include check result)
+- [get_household_context](/docs/reference/mcp/get-household-context) - Get household member information

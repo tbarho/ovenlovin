@@ -1,0 +1,123 @@
+---
+title: get_household_context
+description: Get household schedule, people, rules, preferences, and recent meal history
+---
+
+Get comprehensive household context including weekly schedule, member information with rule summaries, preferences, and recent meal history. Essential starting point for meal planning.
+
+## Input Schema
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `includeSchedule` | boolean | No | `true` | Include weekly schedule template and overrides |
+| `includePeople` | boolean | No | `true` | Include household members with rule summaries |
+| `includePreferences` | boolean | No | `true` | Include household cuisine preferences and avoidances |
+| `includeRecentMeals` | boolean | No | `true` | Include recent meal history |
+
+## Output Schema
+
+```typescript
+{
+  household: {
+    id: string,
+    name: string
+  },
+  schedule?: {
+    weeklyTemplate: Array<{
+      day: string,
+      meal: string,
+      busyLevel: "low" | "medium" | "high",
+      timeBudgetMinutes?: number,
+      attendees: string[],
+      constraints: string[]
+    }>,
+    overrides: Array<{
+      date: string,
+      meal: string,
+      note: string
+    }>
+  },
+  people?: Array<{
+    id: string,
+    displayName: string,
+    age?: number,
+    activityProfile?: string,
+    rulesSummary: {
+      blockCount: number,
+      warnCount: number,
+      preferAvoidCount: number
+    },
+    labelNotes?: string[]
+  }>,
+  preferences?: {
+    cuisines: string[],
+    avoidances: string[]
+  },
+  recentMeals?: Array<{
+    date: string,
+    meal: string,
+    recipeTitle: string
+  }>
+}
+```
+
+## Example Call
+
+```json
+{
+  "includeSchedule": true,
+  "includePeople": true,
+  "includePreferences": true,
+  "includeRecentMeals": true
+}
+```
+
+## Example Result
+
+```json
+{
+  "household": {
+    "id": "household-123",
+    "name": "The Smith Family"
+  },
+  "people": [
+    {
+      "id": "person-001",
+      "displayName": "Parent A",
+      "age": 42,
+      "activityProfile": "moderate",
+      "rulesSummary": {
+        "blockCount": 0,
+        "warnCount": 1,
+        "preferAvoidCount": 2
+      },
+      "labelNotes": ["Prefers low-carb meals"]
+    },
+    {
+      "id": "person-002",
+      "displayName": "Child B",
+      "age": 9,
+      "activityProfile": "very_active",
+      "rulesSummary": {
+        "blockCount": 2,
+        "warnCount": 0,
+        "preferAvoidCount": 0
+      },
+      "labelNotes": ["Severe peanut allergy", "Tree nut allergy"]
+    }
+  ]
+}
+```
+
+## Usage Notes
+
+1. **Start with context**: Call this tool at the beginning of meal planning sessions to understand household needs
+2. **Rule summaries**: The `rulesSummary` provides quick counts; use [get_person_rules](/docs/reference/mcp/get-person-rules) for full rule details
+3. **Activity profiles**: Use activity levels to estimate caloric needs when selecting recipes
+4. **Label notes**: Quick-reference labels (e.g., "Severe peanut allergy") for safety-critical information
+
+## Related Tools
+
+- [get_person_rules](/docs/reference/mcp/get-person-rules) - Get detailed per-person rules
+- [search_recipes](/docs/reference/mcp/search-recipes) - Search recipes filtered by attendee rules
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Verify meal plan against rules

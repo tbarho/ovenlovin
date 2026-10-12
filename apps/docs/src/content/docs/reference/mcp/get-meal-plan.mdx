@@ -1,0 +1,155 @@
+---
+title: get_meal_plan
+description: Retrieve a saved meal plan by ID or date range
+---
+
+Get a saved meal plan with enriched recipe details, attendee information, and check report summary. Use to retrieve existing plans for review or modification.
+
+## Input Schema
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `planId` | string (UUID) | No* | Meal plan ID to retrieve |
+| `weekStart` | string (date) | No* | Week start date (YYYY-MM-DD) to find plan for |
+
+*Either `planId` or `weekStart` must be provided.
+
+## Output Schema
+
+```typescript
+{
+  id: string,
+  weekStart: string,
+  status: "draft" | "approved" | "archived",
+  entries: Array<{
+    date: string,
+    meal: string,
+    recipe: {
+      id: string,
+      title: string,
+      prepTimeMinutes?: number,
+      cookTimeMinutes?: number
+    },
+    servings: number,
+    attendees: Array<{
+      id: string,
+      displayName: string
+    }>,
+    prepAheadNotes?: string
+  }>,
+  checkReport?: {
+    status: "complete" | "incomplete",
+    blockingIssues: number,
+    warnings: number,
+    checkedAt: string
+  },
+  acknowledgedWarnings: string[]
+}
+```
+
+## Example Call (by ID)
+
+```json
+{
+  "planId": "plan-abc-123"
+}
+```
+
+## Example Call (by date)
+
+```json
+{
+  "weekStart": "2024-01-15"
+}
+```
+
+## Example Result
+
+```json
+{
+  "id": "plan-abc-123",
+  "weekStart": "2024-01-15",
+  "status": "approved",
+  "entries": [
+    {
+      "date": "2024-01-15",
+      "meal": "dinner",
+      "recipe": {
+        "id": "recipe-001",
+        "title": "Grilled Chicken Salad",
+        "prepTimeMinutes": 20,
+        "cookTimeMinutes": 15
+      },
+      "servings": 4,
+      "attendees": [
+        {
+          "id": "person-001",
+          "displayName": "Parent A"
+        },
+        {
+          "id": "person-002",
+          "displayName": "Child B"
+        }
+      ],
+      "prepAheadNotes": "Marinate chicken the night before"
+    },
+    {
+      "date": "2024-01-16",
+      "meal": "dinner",
+      "recipe": {
+        "id": "recipe-002",
+        "title": "Vegetarian Pasta Primavera",
+        "prepTimeMinutes": 15,
+        "cookTimeMinutes": 20
+      },
+      "servings": 4,
+      "attendees": [
+        {
+          "id": "person-001",
+          "displayName": "Parent A"
+        },
+        {
+          "id": "person-002",
+          "displayName": "Child B"
+        },
+        {
+          "id": "person-003",
+          "displayName": "Parent C"
+        }
+      ]
+    }
+  ],
+  "checkReport": {
+    "status": "complete",
+    "blockingIssues": 0,
+    "warnings": 0,
+    "checkedAt": "2024-01-14T18:30:00Z"
+  },
+  "acknowledgedWarnings": []
+}
+```
+
+## Lookup Behavior
+
+### By planId
+- Returns exact plan matching the ID
+- Throws error if not found
+- Fastest lookup method
+
+### By weekStart
+- Returns the first plan matching that week start date
+- Returns error if no plan exists for that week
+- Use when you know the week but not the plan ID
+
+## Usage Notes
+
+1. **Enriched data**: Recipe and attendee details are pre-loaded for display
+2. **Check report summary**: The `checkReport` provides high-level safety status; full findings are stored but not returned here
+3. **Re-checking**: If the plan status shows `needsRecheck` (not shown in output but stored), re-run `check_meal_plan` before using
+4. **Get full recipe details**: Use [get_recipe](/docs/reference/mcp/get-recipe) for complete ingredient lists
+
+## Related Tools
+
+- [save_meal_plan](/docs/reference/mcp/save-meal-plan) - Save a new or updated plan
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Check plan against current rules
+- [export_shopping_list](/docs/reference/mcp/export-shopping-list) - Generate shopping list from this plan
