@@ -6,6 +6,8 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { RecipeService } from "@ovenlovin/core";
+import { createDbClient } from "@ovenlovin/db";
 
 export const getRecipeSchema = z.object({
   id: z.string().uuid(),
@@ -67,13 +69,43 @@ export interface GetRecipeOutput {
   };
 }
 
-async function handler(_input: GetRecipeInput, _context: AuthContext): Promise<GetRecipeOutput> {
-  // TODO: Implement using @ovenlovin/core service
-  // - Fetch recipe by ID
-  // - Check household access
-  // - Return full recipe details
+async function handler(input: GetRecipeInput, context: AuthContext): Promise<GetRecipeOutput> {
+  const db = createDbClient(process.env.DATABASE_URL!);
+  const recipeService = new RecipeService(db);
 
-  throw new Error("Not implemented: get_recipe");
+  const recipe = await recipeService.getRecipe(input.id);
+
+  if (!recipe) {
+    throw new Error(`Recipe not found: ${input.id}`);
+  }
+
+  // Verify access - recipe must belong to user's household
+  if (recipe.householdId !== context.householdId) {
+    throw new Error("Unauthorized access to recipe");
+  }
+
+  // TODO: Fetch ingredients and steps from related tables
+  // For now, returning basic recipe data
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    description: recipe.description ?? undefined,
+    yieldQuantity: recipe.yieldQuantity ?? undefined,
+    yieldUnit: recipe.yieldUnit ?? undefined,
+    servings: recipe.servings ?? undefined,
+    prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
+    cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
+    totalTimeMinutes: recipe.totalTimeMinutes ?? undefined,
+    activeTimeMinutes: recipe.activeTimeMinutes ?? undefined,
+    methodTags: recipe.methodTags || [],
+    cuisine: recipe.cuisine ?? undefined,
+    course: recipe.course ?? undefined,
+    difficulty: recipe.difficulty ?? undefined,
+    equipment: recipe.equipment || [],
+    images: recipe.images || [],
+    ingredients: [], // TODO: Load from recipe_ingredient table
+    steps: [], // TODO: Load from recipe_step table
+  };
 }
 
 export const getRecipeTool = {
