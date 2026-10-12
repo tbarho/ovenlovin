@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import type { AuthContext } from "../auth/index.js";
+import type { AuthContext } from "../auth/index";
 
 export const getPersonRulesSchema = z.object({
   personIds: z.array(z.string()).min(1).describe("Person IDs to get rules for"),

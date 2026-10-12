@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import type { AuthContext } from "../auth/index.js";
+import type { AuthContext } from "../auth/index";
 
 export const searchRecipesSchema = z.object({
   query: z.string().optional(),
