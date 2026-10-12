@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createPhotoImporter } from "../importers/photo";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -16,7 +16,11 @@ vi.mock("@ai-sdk/openai", () => ({
 }));
 
 describe("Photo Importer", () => {
-  const importer = createPhotoImporter({ visionModelId: "openai/gpt-4o" });
+  beforeEach(() => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+  });
+
+  const importer = createPhotoImporter({ visionModelId: "xai/grok-vision-latest" });
 
   describe("canHandle", () => {
     it("should accept images", () => {
@@ -64,7 +68,7 @@ describe("Photo Importer", () => {
       expect(result.sourceType).toBe("photo");
       expect(result.rawData.title).toBe("Grandma's Ginger Snaps");
       expect(result.rawData.isHandwritten).toBe(true);
-      expect(result.modelUsed).toBe("openai/gpt-4o");
+      expect(result.modelUsed).toBe("xai/grok-vision-latest");
     });
 
     it("should handle multiple images", async () => {
@@ -100,7 +104,7 @@ describe("Photo Importer", () => {
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
-        modelUsed: "openai/gpt-4o",
+        modelUsed: "xai/grok-vision-latest",
       };
 
       const draft = await importer.toDraft(rawExtraction);

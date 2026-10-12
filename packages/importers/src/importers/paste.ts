@@ -48,7 +48,7 @@ const recipeSchema = z.object({
 });
 
 export function createPasteImporter(config: ImporterConfig = {}): Importer<PasteImportInput> {
-  const modelId = config.modelId || process.env.RK_MODEL_DEFAULT || "openai/gpt-4o";
+  const modelId = config.modelId || process.env.RK_MODEL_DEFAULT || "xai/grok-2-latest";
 
   return {
     name: "paste-importer",
@@ -61,10 +61,18 @@ export function createPasteImporter(config: ImporterConfig = {}): Importer<Paste
 
     async extract(input: PasteImportInput): Promise<RawExtraction> {
       const { createOpenAI } = await import("@ai-sdk/openai");
-      const openai = createOpenAI();
+      const apiKey = process.env.AI_GATEWAY_API_KEY;
+      if (!apiKey) {
+        throw new Error("AI_GATEWAY_API_KEY environment variable is required");
+      }
+
+      const openai = createOpenAI({
+        apiKey,
+        baseURL: "https://gateway.ai.cloudflare.com/v1",
+      });
 
       const result = await generateObject({
-        model: openai(modelId.replace(/^openai\//, "")),
+        model: openai(modelId),
         schema: recipeSchema,
         prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.
 
