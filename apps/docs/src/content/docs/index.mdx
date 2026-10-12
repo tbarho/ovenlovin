@@ -1,0 +1,51 @@
+---
+title: Introduction
+description: Get started with OvenLovin, the AI-powered recipe and meal planning platform
+---
+
+## What is OvenLovin?
+
+OvenLovin is an LLM-optimized recipe and family meal-planning platform built specifically for AI agents. It helps families manage weekly meal planning with per-person dietary rules and comprehensive allergy checking.
+
+### Why OvenLovin?
+
+Traditional meal planning tools aren't built for AI agents. OvenLovin is designed from the ground up to work seamlessly with:
+
+- **Grok Bot** - X's AI assistant
+- **ChatGPT** - OpenAI's conversational AI
+- **Claude Desktop** - Anthropic's desktop AI
+- **Generic MCP clients** - Any Model Context Protocol compatible agent
+
+### Key Features
+
+- **Agent-First APIs** - REST API with OpenAPI spec, MCP server, and CLI for seamless AI integration
+- **Safety-Critical Rules** - Per-person allergy and dietary restrictions with deterministic checking
+- **Smart Import** - Import recipes from URLs, photos with OCR, voice input, or app exports
+- **Multi-Household** - Clerk authentication with organization support for family accounts
+
+### How It Works
+
+1. **Configure dietary rules** - Set up per-person allergies and dietary restrictions with severity levels (block/warn/prefer-avoid)
+2. **Import recipes** - Add recipes from any source: URLs, photos, voice, or paste
+3. **Plan meals** - Let your AI agent propose weekly meal plans with automatic rule checking
+4. **Generate shopping lists** - Get aggregated ingredient lists with allergen warnings
+
+### Architecture
+
+OvenLovin is built as a TypeScript monorepo with clear separation of concerns:
+
+- **@ovenlovin/core** - Pure TypeScript business logic, zod schemas, and services
+- **@ovenlovin/web** - Next.js 15 App Router UI with REST API routes
+- **@ovenlovin/mcp** - Model Context Protocol server for AI agents
+- **@ovenlovin/cli** - Command-line interface tool
+- **@ovenlovin/importers** - Recipe importers (URL, photo/OCR, text, app exports)
+- **@ovenlovin/allergens** - Allergen taxonomy and rule checker
+- **@ovenlovin/db** - Drizzle ORM schema and migrations for Neon Postgres
+
+All business logic lives in `@ovenlovin/core` as pure TypeScript, ensuring that external bots get identical behavior through any interface.
+
+### Next Steps
+
+- [Quickstart](/docs/quickstart) - Deploy to Vercel or run locally in minutes
+- [Connect Your Agent](/docs/agents) - Set up Grok Bot, ChatGPT, or Claude Desktop
+- [Concepts](/docs/concepts) - Learn about households, rules, and meal planning
