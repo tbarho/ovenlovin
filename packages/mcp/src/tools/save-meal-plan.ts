@@ -19,7 +19,7 @@ export const saveMealPlanSchema = z.object({
       prepAheadNotes: z.string().optional(),
     })
   ),
-  checkReportJson: z.record(z.unknown()).describe("The latest check_meal_plan result"),
+  checkReportJson: z.record(z.string(), z.unknown()).describe("The latest check_meal_plan result"),
   acknowledgedWarnings: z.array(z.string()).optional(),
   status: z.enum(["draft", "approved"]).default("draft"),
 });
