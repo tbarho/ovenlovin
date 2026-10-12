@@ -1,6 +1,6 @@
 /**
  * Allergen taxonomy data
- * 
+ *
  * Tree structure covering US Big 9, EU 14, and common allergens.
  * Peanut and tree nuts are thoroughly mapped per spec requirements.
  */
@@ -246,7 +246,10 @@ export const allergenTaxonomy: AllergenTaxonomyNode[] = [
 /**
  * Flatten the taxonomy tree into a map for efficient lookups
  */
-export function buildAllergenMap(): Map<string, { name: string; description?: string; parent?: string }> {
+export function buildAllergenMap(): Map<
+  string,
+  { name: string; description?: string; parent?: string }
+> {
   const map = new Map<string, { name: string; description?: string; parent?: string }>();
 
   function traverse(nodes: AllergenTaxonomyNode[], parent?: string) {
@@ -305,11 +308,11 @@ export function getDescendants(allergenCode: string, taxonomy = allergenTaxonomy
 export function getAncestors(allergenCode: string, map = buildAllergenMap()): string[] {
   const ancestors: string[] = [];
   let current = map.get(allergenCode)?.parent;
-  
+
   while (current) {
     ancestors.push(current);
     current = map.get(current)?.parent;
   }
-  
+
   return ancestors;
 }

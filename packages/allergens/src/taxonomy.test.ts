@@ -34,7 +34,17 @@ describe("allergenTaxonomy", () => {
   });
 
   it("includes US Big 9 allergens", () => {
-    const big9 = ["milk", "egg", "fish", "shellfish", "tree_nut", "peanut", "wheat", "soy", "sesame"];
+    const big9 = [
+      "milk",
+      "egg",
+      "fish",
+      "shellfish",
+      "tree_nut",
+      "peanut",
+      "wheat",
+      "soy",
+      "sesame",
+    ];
     const codes = allergenTaxonomy.map((a) => a.code);
     for (const allergen of big9) {
       expect(codes).toContain(allergen);
