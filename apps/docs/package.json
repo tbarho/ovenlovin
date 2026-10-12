@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "next build --no-lint",
+    "build": "bash scripts/fix-source-types.sh && next build --no-lint",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "echo 'Skipping typecheck due to fumadocs-mdx generated code issues' && exit 0"
+    "typecheck": "bash scripts/fix-source-types.sh 2>/dev/null || true && tsc --noEmit"
   },
   "dependencies": {
     "fumadocs-core": "^14.4.1",
