@@ -31,9 +31,7 @@ const recipeSchema = z.object({
         unit: z.string().optional().describe("Unit of measurement if legible"),
         ingredient: z.string().optional().describe("Ingredient name if legible"),
         preparation: z.string().optional().describe("Preparation notes if present"),
-        confidence: z
-          .enum(["high", "medium", "low", "illegible"])
-          .describe("Reading confidence"),
+        confidence: z.enum(["high", "medium", "low", "illegible"]).describe("Reading confidence"),
       })
     )
     .describe("List of ingredients"),
@@ -41,15 +39,11 @@ const recipeSchema = z.object({
     .array(
       z.object({
         text: z.string().describe("Step instruction text exactly as written"),
-        confidence: z
-          .enum(["high", "medium", "low", "illegible"])
-          .describe("Reading confidence"),
+        confidence: z.enum(["high", "medium", "low", "illegible"]).describe("Reading confidence"),
       })
     )
     .describe("Cooking steps in order"),
-  ocrQuality: z
-    .enum(["excellent", "good", "fair", "poor"])
-    .describe("Overall image/text quality"),
+  ocrQuality: z.enum(["excellent", "good", "fair", "poor"]).describe("Overall image/text quality"),
   handwrittenNotes: z
     .string()
     .optional()
@@ -57,8 +51,7 @@ const recipeSchema = z.object({
 });
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
-  const visionModelId =
-    config.visionModelId || process.env.RK_MODEL_VISION || "openai/gpt-4o";
+  const visionModelId = config.visionModelId || process.env.RK_MODEL_VISION || "openai/gpt-4o";
 
   return {
     name: "photo-importer",
@@ -129,8 +122,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
       const cuisine = typeof recipe.cuisine === "string" ? recipe.cuisine : undefined;
       const course = typeof recipe.course === "string" ? recipe.course : undefined;
 
-      const ocrQuality =
-        typeof recipe.ocrQuality === "string" ? recipe.ocrQuality : "unknown";
+      const ocrQuality = typeof recipe.ocrQuality === "string" ? recipe.ocrQuality : "unknown";
       const handwrittenNotes =
         typeof recipe.handwrittenNotes === "string" ? recipe.handwrittenNotes : undefined;
 
