@@ -1,0 +1,502 @@
+---
+title: Contributing
+description: Contribute to OvenLovin - guidelines for code, documentation, and community
+---
+
+Thank you for your interest in contributing to OvenLovin! This guide will help you get started with development, testing, and submitting contributions.
+
+## Code of Conduct
+
+OvenLovin is committed to providing a welcoming and inclusive environment. Please be respectful and constructive in all interactions.
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** 20 or later
+- **pnpm** 9 or later
+- **Git**
+- **PostgreSQL** (or use Neon for cloud database)
+
+### Fork and Clone
+
+```bash
+# Fork the repository on GitHub, then:
+git clone https://github.com/YOUR_USERNAME/ovenlovin.git
+cd ovenlovin
+
+# Add upstream remote
+git remote add upstream https://github.com/tbarho/ovenlovin.git
+```
+
+### Install Dependencies
+
+```bash
+pnpm install
+```
+
+### Set Up Environment
+
+```bash
+# Copy example environment file
+cp .env.example .env.local
+
+# Edit .env.local with your API keys
+# See Self-Hosting Guide for obtaining keys
+```
+
+### Run Development Server
+
+```bash
+# Start all workspaces
+pnpm dev
+
+# Or start specific workspace
+pnpm --filter @ovenlovin/web dev
+```
+
+The web app will be available at `http://localhost:3000`.
+
+## Development Workflow
+
+### 1. Create a Branch
+
+```bash
+# Update your fork
+git fetch upstream
+git checkout main
+git merge upstream/main
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+```
+
+### 2. Make Changes
+
+Follow the project conventions (see below) and make your changes.
+
+### 3. Test Your Changes
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run specific package tests
+pnpm --filter @ovenlovin/core test
+```
+
+### 4. Lint and Format
+
+```bash
+# Check formatting
+pnpm format:check
+
+# Fix formatting
+pnpm format
+
+# Run linter
+pnpm lint
+
+# Type check
+pnpm typecheck
+```
+
+### 5. Commit Changes
+
+```bash
+# Stage changes
+git add .
+
+# Commit with conventional commit message
+git commit -m "feat(core): add recipe tagging support"
+```
+
+### 6. Push and Create PR
+
+```bash
+# Push to your fork
+git push origin feature/your-feature-name
+
+# Create pull request on GitHub
+```
+
+## Project Structure
+
+```
+ovenlovin/
+├── apps/
+│   ├── web/              # Next.js frontend & API routes
+│   └── docs/             # Fumadocs documentation site
+├── packages/
+│   ├── core/             # Business logic (pure TypeScript)
+│   ├── db/               # Drizzle schema & migrations
+│   ├── mcp/              # Model Context Protocol server
+│   ├── importers/        # Recipe importers (URL, photo, paste)
+│   └── allergens/        # Allergy checking & rule engine
+├── .github/workflows/    # CI/CD pipelines
+└── docs/                 # Additional documentation
+```
+
+## Architecture Principles
+
+### 1. Business Logic in @ovenlovin/core
+
+All business logic lives in `packages/core` as pure TypeScript:
+
+- Zod schemas for validation
+- Service classes for operations
+- Pure functions for transformations
+- No framework dependencies (no Next.js, no React)
+
+**Why**: External bots (Grok, ChatGPT, Claude) must get identical behavior through any interface (REST API, MCP, CLI, UI).
+
+### 2. Thin Adapters
+
+REST routes, MCP tools, and CLI commands are thin wrappers around `@ovenlovin/core`:
+
+```typescript
+// ❌ Bad: Logic in API route
+export async function POST(request: Request) {
+  const body = await request.json();
+  // Validation and business logic here...
+}
+
+// ✅ Good: Thin wrapper around core service
+export async function POST(request: Request) {
+  const body = await request.json();
+  const service = new RecipeService(db);
+  return service.createRecipe(body);
+}
+```
+
+### 3. Safety-Critical Rule Checking
+
+Allergy checking is safety-relevant. **Always**:
+
+- Return per-person findings with severity
+- Name the affected person in warnings
+- Report `status: incomplete` when checking fails (never "no issues")
+- Never hard-code allergen policies (rules are per-person, configured by admin)
+
+### 4. Generic Data Only
+
+No real family names, photos, or private data in:
+
+- Tests and fixtures
+- Documentation examples
+- Seed data
+
+Use generic names: "Parent A", "Child B", "Household 1"
+
+## Coding Conventions
+
+### TypeScript
+
+- **Strict mode**: `strict: true` in `tsconfig.json`
+- **No unchecked indexed access**: `noUncheckedIndexedAccess: true`
+- **Explicit return types** for exported functions
+- **No `any` types** (use `unknown` if needed)
+
+### Naming
+
+- **Variables/functions**: `camelCase`
+- **Types/interfaces**: `PascalCase`
+- **Constants**: `UPPER_SNAKE_CASE` or `camelCase` for runtime constants
+- **Files**: `kebab-case.ts` for modules, `PascalCase.tsx` for React components
+
+### Code Style
+
+- **Line length**: 100 characters (Prettier default)
+- **Indentation**: 2 spaces
+- **Quotes**: Double quotes for strings
+- **Semicolons**: Required
+- **Trailing commas**: Multi-line arrays/objects
+
+### Zod Schemas
+
+Start with Zod schemas for all data structures:
+
+```typescript
+import { z } from "zod";
+
+export const recipeSchema = z.object({
+  title: z.string().min(1),
+  servings: z.number().int().positive().optional(),
+  ingredients: z.array(ingredientSchema),
+});
+
+export type Recipe = z.infer<typeof recipeSchema>;
+```
+
+### Error Handling
+
+Return descriptive errors with remediation hints:
+
+```typescript
+if (!recipe) {
+  throw new Error(
+    `Recipe not found: ${id}. Check that the recipe exists and you have access to it.`
+  );
+}
+```
+
+## Testing
+
+### Unit Tests
+
+Use Vitest for unit tests:
+
+```typescript
+import { describe, it, expect } from "vitest";
+import { parseIngredient } from "./parser";
+
+describe("parseIngredient", () => {
+  it("parses quantity and unit", () => {
+    const result = parseIngredient("2 cups flour");
+    expect(result.quantity).toBe(2);
+    expect(result.unit).toBe("cups");
+    expect(result.ingredient).toBe("flour");
+  });
+});
+```
+
+### Property-Based Tests
+
+Use `fast-check` for property-based testing:
+
+```typescript
+import { it } from "vitest";
+import * as fc from "fast-check";
+
+it("recipe with blocking ingredient always yields block finding", () => {
+  fc.assert(
+    fc.property(fc.string(), (ingredient) => {
+      const recipe = createRecipe([ingredient]);
+      const person = createPerson([{ kind: "allergen", value: ingredient, severity: "block" }]);
+      const findings = checkRecipe(recipe, [person]);
+      expect(findings.block.length).toBeGreaterThan(0);
+    })
+  );
+});
+```
+
+### Integration Tests
+
+Test database access and API endpoints:
+
+```typescript
+import { describe, it, beforeEach } from "vitest";
+import { getDatabase } from "@ovenlovin/db";
+
+describe("RecipeService", () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  });
+
+  it("creates and retrieves recipe", async () => {
+    const db = getDatabase();
+    const service = new RecipeService(db);
+    const recipe = await service.createRecipe({ title: "Test" });
+    const retrieved = await service.getRecipe(recipe.id);
+    expect(retrieved?.title).toBe("Test");
+  });
+});
+```
+
+### Test Coverage
+
+Aim for:
+
+- **Core logic**: 80%+ coverage
+- **Allergen checking**: 100% coverage (safety-critical)
+- **Importers**: 70%+ coverage with adversarial tests
+- **API routes**: Contract tests for OpenAPI conformance
+
+## Pull Request Guidelines
+
+### PR Title
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat(scope): add feature` - New feature
+- `fix(scope): fix bug` - Bug fix
+- `docs(scope): update docs` - Documentation only
+- `test(scope): add tests` - Tests only
+- `refactor(scope): refactor code` - Code refactoring
+- `perf(scope): improve performance` - Performance improvement
+- `chore(scope): update deps` - Maintenance tasks
+
+**Scopes**: `core`, `web`, `db`, `mcp`, `cli`, `importers`, `allergens`, `docs`
+
+### PR Description
+
+Include:
+
+1. **What**: What does this PR do?
+2. **Why**: Why is this change needed?
+3. **How**: How does it work (for complex changes)?
+4. **Testing**: How was this tested?
+5. **Breaking changes**: Any breaking changes?
+
+### PR Checklist
+
+- [ ] Code follows project conventions
+- [ ] Tests added/updated and passing
+- [ ] Documentation updated
+- [ ] Type checking passes (`pnpm typecheck`)
+- [ ] Linting passes (`pnpm lint`)
+- [ ] Formatted with Prettier (`pnpm format`)
+- [ ] No real family names or private data
+- [ ] Safety invariants maintained (for allergen-related changes)
+
+### CI Checks
+
+All PRs must pass:
+
+- **Lint**: ESLint and Prettier formatting
+- **Type Check**: TypeScript compilation
+- **Test**: All Vitest tests
+- **Build**: All packages build successfully
+
+## Contributing Areas
+
+### 🐛 Bug Fixes
+
+Found a bug? Please:
+
+1. Check if it's already reported in [Issues](https://github.com/tbarho/ovenlovin/issues)
+2. If not, create a new issue with:
+   - Description of the bug
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Environment (OS, Node version, etc.)
+3. Submit a PR with a fix and regression test
+
+### ✨ New Features
+
+Want to add a feature?
+
+1. Check [GitHub issue #1](https://github.com/tbarho/ovenlovin/issues/1) for the roadmap
+2. Create an issue to discuss the feature first
+3. Wait for maintainer feedback before starting work
+4. Follow the PR guidelines above
+
+### 📝 Documentation
+
+Documentation improvements are always welcome:
+
+- Fix typos or unclear explanations
+- Add examples or use cases
+- Improve API documentation
+- Translate documentation
+
+No issue needed for documentation-only PRs.
+
+### 🧪 Tests
+
+Help improve test coverage:
+
+- Add unit tests for uncovered code
+- Add adversarial tests for importers
+- Add property-based tests for core logic
+- Add integration tests for API routes
+
+### 🌐 Importers
+
+Add support for new recipe sources:
+
+1. Create `packages/importers/src/importers/<source>.ts`
+2. Implement `Importer` interface
+3. Add eval fixtures (input + expected output)
+4. Add tests with recorded confidence scores
+5. Update `importers.mdx` documentation
+
+### 🔧 MCP Tools
+
+Add new MCP tools for AI agents:
+
+1. Define tool in `packages/mcp/src/tools/<name>.ts`
+2. Implement as thin wrapper around `@ovenlovin/core` service
+3. Add schema tests
+4. Document in `agents.mdx`
+
+## Development Tips
+
+### Watch Mode
+
+Run tests and type checking in watch mode during development:
+
+```bash
+# Terminal 1: Dev server
+pnpm dev
+
+# Terminal 2: Tests
+pnpm test:watch
+
+# Terminal 3: Type checking
+pnpm --filter @ovenlovin/core typecheck --watch
+```
+
+### Database Migrations
+
+When changing the schema:
+
+```bash
+# Generate migration
+pnpm --filter @ovenlovin/db db:generate
+
+# Apply migration
+pnpm --filter @ovenlovin/db db:migrate
+
+# Or push directly (development only)
+pnpm --filter @ovenlovin/db db:push
+```
+
+### Debugging
+
+Use VS Code debugger or `console.log`:
+
+```typescript
+// Debug point
+console.log("Recipe:", JSON.stringify(recipe, null, 2));
+
+// Conditional debug
+if (process.env.DEBUG) {
+  console.log("Debug info:", data);
+}
+```
+
+### Turborepo Cache
+
+Clear Turborepo cache if builds are stale:
+
+```bash
+pnpm clean
+pnpm install
+pnpm build
+```
+
+## Community
+
+- **GitHub**: [tbarho/ovenlovin](https://github.com/tbarho/ovenlovin)
+- **Issues**: [GitHub Issues](https://github.com/tbarho/ovenlovin/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/tbarho/ovenlovin/discussions)
+- **Spec**: [GitHub issue #1](https://github.com/tbarho/ovenlovin/issues/1)
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the [MIT License](https://github.com/tbarho/ovenlovin/blob/main/LICENSE).
+
+## Questions?
+
+If you have questions:
+
+1. Check the [documentation](https://tbarho.github.io/ovenlovin)
+2. Search [existing issues](https://github.com/tbarho/ovenlovin/issues)
+3. Ask in [GitHub Discussions](https://github.com/tbarho/ovenlovin/discussions)
+4. Create a new issue
+
+Thank you for contributing to OvenLovin! 🍪
