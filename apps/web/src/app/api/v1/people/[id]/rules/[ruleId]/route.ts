@@ -1,11 +1,7 @@
 import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
-import {
-  getRequestContext,
-  requireHouseholdId,
-  requireAdminRole,
-} from "@/lib/api/middleware";
+import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
