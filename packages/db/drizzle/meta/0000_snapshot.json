@@ -97,12 +97,8 @@
           "name": "api_key_household_id_household_id_fk",
           "tableFrom": "api_key",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -176,16 +172,12 @@
         "household_slug_unique": {
           "name": "household_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         },
         "household_clerk_org_id_unique": {
           "name": "household_clerk_org_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_org_id"
-          ]
+          "columns": ["clerk_org_id"]
         }
       },
       "policies": {},
@@ -250,12 +242,8 @@
           "name": "membership_user_id_user_id_fk",
           "tableFrom": "membership",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -263,12 +251,8 @@
           "name": "membership_household_id_household_id_fk",
           "tableFrom": "membership",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -336,9 +320,7 @@
         "user_clerk_user_id_unique": {
           "name": "user_clerk_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_user_id"
-          ]
+          "columns": ["clerk_user_id"]
         }
       },
       "policies": {},
@@ -438,12 +420,8 @@
           "name": "nutrition_goal_person_id_person_id_fk",
           "tableFrom": "nutrition_goal",
           "tableTo": "person",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -547,12 +525,8 @@
           "name": "person_household_id_household_id_fk",
           "tableFrom": "person",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -560,12 +534,8 @@
           "name": "person_user_id_user_id_fk",
           "tableFrom": "person",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -644,12 +614,8 @@
           "name": "person_label_note_person_id_person_id_fk",
           "tableFrom": "person_label_note",
           "tableTo": "person",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -803,12 +769,8 @@
           "name": "person_rule_person_id_person_id_fk",
           "tableFrom": "person_rule",
           "tableTo": "person",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -816,12 +778,8 @@
           "name": "person_rule_set_by_user_id_fk",
           "tableFrom": "person_rule",
           "tableTo": "user",
-          "columnsFrom": [
-            "set_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["set_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -901,12 +859,8 @@
           "name": "preference_person_id_person_id_fk",
           "tableFrom": "preference",
           "tableTo": "person",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -980,9 +934,7 @@
         "allergen_code_unique": {
           "name": "allergen_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -1136,12 +1088,8 @@
           "name": "ingredient_allergen_ingredient_id_ingredient_id_fk",
           "tableFrom": "ingredient_allergen",
           "tableTo": "ingredient",
-          "columnsFrom": [
-            "ingredient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ingredient_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1149,12 +1097,8 @@
           "name": "ingredient_allergen_allergen_id_allergen_id_fk",
           "tableFrom": "ingredient_allergen",
           "tableTo": "allergen",
-          "columnsFrom": [
-            "allergen_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["allergen_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1312,12 +1256,8 @@
           "name": "collection_household_id_household_id_fk",
           "tableFrom": "collection",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1384,12 +1324,8 @@
           "name": "collection_recipe_collection_id_collection_id_fk",
           "tableFrom": "collection_recipe",
           "tableTo": "collection",
-          "columnsFrom": [
-            "collection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["collection_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1397,12 +1333,8 @@
           "name": "collection_recipe_recipe_id_recipe_id_fk",
           "tableFrom": "collection_recipe",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1481,12 +1413,8 @@
           "name": "cook_log_recipe_id_recipe_id_fk",
           "tableFrom": "cook_log",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1688,12 +1616,8 @@
           "name": "recipe_household_id_household_id_fk",
           "tableFrom": "recipe",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1821,12 +1745,8 @@
           "name": "recipe_ingredient_recipe_id_recipe_id_fk",
           "tableFrom": "recipe_ingredient",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1834,12 +1754,8 @@
           "name": "recipe_ingredient_group_id_recipe_ingredient_group_id_fk",
           "tableFrom": "recipe_ingredient",
           "tableTo": "recipe_ingredient_group",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1847,12 +1763,8 @@
           "name": "recipe_ingredient_ingredient_id_ingredient_id_fk",
           "tableFrom": "recipe_ingredient",
           "tableTo": "ingredient",
-          "columnsFrom": [
-            "ingredient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ingredient_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1919,12 +1831,8 @@
           "name": "recipe_ingredient_group_recipe_id_recipe_id_fk",
           "tableFrom": "recipe_ingredient_group",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2047,12 +1955,8 @@
           "name": "recipe_nutrition_recipe_id_recipe_id_fk",
           "tableFrom": "recipe_nutrition",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2125,12 +2029,8 @@
           "name": "recipe_rating_recipe_id_recipe_id_fk",
           "tableFrom": "recipe_rating",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2253,12 +2153,8 @@
           "name": "recipe_source_recipe_id_recipe_id_fk",
           "tableFrom": "recipe_source",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2345,12 +2241,8 @@
           "name": "recipe_step_recipe_id_recipe_id_fk",
           "tableFrom": "recipe_step",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2411,12 +2303,8 @@
           "name": "recipe_tag_recipe_id_recipe_id_fk",
           "tableFrom": "recipe_tag",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2424,12 +2312,8 @@
           "name": "recipe_tag_tag_id_tag_id_fk",
           "tableFrom": "recipe_tag",
           "tableTo": "tag",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2502,12 +2386,8 @@
           "name": "tag_household_id_household_id_fk",
           "tableFrom": "tag",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2598,12 +2478,8 @@
           "name": "check_result_meal_plan_id_meal_plan_id_fk",
           "tableFrom": "check_result",
           "tableTo": "meal_plan",
-          "columnsFrom": [
-            "meal_plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meal_plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2611,12 +2487,8 @@
           "name": "check_result_entry_id_meal_plan_entry_id_fk",
           "tableFrom": "check_result",
           "tableTo": "meal_plan_entry",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2624,12 +2496,8 @@
           "name": "check_result_person_id_person_id_fk",
           "tableFrom": "check_result",
           "tableTo": "person",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2637,12 +2505,8 @@
           "name": "check_result_person_rule_id_person_rule_id_fk",
           "tableFrom": "check_result",
           "tableTo": "person_rule",
-          "columnsFrom": [
-            "person_rule_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_rule_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2761,12 +2625,8 @@
           "name": "meal_plan_household_id_household_id_fk",
           "tableFrom": "meal_plan",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2877,12 +2737,8 @@
           "name": "meal_plan_entry_meal_plan_id_meal_plan_id_fk",
           "tableFrom": "meal_plan_entry",
           "tableTo": "meal_plan",
-          "columnsFrom": [
-            "meal_plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meal_plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2890,12 +2746,8 @@
           "name": "meal_plan_entry_recipe_id_recipe_id_fk",
           "tableFrom": "meal_plan_entry",
           "tableTo": "recipe",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3000,12 +2852,8 @@
           "name": "schedule_override_household_id_household_id_fk",
           "tableFrom": "schedule_override",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3111,12 +2959,8 @@
           "name": "schedule_template_household_id_household_id_fk",
           "tableFrom": "schedule_template",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3201,12 +3045,8 @@
           "name": "pantry_item_household_id_household_id_fk",
           "tableFrom": "pantry_item",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3214,12 +3054,8 @@
           "name": "pantry_item_ingredient_id_ingredient_id_fk",
           "tableFrom": "pantry_item",
           "tableTo": "ingredient",
-          "columnsFrom": [
-            "ingredient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ingredient_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3292,12 +3128,8 @@
           "name": "shopping_list_household_id_household_id_fk",
           "tableFrom": "shopping_list",
           "tableTo": "household",
-          "columnsFrom": [
-            "household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3305,12 +3137,8 @@
           "name": "shopping_list_meal_plan_id_meal_plan_id_fk",
           "tableFrom": "shopping_list",
           "tableTo": "meal_plan",
-          "columnsFrom": [
-            "meal_plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meal_plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3434,12 +3262,8 @@
           "name": "shopping_list_item_list_id_shopping_list_id_fk",
           "tableFrom": "shopping_list_item",
           "tableTo": "shopping_list",
-          "columnsFrom": [
-            "list_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["list_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3447,12 +3271,8 @@
           "name": "shopping_list_item_ingredient_id_ingredient_id_fk",
           "tableFrom": "shopping_list_item",
           "tableTo": "ingredient",
-          "columnsFrom": [
-            "ingredient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ingredient_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3558,12 +3378,8 @@
           "name": "share_grantee_household_id_household_id_fk",
           "tableFrom": "share",
           "tableTo": "household",
-          "columnsFrom": [
-            "grantee_household_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["grantee_household_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3571,12 +3387,8 @@
           "name": "share_grantee_user_id_user_id_fk",
           "tableFrom": "share",
           "tableTo": "user",
-          "columnsFrom": [
-            "grantee_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["grantee_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3586,9 +3398,7 @@
         "share_token_unique": {
           "name": "share_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -3600,61 +3410,32 @@
     "public.membership_role": {
       "name": "membership_role",
       "schema": "public",
-      "values": [
-        "owner",
-        "admin",
-        "member",
-        "viewer"
-      ]
+      "values": ["owner", "admin", "member", "viewer"]
     },
     "public.rule_kind": {
       "name": "rule_kind",
       "schema": "public",
-      "values": [
-        "allergen",
-        "ingredient",
-        "ingredient_category",
-        "diet",
-        "tag",
-        "custom"
-      ]
+      "values": ["allergen", "ingredient", "ingredient_category", "diet", "tag", "custom"]
     },
     "public.severity": {
       "name": "severity",
       "schema": "public",
-      "values": [
-        "block",
-        "warn",
-        "prefer_avoid"
-      ]
+      "values": ["block", "warn", "prefer_avoid"]
     },
     "public.sex": {
       "name": "sex",
       "schema": "public",
-      "values": [
-        "male",
-        "female",
-        "other"
-      ]
+      "values": ["male", "female", "other"]
     },
     "public.shared_facility": {
       "name": "shared_facility",
       "schema": "public",
-      "values": [
-        "block",
-        "warn",
-        "ignore"
-      ]
+      "values": ["block", "warn", "ignore"]
     },
     "public.allergen_relation": {
       "name": "allergen_relation",
       "schema": "public",
-      "values": [
-        "contains",
-        "may_contain",
-        "derived_from",
-        "commonly_cross_contact"
-      ]
+      "values": ["contains", "may_contain", "derived_from", "commonly_cross_contact"]
     },
     "public.ingredient_category": {
       "name": "ingredient_category",
@@ -3678,11 +3459,7 @@
     "public.unit_system": {
       "name": "unit_system",
       "schema": "public",
-      "values": [
-        "metric",
-        "us",
-        "count"
-      ]
+      "values": ["metric", "us", "count"]
     },
     "public.recipe_source_type": {
       "name": "recipe_source_type",
@@ -3703,67 +3480,37 @@
     "public.recipe_status": {
       "name": "recipe_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "needs_review",
-        "published"
-      ]
+      "values": ["draft", "needs_review", "published"]
     },
     "public.recipe_visibility": {
       "name": "recipe_visibility",
       "schema": "public",
-      "values": [
-        "private",
-        "household",
-        "shared",
-        "public"
-      ]
+      "values": ["private", "household", "shared", "public"]
     },
     "public.busy_level": {
       "name": "busy_level",
       "schema": "public",
-      "values": [
-        "low",
-        "medium",
-        "high"
-      ]
+      "values": ["low", "medium", "high"]
     },
     "public.meal_plan_status": {
       "name": "meal_plan_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "approved",
-        "archived"
-      ]
+      "values": ["draft", "approved", "archived"]
     },
     "public.share_grantee_type": {
       "name": "share_grantee_type",
       "schema": "public",
-      "values": [
-        "household",
-        "user",
-        "public"
-      ]
+      "values": ["household", "user", "public"]
     },
     "public.share_permission": {
       "name": "share_permission",
       "schema": "public",
-      "values": [
-        "view",
-        "comment",
-        "edit"
-      ]
+      "values": ["view", "comment", "edit"]
     },
     "public.share_resource_type": {
       "name": "share_resource_type",
       "schema": "public",
-      "values": [
-        "recipe",
-        "collection",
-        "meal_plan",
-        "shopping_list"
-      ]
+      "values": ["recipe", "collection", "meal_plan", "shopping_list"]
     }
   },
   "schemas": {},
