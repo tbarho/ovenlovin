@@ -78,10 +78,10 @@ export interface RecipeDraft {
   difficulty?: string;
   equipment?: string[];
   images?: string[];
-  
+
   ingredients: ParsedIngredient[];
   steps: ParsedStep[];
-  
+
   source: {
     type: RecipeSourceType;
     url?: string;
@@ -95,7 +95,7 @@ export interface RecipeDraft {
     rawExtractionJson: Record<string, unknown>;
     licenseNote?: string;
   };
-  
+
   overallConfidence: ConfidenceScore;
   needsReview: boolean;
   reviewReasons: string[];
@@ -108,7 +108,7 @@ export interface Importer<TInput> {
   name: string;
   version: string;
   sourceType: RecipeSourceType;
-  
+
   canHandle(input: TInput): boolean;
   extract(input: TInput): Promise<RawExtraction>;
   toDraft(raw: RawExtraction): Promise<RecipeDraft>;

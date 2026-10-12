@@ -3,7 +3,9 @@ import type { ConfidenceScore, RecipeDraft } from "../types/importer";
 /**
  * Calculate overall confidence score from parsed fields
  */
-export function calculateOverallConfidence(draft: Omit<RecipeDraft, "overallConfidence" | "needsReview" | "reviewReasons">): {
+export function calculateOverallConfidence(
+  draft: Omit<RecipeDraft, "overallConfidence" | "needsReview" | "reviewReasons">
+): {
   overallConfidence: ConfidenceScore;
   needsReview: boolean;
   reviewReasons: string[];
@@ -14,14 +16,14 @@ export function calculateOverallConfidence(draft: Omit<RecipeDraft, "overallConf
   for (const ingredient of draft.ingredients) {
     scores.push(ingredient.confidence);
     if (ingredient.confidence < 0.6 && ingredient.confidenceReasons) {
-      reasons.push(...ingredient.confidenceReasons.map(r => `Ingredient: ${r}`));
+      reasons.push(...ingredient.confidenceReasons.map((r) => `Ingredient: ${r}`));
     }
   }
 
   for (const step of draft.steps) {
     scores.push(step.confidence);
     if (step.confidence < 0.6 && step.confidenceReasons) {
-      reasons.push(...step.confidenceReasons.map(r => `Step: ${r}`));
+      reasons.push(...step.confidenceReasons.map((r) => `Step: ${r}`));
     }
   }
 
@@ -42,9 +44,8 @@ export function calculateOverallConfidence(draft: Omit<RecipeDraft, "overallConf
     reasons.push("No steps found");
   }
 
-  const overallConfidence = scores.length > 0
-    ? scores.reduce((sum, score) => sum + score, 0) / scores.length
-    : 0;
+  const overallConfidence =
+    scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
 
   const needsReview = overallConfidence < 0.6 || reasons.length > 0;
 
@@ -71,16 +72,33 @@ export function detectMethodTags(ingredients: string[], steps: string[]): string
   if (text.includes("sheet pan") || text.includes("baking sheet")) {
     tags.add("sheet_pan");
   }
-  if (text.includes("grill") || text.includes("grilling") || text.includes("barbecue") || text.includes("bbq")) {
+  if (
+    text.includes("grill") ||
+    text.includes("grilling") ||
+    text.includes("barbecue") ||
+    text.includes("bbq")
+  ) {
     tags.add("grill");
   }
-  if ((text.includes("no cook") || text.includes("no-cook") || text.includes("no bake")) && !text.includes("cooking") && !text.includes("baking")) {
+  if (
+    (text.includes("no cook") || text.includes("no-cook") || text.includes("no bake")) &&
+    !text.includes("cooking") &&
+    !text.includes("baking")
+  ) {
     tags.add("no_cook");
   }
-  if (text.includes("freezer friendly") || text.includes("can be frozen") || text.includes("freeze")) {
+  if (
+    text.includes("freezer friendly") ||
+    text.includes("can be frozen") ||
+    text.includes("freeze")
+  ) {
     tags.add("freezer_friendly");
   }
-  if (text.includes("make ahead") || text.includes("make-ahead") || text.includes("prepare ahead")) {
+  if (
+    text.includes("make ahead") ||
+    text.includes("make-ahead") ||
+    text.includes("prepare ahead")
+  ) {
     tags.add("make_ahead");
   }
 
@@ -92,13 +110,13 @@ export function detectMethodTags(ingredients: string[], steps: string[]): string
  */
 export function extractTimers(text: string): Array<{ duration: number; label?: string }> {
   const timers: Array<{ duration: number; label?: string }> = [];
-  
+
   const rangePattern = /(\d+)\s*(?:to|-)\s*(\d+)\s*(minute|min|hour|hr)s?/gi;
   const rangeMatches = text.matchAll(rangePattern);
   for (const match of rangeMatches) {
     const unit = match[3]?.toLowerCase();
     if (!unit) continue;
-    
+
     const min = parseInt(match[1]!);
     const max = parseInt(match[2]!);
     let duration = (min + max) / 2;
@@ -113,13 +131,13 @@ export function extractTimers(text: string): Array<{ duration: number; label?: s
   }
 
   const textWithoutRanges = text.replace(rangePattern, "");
-  
+
   const singlePattern = /(\d+)\s*(minute|min|hour|hr)s?/gi;
   const singleMatches = textWithoutRanges.matchAll(singlePattern);
   for (const match of singleMatches) {
     const unit = match[2]?.toLowerCase();
     if (!unit) continue;
-    
+
     let duration = parseInt(match[1]!);
 
     if (unit.startsWith("hour") || unit === "hr") {

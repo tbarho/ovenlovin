@@ -10,9 +10,7 @@ describe("calculateOverallConfidence", () => {
         { rawText: "1 cup flour", confidence: 0.9 },
         { rawText: "2 eggs", confidence: 0.95 },
       ],
-      steps: [
-        { text: "Mix ingredients", order: 0, confidence: 0.85 },
-      ],
+      steps: [{ text: "Mix ingredients", order: 0, confidence: 0.85 }],
       source: {
         type: "paste",
         importerName: "test",
@@ -22,7 +20,7 @@ describe("calculateOverallConfidence", () => {
     };
 
     const result = calculateOverallConfidence(draft);
-    
+
     expect(result.overallConfidence).toBeGreaterThan(0.8);
     expect(result.needsReview).toBe(false);
     expect(result.reviewReasons).toHaveLength(0);
@@ -32,15 +30,13 @@ describe("calculateOverallConfidence", () => {
     const draft: Omit<RecipeDraft, "overallConfidence" | "needsReview" | "reviewReasons"> = {
       title: "Test Recipe",
       ingredients: [
-        { 
-          rawText: "some flour", 
+        {
+          rawText: "some flour",
           confidence: 0.3,
           confidenceReasons: ["Missing quantity"],
         },
       ],
-      steps: [
-        { text: "Mix", order: 0, confidence: 0.4 },
-      ],
+      steps: [{ text: "Mix", order: 0, confidence: 0.4 }],
       source: {
         type: "photo",
         importerName: "test",
@@ -50,7 +46,7 @@ describe("calculateOverallConfidence", () => {
     };
 
     const result = calculateOverallConfidence(draft);
-    
+
     expect(result.overallConfidence).toBeLessThan(0.6);
     expect(result.needsReview).toBe(true);
     expect(result.reviewReasons.length).toBeGreaterThan(0);
@@ -70,7 +66,7 @@ describe("calculateOverallConfidence", () => {
     };
 
     const result = calculateOverallConfidence(draft);
-    
+
     expect(result.needsReview).toBe(true);
     expect(result.reviewReasons).toContain("Missing recipe title");
   });
