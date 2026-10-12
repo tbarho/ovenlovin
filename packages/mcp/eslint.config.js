@@ -4,10 +4,12 @@ import tsparser from "@typescript-eslint/parser";
 import globals from "globals";
 
 export default [
+  {
+    ignores: ["dist/**", "**/*.d.ts", "**/*.test.ts", "node_modules/**"],
+  },
   eslint.configs.recommended,
   {
     files: ["src/**/*.ts"],
-    ignores: ["**/*.test.ts", "**/*.d.ts", "dist/**"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
