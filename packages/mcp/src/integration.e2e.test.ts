@@ -73,21 +73,22 @@ describe("MCP Integration E2E", () => {
     expect(result.findings.block.length).toBeGreaterThan(0);
 
     const blockFinding = result.findings.block[0];
+    expect(blockFinding).toBeDefined();
 
     // Verify finding includes person info
-    expect(blockFinding.personId).toBe("person-1");
-    expect(blockFinding.personName).toBe("Child A");
+    expect(blockFinding?.personId).toBe("person-1");
+    expect(blockFinding?.personName).toBe("Child A");
 
     // Verify finding includes rule info
-    expect(blockFinding.ruleId).toBe("rule-1");
-    expect(blockFinding.severity).toBe("block");
+    expect(blockFinding?.ruleId).toBe("rule-1");
+    expect(blockFinding?.severity).toBe("block");
 
     // Verify finding includes ingredient info
-    expect(blockFinding.ingredientName).toContain("almond");
-    expect(blockFinding.allergenCode).toBe("almond");
+    expect(blockFinding?.ingredientName).toContain("almond");
+    expect(blockFinding?.allergenCode).toBe("almond");
 
     // Verify message includes person name
-    expect(blockFinding.message).toContain("Child A");
+    expect(blockFinding?.message).toContain("Child A");
   });
 
   it("should pass check when recipe has no allergens", async () => {

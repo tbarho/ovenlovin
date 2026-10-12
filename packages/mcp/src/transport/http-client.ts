@@ -48,7 +48,7 @@ export class StreamableHTTPClientTransport implements Transport {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const responseData = await response.json();
+      const responseData = (await response.json()) as JSONRPCMessage;
 
       if (this.onmessageCallback) {
         this.onmessageCallback(responseData);

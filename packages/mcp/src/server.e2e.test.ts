@@ -37,7 +37,7 @@ describe("MCP Server E2E over HTTP", () => {
           if (req.headers) {
             for (const [key, value] of Object.entries(req.headers)) {
               if (value) {
-                headers[key] = Array.isArray(value) ? value[0] : value;
+                headers[key] = Array.isArray(value) ? value[0] || "" : value;
               }
             }
           }
