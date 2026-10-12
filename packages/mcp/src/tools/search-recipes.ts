@@ -6,16 +6,8 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import {
-  RecipeService,
-  PeopleService,
-  type Recipe,
-  type PersonRule,
-} from "@ovenlovin/core";
-import {
-  createDbClient,
-  recipeIngredient,
-} from "@ovenlovin/db";
+import { RecipeService, PeopleService, type Recipe, type PersonRule } from "@ovenlovin/core";
+import { createDbClient, recipeIngredient } from "@ovenlovin/db";
 import { eq, and, isNull } from "drizzle-orm";
 import {
   checkIngredientsAgainstRules,
@@ -81,7 +73,7 @@ async function handler(
     for (const personId of input.forAttendees) {
       const person = await peopleService.getPerson(personId);
       if (!person) continue;
-      
+
       // Verify person belongs to the household
       if (person.householdId !== context.householdId) {
         throw new Error(`Unauthorized access to person: ${personId}`);
@@ -115,9 +107,7 @@ async function handler(
       // Filter by method tags if provided
       if (input.methodTags && input.methodTags.length > 0) {
         const recipeTags = recipe.methodTags || [];
-        const hasMatchingTag = input.methodTags.some((tag) =>
-          recipeTags.includes(tag as any)
-        );
+        const hasMatchingTag = input.methodTags.some((tag) => recipeTags.includes(tag as any));
         if (!hasMatchingTag) {
           return null;
         }
@@ -138,9 +128,7 @@ async function handler(
   );
 
   // Filter out null results (recipes that didn't match method tags)
-  const recipes = recipesWithWarnings.filter(
-    (r): r is NonNullable<typeof r> => r !== null
-  );
+  const recipes = recipesWithWarnings.filter((r): r is NonNullable<typeof r> => r !== null);
 
   return {
     recipes,
