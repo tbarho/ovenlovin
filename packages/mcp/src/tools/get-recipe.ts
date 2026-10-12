@@ -7,7 +7,8 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { RecipeService } from "@ovenlovin/core";
-import { createDbClient } from "@ovenlovin/db";
+import { createDbClient, recipeIngredient, recipeStep, recipeNutrition } from "@ovenlovin/db";
+import { eq, asc, and, isNull } from "drizzle-orm";
 
 export const getRecipeSchema = z.object({
   id: z.string().uuid(),
@@ -84,8 +85,71 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     throw new Error("Unauthorized access to recipe");
   }
 
-  // TODO: Fetch ingredients and steps from related tables
-  // For now, returning basic recipe data
+  // Fetch ingredients
+  const ingredientRows = await db
+    .select()
+    .from(recipeIngredient)
+    .where(and(eq(recipeIngredient.recipeId, input.id), isNull(recipeIngredient.deletedAt)))
+    .orderBy(asc(recipeIngredient.order));
+
+  const ingredients = ingredientRows.map((ing) => ({
+    id: ing.id,
+    groupName: ing.groupId ?? undefined,
+    order: ing.order,
+    rawText: ing.rawText,
+    quantity: ing.quantityMin
+      ? {
+          min: Number(ing.quantityMin),
+          max: ing.quantityMax ? Number(ing.quantityMax) : undefined,
+        }
+      : undefined,
+    unit: ing.unit ?? undefined,
+    ingredientName: ing.ingredientId ?? undefined,
+    preparation: ing.preparation ?? undefined,
+    isOptional: ing.isOptional ?? false,
+    substitutionNotes: ing.substitutionNotes ?? undefined,
+  }));
+
+  // Fetch steps
+  const stepRows = await db
+    .select()
+    .from(recipeStep)
+    .where(and(eq(recipeStep.recipeId, input.id), isNull(recipeStep.deletedAt)))
+    .orderBy(asc(recipeStep.order));
+
+  const steps = stepRows.map((step) => ({
+    id: step.id,
+    order: step.order,
+    text: step.text,
+    timers: (step.timers as Array<{ duration: number; label?: string }> | null) ?? undefined,
+    image: step.image ?? undefined,
+  }));
+
+  // Fetch nutrition if requested
+  let nutrition: GetRecipeOutput["nutrition"] = undefined;
+  if (input.includeNutrition) {
+    const [nutritionRow] = await db
+      .select()
+      .from(recipeNutrition)
+      .where(
+        and(eq(recipeNutrition.recipeId, input.id), isNull(recipeNutrition.deletedAt))
+      )
+      .limit(1);
+
+    if (nutritionRow) {
+      nutrition = {
+        perServing: nutritionRow.perServing,
+        calories: nutritionRow.calories ? Number(nutritionRow.calories) : undefined,
+        protein: nutritionRow.protein ? Number(nutritionRow.protein) : undefined,
+        carbohydrates: nutritionRow.carbohydrates
+          ? Number(nutritionRow.carbohydrates)
+          : undefined,
+        fat: nutritionRow.fat ? Number(nutritionRow.fat) : undefined,
+        fiber: nutritionRow.fiber ? Number(nutritionRow.fiber) : undefined,
+      };
+    }
+  }
+
   return {
     id: recipe.id,
     title: recipe.title,
@@ -103,8 +167,9 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     difficulty: recipe.difficulty ?? undefined,
     equipment: recipe.equipment || [],
     images: recipe.images || [],
-    ingredients: [], // TODO: Load from recipe_ingredient table
-    steps: [], // TODO: Load from recipe_step table
+    ingredients,
+    steps,
+    nutrition,
   };
 }
 
