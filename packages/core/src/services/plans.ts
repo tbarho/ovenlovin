@@ -1,6 +1,7 @@
 import { eq, and, isNull, desc, gte, lte } from "drizzle-orm";
 import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db";
 import type { MealPlan, MealPlanEntry } from "../schemas/plans";
+import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
 
@@ -29,7 +30,7 @@ export class PlanService extends BaseService {
     let conditions = [eq(mealPlan.householdId, householdId), isNull(mealPlan.deletedAt)];
 
     if (options?.status) {
-      conditions.push(eq(mealPlan.status, options.status as any));
+      conditions.push(eq(mealPlan.status, options.status as "draft" | "approved" | "archived"));
     }
     if (options?.weekStart) {
       conditions.push(gte(mealPlan.weekStart, options.weekStart));
@@ -138,7 +139,7 @@ export class PlanService extends BaseService {
     return this.mapMealPlanEntry(created);
   }
 
-  async getRecipeIngredientsForEntry(recipeId: string): Promise<any[]> {
+  async getRecipeIngredientsForEntry(recipeId: string): Promise<RecipeIngredient[]> {
     const ingredients = await this._db
       .select()
       .from(recipeIngredient)
@@ -146,12 +147,20 @@ export class PlanService extends BaseService {
       .orderBy(recipeIngredient.order);
 
     return ingredients.map((ing) => ({
-      name: ing.rawText,
-      rawText: ing.rawText,
-      quantity: ing.quantityMin ? Number(ing.quantityMin) : undefined,
-      unit: ing.unit ?? undefined,
+      ...ing,
+      createdAt: ing.createdAt.toISOString(),
+      updatedAt: ing.updatedAt.toISOString(),
+      deletedAt: ing.deletedAt?.toISOString() ?? undefined,
+      groupId: ing.groupId ?? undefined,
       ingredientId: ing.ingredientId ?? undefined,
-      confidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
+      quantityMin: ing.quantityMin ? Number(ing.quantityMin) : undefined,
+      quantityMax: ing.quantityMax ? Number(ing.quantityMax) : undefined,
+      unit: ing.unit ?? undefined,
+      originalUnit: ing.originalUnit ?? undefined,
+      preparation: ing.preparation ?? undefined,
+      isOptional: ing.isOptional ?? false,
+      substitutionNotes: ing.substitutionNotes ?? undefined,
+      parseConfidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
     }));
   }
 

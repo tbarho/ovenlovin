@@ -38,8 +38,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           };
         }
 
-        const ingredients = await planService.getRecipeIngredientsForEntry(entry.recipeId);
+        const ingredientRows = await planService.getRecipeIngredientsForEntry(entry.recipeId);
         const recipeTitle = await planService.getRecipeTitle(entry.recipeId);
+
+        const ingredients = ingredientRows.map((ing) => ({
+          name: ing.rawText,
+          rawText: ing.rawText,
+          quantity: ing.quantityMin ?? undefined,
+          unit: ing.unit ?? undefined,
+          ingredientId: ing.ingredientId ?? undefined,
+        }));
 
         return {
           entry,
