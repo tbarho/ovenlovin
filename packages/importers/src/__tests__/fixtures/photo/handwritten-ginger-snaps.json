@@ -1,0 +1,102 @@
+{
+  "title": "Grandma's Ginger Snaps",
+  "description": "Old family recipe from Grandma's handwritten card",
+  "servings": 48,
+  "cookTimeMinutes": 10,
+  "ingredients": [
+    {
+      "text": "3/4 c. shortening",
+      "quantity": "3/4",
+      "unit": "c.",
+      "ingredient": "shortening",
+      "confidence": "medium"
+    },
+    {
+      "text": "1 c. sugar",
+      "quantity": "1",
+      "unit": "c.",
+      "ingredient": "sugar",
+      "confidence": "high"
+    },
+    {
+      "text": "1 egg",
+      "quantity": "1",
+      "ingredient": "egg",
+      "confidence": "high"
+    },
+    {
+      "text": "1/4 c. molasses",
+      "quantity": "1/4",
+      "unit": "c.",
+      "ingredient": "molasses",
+      "confidence": "medium"
+    },
+    {
+      "text": "2 c. flour",
+      "quantity": "2",
+      "unit": "c.",
+      "ingredient": "flour",
+      "confidence": "high"
+    },
+    {
+      "text": "2 tsp. baking soda",
+      "quantity": "2",
+      "unit": "tsp.",
+      "ingredient": "baking soda",
+      "confidence": "low"
+    },
+    {
+      "text": "1 tsp. cinnamon",
+      "quantity": "1",
+      "unit": "tsp.",
+      "ingredient": "cinnamon",
+      "confidence": "medium"
+    },
+    {
+      "text": "1 tsp. cloves",
+      "quantity": "1",
+      "unit": "tsp.",
+      "ingredient": "cloves",
+      "confidence": "low"
+    },
+    {
+      "text": "1 tsp. ginger",
+      "quantity": "1",
+      "unit": "tsp.",
+      "ingredient": "ginger",
+      "confidence": "medium"
+    }
+  ],
+  "steps": [
+    {
+      "text": "Mix shortening, sugar, egg and molasses thoroughly.",
+      "confidence": "high"
+    },
+    {
+      "text": "Sift together flour, baking soda, and spices; blend in.",
+      "confidence": "medium"
+    },
+    {
+      "text": "Chill dough.",
+      "confidence": "high"
+    },
+    {
+      "text": "Roll into balls the size of large walnuts.",
+      "confidence": "medium"
+    },
+    {
+      "text": "Dip tops in sugar.",
+      "confidence": "high"
+    },
+    {
+      "text": "Place sugar side up on greased baking sheet.",
+      "confidence": "medium"
+    },
+    {
+      "text": "Bake 10-12 min. at 375°.",
+      "confidence": "low"
+    }
+  ],
+  "ocrQuality": "fair",
+  "handwrittenNotes": "Handwriting is mostly legible. Some spice measurements difficult to read clearly. Baking temperature partially smudged."
+}
