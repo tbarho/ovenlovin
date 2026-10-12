@@ -3,7 +3,12 @@ import { eq, and } from "drizzle-orm";
 import { apiKey } from "@ovenlovin/db/schema";
 import type { DbClient } from "@ovenlovin/db/client";
 import { BaseService } from "./base";
-import type { ApiKey, ApiKeyWithPlaintext, CreateApiKeyInput } from "../schemas/households";
+import type {
+  ApiKey,
+  ApiKeyScope,
+  ApiKeyWithPlaintext,
+  CreateApiKeyInput,
+} from "../schemas/households";
 
 export class ApiKeyService extends BaseService {
   constructor(db: DbClient) {
@@ -23,7 +28,7 @@ export class ApiKeyService extends BaseService {
         keyHash,
         keyPrefix,
         scopes: input.scopes,
-        expiresAt: input.expiresAt,
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
         createdBy,
       })
       .returning();
@@ -42,7 +47,7 @@ export class ApiKeyService extends BaseService {
       name: created.name,
       keyHash: created.keyHash,
       keyPrefix: created.keyPrefix,
-      scopes: created.scopes as string[],
+      scopes: created.scopes as ApiKeyScope[],
       lastUsedAt: created.lastUsedAt?.toISOString() ?? null,
       expiresAt: created.expiresAt?.toISOString() ?? null,
       revokedAt: created.revokedAt?.toISOString() ?? null,
@@ -77,23 +82,25 @@ export class ApiKeyService extends BaseService {
 
     await this._db.update(apiKey).set({ lastUsedAt: new Date() }).where(eq(apiKey.id, found.id));
 
+    const key: ApiKey = {
+      id: found.id,
+      createdAt: found.createdAt.toISOString(),
+      updatedAt: found.updatedAt.toISOString(),
+      deletedAt: null,
+      createdBy: found.createdBy,
+      householdId: found.householdId,
+      name: found.name,
+      keyHash: found.keyHash,
+      keyPrefix: found.keyPrefix,
+      scopes: found.scopes as ApiKeyScope[],
+      lastUsedAt: found.lastUsedAt ? found.lastUsedAt.toISOString() : null,
+      expiresAt: found.expiresAt ? found.expiresAt.toISOString() : null,
+      revokedAt: null,
+    };
+
     return {
       valid: true,
-      key: {
-        id: found.id,
-        createdAt: found.createdAt.toISOString(),
-        updatedAt: found.updatedAt.toISOString(),
-        deletedAt: found.deletedAt?.toISOString() ?? null,
-        createdBy: found.createdBy,
-        householdId: found.householdId,
-        name: found.name,
-        keyHash: found.keyHash,
-        keyPrefix: found.keyPrefix,
-        scopes: found.scopes as string[],
-        lastUsedAt: found.lastUsedAt?.toISOString() ?? null,
-        expiresAt: found.expiresAt?.toISOString() ?? null,
-        revokedAt: found.revokedAt?.toISOString() ?? null,
-      },
+      key,
     };
   }
 
@@ -117,7 +124,7 @@ export class ApiKeyService extends BaseService {
       name: k.name,
       keyHash: k.keyHash,
       keyPrefix: k.keyPrefix,
-      scopes: k.scopes as string[],
+      scopes: k.scopes as ApiKeyScope[],
       lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
       expiresAt: k.expiresAt?.toISOString() ?? null,
       revokedAt: k.revokedAt?.toISOString() ?? null,
