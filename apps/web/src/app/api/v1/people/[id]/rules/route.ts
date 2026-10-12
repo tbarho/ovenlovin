@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, createdResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId, getIdempotencyKey } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireAdminRole,
+  getIdempotencyKey,
+} from "@/lib/api/middleware";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
@@ -31,6 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
+    requireAdminRole(context);
     const householdId = requireHouseholdId(context);
     const idempotencyKey = getIdempotencyKey(request);
 

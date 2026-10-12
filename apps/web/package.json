@@ -12,10 +12,12 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@clerk/nextjs": "^7.9.14",
     "@ovenlovin/allergens": "workspace:*",
     "@ovenlovin/core": "workspace:*",
     "@ovenlovin/db": "workspace:^",
     "@ovenlovin/mcp": "workspace:*",
+    "drizzle-orm": "^0.38.3",
     "next": "^15.1.4",
     "openapi3-ts": "^4.6.1",
     "react": "^19.0.0",
