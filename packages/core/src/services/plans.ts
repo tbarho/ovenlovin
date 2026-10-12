@@ -1,7 +1,6 @@
 import { eq, and, isNull, desc, gte, lte } from "drizzle-orm";
-import { mealPlan, mealPlanEntry } from "@ovenlovin/db";
-import type { MealPlan, MealPlanEntry, CheckReport, CheckFinding } from "../schemas/plans";
-import type { PersonRule } from "../schemas/people";
+import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db";
+import type { MealPlan, MealPlanEntry } from "../schemas/plans";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
 
@@ -19,6 +18,7 @@ export class PlanService extends BaseService {
   async listMealPlans(
     householdId: string,
     options?: {
+      status?: string;
       weekStart?: string;
       weekEnd?: string;
       pagination?: Pagination;
@@ -28,6 +28,9 @@ export class PlanService extends BaseService {
 
     let conditions = [eq(mealPlan.householdId, householdId), isNull(mealPlan.deletedAt)];
 
+    if (options?.status) {
+      conditions.push(eq(mealPlan.status, options.status as any));
+    }
     if (options?.weekStart) {
       conditions.push(gte(mealPlan.weekStart, options.weekStart));
     }
@@ -71,6 +74,35 @@ export class PlanService extends BaseService {
     return this.mapMealPlan(created);
   }
 
+  async updateMealPlan(
+    id: string,
+    data: Partial<Omit<MealPlan, "id" | "createdAt" | "updatedAt" | "deletedAt" | "createdBy" | "householdId">>
+  ): Promise<MealPlan | null> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: any = { ...data, updatedAt: new Date() };
+    if (data.checkedAt !== undefined) {
+      updateData.checkedAt = data.checkedAt ? new Date(data.checkedAt) : null;
+    }
+
+    const [updated] = await this._db
+      .update(mealPlan)
+      .set(updateData)
+      .where(and(eq(mealPlan.id, id), isNull(mealPlan.deletedAt)))
+      .returning();
+
+    return updated ? this.mapMealPlan(updated) : null;
+  }
+
+  async deleteMealPlan(id: string): Promise<boolean> {
+    const [deleted] = await this._db
+      .update(mealPlan)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(mealPlan.id, id), isNull(mealPlan.deletedAt)))
+      .returning();
+
+    return !!deleted;
+  }
+
   async getMealPlanEntries(planId: string): Promise<MealPlanEntry[]> {
     const results = await this._db
       .select()
@@ -81,49 +113,54 @@ export class PlanService extends BaseService {
     return results.map((r) => this.mapMealPlanEntry(r));
   }
 
-  async checkMealPlan(
-    plan: MealPlan,
-    entries: MealPlanEntry[],
-    peopleRules: Map<string, PersonRule[]>
-  ): Promise<CheckReport> {
-    const findings: CheckFinding[] = [];
-    const affectedPeopleSet = new Set<string>();
+  async createMealPlanEntry(
+    data: Omit<MealPlanEntry, "id" | "createdAt" | "updatedAt" | "deletedAt">
+  ): Promise<MealPlanEntry> {
+    const [created] = await this._db
+      .insert(mealPlanEntry)
+      .values({
+        mealPlanId: data.mealPlanId,
+        date: data.date,
+        mealSlot: data.mealSlot,
+        recipeId: data.recipeId ?? null,
+        freeformMeal: data.freeformMeal ?? null,
+        servings: data.servings ?? null,
+        attendees: data.attendees ?? [],
+        scaleFactor: data.scaleFactor ?? 1,
+        prepAheadNotes: data.prepAheadNotes ?? null,
+        leftoverSourceId: data.leftoverSourceId ?? null,
+      })
+      .returning();
 
-    for (const entry of entries) {
-      for (const personId of entry.attendees) {
-        const rules = peopleRules.get(personId) || [];
-
-        for (let i = 0; i < rules.length; i++) {
-          const finding = await this.checkEntryAgainstRule();
-          if (finding) {
-            findings.push(finding);
-            affectedPeopleSet.add(personId);
-          }
-        }
-      }
-    }
-
-    return {
-      status: "complete",
-      planId: plan.id,
-      checkedAt: new Date().toISOString(),
-      findings,
-      incompleteReasons: [],
-      summary: {
-        totalEntries: entries.length,
-        entriesWithBlocks: new Set(
-          findings.filter((f) => f.severity === "block").map((f) => f.entryId)
-        ).size,
-        entriesWithWarnings: new Set(
-          findings.filter((f) => f.severity === "warn").map((f) => f.entryId)
-        ).size,
-        affectedPeople: Array.from(affectedPeopleSet),
-      },
-    };
+    if (!created) throw new Error("Failed to create meal plan entry");
+    return this.mapMealPlanEntry(created);
   }
 
-  private async checkEntryAgainstRule(): Promise<CheckFinding | null> {
-    return null;
+  async getRecipeIngredientsForEntry(recipeId: string): Promise<any[]> {
+    const ingredients = await this._db
+      .select()
+      .from(recipeIngredient)
+      .where(and(eq(recipeIngredient.recipeId, recipeId), isNull(recipeIngredient.deletedAt)))
+      .orderBy(recipeIngredient.order);
+
+    return ingredients.map((ing) => ({
+      name: ing.rawText,
+      rawText: ing.rawText,
+      quantity: ing.quantityMin ? Number(ing.quantityMin) : undefined,
+      unit: ing.unit ?? undefined,
+      ingredientId: ing.ingredientId ?? undefined,
+      confidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
+    }));
+  }
+
+  async getRecipeTitle(recipeId: string): Promise<string | null> {
+    const [result] = await this._db
+      .select({ title: recipe.title })
+      .from(recipe)
+      .where(and(eq(recipe.id, recipeId), isNull(recipe.deletedAt)))
+      .limit(1);
+
+    return result?.title ?? null;
   }
 
   private mapMealPlan(row: typeof mealPlan.$inferSelect): MealPlan {

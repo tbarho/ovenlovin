@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@ovenlovin/allergens": "workspace:*",
     "@ovenlovin/core": "workspace:*",
     "@ovenlovin/db": "workspace:^",
     "@ovenlovin/mcp": "workspace:*",

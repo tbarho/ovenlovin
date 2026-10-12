@@ -30,6 +30,9 @@ importers:
       '@asteasolutions/zod-to-openapi':
         specifier: ^9.1.0
         version: 9.1.0(zod@4.6.7)
+      '@ovenlovin/allergens':
+        specifier: workspace:*
+        version: link:../../packages/allergens
       '@ovenlovin/core':
         specifier: workspace:*
         version: link:../../packages/core
