@@ -40,9 +40,7 @@ export class RecipeService extends BaseService {
     let conditions = [eq(recipe.householdId, householdId), isNull(recipe.deletedAt)];
 
     if (options?.status) {
-      conditions.push(
-        eq(recipe.status, options.status as "draft" | "needs_review" | "published")
-      );
+      conditions.push(eq(recipe.status, options.status as "draft" | "needs_review" | "published"));
     }
 
     if (options?.search) {
