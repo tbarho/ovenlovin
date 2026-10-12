@@ -21,7 +21,7 @@ describe("Paste Importer", () => {
     vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
   });
 
-  const importer = createPasteImporter({ modelId: "spacexai/grok-4.7" });
+  const importer = createPasteImporter({ modelId: "xai/grok-2-vision-1212" });
 
   describe("canHandle", () => {
     it("should accept non-empty text", () => {
@@ -70,7 +70,7 @@ describe("Paste Importer", () => {
 
       expect(result.sourceType).toBe("paste");
       expect(result.rawData.title).toBe("Classic Chocolate Chip Cookies");
-      expect(result.modelUsed).toBe("spacexai/grok-4.7");
+      expect(result.modelUsed).toBe("xai/grok-2-vision-1212");
     });
 
     it("should include optional URL and author", async () => {
@@ -128,7 +128,7 @@ describe("Paste Importer", () => {
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
-        modelUsed: "spacexai/grok-4.7",
+        modelUsed: "xai/grok-2-vision-1212",
       };
 
       const draft = await importer.toDraft(rawExtraction);
@@ -159,7 +159,7 @@ describe("Paste Importer", () => {
 
       expect(draft.source.type).toBe("paste");
       expect(draft.source.importerName).toBe("paste-importer");
-      expect(draft.source.modelUsed).toBe("spacexai/grok-4.7");
+      expect(draft.source.modelUsed).toBe("xai/grok-2-vision-1212");
     });
 
     it("should handle missing ingredient quantity", async () => {

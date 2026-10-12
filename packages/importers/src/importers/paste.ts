@@ -49,7 +49,7 @@ const recipeSchema = z.object({
 });
 
 export function createPasteImporter(config: ImporterConfig = {}): Importer<PasteImportInput> {
-  const modelId = config.modelId || process.env.RK_MODEL_DEFAULT || "spacexai/grok-4.7";
+  const modelId = config.modelId || process.env.RK_MODEL_DEFAULT || "xai/grok-2-vision-1212";
 
   return {
     name: "paste-importer",
