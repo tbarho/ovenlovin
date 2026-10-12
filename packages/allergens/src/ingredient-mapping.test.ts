@@ -8,9 +8,7 @@ import {
 
 describe("ingredientAllergenMappings", () => {
   it("includes peanut with comprehensive aliases", () => {
-    const peanut = ingredientAllergenMappings.find(
-      (m) => m.name === "peanut",
-    );
+    const peanut = ingredientAllergenMappings.find((m) => m.name === "peanut");
     expect(peanut).toBeDefined();
     expect(peanut?.allergenCode).toBe("peanut");
     expect(peanut?.aliases).toContain("peanuts");
@@ -32,9 +30,7 @@ describe("ingredientAllergenMappings", () => {
     ];
 
     for (const code of treeNutCodes) {
-      const mapping = ingredientAllergenMappings.find(
-        (m) => m.allergenCode === code,
-      );
+      const mapping = ingredientAllergenMappings.find((m) => m.allergenCode === code);
       expect(mapping).toBeDefined();
     }
   });
@@ -58,17 +54,13 @@ describe("ingredientAllergenMappings", () => {
   });
 
   it("includes coconut as separate allergen", () => {
-    const coconut = ingredientAllergenMappings.find(
-      (m) => m.name === "coconut",
-    );
+    const coconut = ingredientAllergenMappings.find((m) => m.name === "coconut");
     expect(coconut).toBeDefined();
     expect(coconut?.allergenCode).toBe("coconut");
   });
 
   it("includes OCR error variants", () => {
-    const peanut = ingredientAllergenMappings.find(
-      (m) => m.name === "peanut",
-    );
+    const peanut = ingredientAllergenMappings.find((m) => m.name === "peanut");
     expect(peanut?.aliases).toContain("peanu");
     expect(peanut?.aliases).toContain("penuts");
 
@@ -77,15 +69,11 @@ describe("ingredientAllergenMappings", () => {
   });
 
   it("includes cross-contact items", () => {
-    const chocolateChips = ingredientAllergenMappings.find(
-      (m) => m.name === "chocolate chips",
-    );
+    const chocolateChips = ingredientAllergenMappings.find((m) => m.name === "chocolate chips");
     expect(chocolateChips).toBeDefined();
     expect(chocolateChips?.relation).toBe("commonly_cross_contact");
 
-    const granola = ingredientAllergenMappings.find(
-      (m) => m.name === "granola",
-    );
+    const granola = ingredientAllergenMappings.find((m) => m.name === "granola");
     expect(granola).toBeDefined();
     expect(granola?.relation).toBe("commonly_cross_contact");
   });
@@ -106,9 +94,7 @@ describe("normalizeIngredientName", () => {
 
   it("removes punctuation", () => {
     expect(normalizeIngredientName("peanut-butter")).toBe("peanut butter");
-    expect(normalizeIngredientName("chocolate, chips")).toBe(
-      "chocolate chips",
-    );
+    expect(normalizeIngredientName("chocolate, chips")).toBe("chocolate chips");
   });
 
   it("handles combined normalization", () => {

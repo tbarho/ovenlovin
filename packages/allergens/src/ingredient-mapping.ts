@@ -63,14 +63,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   },
   {
     name: "satay sauce",
-    aliases: [
-      "satay",
-      "sate",
-      "peanut sauce",
-      "gado gado",
-      "gado-gado",
-      "pad thai sauce",
-    ],
+    aliases: ["satay", "sate", "peanut sauce", "gado gado", "gado-gado", "pad thai sauce"],
     allergenCode: "peanut",
     relation: "contains",
     notes: "Southeast Asian sauce typically made with peanuts",
@@ -301,12 +294,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   },
   {
     name: "pesto",
-    aliases: [
-      "basil pesto",
-      "pesto sauce",
-      "pesto genovese",
-      "pesto alla genovese",
-    ],
+    aliases: ["basil pesto", "pesto sauce", "pesto genovese", "pesto alla genovese"],
     allergenCode: "pine_nut",
     relation: "contains",
     notes: "Traditional pesto contains pine nuts or walnuts",
@@ -506,15 +494,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   },
   {
     name: "cheese",
-    aliases: [
-      "cheddar",
-      "mozzarella",
-      "parmesan",
-      "swiss",
-      "fromage",
-      "queso",
-      "käse",
-    ],
+    aliases: ["cheddar", "mozzarella", "parmesan", "swiss", "fromage", "queso", "käse"],
     allergenCode: "milk",
     relation: "contains",
   },
@@ -528,15 +508,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   // ===== EGG =====
   {
     name: "egg",
-    aliases: [
-      "eggs",
-      "chicken egg",
-      "whole egg",
-      "egg white",
-      "egg yolk",
-      "oeuf",
-      "huevo",
-    ],
+    aliases: ["eggs", "chicken egg", "whole egg", "egg white", "egg yolk", "oeuf", "huevo"],
     allergenCode: "egg",
     relation: "contains",
   },
@@ -618,16 +590,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   // ===== FISH =====
   {
     name: "fish",
-    aliases: [
-      "salmon",
-      "tuna",
-      "cod",
-      "halibut",
-      "bass",
-      "trout",
-      "poisson",
-      "pescado",
-    ],
+    aliases: ["salmon", "tuna", "cod", "halibut", "bass", "trout", "poisson", "pescado"],
     allergenCode: "fish",
     relation: "contains",
   },
@@ -675,14 +638,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   // ===== CELERY =====
   {
     name: "celery",
-    aliases: [
-      "celery seed",
-      "celery seeds",
-      "celery salt",
-      "celeriac",
-      "celeri",
-      "apio",
-    ],
+    aliases: ["celery seed", "celery seeds", "celery salt", "celeriac", "celeri", "apio"],
     allergenCode: "celery",
     relation: "contains",
   },
@@ -690,13 +646,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   // ===== LUPIN =====
   {
     name: "lupin",
-    aliases: [
-      "lupine",
-      "lupin flour",
-      "lupin beans",
-      "lupini beans",
-      "lupinus",
-    ],
+    aliases: ["lupine", "lupin flour", "lupin beans", "lupini beans", "lupinus"],
     allergenCode: "lupin",
     relation: "contains",
   },
@@ -722,10 +672,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
 /**
  * Build a fast lookup map from ingredient name (normalized) to allergen mappings
  */
-export function buildIngredientMap(): Map<
-  string,
-  IngredientAllergenMapping[]
-> {
+export function buildIngredientMap(): Map<string, IngredientAllergenMapping[]> {
   const map = new Map<string, IngredientAllergenMapping[]>();
 
   function addMapping(key: string, mapping: IngredientAllergenMapping) {
@@ -769,7 +716,7 @@ export function normalizeIngredientName(name: string): string {
  */
 export function matchIngredient(
   ingredientName: string,
-  map: Map<string, IngredientAllergenMapping[]> = buildIngredientMap(),
+  map: Map<string, IngredientAllergenMapping[]> = buildIngredientMap()
 ): IngredientAllergenMapping[] {
   const normalized = normalizeIngredientName(ingredientName);
   return map.get(normalized) || [];
