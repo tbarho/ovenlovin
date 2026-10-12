@@ -184,7 +184,7 @@ function parseIngredients(ingredientsData: unknown): ParsedIngredient[] {
 
 function parseQuantityString(qty: string): { min: number; max?: number } | undefined {
   const rangeMatch = qty.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
-  if (rangeMatch) {
+  if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
     return {
       min: parseFloat(rangeMatch[1]),
       max: parseFloat(rangeMatch[2]),
@@ -192,21 +192,21 @@ function parseQuantityString(qty: string): { min: number; max?: number } | undef
   }
 
   const mixedMatch = qty.match(/(\d+)\s+(\d+)\/(\d+)/);
-  if (mixedMatch) {
-    const whole = parseInt(mixedMatch[1]);
-    const numerator = parseInt(mixedMatch[2]);
-    const denominator = parseInt(mixedMatch[3]);
+  if (mixedMatch && mixedMatch[1] && mixedMatch[2] && mixedMatch[3]) {
+    const whole = parseInt(mixedMatch[1], 10);
+    const numerator = parseInt(mixedMatch[2], 10);
+    const denominator = parseInt(mixedMatch[3], 10);
     return { min: whole + numerator / denominator };
   }
 
   const fractionMatch = qty.match(/(\d+)\/(\d+)/);
-  if (fractionMatch) {
-    const value = parseInt(fractionMatch[1]) / parseInt(fractionMatch[2]);
+  if (fractionMatch && fractionMatch[1] && fractionMatch[2]) {
+    const value = parseInt(fractionMatch[1], 10) / parseInt(fractionMatch[2], 10);
     return { min: value };
   }
 
   const numberMatch = qty.match(/(\d+(?:\.\d+)?)/);
-  if (numberMatch) {
+  if (numberMatch && numberMatch[1]) {
     return { min: parseFloat(numberMatch[1]) };
   }
 
