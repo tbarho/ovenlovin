@@ -40,7 +40,29 @@ ovenlovin/
     └── ui/           # Shared UI components
 ```
 
-## Quick Start
+## Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://github.com/tbarho/ovenlovin/blob/main/docs/bot-setup.md&project-name=ovenlovin&repository-name=ovenlovin&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://github.com/tbarho/ovenlovin&demo-image=https://vercel.com/api/www/avatar?u=ovenlovin&s=128&integration-ids=oac_nEXJBbvUWwjlcyqXeFz6ybeh)
+
+The one-click deploy will:
+- Clone this repository to your GitHub account
+- Create a new Vercel project
+- Connect a Neon Postgres database (auto-configured `DATABASE_URL`)
+- Prompt for required API keys and secrets
+- Deploy the Next.js app with all environment variables
+
+### Required Environment Variables
+
+- `DATABASE_URL` - Neon Postgres connection string (auto-configured if using Neon integration)
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk publishable key ([get one](https://clerk.com))
+- `CLERK_SECRET_KEY` - Clerk secret key
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token ([create one](https://vercel.com/docs/storage/vercel-blob))
+- `AI_GATEWAY_API_KEY` - Vercel AI Gateway API key ([create one](https://vercel.com/docs/ai))
+- `USDA_FDC_API_KEY` - USDA FoodData Central API key ([get one](https://fdc.nal.usda.gov/api-key-signup.html))
+
+See the [Bot Setup Guide](./docs/bot-setup.md) for detailed configuration instructions.
+
+## Quick Start (Local Development)
 
 ```bash
 # Install dependencies
