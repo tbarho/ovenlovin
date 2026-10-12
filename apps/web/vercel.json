@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "cd ../.. && pnpm install && pnpm turbo run build --filter=@ovenlovin/web..."
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@ovenlovin/web..."
 }
