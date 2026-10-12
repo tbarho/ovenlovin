@@ -51,7 +51,7 @@ const recipeSchema = z.object({
 });
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
-  const visionModelId = config.visionModelId || process.env.RK_MODEL_VISION || "openai/gpt-4o";
+  const visionModelId = config.visionModelId || process.env.RK_MODEL_VISION || "grok-4.7";
 
   return {
     name: "photo-importer",
@@ -63,8 +63,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
     },
 
     async extract(input: PhotoImportInput): Promise<RawExtraction> {
-      const { createOpenAI } = await import("@ai-sdk/openai");
-      const openai = createOpenAI();
+      const { xai } = await import("@ai-sdk/xai");
 
       const imageMessages = input.images.map((img) => ({
         type: "image" as const,
@@ -76,7 +75,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         : "";
 
       const result = await generateObject({
-        model: openai(visionModelId.replace(/^openai\//, "")),
+        model: xai(visionModelId),
         messages: [
           {
             role: "user",

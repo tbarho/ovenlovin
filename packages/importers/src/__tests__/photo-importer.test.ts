@@ -11,12 +11,12 @@ vi.mock("ai", () => ({
   generateObject: vi.fn(),
 }));
 
-vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: () => () => "mock-model",
+vi.mock("@ai-sdk/xai", () => ({
+  xai: () => "mock-model",
 }));
 
 describe("Photo Importer", () => {
-  const importer = createPhotoImporter({ visionModelId: "openai/gpt-4o" });
+  const importer = createPhotoImporter({ visionModelId: "grok-4.7" });
 
   describe("canHandle", () => {
     it("should accept images", () => {
@@ -64,7 +64,7 @@ describe("Photo Importer", () => {
       expect(result.sourceType).toBe("photo");
       expect(result.rawData.title).toBe("Grandma's Ginger Snaps");
       expect(result.rawData.isHandwritten).toBe(true);
-      expect(result.modelUsed).toBe("openai/gpt-4o");
+      expect(result.modelUsed).toBe("grok-4.7");
     });
 
     it("should handle multiple images", async () => {
@@ -100,7 +100,7 @@ describe("Photo Importer", () => {
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
-        modelUsed: "openai/gpt-4o",
+        modelUsed: "grok-4.7",
       };
 
       const draft = await importer.toDraft(rawExtraction);

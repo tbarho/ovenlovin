@@ -12,12 +12,12 @@ vi.mock("ai", () => ({
   generateObject: vi.fn(),
 }));
 
-vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: () => () => "mock-model",
+vi.mock("@ai-sdk/xai", () => ({
+  xai: () => "mock-model",
 }));
 
 describe("Paste Importer", () => {
-  const importer = createPasteImporter({ modelId: "openai/gpt-4o" });
+  const importer = createPasteImporter({ modelId: "grok-4.7" });
 
   describe("canHandle", () => {
     it("should accept non-empty text", () => {
@@ -66,7 +66,7 @@ describe("Paste Importer", () => {
 
       expect(result.sourceType).toBe("paste");
       expect(result.rawData.title).toBe("Classic Chocolate Chip Cookies");
-      expect(result.modelUsed).toBe("openai/gpt-4o");
+      expect(result.modelUsed).toBe("grok-4.7");
     });
 
     it("should include optional URL and author", async () => {
@@ -124,7 +124,7 @@ describe("Paste Importer", () => {
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
-        modelUsed: "openai/gpt-4o",
+        modelUsed: "grok-4.7",
       };
 
       const draft = await importer.toDraft(rawExtraction);
@@ -155,7 +155,7 @@ describe("Paste Importer", () => {
 
       expect(draft.source.type).toBe("paste");
       expect(draft.source.importerName).toBe("paste-importer");
-      expect(draft.source.modelUsed).toBe("openai/gpt-4o");
+      expect(draft.source.modelUsed).toBe("grok-4.7");
     });
 
     it("should handle missing ingredient quantity", async () => {
