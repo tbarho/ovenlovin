@@ -1,4 +1,9 @@
 import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { getDatabase } from "@ovenlovin/db";
+import { ApiKeyService } from "@ovenlovin/core";
+import { eq } from "drizzle-orm";
+import { household } from "@ovenlovin/db/schema";
 import { UnauthorizedError } from "./errors";
 
 export type RequestContext = {
@@ -6,6 +11,7 @@ export type RequestContext = {
   householdId?: string;
   isBot?: boolean;
   clientId?: string;
+  membershipRole?: "owner" | "admin" | "member" | "viewer";
 };
 
 export async function getRequestContext(request: NextRequest): Promise<RequestContext> {
@@ -16,8 +22,7 @@ export async function getRequestContext(request: NextRequest): Promise<RequestCo
   }
 
   if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    return parseBearerToken(token);
+    return parseClerkAuth();
   }
 
   if (authHeader.startsWith("ApiKey ")) {
@@ -28,14 +33,34 @@ export async function getRequestContext(request: NextRequest): Promise<RequestCo
   throw new UnauthorizedError("Invalid authorization scheme. Use Bearer or ApiKey.");
 }
 
-async function parseBearerToken(token: string): Promise<RequestContext> {
-  if (!token) {
-    throw new UnauthorizedError("Invalid bearer token");
+async function parseClerkAuth(): Promise<RequestContext> {
+  const { userId, orgId, orgRole } = await auth();
+
+  if (!userId) {
+    throw new UnauthorizedError("Authentication required");
   }
 
+  if (!orgId) {
+    throw new UnauthorizedError("Organization membership required");
+  }
+
+  const db = getDatabase();
+  const [householdRecord] = await db
+    .select()
+    .from(household)
+    .where(eq(household.clerkOrgId, orgId))
+    .limit(1);
+
+  if (!householdRecord) {
+    throw new UnauthorizedError("Household not found for organization");
+  }
+
+  const role = orgRole as "owner" | "admin" | "member" | "viewer" | undefined;
+
   return {
-    userId: "user-stub",
-    householdId: "household-stub",
+    userId,
+    householdId: householdRecord.id,
+    membershipRole: role ?? "member",
   };
 }
 
@@ -44,9 +69,17 @@ async function parseApiKey(apiKey: string): Promise<RequestContext> {
     throw new UnauthorizedError("Invalid API key");
   }
 
+  const db = getDatabase();
+  const apiKeyService = new ApiKeyService(db);
+  const result = await apiKeyService.validate(apiKey);
+
+  if (!result.valid) {
+    throw new UnauthorizedError("Invalid or expired API key");
+  }
+
   return {
-    clientId: "bot-stub",
-    householdId: "household-stub",
+    clientId: result.key.id,
+    householdId: result.key.householdId,
     isBot: true,
   };
 }
@@ -67,4 +100,10 @@ export function requireUserId(context: RequestContext): string {
     throw new UnauthorizedError("User authentication required");
   }
   return context.userId;
+}
+
+export function requireAdminRole(context: RequestContext): void {
+  if (!context.membershipRole || !["owner", "admin"].includes(context.membershipRole)) {
+    throw new UnauthorizedError("Admin or owner role required");
+  }
 }
