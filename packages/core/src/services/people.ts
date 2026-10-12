@@ -91,6 +91,16 @@ export class PeopleService extends BaseService {
     return results.map((r) => this.mapPersonRule(r));
   }
 
+  async getRule(id: string): Promise<PersonRule | null> {
+    const [result] = await this._db
+      .select()
+      .from(personRule)
+      .where(and(eq(personRule.id, id), isNull(personRule.deletedAt)))
+      .limit(1);
+
+    return result ? this.mapPersonRule(result) : null;
+  }
+
   async createRule(
     data: Omit<PersonRule, "id" | "createdAt" | "updatedAt" | "deletedAt">
   ): Promise<PersonRule> {
