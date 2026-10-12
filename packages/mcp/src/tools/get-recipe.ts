@@ -6,6 +6,9 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { RecipeService } from "@ovenlovin/core";
+import { createDbClient, recipeIngredient, recipeStep, recipeNutrition } from "@ovenlovin/db";
+import { eq, asc, and, isNull } from "drizzle-orm";
 
 export const getRecipeSchema = z.object({
   id: z.string().uuid(),
@@ -67,13 +70,107 @@ export interface GetRecipeOutput {
   };
 }
 
-async function handler(_input: GetRecipeInput, _context: AuthContext): Promise<GetRecipeOutput> {
-  // TODO: Implement using @ovenlovin/core service
-  // - Fetch recipe by ID
-  // - Check household access
-  // - Return full recipe details
+async function handler(input: GetRecipeInput, context: AuthContext): Promise<GetRecipeOutput> {
+  const db = createDbClient(process.env.DATABASE_URL!);
+  const recipeService = new RecipeService(db);
 
-  throw new Error("Not implemented: get_recipe");
+  const recipe = await recipeService.getRecipe(input.id);
+
+  if (!recipe) {
+    throw new Error(`Recipe not found: ${input.id}`);
+  }
+
+  // Verify access - recipe must belong to user's household
+  if (recipe.householdId !== context.householdId) {
+    throw new Error("Unauthorized access to recipe");
+  }
+
+  // Fetch ingredients
+  const ingredientRows = await db
+    .select()
+    .from(recipeIngredient)
+    .where(and(eq(recipeIngredient.recipeId, input.id), isNull(recipeIngredient.deletedAt)))
+    .orderBy(asc(recipeIngredient.order));
+
+  const ingredients = ingredientRows.map((ing) => ({
+    id: ing.id,
+    groupName: ing.groupId ?? undefined,
+    order: ing.order,
+    rawText: ing.rawText,
+    quantity: ing.quantityMin
+      ? {
+          min: Number(ing.quantityMin),
+          max: ing.quantityMax ? Number(ing.quantityMax) : undefined,
+        }
+      : undefined,
+    unit: ing.unit ?? undefined,
+    ingredientName: ing.ingredientId ?? undefined,
+    preparation: ing.preparation ?? undefined,
+    isOptional: ing.isOptional ?? false,
+    substitutionNotes: ing.substitutionNotes ?? undefined,
+  }));
+
+  // Fetch steps
+  const stepRows = await db
+    .select()
+    .from(recipeStep)
+    .where(and(eq(recipeStep.recipeId, input.id), isNull(recipeStep.deletedAt)))
+    .orderBy(asc(recipeStep.order));
+
+  const steps = stepRows.map((step) => ({
+    id: step.id,
+    order: step.order,
+    text: step.text,
+    timers: (step.timers as Array<{ duration: number; label?: string }> | null) ?? undefined,
+    image: step.image ?? undefined,
+  }));
+
+  // Fetch nutrition if requested
+  let nutrition: GetRecipeOutput["nutrition"] = undefined;
+  if (input.includeNutrition) {
+    const [nutritionRow] = await db
+      .select()
+      .from(recipeNutrition)
+      .where(
+        and(eq(recipeNutrition.recipeId, input.id), isNull(recipeNutrition.deletedAt))
+      )
+      .limit(1);
+
+    if (nutritionRow) {
+      nutrition = {
+        perServing: nutritionRow.perServing,
+        calories: nutritionRow.calories ? Number(nutritionRow.calories) : undefined,
+        protein: nutritionRow.protein ? Number(nutritionRow.protein) : undefined,
+        carbohydrates: nutritionRow.carbohydrates
+          ? Number(nutritionRow.carbohydrates)
+          : undefined,
+        fat: nutritionRow.fat ? Number(nutritionRow.fat) : undefined,
+        fiber: nutritionRow.fiber ? Number(nutritionRow.fiber) : undefined,
+      };
+    }
+  }
+
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    description: recipe.description ?? undefined,
+    yieldQuantity: recipe.yieldQuantity ?? undefined,
+    yieldUnit: recipe.yieldUnit ?? undefined,
+    servings: recipe.servings ?? undefined,
+    prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
+    cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
+    totalTimeMinutes: recipe.totalTimeMinutes ?? undefined,
+    activeTimeMinutes: recipe.activeTimeMinutes ?? undefined,
+    methodTags: recipe.methodTags || [],
+    cuisine: recipe.cuisine ?? undefined,
+    course: recipe.course ?? undefined,
+    difficulty: recipe.difficulty ?? undefined,
+    equipment: recipe.equipment || [],
+    images: recipe.images || [],
+    ingredients,
+    steps,
+    nutrition,
+  };
 }
 
 export const getRecipeTool = {
