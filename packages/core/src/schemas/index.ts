@@ -4,3 +4,4 @@ export * from "./people";
 export * from "./allergens";
 export * from "./ingredients";
 export * from "./recipes";
+export * from "./plans";
