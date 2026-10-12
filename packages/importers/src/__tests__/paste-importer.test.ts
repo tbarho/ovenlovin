@@ -128,7 +128,7 @@ describe("Paste Importer", () => {
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
-        modelUsed: "openai/gpt-4o",
+        modelUsed: "xai/grok-2-latest",
       };
 
       const draft = await importer.toDraft(rawExtraction);
