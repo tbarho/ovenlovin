@@ -124,6 +124,7 @@ export interface UrlImportInput {
 export interface PasteImportInput {
   text: string;
   url?: string;
+  author?: string;
 }
 
 export interface PhotoImportInput {
