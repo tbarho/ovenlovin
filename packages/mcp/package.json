@@ -29,6 +29,7 @@
     "@ovenlovin/allergens": "workspace:*",
     "@ovenlovin/core": "workspace:*",
     "@ovenlovin/db": "workspace:*",
+    "@ovenlovin/importers": "workspace:*",
     "drizzle-orm": "^0.38.3",
     "globals": "^17.13.0",
     "zod": "^4.0.0",

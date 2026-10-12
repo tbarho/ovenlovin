@@ -1,0 +1,208 @@
+/**
+ * Unit tests for MCP tool schemas
+ */
+
+import { describe, it, expect } from "vitest";
+import {
+  searchRecipesTool,
+  getRecipeTool,
+  importRecipeTool,
+  getHouseholdContextTool,
+  getPersonRulesTool,
+  checkMealPlanTool,
+  exportShoppingListTool,
+  saveMealPlanTool,
+  getMealPlanTool,
+} from "./index.js";
+
+describe("MCP Tool Schemas", () => {
+  describe("search_recipes", () => {
+    it("validates correct input", () => {
+      const result = searchRecipesTool.inputSchema.safeParse({
+        query: "pasta",
+        maxResults: 10,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects negative maxResults", () => {
+      const result = searchRecipesTool.inputSchema.safeParse({
+        maxResults: -1,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("applies default maxResults", () => {
+      const result = searchRecipesTool.inputSchema.safeParse({});
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.maxResults).toBe(20);
+      }
+    });
+  });
+
+  describe("get_recipe", () => {
+    it("validates correct UUID", () => {
+      const result = getRecipeTool.inputSchema.safeParse({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid UUID", () => {
+      const result = getRecipeTool.inputSchema.safeParse({
+        id: "not-a-uuid",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("check_meal_plan", () => {
+    it("validates correct plan structure", () => {
+      const result = checkMealPlanTool.inputSchema.safeParse({
+        plan: {
+          weekStart: "2026-10-13",
+          entries: [
+            {
+              date: "2026-10-13",
+              meal: "dinner",
+              recipeId: "550e8400-e29b-41d4-a716-446655440000",
+              servings: 4,
+              attendees: ["person-1"],
+            },
+          ],
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid date format", () => {
+      const result = checkMealPlanTool.inputSchema.safeParse({
+        plan: {
+          weekStart: "invalid-date",
+          entries: [],
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects missing plan", () => {
+      const result = checkMealPlanTool.inputSchema.safeParse({});
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("get_person_rules", () => {
+    it("validates correct input", () => {
+      const result = getPersonRulesTool.inputSchema.safeParse({
+        personIds: ["person-1", "person-2"],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects empty personIds", () => {
+      const result = getPersonRulesTool.inputSchema.safeParse({
+        personIds: [],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("applies default includeInactive", () => {
+      const result = getPersonRulesTool.inputSchema.safeParse({
+        personIds: ["person-1"],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.includeInactive).toBe(false);
+      }
+    });
+  });
+
+  describe("save_meal_plan", () => {
+    it("validates correct input", () => {
+      const result = saveMealPlanTool.inputSchema.safeParse({
+        weekStart: "2026-10-13",
+        entries: [
+          {
+            date: "2026-10-13",
+            meal: "dinner",
+            recipeId: "550e8400-e29b-41d4-a716-446655440000",
+            servings: 4,
+            attendees: ["person-1"],
+          },
+        ],
+        checkReportJson: { status: "complete" },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("applies default status", () => {
+      const result = saveMealPlanTool.inputSchema.safeParse({
+        weekStart: "2026-10-13",
+        entries: [],
+        checkReportJson: {},
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.status).toBe("draft");
+      }
+    });
+  });
+
+  describe("export_shopping_list", () => {
+    it("validates correct input", () => {
+      const result = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("applies default format", () => {
+      const result = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.format).toBe("markdown");
+        expect(result.data.groupBy).toBe("aisle");
+      }
+    });
+
+    it("validates format enum", () => {
+      const result = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+        format: "invalid-format",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("import_recipe", () => {
+    it("validates URL source", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "url",
+        content: "https://example.com/recipe",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("validates paste source", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "paste",
+        content: "Recipe text...",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("applies default skipReview", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "url",
+        content: "https://example.com/recipe",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.skipReview).toBe(false);
+      }
+    });
+  });
+});

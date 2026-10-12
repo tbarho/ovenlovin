@@ -236,6 +236,9 @@ importers:
       '@ovenlovin/db':
         specifier: workspace:*
         version: link:../db
+      '@ovenlovin/importers':
+        specifier: workspace:*
+        version: link:../importers
       drizzle-orm:
         specifier: ^0.38.3
         version: 0.38.4(@opentelemetry/api@1.9.0)(@types/react@19.3.0)(postgres@3.4.9)(react@19.3.0)

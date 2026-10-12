@@ -6,6 +6,14 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { RecipeService, PeopleService } from "@ovenlovin/core";
+import { createDbClient, recipeIngredient } from "@ovenlovin/db";
+import { eq, and, isNull } from "drizzle-orm";
+import {
+  checkIngredientsAgainstRules,
+  type RuleCheckContext,
+  type IngredientCheckInput,
+} from "@ovenlovin/allergens";
 
 export const checkMealPlanSchema = z.object({
   plan: z.object({
@@ -61,19 +69,165 @@ export interface CheckMealPlanOutput {
 }
 
 async function handler(
-  _input: CheckMealPlanInput,
-  _context: AuthContext
+  input: CheckMealPlanInput,
+  context: AuthContext
 ): Promise<CheckMealPlanOutput> {
-  // TODO: Implement using @ovenlovin/allergens (when merged)
-  // - Load recipes
-  // - Load attendee rules
-  // - Check each entry against rules
-  // - Check schedule constraints
-  // - Return deterministic findings
+  const db = createDbClient(process.env.DATABASE_URL!);
+  const recipeService = new RecipeService(db);
+  const peopleService = new PeopleService(db);
 
-  throw new Error(
-    "Not implemented: check_meal_plan - depends on @ovenlovin/allergens rules engine"
+  const entriesResults = await Promise.all(
+    input.plan.entries.map(async (entry) => {
+      // Load recipe
+      const recipe = await recipeService.getRecipe(entry.recipeId);
+      if (!recipe) {
+        return {
+          date: entry.date,
+          meal: entry.meal,
+          recipeTitle: "[Recipe not found]",
+          findings: [],
+          scheduleIssues: [
+            {
+              type: "attendance" as const,
+              message: `Recipe ${entry.recipeId} not found`,
+            },
+          ],
+        };
+      }
+
+      // Verify recipe belongs to the household
+      if (recipe.householdId !== context.householdId) {
+        throw new Error(`Unauthorized access to recipe: ${entry.recipeId}`);
+      }
+
+      // Load recipe ingredients
+      const ingredientRows = await db
+        .select()
+        .from(recipeIngredient)
+        .where(
+          and(eq(recipeIngredient.recipeId, entry.recipeId), isNull(recipeIngredient.deletedAt))
+        );
+
+      const ingredients: IngredientCheckInput[] = ingredientRows.map((ing) => ({
+        name: ing.rawText,
+        ingredientId: ing.ingredientId ?? undefined,
+        confidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
+      }));
+
+      // Load attendee rules
+      const contexts: RuleCheckContext[] = [];
+      for (const personId of entry.attendees) {
+        const person = await peopleService.getPerson(personId);
+        if (!person) continue;
+
+        // Verify person belongs to the household
+        if (person.householdId !== context.householdId) {
+          throw new Error(`Unauthorized access to person: ${personId}`);
+        }
+
+        const rules = await peopleService.getRulesForPerson(personId);
+        for (const rule of rules) {
+          // Only check active rules
+          const now = new Date();
+          if (rule.activeFrom && new Date(rule.activeFrom) > now) continue;
+          if (rule.activeUntil && new Date(rule.activeUntil) < now) continue;
+
+          contexts.push({
+            personId: person.id,
+            personName: person.displayName,
+            rule,
+          });
+        }
+      }
+
+      // Run rule checker
+      const checkResult =
+        contexts.length > 0 && ingredients.length > 0
+          ? checkIngredientsAgainstRules(ingredients, contexts)
+          : { status: "complete" as const, findings: { block: [], warn: [], prefer_avoid: [] } };
+
+      // Convert findings to output format
+      const findings: CheckMealPlanOutput["entries"][0]["findings"] = [];
+
+      for (const finding of checkResult.findings.block) {
+        findings.push({
+          personId: finding.personId,
+          personName: finding.personName,
+          ruleId: finding.ruleId,
+          severity: "block",
+          message: finding.message,
+          evidence: {
+            ingredient: finding.ingredientName,
+            matchType:
+              finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
+            confidence: finding.confidence,
+          },
+        });
+      }
+
+      for (const finding of checkResult.findings.warn) {
+        findings.push({
+          personId: finding.personId,
+          personName: finding.personName,
+          ruleId: finding.ruleId,
+          severity: "warn",
+          message: finding.message,
+          evidence: {
+            ingredient: finding.ingredientName,
+            matchType:
+              finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
+            confidence: finding.confidence,
+          },
+        });
+      }
+
+      for (const finding of checkResult.findings.prefer_avoid) {
+        findings.push({
+          personId: finding.personId,
+          personName: finding.personName,
+          ruleId: finding.ruleId,
+          severity: "prefer_avoid",
+          message: finding.message,
+          evidence: {
+            ingredient: finding.ingredientName,
+            matchType:
+              finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
+            confidence: finding.confidence,
+          },
+        });
+      }
+
+      return {
+        date: entry.date,
+        meal: entry.meal,
+        recipeTitle: recipe.title,
+        findings,
+      };
+    })
   );
+
+  // Calculate summary
+  const overallSummary = {
+    totalEntries: entriesResults.length,
+    blockingIssues: entriesResults.reduce(
+      (sum, entry) => sum + entry.findings.filter((f) => f.severity === "block").length,
+      0
+    ),
+    warnings: entriesResults.reduce(
+      (sum, entry) => sum + entry.findings.filter((f) => f.severity === "warn").length,
+      0
+    ),
+    preferAvoidances: entriesResults.reduce(
+      (sum, entry) => sum + entry.findings.filter((f) => f.severity === "prefer_avoid").length,
+      0
+    ),
+  };
+
+  return {
+    status: "complete",
+    overallSummary,
+    entries: entriesResults,
+  };
 }
 
 export const checkMealPlanTool = {
