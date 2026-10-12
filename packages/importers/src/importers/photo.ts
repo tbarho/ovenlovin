@@ -74,6 +74,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         : "";
 
       const result = await generateObject({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         model: gateway(visionModelId) as any,
         messages: [
           {

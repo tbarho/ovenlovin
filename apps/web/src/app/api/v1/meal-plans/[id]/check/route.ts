@@ -8,6 +8,7 @@ import {
   checkMealPlan,
   type MealPlanCheckInput,
   type MealPlanEntryInput,
+  type IngredientCheckInput,
   type PersonWithRules,
 } from "@ovenlovin/allergens";
 
@@ -34,11 +35,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Build entry inputs for the checker
     const entryInputs: MealPlanEntryInput[] = await Promise.all(
       entries.map(async (entry) => {
-        let ingredients = [];
+        let ingredients: IngredientCheckInput[] = [];
         let recipeTitle: string | undefined;
 
         if (entry.recipeId) {
-          ingredients = await planService.getRecipeIngredientsForEntry(entry.recipeId);
+          const ingredientRows = await planService.getRecipeIngredientsForEntry(entry.recipeId);
+          ingredients = ingredientRows.map((ing) => ({
+            name: ing.rawText,
+          }));
           recipeTitle = (await planService.getRecipeTitle(entry.recipeId)) ?? undefined;
         }
 
