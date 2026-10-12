@@ -14,9 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const format = url.searchParams.get("format") || "json";
 
     if (!["json", "csv", "markdown", "text"].includes(format)) {
-      throw new BadRequestError(
-        "Invalid format. Must be one of: json, csv, markdown, text"
-      );
+      throw new BadRequestError("Invalid format. Must be one of: json, csv, markdown, text");
     }
 
     const db = getDatabase();
@@ -51,9 +49,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       })
     );
 
-    const aggregatedIngredients = shoppingListService.aggregateIngredients(
-      entriesWithIngredients
-    );
+    const aggregatedIngredients = shoppingListService.aggregateIngredients(entriesWithIngredients);
 
     const shoppingListData = {
       mealPlanId: plan.id,
