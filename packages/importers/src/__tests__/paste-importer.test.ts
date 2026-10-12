@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createPasteImporter } from "../importers/paste";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -17,7 +17,11 @@ vi.mock("@ai-sdk/openai", () => ({
 }));
 
 describe("Paste Importer", () => {
-  const importer = createPasteImporter({ modelId: "openai/gpt-4o" });
+  beforeEach(() => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+  });
+
+  const importer = createPasteImporter({ modelId: "xai/grok-2-latest" });
 
   describe("canHandle", () => {
     it("should accept non-empty text", () => {
@@ -66,7 +70,7 @@ describe("Paste Importer", () => {
 
       expect(result.sourceType).toBe("paste");
       expect(result.rawData.title).toBe("Classic Chocolate Chip Cookies");
-      expect(result.modelUsed).toBe("openai/gpt-4o");
+      expect(result.modelUsed).toBe("xai/grok-2-latest");
     });
 
     it("should include optional URL and author", async () => {
@@ -124,7 +128,7 @@ describe("Paste Importer", () => {
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
-        modelUsed: "openai/gpt-4o",
+        modelUsed: "xai/grok-2-latest",
       };
 
       const draft = await importer.toDraft(rawExtraction);
@@ -155,7 +159,7 @@ describe("Paste Importer", () => {
 
       expect(draft.source.type).toBe("paste");
       expect(draft.source.importerName).toBe("paste-importer");
-      expect(draft.source.modelUsed).toBe("openai/gpt-4o");
+      expect(draft.source.modelUsed).toBe("xai/grok-2-latest");
     });
 
     it("should handle missing ingredient quantity", async () => {

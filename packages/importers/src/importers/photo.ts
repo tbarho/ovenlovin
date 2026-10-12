@@ -51,7 +51,8 @@ const recipeSchema = z.object({
 });
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
-  const visionModelId = config.visionModelId || process.env.RK_MODEL_VISION || "openai/gpt-4o";
+  const visionModelId =
+    config.visionModelId || process.env.RK_MODEL_VISION || "xai/grok-vision-latest";
 
   return {
     name: "photo-importer",
@@ -64,7 +65,15 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
 
     async extract(input: PhotoImportInput): Promise<RawExtraction> {
       const { createOpenAI } = await import("@ai-sdk/openai");
-      const openai = createOpenAI();
+      const apiKey = process.env.AI_GATEWAY_API_KEY;
+      if (!apiKey) {
+        throw new Error("AI_GATEWAY_API_KEY environment variable is required");
+      }
+
+      const openai = createOpenAI({
+        apiKey,
+        baseURL: "https://gateway.ai.cloudflare.com/v1",
+      });
 
       const imageMessages = input.images.map((img) => ({
         type: "image" as const,
@@ -76,7 +85,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         : "";
 
       const result = await generateObject({
-        model: openai(visionModelId.replace(/^openai\//, "")),
+        model: openai(visionModelId),
         messages: [
           {
             role: "user",
@@ -96,10 +105,10 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         sourceType: "photo",
         sourceBlobs: input.images.map((img) => img.blob),
         rawData: {
-          ...(result.object as Record<string, unknown>),
+          ...(result.object as object),
           isHandwritten: input.isHandwritten,
           imageCount: input.images.length,
-        },
+        } as Record<string, unknown>,
         extractedAt: new Date(),
         extractorVersion: IMPORTER_VERSION,
         modelUsed: visionModelId,
