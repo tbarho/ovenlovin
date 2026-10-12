@@ -1,8 +1,8 @@
-import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
-import type { InferMetaType, InferPageType } from 'fumadocs-core/source';
+import { defineConfig, defineDocs } from "fumadocs-mdx/config";
+import type { InferMetaType, InferPageType } from "fumadocs-core/source";
 
 export const { docs, meta } = defineDocs({
-  dir: 'src/content/docs',
+  dir: "src/content/docs",
 });
 
 export default defineConfig();

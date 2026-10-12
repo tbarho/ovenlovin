@@ -1,12 +1,8 @@
-import { source } from '@/lib/source';
-import type { ReactNode } from 'react';
-import { DocsLayout } from 'fumadocs-ui/layouts/docs';
+import { source } from "@/lib/source";
+import type { ReactNode } from "react";
+import { DocsLayout } from "fumadocs-ui/layouts/docs";
 
-export default function Layout({
-  children,
-}: {
-  children: ReactNode;
-}): React.ReactElement {
+export default function Layout({ children }: { children: ReactNode }): React.ReactElement {
   return (
     <DocsLayout
       tree={source.pageTree}
@@ -16,12 +12,12 @@ export default function Layout({
             <span className="text-primary">OvenLovin</span>
           </span>
         ),
-        url: '/',
+        url: "/",
       }}
       links={[
         {
-          text: 'GitHub',
-          url: 'https://github.com/tbarho/ovenlovin',
+          text: "GitHub",
+          url: "https://github.com/tbarho/ovenlovin",
           external: true,
         },
       ]}

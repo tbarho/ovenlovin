@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { BookOpen, Code, Zap, Shield, Users, Bot } from 'lucide-react';
+import Link from "next/link";
+import { BookOpen, Code, Zap, Shield, Users, Bot } from "lucide-react";
 
 export default function HomePage(): React.ReactElement {
   return (
@@ -9,7 +9,8 @@ export default function HomePage(): React.ReactElement {
           <span className="text-primary">OvenLovin</span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl">
-          LLM-optimized recipe and family meal-planning platform. Built for AI agents to help families manage weekly meal planning with per-person dietary rules and allergy checking.
+          LLM-optimized recipe and family meal-planning platform. Built for AI agents to help
+          families manage weekly meal planning with per-person dietary rules and allergy checking.
         </p>
         <div className="flex gap-4 mt-4">
           <Link
@@ -64,9 +65,7 @@ export default function HomePage(): React.ReactElement {
 
       <div className="border border-border rounded-lg p-8 bg-card">
         <h2 className="text-2xl font-bold mb-4">Quick Start</h2>
-        <p className="text-muted-foreground mb-4">
-          Deploy to Vercel in one click or run locally:
-        </p>
+        <p className="text-muted-foreground mb-4">Deploy to Vercel in one click or run locally:</p>
         <div className="bg-background border border-border rounded-md p-4 font-mono text-sm">
           <div className="text-muted-foreground mb-2"># Clone the repository</div>
           <div>git clone https://github.com/tbarho/ovenlovin.git</div>
