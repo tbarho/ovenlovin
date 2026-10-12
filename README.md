@@ -1,4 +1,4 @@
-# recipe-kit
+# OvenLovin
 
 > ⚠️ **Pre-alpha — no app code yet.** The design spec lives in [issue #1](../../issues/1).
 
