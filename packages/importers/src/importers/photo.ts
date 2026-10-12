@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 import { generateObject } from "ai";
+import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
 import type {
   Importer,
@@ -51,8 +52,7 @@ const recipeSchema = z.object({
 });
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
-  const visionModelId =
-    config.visionModelId || process.env.RK_MODEL_VISION || "xai/grok-vision-latest";
+  const visionModelId = config.visionModelId || process.env.RK_MODEL_VISION || "spacexai/grok-4.7";
 
   return {
     name: "photo-importer",
@@ -64,17 +64,6 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
     },
 
     async extract(input: PhotoImportInput): Promise<RawExtraction> {
-      const { createOpenAI } = await import("@ai-sdk/openai");
-      const apiKey = process.env.AI_GATEWAY_API_KEY;
-      if (!apiKey) {
-        throw new Error("AI_GATEWAY_API_KEY environment variable is required");
-      }
-
-      const openai = createOpenAI({
-        apiKey,
-        baseURL: "https://gateway.ai.cloudflare.com/v1",
-      });
-
       const imageMessages = input.images.map((img) => ({
         type: "image" as const,
         image: img.blob,
@@ -85,7 +74,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         : "";
 
       const result = await generateObject({
-        model: openai(visionModelId),
+        model: gateway(visionModelId) as any,
         messages: [
           {
             role: "user",
