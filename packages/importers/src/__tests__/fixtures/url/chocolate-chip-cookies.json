@@ -1,0 +1,54 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  "name": "Classic Chocolate Chip Cookies",
+  "description": "The best chocolate chip cookies - soft, chewy, and packed with chocolate chips!",
+  "image": "https://example.com/cookies.jpg",
+  "author": {
+    "@type": "Person",
+    "name": "Chef Baker"
+  },
+  "prepTime": "PT15M",
+  "cookTime": "PT12M",
+  "totalTime": "PT27M",
+  "recipeYield": "24",
+  "recipeIngredient": [
+    "2 1/4 cups all-purpose flour",
+    "1 tsp baking soda",
+    "1 tsp salt",
+    "1 cup butter, softened",
+    "3/4 cup granulated sugar",
+    "3/4 cup packed brown sugar",
+    "2 large eggs",
+    "2 tsp vanilla extract",
+    "2 cups chocolate chips"
+  ],
+  "recipeInstructions": [
+    {
+      "@type": "HowToStep",
+      "text": "Preheat oven to 375°F (190°C)."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Combine flour, baking soda, and salt in a small bowl."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Beat butter, granulated sugar, and brown sugar until creamy. Add eggs and vanilla extract; beat well."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Gradually beat in flour mixture. Stir in chocolate chips."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Drop rounded tablespoons of dough onto ungreased baking sheets."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Bake for 9 to 11 minutes or until golden brown. Cool on baking sheets for 2 minutes; remove to wire racks."
+    }
+  ],
+  "recipeCuisine": "American",
+  "recipeCategory": "Dessert"
+}
