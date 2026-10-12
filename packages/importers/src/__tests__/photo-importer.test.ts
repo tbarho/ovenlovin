@@ -20,7 +20,7 @@ describe("Photo Importer", () => {
     vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
   });
 
-  const importer = createPhotoImporter({ visionModelId: "xai/grok-vision-beta" });
+  const importer = createPhotoImporter({ visionModelId: "spacexai/grok-4.7" });
 
   describe("canHandle", () => {
     it("should accept images", () => {
@@ -68,7 +68,7 @@ describe("Photo Importer", () => {
       expect(result.sourceType).toBe("photo");
       expect(result.rawData.title).toBe("Grandma's Ginger Snaps");
       expect(result.rawData.isHandwritten).toBe(true);
-      expect(result.modelUsed).toBe("xai/grok-vision-beta");
+      expect(result.modelUsed).toBe("spacexai/grok-4.7");
     });
 
     it("should handle multiple images", async () => {
@@ -104,7 +104,7 @@ describe("Photo Importer", () => {
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
-        modelUsed: "xai/grok-vision-beta",
+        modelUsed: "spacexai/grok-4.7",
       };
 
       const draft = await importer.toDraft(rawExtraction);
