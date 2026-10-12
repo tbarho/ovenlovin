@@ -1,0 +1,407 @@
+---
+title: Recipe Importers
+description: Import recipes from URLs, photos, or pasted text into OvenLovin
+---
+
+OvenLovin supports multiple recipe import methods to make it easy to add recipes from any source. All importers extract recipe data, parse ingredients and instructions, and calculate confidence scores for quality validation.
+
+## URL Import
+
+Import recipes directly from recipe websites that use Schema.org Recipe markup.
+
+### How It Works
+
+The URL importer:
+
+1. Fetches the HTML from the provided URL
+2. Extracts Schema.org Recipe JSON-LD structured data
+3. Parses ingredients, instructions, nutrition, and metadata
+4. Calculates confidence scores based on completeness
+5. Returns a validated recipe draft
+
+### Supported Sites
+
+Any website that includes Schema.org Recipe JSON-LD markup, including:
+
+- AllRecipes
+- Food Network
+- NYT Cooking
+- Serious Eats
+- Bon Appétit
+- Most food blogs (WordPress, Wix, etc.)
+
+### Usage
+
+#### Via MCP Tool
+
+```typescript
+{
+  "tool": "import_recipe",
+  "input": {
+    "type": "url",
+    "url": "https://example.com/recipe/chocolate-chip-cookies"
+  }
+}
+```
+
+#### Via REST API
+
+```bash
+curl -X POST https://your-app.vercel.app/api/v1/recipes/import \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "url",
+    "url": "https://example.com/recipe/chocolate-chip-cookies"
+  }'
+```
+
+#### Programmatic (TypeScript)
+
+```typescript
+import { createUrlImporter } from "@ovenlovin/importers";
+
+const importer = createUrlImporter();
+
+// Check if URL can be imported
+if (importer.canHandle({ url: "https://example.com/recipe" })) {
+  // Extract raw data
+  const extraction = await importer.extract({
+    url: "https://example.com/recipe"
+  });
+
+  // Convert to recipe draft
+  const draft = await importer.toDraft(extraction);
+  
+  console.log(draft.title);
+  console.log(draft.confidence.overall); // 0.0 - 1.0
+}
+```
+
+### What Gets Extracted
+
+- **Title** and description
+- **Ingredients** with quantities and units
+- **Instructions** with step-by-step text
+- **Servings** and yield
+- **Times** (prep, cook, total)
+- **Nutrition** (if available in JSON-LD)
+- **Images** (primary and gallery)
+- **Cuisine** and course/category
+- **Author** and attribution
+- **Method tags** (detected from ingredients/steps)
+
+### Confidence Scoring
+
+Each imported recipe receives confidence scores:
+
+```typescript
+{
+  confidence: {
+    overall: 0.85,          // Combined score
+    structure: 0.9,         // Has title, ingredients, steps
+    ingredients: 0.8,       // Ingredient quality
+    instructions: 0.9,      // Instruction quality
+    metadata: 0.7           // Times, servings, images
+  }
+}
+```
+
+**Score ranges:**
+
+- `0.9 - 1.0`: Excellent (complete, well-structured)
+- `0.7 - 0.89`: Good (minor gaps acceptable)
+- `0.5 - 0.69`: Fair (review recommended)
+- `< 0.5`: Poor (manual editing required)
+
+## Photo Import (OCR)
+
+Extract recipes from photos of recipe cards, cookbook pages, or handwritten notes using optical character recognition.
+
+### How It Works
+
+The photo importer:
+
+1. Accepts image file (JPEG, PNG, WebP)
+2. Uploads to Vercel Blob storage
+3. Sends to vision model (default: `spacexai/grok-4.7`) for OCR
+4. Parses extracted text into structured recipe format
+5. Returns draft with confidence scores
+
+### Usage
+
+#### Via MCP Tool
+
+```typescript
+{
+  "tool": "import_recipe",
+  "input": {
+    "type": "photo",
+    "imageUrl": "https://blob.vercel-storage.com/recipe-card-abc123.jpg"
+  }
+}
+```
+
+#### Via REST API
+
+```bash
+# First, upload image to get URL
+curl -X POST https://your-app.vercel.app/api/v1/upload \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@recipe-card.jpg"
+
+# Then import from the returned URL
+curl -X POST https://your-app.vercel.app/api/v1/recipes/import \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "photo",
+    "imageUrl": "https://blob.vercel-storage.com/..."
+  }'
+```
+
+#### Programmatic (TypeScript)
+
+```typescript
+import { createPhotoImporter } from "@ovenlovin/importers";
+
+const importer = createPhotoImporter({
+  blobToken: process.env.BLOB_READ_WRITE_TOKEN,
+  aiGatewayKey: process.env.AI_GATEWAY_API_KEY,
+  visionModel: process.env.RK_MODEL_VISION || "spacexai/grok-4.7"
+});
+
+// Import from uploaded image URL
+if (importer.canHandle({ imageUrl: "https://..." })) {
+  const extraction = await importer.extract({
+    imageUrl: "https://blob.vercel-storage.com/recipe.jpg"
+  });
+
+  const draft = await importer.toDraft(extraction);
+  console.log(draft.title);
+}
+```
+
+### Supported Image Types
+
+- **JPEG** / JPG
+- **PNG**
+- **WebP**
+
+### Best Results
+
+For optimal OCR quality:
+
+- **Lighting**: Even, bright lighting without glare
+- **Focus**: Clear, sharp image (not blurry)
+- **Angle**: Flat, head-on perspective (avoid skew)
+- **Resolution**: At least 1024x768 pixels
+- **Text size**: Recipe text should be readable when zoomed in
+- **Handwriting**: Print is better than cursive
+
+### OCR Limitations
+
+- **Accuracy**: 85-95% for printed text, lower for handwriting
+- **Layout**: Complex multi-column layouts may need manual review
+- **Languages**: English recommended; other languages may have lower accuracy
+- **Quality**: Confidence scores will reflect OCR uncertainty
+
+## Paste Import
+
+Parse recipes from pasted plain text, including recipes copied from emails, PDFs, or screenshots.
+
+### How It Works
+
+The paste importer:
+
+1. Accepts plain text input
+2. Sends to LLM (default: `spacexai/grok-4.7`) for parsing
+3. Identifies title, ingredients, instructions, and metadata
+4. Structures data into recipe format
+5. Returns draft with confidence scores
+
+### Usage
+
+#### Via MCP Tool
+
+```typescript
+{
+  "tool": "import_recipe",
+  "input": {
+    "type": "paste",
+    "text": "Chocolate Chip Cookies\n\nIngredients:\n2 1/4 cups flour\n..."
+  }
+}
+```
+
+#### Via REST API
+
+```bash
+curl -X POST https://your-app.vercel.app/api/v1/recipes/import \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "paste",
+    "text": "Chocolate Chip Cookies\n\nIngredients:\n2 1/4 cups flour\n1 cup butter\n..."
+  }'
+```
+
+#### Programmatic (TypeScript)
+
+```typescript
+import { createPasteImporter } from "@ovenlovin/importers";
+
+const importer = createPasteImporter({
+  aiGatewayKey: process.env.AI_GATEWAY_API_KEY,
+  defaultModel: process.env.RK_MODEL_DEFAULT || "spacexai/grok-4.7"
+});
+
+const text = `
+Chocolate Chip Cookies
+
+Ingredients:
+- 2 1/4 cups all-purpose flour
+- 1 cup butter, softened
+- 2 cups chocolate chips
+
+Instructions:
+1. Preheat oven to 375°F
+2. Mix butter and sugar
+3. Add flour gradually
+4. Fold in chocolate chips
+5. Bake for 10-12 minutes
+`;
+
+if (importer.canHandle({ text })) {
+  const extraction = await importer.extract({ text });
+  const draft = await importer.toDraft(extraction);
+  console.log(draft.ingredients.length); // 3
+}
+```
+
+### Supported Text Formats
+
+The paste importer handles various formats:
+
+- **Structured** (clearly labeled sections)
+- **Semi-structured** (some headings)
+- **Unstructured** (narrative format)
+- **Bullet points** or numbered lists
+- **Mixed** (ingredients as list, instructions as paragraphs)
+
+### Example Formats
+
+#### Structured
+
+```text
+Chocolate Chip Cookies
+
+Ingredients:
+- 2 1/4 cups flour
+- 1 cup butter
+
+Instructions:
+1. Preheat oven
+2. Mix ingredients
+```
+
+#### Semi-Structured
+
+```text
+CHOCOLATE CHIP COOKIES
+
+2 1/4 cups flour
+1 cup butter
+2 cups chocolate chips
+
+Preheat oven to 375. Mix butter and sugar. 
+Add flour. Fold in chips. Bake 10-12 minutes.
+```
+
+#### Narrative
+
+```text
+To make chocolate chip cookies, you'll need 2 1/4 cups 
+of flour, 1 cup of butter, and 2 cups of chocolate chips.
+
+First, preheat your oven to 375 degrees. Mix the butter 
+and sugar together, then gradually add the flour...
+```
+
+## Confidence Scores
+
+All importers calculate confidence scores to help you identify recipes that may need review.
+
+### Score Components
+
+```typescript
+{
+  confidence: {
+    overall: 0.85,          // Combined score (weighted average)
+    structure: 0.9,         // Has required fields (title, ingredients, steps)
+    ingredients: 0.8,       // Ingredient parsing quality
+    instructions: 0.9,      // Instruction parsing quality
+    metadata: 0.7           // Optional fields (times, servings, images)
+  },
+  issues: [                 // Specific problems detected
+    {
+      field: "servings",
+      severity: "warning",
+      message: "Servings not found; defaulting to 4"
+    }
+  ]
+}
+```
+
+### Quality Guidelines
+
+| Overall Score | Recommendation | Action |
+|--------------|----------------|--------|
+| 0.9 - 1.0 | Excellent | Ready to use |
+| 0.7 - 0.89 | Good | Minor review recommended |
+| 0.5 - 0.69 | Fair | Review and edit before use |
+| < 0.5 | Poor | Requires manual editing |
+
+### Common Issues
+
+**Low Structure Score:**
+- Missing title
+- No ingredients or instructions
+- Malformed data
+
+**Low Ingredient Score:**
+- Few ingredients detected (< 3)
+- No quantities or units
+- Ambiguous ingredient names
+
+**Low Instruction Score:**
+- Few steps (< 2)
+- Steps are too short or vague
+- No cooking instructions detected
+
+**Low Metadata Score:**
+- Missing prep/cook times
+- No servings specified
+- No images available
+
+## Import Strategy
+
+For best results, use importers in this order:
+
+1. **URL Import** (highest quality)
+   - Use when recipe is on a website
+   - Most reliable and complete
+
+2. **Photo Import** (good for physical media)
+   - Use for recipe cards, cookbooks
+   - Requires good lighting and focus
+
+3. **Paste Import** (flexible fallback)
+   - Use for email recipes, PDFs, or OCR text
+   - Most forgiving of format variations
+
+## Next Steps
+
+- [Self-Hosting Guide](./self-hosting) - Set up API keys for importers
+- [Connect Your Agent](./agents) - Use importers via MCP or REST API
+- [CLI Reference](./cli) - Import recipes from the command line
