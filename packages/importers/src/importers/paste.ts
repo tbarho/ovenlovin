@@ -30,7 +30,10 @@ const recipeSchema = z.object({
         quantity: z.string().optional().describe("Quantity (e.g., '2', '1/4', '2-3')"),
         unit: z.string().optional().describe("Unit of measurement"),
         ingredient: z.string().optional().describe("Ingredient name"),
-        preparation: z.string().optional().describe("Preparation notes (e.g., 'diced', 'softened')"),
+        preparation: z
+          .string()
+          .optional()
+          .describe("Preparation notes (e.g., 'diced', 'softened')"),
         optional: z.boolean().optional().describe("Is this ingredient optional?"),
       })
     )
@@ -86,9 +89,12 @@ ${input.text}`,
       const title = typeof recipe.title === "string" ? recipe.title : "";
       const description = typeof recipe.description === "string" ? recipe.description : undefined;
       const servings = typeof recipe.servings === "number" ? recipe.servings : undefined;
-      const prepTime = typeof recipe.prepTimeMinutes === "number" ? recipe.prepTimeMinutes : undefined;
-      const cookTime = typeof recipe.cookTimeMinutes === "number" ? recipe.cookTimeMinutes : undefined;
-      const totalTime = typeof recipe.totalTimeMinutes === "number" ? recipe.totalTimeMinutes : undefined;
+      const prepTime =
+        typeof recipe.prepTimeMinutes === "number" ? recipe.prepTimeMinutes : undefined;
+      const cookTime =
+        typeof recipe.cookTimeMinutes === "number" ? recipe.cookTimeMinutes : undefined;
+      const totalTime =
+        typeof recipe.totalTimeMinutes === "number" ? recipe.totalTimeMinutes : undefined;
       const cuisine = typeof recipe.cuisine === "string" ? recipe.cuisine : undefined;
       const course = typeof recipe.course === "string" ? recipe.course : undefined;
 

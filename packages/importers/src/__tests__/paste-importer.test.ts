@@ -34,7 +34,7 @@ describe("Paste Importer", () => {
   describe("extract", () => {
     it("should extract recipe using LLM", async () => {
       const { generateObject } = await import("ai");
-      
+
       (generateObject as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         object: {
           title: "Classic Chocolate Chip Cookies",
@@ -71,7 +71,7 @@ describe("Paste Importer", () => {
 
     it("should include optional URL and author", async () => {
       const { generateObject } = await import("ai");
-      
+
       (generateObject as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         object: {
           title: "Test Recipe",
@@ -236,10 +236,7 @@ describe("Paste Importer", () => {
         rawData: {
           title: "Test Recipe",
           ingredients: [{ text: "flour" }],
-          steps: [
-            { text: "Bake for 30 minutes at 350°F" },
-            { text: "Let cool for 10 minutes" },
-          ],
+          steps: [{ text: "Bake for 30 minutes at 350°F" }, { text: "Let cool for 10 minutes" }],
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
