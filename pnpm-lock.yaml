@@ -57,6 +57,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@ovenlovin/db':
+        specifier: workspace:*
+        version: link:../db
       zod:
         specifier: ^3.24.1
         version: 3.25.76

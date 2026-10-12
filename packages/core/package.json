@@ -16,6 +16,7 @@
     "clean": "rm -rf dist node_modules .turbo"
   },
   "dependencies": {
+    "@ovenlovin/db": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {
