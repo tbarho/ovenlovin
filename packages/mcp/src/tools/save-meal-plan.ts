@@ -52,7 +52,7 @@ async function handler(
     checkedAt: new Date().toISOString(),
     acknowledgedWarnings: input.acknowledgedWarnings ?? [],
     needsRecheck: false,
-    createdBy: context.userId,
+    createdBy: context.userId as string,
   });
 
   // Create entries

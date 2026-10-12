@@ -73,7 +73,7 @@ async function handler(
     visibility: "private",
     version: 1,
     isFamilyRecipe: false,
-    createdBy: context.userId,
+    createdBy: context.userId as string,
   });
 
   // TODO: Create ingredients and steps (need to add those methods to RecipeService)
