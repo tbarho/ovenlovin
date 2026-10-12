@@ -63,7 +63,7 @@ async function handler(
     cookTimeMinutes: draft.cookTimeMinutes ?? null,
     totalTimeMinutes: draft.totalTimeMinutes ?? null,
     activeTimeMinutes: draft.activeTimeMinutes ?? null,
-    methodTags: draft.methodTags as any ?? [],
+    methodTags: (draft.methodTags as any) ?? [],
     cuisine: draft.cuisine ?? null,
     course: draft.course ?? null,
     difficulty: draft.difficulty ?? null,

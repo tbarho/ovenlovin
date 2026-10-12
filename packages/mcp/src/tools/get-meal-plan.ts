@@ -49,10 +49,7 @@ export interface GetMealPlanOutput {
   acknowledgedWarnings: string[];
 }
 
-async function handler(
-  input: GetMealPlanInput,
-  context: AuthContext
-): Promise<GetMealPlanOutput> {
+async function handler(input: GetMealPlanInput, context: AuthContext): Promise<GetMealPlanOutput> {
   const db = createDbClient(process.env.DATABASE_URL!);
   const planService = new PlanService(db);
   const recipeService = new RecipeService(db);

@@ -63,7 +63,7 @@ async function handler(
       }
 
       const allRules = await peopleService.getRulesForPerson(personId);
-      
+
       // Filter inactive rules if not requested
       const rules = input.includeInactive
         ? allRules

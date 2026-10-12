@@ -158,7 +158,8 @@ async function handler(
           message: finding.message,
           evidence: {
             ingredient: finding.ingredientName,
-            matchType: finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
+            matchType:
+              finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
             confidence: finding.confidence,
           },
         });
@@ -173,7 +174,8 @@ async function handler(
           message: finding.message,
           evidence: {
             ingredient: finding.ingredientName,
-            matchType: finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
+            matchType:
+              finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
             confidence: finding.confidence,
           },
         });
@@ -188,7 +190,8 @@ async function handler(
           message: finding.message,
           evidence: {
             ingredient: finding.ingredientName,
-            matchType: finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
+            matchType:
+              finding.relation === "commonly_cross_contact" ? "cross_contact" : finding.relation,
             confidence: finding.confidence,
           },
         });

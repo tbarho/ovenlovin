@@ -160,9 +160,7 @@ async function handler(
   } else if (input.format === "csv") {
     const lines = ["Ingredient,Quantity,Unit,Recipe"];
     for (const ing of allIngredients) {
-      lines.push(
-        `"${ing.text}",${ing.quantity ?? ""},${ing.unit ?? ""},"${ing.recipeTitle}"`
-      );
+      lines.push(`"${ing.text}",${ing.quantity ?? ""},${ing.unit ?? ""},"${ing.recipeTitle}"`);
     }
     content = lines.join("\n");
   } else if (input.format === "text") {

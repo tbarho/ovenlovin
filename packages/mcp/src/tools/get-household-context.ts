@@ -85,11 +85,11 @@ async function handler(
   // Get people with rule summaries if requested
   if (input.includePeople) {
     const peopleResult = await peopleService.listPeopleByHousehold(context.householdId);
-    
+
     const peopleWithRules = await Promise.all(
       peopleResult.items.map(async (person) => {
         const rules = await peopleService.getRulesForPerson(person.id);
-        
+
         // Count rules by severity
         const rulesSummary = {
           blockCount: rules.filter((r) => r.severity === "block").length,
@@ -98,9 +98,7 @@ async function handler(
         };
 
         // Calculate age if birth year is available
-        const age = person.birthYear
-          ? new Date().getFullYear() - person.birthYear
-          : undefined;
+        const age = person.birthYear ? new Date().getFullYear() - person.birthYear : undefined;
 
         // Collect label notes from rules
         const labelNotes = rules.filter((r) => r.label).map((r) => r.label!);
