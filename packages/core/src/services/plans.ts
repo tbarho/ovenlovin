@@ -76,7 +76,9 @@ export class PlanService extends BaseService {
 
   async updateMealPlan(
     id: string,
-    data: Partial<Omit<MealPlan, "id" | "createdAt" | "updatedAt" | "deletedAt" | "createdBy" | "householdId">>
+    data: Partial<
+      Omit<MealPlan, "id" | "createdAt" | "updatedAt" | "deletedAt" | "createdBy" | "householdId">
+    >
   ): Promise<MealPlan | null> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = { ...data, updatedAt: new Date() };

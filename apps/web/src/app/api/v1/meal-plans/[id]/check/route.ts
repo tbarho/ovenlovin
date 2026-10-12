@@ -4,7 +4,12 @@ import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { PlanService, PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
-import { checkMealPlan, type MealPlanCheckInput, type MealPlanEntryInput, type PersonWithRules } from "@ovenlovin/allergens";
+import {
+  checkMealPlan,
+  type MealPlanCheckInput,
+  type MealPlanEntryInput,
+  type PersonWithRules,
+} from "@ovenlovin/allergens";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
