@@ -38,10 +38,7 @@ export const apiKey = pgTable("api_key", {
   name: varchar("name", { length: 255 }).notNull(),
   keyHash: varchar("key_hash", { length: 255 }).notNull(),
   keyPrefix: varchar("key_prefix", { length: 16 }).notNull(),
-  scopes: text("scopes")
-    .array()
-    .notNull()
-    .default([]),
+  scopes: text("scopes").array().notNull().default([]),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),

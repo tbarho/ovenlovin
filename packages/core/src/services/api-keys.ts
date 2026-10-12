@@ -3,21 +3,14 @@ import { eq, and } from "drizzle-orm";
 import { apiKey } from "@ovenlovin/db/schema";
 import type { DbClient } from "@ovenlovin/db/client";
 import { BaseService } from "./base";
-import type {
-  ApiKey,
-  ApiKeyWithPlaintext,
-  CreateApiKeyInput,
-} from "../schemas/households";
+import type { ApiKey, ApiKeyWithPlaintext, CreateApiKeyInput } from "../schemas/households";
 
 export class ApiKeyService extends BaseService {
   constructor(db: DbClient) {
     super(db);
   }
 
-  async create(
-    input: CreateApiKeyInput,
-    createdBy: string
-  ): Promise<ApiKeyWithPlaintext> {
+  async create(input: CreateApiKeyInput, createdBy: string): Promise<ApiKeyWithPlaintext> {
     const plaintext = this.generateKey();
     const keyHash = this.hashKey(plaintext);
     const keyPrefix = plaintext.slice(0, 8);
@@ -57,9 +50,7 @@ export class ApiKeyService extends BaseService {
     };
   }
 
-  async validate(
-    plaintext: string
-  ): Promise<{ valid: false } | { valid: true; key: ApiKey }> {
+  async validate(plaintext: string): Promise<{ valid: false } | { valid: true; key: ApiKey }> {
     const keyHash = this.hashKey(plaintext);
 
     const [found] = await this._db
@@ -84,10 +75,7 @@ export class ApiKeyService extends BaseService {
       return { valid: false };
     }
 
-    await this._db
-      .update(apiKey)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(apiKey.id, found.id));
+    await this._db.update(apiKey).set({ lastUsedAt: new Date() }).where(eq(apiKey.id, found.id));
 
     return {
       valid: true,
@@ -117,10 +105,7 @@ export class ApiKeyService extends BaseService {
   }
 
   async listForHousehold(householdId: string): Promise<ApiKey[]> {
-    const keys = await this._db
-      .select()
-      .from(apiKey)
-      .where(eq(apiKey.householdId, householdId));
+    const keys = await this._db.select().from(apiKey).where(eq(apiKey.householdId, householdId));
 
     return keys.map((k) => ({
       id: k.id,
