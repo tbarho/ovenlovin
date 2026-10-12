@@ -22,3 +22,13 @@ export {
   type RuleCheckFinding,
   type RuleCheckResult,
 } from "./rule-checker";
+
+export {
+  checkMealPlan,
+  type MealPlanCheckInput,
+  type MealPlanEntryInput,
+  type PersonWithRules,
+  type EntryCheckResult,
+  type PersonCheckResult,
+  type MealPlanCheckResult,
+} from "./meal-plan-checker";
