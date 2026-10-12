@@ -16,7 +16,7 @@ export class ApiError extends Error {
     public type: string,
     public title: string,
     public detail?: string,
-    public extensions?: Record<string, unknown>,
+    public extensions?: Record<string, unknown>
   ) {
     super(title);
     this.name = "ApiError";
@@ -45,13 +45,7 @@ export class ApiError extends Error {
 
 export class BadRequestError extends ApiError {
   constructor(detail?: string, extensions?: Record<string, unknown>) {
-    super(
-      400,
-      "https://ovenlovin.dev/problems/bad-request",
-      "Bad Request",
-      detail,
-      extensions,
-    );
+    super(400, "https://ovenlovin.dev/problems/bad-request", "Bad Request", detail, extensions);
   }
 }
 
@@ -104,7 +98,7 @@ export class InternalServerError extends ApiError {
       500,
       "https://ovenlovin.dev/problems/internal-server-error",
       "Internal Server Error",
-      detail,
+      detail
     );
   }
 }

@@ -7,7 +7,7 @@ export function jsonResponse<T>(data: T, status = 200): NextResponse {
 
 export function paginatedResponse<T>(
   data: PaginatedResponse<T>,
-  status = 200,
+  status = 200
 ): NextResponse<PaginatedResponse<T>> {
   return NextResponse.json(data, { status });
 }
