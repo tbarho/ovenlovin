@@ -3,10 +3,8 @@
  */
 
 import { createServer as createHTTPServer } from "http";
-import { createServer } from "../server.js";
 
 export async function createMockServer(port: number, apiKey: string) {
-  const mcpServer = createServer();
 
   const httpServer = createHTTPServer(async (req, res) => {
     // CORS headers for testing
