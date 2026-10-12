@@ -1,0 +1,302 @@
+---
+title: Self-Hosting Guide
+description: Deploy OvenLovin to your own infrastructure with Vercel, Neon, and Clerk
+---
+
+## Environment Variables
+
+OvenLovin requires the following environment variables to function. Set these in your hosting platform or `.env.local` file for local development.
+
+| Variable | Required | Description | Where to Get |
+|----------|----------|-------------|--------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string | [Neon Console](https://console.neon.tech) or your database provider |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for authentication | [Clerk Dashboard](https://dashboard.clerk.com) → API Keys |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key for server-side auth | [Clerk Dashboard](https://dashboard.clerk.com) → API Keys |
+| `BLOB_READ_WRITE_TOKEN` | Yes | Vercel Blob storage token for recipe photos and OCR | [Vercel Storage](https://vercel.com/dashboard/stores) → Create Blob Store |
+| `AI_GATEWAY_API_KEY` | Yes | Vercel AI Gateway API key for LLM operations | [Vercel AI Gateway](https://vercel.com/docs/ai) |
+| `USDA_FDC_API_KEY` | Yes | USDA FoodData Central API key for nutrition data | [FoodData Central](https://fdc.nal.usda.gov/api-key-signup.html) |
+| `RK_MODEL_DEFAULT` | No | Default LLM model (default: `spacexai/grok-4.7`) | N/A - set custom model |
+| `RK_MODEL_VISION` | No | Vision model for OCR (default: `spacexai/grok-4.7`) | N/A - set custom model |
+| `RK_MODEL_STT` | No | Speech-to-text model (default: `openai/whisper-1`) | N/A - set custom model |
+
+### Getting API Keys
+
+#### Neon (Database)
+
+1. Sign up at [console.neon.tech](https://console.neon.tech)
+2. Create a new project
+3. Copy the connection string (starts with `postgresql://`)
+4. Set as `DATABASE_URL`
+
+#### Clerk (Authentication)
+
+1. Sign up at [dashboard.clerk.com](https://dashboard.clerk.com)
+2. Create a new application
+3. Go to **API Keys** in the sidebar
+4. Copy:
+   - **Publishable Key** → `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+   - **Secret Key** → `CLERK_SECRET_KEY`
+
+#### Vercel Blob (Storage)
+
+1. Go to [vercel.com/dashboard/stores](https://vercel.com/dashboard/stores)
+2. Click **Create Database** → **Blob**
+3. Name your store (e.g., `ovenlovin-uploads`)
+4. Copy the **Read Write Token** → `BLOB_READ_WRITE_TOKEN`
+
+#### Vercel AI Gateway
+
+1. Follow the [Vercel AI Gateway setup guide](https://vercel.com/docs/ai)
+2. Create a gateway and obtain an API key
+3. Set as `AI_GATEWAY_API_KEY`
+
+#### USDA FoodData Central
+
+1. Go to [fdc.nal.usda.gov/api-key-signup.html](https://fdc.nal.usda.gov/api-key-signup.html)
+2. Sign up for a free API key
+3. Set as `USDA_FDC_API_KEY`
+
+## Deploy to Vercel
+
+The fastest way to deploy OvenLovin is using Vercel's one-click deployment.
+
+### One-Click Deploy
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&project-name=ovenlovin&repository-name=ovenlovin&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://github.com/tbarho/ovenlovin&demo-image=https://vercel.com/api/www/avatar?u=ovenlovin&s=128&integration-ids=oac_nEXJBbvUWwjlcyqXeFz6ybeh)
+
+The one-click deploy will:
+
+1. Fork the repository to your GitHub account
+2. Create a new Vercel project
+3. Prompt for environment variables
+4. Deploy the Next.js application
+
+### Manual Vercel Deploy
+
+If you prefer to deploy manually:
+
+```bash
+# Clone the repository
+git clone https://github.com/tbarho/ovenlovin.git
+cd ovenlovin
+
+# Install Vercel CLI
+pnpm add -g vercel
+
+# Link to Vercel project
+vercel link
+
+# Set environment variables
+vercel env add DATABASE_URL
+vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+vercel env add CLERK_SECRET_KEY
+vercel env add BLOB_READ_WRITE_TOKEN
+vercel env add AI_GATEWAY_API_KEY
+vercel env add USDA_FDC_API_KEY
+
+# Deploy
+vercel --prod
+```
+
+## Neon Database Setup
+
+OvenLovin uses Neon as the recommended PostgreSQL provider for serverless deployments.
+
+### Create Database
+
+1. Sign up at [console.neon.tech](https://console.neon.tech)
+2. Click **Create Project**
+3. Choose:
+   - **Name**: `ovenlovin`
+   - **Region**: closest to your users
+   - **PostgreSQL Version**: 16 or later
+4. Click **Create Project**
+
+### Get Connection String
+
+After project creation:
+
+1. Go to **Dashboard** → **Connection Details**
+2. Copy the connection string:
+   ```
+   postgresql://user:password@ep-xyz.region.aws.neon.tech/neondb
+   ```
+3. Add to your environment variables as `DATABASE_URL`
+
+### Vercel Integration (Recommended)
+
+For automatic configuration:
+
+1. In Vercel project settings, go to **Integrations**
+2. Add **Neon** integration
+3. Authorize and connect your Neon project
+4. `DATABASE_URL` will be automatically configured
+
+## Clerk Organizations Setup
+
+OvenLovin uses Clerk Organizations to represent households. Each household is a Clerk Organization.
+
+### Enable Organizations
+
+1. Go to [dashboard.clerk.com](https://dashboard.clerk.com)
+2. Select your application
+3. Go to **Configure** → **Organizations**
+4. Toggle **Enable Organizations**
+5. Configure:
+   - **Organization Name**: Required
+   - **Roles**: Keep default (admin, member)
+   - **Permissions**: Default settings work well
+
+### Organization Settings
+
+Recommended settings:
+
+- **Maximum organizations per user**: 5 (one person can be in multiple households)
+- **Allow members to leave**: Yes
+- **Require admin approval for new members**: No (family invitations)
+- **Delete organization when last admin leaves**: Yes
+
+### Domain Restrictions
+
+For families, you typically want:
+
+- **Domains**: None (allow any email)
+- **Verified domains**: Not required
+
+## Database Migrations
+
+After deploying and connecting your database, run migrations to create the schema.
+
+### Using pnpm (Recommended)
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run migrations
+pnpm --filter @ovenlovin/db db:migrate
+```
+
+### Using Drizzle Kit Directly
+
+```bash
+cd packages/db
+npx drizzle-kit migrate
+```
+
+### Migration Location
+
+Migrations are in `packages/db/drizzle/`. The initial migration `0000_yellow_shooting_star.sql` creates:
+
+- `households` table
+- `people` table with dietary rules
+- `recipes` table with ingredients
+- `meal_plans` and `meals` tables
+- `shopping_lists` and `shopping_list_items` tables
+- Indexes and foreign key constraints
+
+### Important: Drizzle Push Caveat
+
+> **⚠️ Warning:** If you used `drizzle-kit push` to create your database schema (instead of migrations), you'll need to mark the initial migration as applied before running subsequent migrations:
+
+```sql
+-- Connect to your database
+psql $DATABASE_URL
+
+-- Create drizzle migrations table
+CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+  id SERIAL PRIMARY KEY,
+  hash TEXT NOT NULL,
+  created_at BIGINT
+);
+
+-- Mark 0000 as applied (use the actual hash from meta/_journal.json)
+INSERT INTO "__drizzle_migrations" (hash, created_at)
+VALUES ('0000_yellow_shooting_star', EXTRACT(EPOCH FROM NOW()) * 1000);
+```
+
+This tells Drizzle to skip the initial migration since the schema already exists.
+
+## Verify Deployment
+
+After deployment and database setup:
+
+### Check Health
+
+```bash
+curl https://your-app.vercel.app/api/health
+```
+
+Should return:
+
+```json
+{
+  "status": "ok",
+  "database": "connected",
+  "timestamp": "2024-01-15T12:00:00Z"
+}
+```
+
+### Test Authentication
+
+1. Visit your deployed URL
+2. Click **Sign In**
+3. Create an account
+4. Should redirect to dashboard
+
+### Test Database
+
+1. Sign in
+2. Go to **Settings** → **Household**
+3. Create a household (Clerk Organization)
+4. Add a person with dietary rules
+5. Data should persist on refresh
+
+## Troubleshooting
+
+### Database Connection Errors
+
+**Error:** `ENOTFOUND` or connection refused
+
+- Verify `DATABASE_URL` is correct
+- Check Neon project is not paused (free tier auto-pauses)
+- Ensure IP allowlist includes Vercel IPs (if configured)
+
+### Clerk Authentication Errors
+
+**Error:** Invalid publishable key
+
+- Verify `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` starts with `pk_`
+- Ensure key matches your Clerk environment (development vs production)
+
+**Error:** Organizations not enabled
+
+- Go to Clerk Dashboard → Organizations → Enable Organizations
+- Redeploy after enabling
+
+### Blob Storage Errors
+
+**Error:** Unauthorized or invalid token
+
+- Verify `BLOB_READ_WRITE_TOKEN` is set correctly
+- Check token has read/write permissions
+- Ensure Blob store is in the same Vercel team/project
+
+### Migration Errors
+
+**Error:** relation already exists
+
+- You may have run `drizzle-kit push` before migrations
+- Follow the [Drizzle Push Caveat](#important-drizzle-push-caveat) section above
+
+**Error:** Cannot connect to database
+
+- Verify `DATABASE_URL` environment variable
+- Run migrations from a location with database access
+- For serverless: use Vercel's environment with `vercel env pull`
+
+## Next Steps
+
+- [Connect Your Agent](./agents) - Set up Grok Bot, ChatGPT, or Claude Desktop
+- [Import Recipes](./importers) - Start adding recipes to your instance
+- [CLI Reference](./cli) - Use the command-line interface
