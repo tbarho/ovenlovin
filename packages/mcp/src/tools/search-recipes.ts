@@ -47,7 +47,6 @@ async function handler(
   // - Query recipes from DB
   // - If forAttendees provided, check rules and annotate warnings
   // - Return paginated results
-  console.log("Search recipes with:", input);
 
   return {
     recipes: [],
