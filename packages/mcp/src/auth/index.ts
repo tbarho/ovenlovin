@@ -1,6 +1,6 @@
 /**
  * Authentication and authorization for MCP server
- * 
+ *
  * Supports:
  * - OAuth 2.1 via Clerk (for ChatGPT, Claude Desktop)
  * - Scoped API keys (for Grok Bot, CLI)
@@ -20,16 +20,14 @@ export interface AuthError {
 
 /**
  * Authenticate a request and return auth context
- * 
+ *
  * TODO: Implement OAuth and API key validation
- * 
+ *
  * @param headers Request headers containing Authorization
  * @returns Auth context if valid
  * @throws AuthError if authentication fails
  */
-export async function authenticateRequest(
-  headers: Record<string, string>
-): Promise<AuthContext> {
+export async function authenticateRequest(headers: Record<string, string>): Promise<AuthContext> {
   const authHeader = headers["authorization"] || headers["Authorization"];
 
   if (!authHeader) {

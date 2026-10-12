@@ -1,6 +1,6 @@
 /**
  * Tool: get_household_context
- * 
+ *
  * Get household schedule, people, rules, preferences, and recent meal history
  */
 
@@ -68,7 +68,7 @@ async function handler(
   // - Get schedule template and overrides
   // - Get people with rule summaries (not full rules)
   // - Get recent meal history
-  
+
   return {
     household: {
       id: _context.householdId,
@@ -79,7 +79,8 @@ async function handler(
 
 export const getHouseholdContextTool = {
   name: "get_household_context",
-  description: "Get household context including schedule, attendees, rule summaries, preferences, and recent meal history. Essential for meal planning.",
+  description:
+    "Get household context including schedule, attendees, rule summaries, preferences, and recent meal history. Essential for meal planning.",
   inputSchema: getHouseholdContextSchema,
   handler,
 } as const;

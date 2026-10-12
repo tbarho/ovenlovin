@@ -1,6 +1,6 @@
 /**
  * Tool: import_recipe
- * 
+ *
  * Import a recipe from URL, paste, or file
  */
 
@@ -31,13 +31,14 @@ async function handler(
   // - Queue import job
   // - Return job ID and initial status
   // - Actual import runs async via eve agent
-  
+
   throw new Error("Not implemented: import_recipe - depends on @ovenlovin/importers");
 }
 
 export const importRecipeTool = {
   name: "import_recipe",
-  description: "Import a recipe from a URL or pasted text. Returns a draft recipe that may need review if confidence is low.",
+  description:
+    "Import a recipe from a URL or pasted text. Returns a draft recipe that may need review if confidence is low.",
   inputSchema: importRecipeSchema,
   handler,
 } as const;

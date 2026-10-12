@@ -1,6 +1,6 @@
 /**
  * Tool: search_recipes
- * 
+ *
  * Search for recipes with filters
  */
 
@@ -9,7 +9,10 @@ import type { AuthContext } from "../auth/index.js";
 
 export const searchRecipesSchema = z.object({
   query: z.string().optional(),
-  forAttendees: z.array(z.string()).optional().describe("Filter out recipes with blocking rules for these person IDs"),
+  forAttendees: z
+    .array(z.string())
+    .optional()
+    .describe("Filter out recipes with blocking rules for these person IDs"),
   methodTags: z.array(z.string()).optional(),
   maxResults: z.number().int().positive().default(20),
   cursor: z.string().optional(),
@@ -44,7 +47,7 @@ async function handler(
   // - Query recipes from DB
   // - If forAttendees provided, check rules and annotate warnings
   // - Return paginated results
-  
+
   return {
     recipes: [],
     nextCursor: undefined,
@@ -53,7 +56,8 @@ async function handler(
 
 export const searchRecipesTool = {
   name: "search_recipes",
-  description: "Search for recipes with optional filters. Can exclude recipes with blocking rules for specific attendees and annotate warnings.",
+  description:
+    "Search for recipes with optional filters. Can exclude recipes with blocking rules for specific attendees and annotate warnings.",
   inputSchema: searchRecipesSchema,
   handler,
 } as const;

@@ -1,6 +1,6 @@
 /**
  * Tool: get_recipe
- * 
+ *
  * Get full recipe details by ID
  */
 
@@ -67,21 +67,19 @@ export interface GetRecipeOutput {
   };
 }
 
-async function handler(
-  _input: GetRecipeInput,
-  _context: AuthContext
-): Promise<GetRecipeOutput> {
+async function handler(_input: GetRecipeInput, _context: AuthContext): Promise<GetRecipeOutput> {
   // TODO: Implement using @ovenlovin/core service
   // - Fetch recipe by ID
   // - Check household access
   // - Return full recipe details
-  
+
   throw new Error("Not implemented: get_recipe");
 }
 
 export const getRecipeTool = {
   name: "get_recipe",
-  description: "Get full recipe details including ingredients, steps, nutrition, and optionally source provenance.",
+  description:
+    "Get full recipe details including ingredients, steps, nutrition, and optionally source provenance.",
   inputSchema: getRecipeSchema,
   handler,
 } as const;

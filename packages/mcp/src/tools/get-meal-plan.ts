@@ -1,6 +1,6 @@
 /**
  * Tool: get_meal_plan
- * 
+ *
  * Get a saved meal plan by ID or date range
  */
 
@@ -54,7 +54,7 @@ async function handler(
   // TODO: Implement using @ovenlovin/core service
   // - Fetch plan by ID or weekStart
   // - Return plan with entries and check report
-  
+
   throw new Error("Not implemented: get_meal_plan");
 }
 

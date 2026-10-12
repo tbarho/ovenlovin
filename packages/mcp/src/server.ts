@@ -1,9 +1,9 @@
 /**
  * OvenLovin MCP Server
- * 
+ *
  * Remote MCP server over Streamable HTTP providing recipe management,
  * household context, meal planning, and shopping list tools.
- * 
+ *
  * Auth: OAuth via Clerk + scoped API keys
  */
 

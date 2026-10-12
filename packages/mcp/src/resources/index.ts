@@ -1,6 +1,6 @@
 /**
  * MCP Resources
- * 
+ *
  * Resources provide read-only access to household data:
  * - Household profile
  * - Per-person rules
@@ -24,7 +24,7 @@ export async function listResources(_context: AuthContext): Promise<MCPResource[
   // - List people in household
   // - Return resource URIs for each person's rules
   // - Include schedule resources
-  
+
   return [
     {
       uri: `ovenlovin://household/${_context.householdId}/profile`,
@@ -52,13 +52,13 @@ export async function listResources(_context: AuthContext): Promise<MCPResource[
  */
 export async function readResource(uri: string, _context: AuthContext): Promise<unknown> {
   const url = new URL(uri);
-  
+
   if (url.protocol !== "ovenlovin:") {
     throw new Error("Invalid resource URI protocol");
   }
 
   const pathParts = url.pathname.split("/").filter(Boolean);
-  
+
   if (pathParts[0] !== "household") {
     throw new Error("Invalid resource type");
   }

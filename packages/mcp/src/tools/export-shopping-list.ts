@@ -1,6 +1,6 @@
 /**
  * Tool: export_shopping_list
- * 
+ *
  * Export shopping list for a meal plan in various formats
  */
 
@@ -39,13 +39,14 @@ async function handler(
   // - Group by aisle/recipe/category
   // - Include rule warnings
   // - Format output
-  
+
   throw new Error("Not implemented: export_shopping_list");
 }
 
 export const exportShoppingListTool = {
   name: "export_shopping_list",
-  description: "Export a shopping list for a meal plan in various formats. Aggregates ingredients, converts units, and includes per-person rule warnings for shoppers.",
+  description:
+    "Export a shopping list for a meal plan in various formats. Aggregates ingredients, converts units, and includes per-person rule warnings for shoppers.",
   inputSchema: exportShoppingListSchema,
   handler,
 } as const;

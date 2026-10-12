@@ -1,6 +1,6 @@
 /**
  * Tool: check_meal_plan
- * 
+ *
  * Check a meal plan against household rules and schedule constraints
  */
 
@@ -70,13 +70,16 @@ async function handler(
   // - Check each entry against rules
   // - Check schedule constraints
   // - Return deterministic findings
-  
-  throw new Error("Not implemented: check_meal_plan - depends on @ovenlovin/allergens rules engine");
+
+  throw new Error(
+    "Not implemented: check_meal_plan - depends on @ovenlovin/allergens rules engine"
+  );
 }
 
 export const checkMealPlanTool = {
   name: "check_meal_plan",
-  description: "Check a meal plan against per-person rules and schedule constraints. Returns per-entry, per-person findings by severity. MUST be called before saving a plan.",
+  description:
+    "Check a meal plan against per-person rules and schedule constraints. Returns per-entry, per-person findings by severity. MUST be called before saving a plan.",
   inputSchema: checkMealPlanSchema,
   handler,
 } as const;

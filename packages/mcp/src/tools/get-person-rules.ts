@@ -1,6 +1,6 @@
 /**
  * Tool: get_person_rules
- * 
+ *
  * Get detailed rules for one or more people
  */
 
@@ -49,7 +49,7 @@ async function handler(
   // - Fetch people by IDs
   // - Get their rules with full details
   // - Return structured rule data
-  
+
   return {
     people: [],
   };
@@ -57,7 +57,8 @@ async function handler(
 
 export const getPersonRulesTool = {
   name: "get_person_rules",
-  description: "Get detailed per-person rules including allergies, dietary restrictions, and preferences with severities and options. Use this for detailed rule inspection.",
+  description:
+    "Get detailed per-person rules including allergies, dietary restrictions, and preferences with severities and options. Use this for detailed rule inspection.",
   inputSchema: getPersonRulesSchema,
   handler,
 } as const;

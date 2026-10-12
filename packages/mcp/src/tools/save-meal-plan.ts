@@ -1,6 +1,6 @@
 /**
  * Tool: save_meal_plan
- * 
+ *
  * Save a meal plan to the database
  */
 
@@ -42,13 +42,14 @@ async function handler(
   // - Validate plan entries
   // - Store plan with check report
   // - Return plan ID
-  
+
   throw new Error("Not implemented: save_meal_plan");
 }
 
 export const saveMealPlanTool = {
   name: "save_meal_plan",
-  description: "Save a meal plan to the database with the check report. Must include the latest check_meal_plan result.",
+  description:
+    "Save a meal plan to the database with the check report. Must include the latest check_meal_plan result.",
   inputSchema: saveMealPlanSchema,
   handler,
 } as const;
