@@ -131,9 +131,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     const [nutritionRow] = await db
       .select()
       .from(recipeNutrition)
-      .where(
-        and(eq(recipeNutrition.recipeId, input.id), isNull(recipeNutrition.deletedAt))
-      )
+      .where(and(eq(recipeNutrition.recipeId, input.id), isNull(recipeNutrition.deletedAt)))
       .limit(1);
 
     if (nutritionRow) {
@@ -141,9 +139,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
         perServing: nutritionRow.perServing,
         calories: nutritionRow.calories ? Number(nutritionRow.calories) : undefined,
         protein: nutritionRow.protein ? Number(nutritionRow.protein) : undefined,
-        carbohydrates: nutritionRow.carbohydrates
-          ? Number(nutritionRow.carbohydrates)
-          : undefined,
+        carbohydrates: nutritionRow.carbohydrates ? Number(nutritionRow.carbohydrates) : undefined,
         fat: nutritionRow.fat ? Number(nutritionRow.fat) : undefined,
         fiber: nutritionRow.fiber ? Number(nutritionRow.fiber) : undefined,
       };
