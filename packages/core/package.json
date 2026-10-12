@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ovenlovin/db": "workspace:*",
+    "drizzle-orm": "^0.38.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
