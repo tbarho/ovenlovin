@@ -7,7 +7,7 @@ OvenLovin provides a REST API optimized for AI agents and bot clients. All endpo
 
 ## Base URL
 
-**Production**: `https://ovenlovin.dev/api/v1`
+**Your instance**: `https://your-app.vercel.app/api/v1`
 
 **Local Development**: `http://localhost:3000/api/v1`
 
@@ -19,7 +19,7 @@ For authenticated user requests:
 
 ```bash
 curl -H "Authorization: Bearer <jwt-token>" \
-  https://ovenlovin.dev/api/v1/recipes
+  https://your-app.vercel.app/api/v1/recipes
 ```
 
 ### Bot Authentication (API Key)
@@ -28,7 +28,7 @@ For bot client requests:
 
 ```bash
 curl -H "Authorization: ApiKey <api-key>" \
-  https://ovenlovin.dev/api/v1/recipes
+  https://your-app.vercel.app/api/v1/recipes
 ```
 
 ## Response Formats
@@ -63,7 +63,7 @@ All errors follow problem+json format:
 
 ```json
 {
-  "type": "https://ovenlovin.dev/problems/not-found",
+  "type": "https://your-app.vercel.app/problems/not-found",
   "title": "Not Found",
   "status": 404,
   "detail": "Recipe with id abc-123 not found",
@@ -158,7 +158,7 @@ curl -X POST \
   -H "Idempotency-Key: <uuid>" \
   -H "Content-Type: application/json" \
   -d '{"title": "My Recipe"}' \
-  https://ovenlovin.dev/api/v1/recipes
+  https://your-app.vercel.app/api/v1/recipes
 ```
 
 Idempotency keys:
@@ -178,7 +178,7 @@ Idempotency keys:
 Full OpenAPI 3.1 specification available at:
 
 ```bash
-curl https://ovenlovin.dev/api/v1/openapi.json
+curl https://your-app.vercel.app/api/v1/openapi.json
 ```
 
 ## Code Examples
@@ -186,7 +186,7 @@ curl https://ovenlovin.dev/api/v1/openapi.json
 ### TypeScript (Fetch)
 
 ```typescript
-const response = await fetch('https://ovenlovin.dev/api/v1/recipes', {
+const response = await fetch('https://your-app.vercel.app/api/v1/recipes', {
   headers: {
     'Authorization': `Bearer ${jwtToken}`,
     'Content-Type': 'application/json'
@@ -201,7 +201,7 @@ const data = await response.json();
 ```bash
 curl -H "Authorization: Bearer <jwt>" \
   -H "Content-Type: application/json" \
-  https://ovenlovin.dev/api/v1/recipes
+  https://your-app.vercel.app/api/v1/recipes
 ```
 
 ### Python
@@ -215,7 +215,7 @@ headers = {
 }
 
 response = requests.get(
-    'https://ovenlovin.dev/api/v1/recipes',
+    'https://your-app.vercel.app/api/v1/recipes',
     headers=headers
 )
 
