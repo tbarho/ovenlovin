@@ -67,5 +67,8 @@ describe("@ovenlovin/brand", () => {
     expect(VERCEL_DEPLOY_URL).toContain("blob");
     expect(VERCEL_DEPLOY_URL).toContain("clerk");
     expect(VERCEL_DEPLOY_URL).toContain("NEXT_PUBLIC_INSTANCE_NAME");
+    expect(VERCEL_DEPLOY_URL).toMatch(/[?&]env=USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME/);
+    expect(VERCEL_DEPLOY_URL).not.toMatch(/[?&]env=[^&]*AI_GATEWAY_API_KEY/);
+    expect(VERCEL_DEPLOY_URL).toContain("OIDC");
   });
 });

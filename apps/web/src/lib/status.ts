@@ -1,12 +1,16 @@
 import { sql } from "drizzle-orm";
-import { describeConfigStatus, type ConfigStatus } from "@ovenlovin/core/onboarding";
+import {
+  describeConfigStatus,
+  isAiGatewayConfigured,
+  type ConfigStatus,
+} from "@ovenlovin/core/onboarding";
 
 export async function getConfigStatus(): Promise<ConfigStatus> {
   const databaseConfigured = Boolean(process.env.DATABASE_URL);
   const clerkConfigured = Boolean(
     process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY
   );
-  const aiGatewayConfigured = Boolean(process.env.AI_GATEWAY_API_KEY);
+  const aiGatewayConfigured = isAiGatewayConfigured(process.env);
 
   let databaseReachable: boolean | undefined;
   if (databaseConfigured) {

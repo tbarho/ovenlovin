@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createPasteImporter, createUrlImporter } from "@ovenlovin/importers";
 import { RecipeService } from "@ovenlovin/core";
+import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       const importer = createUrlImporter();
       const raw = await importer.extract({ url: body.content.trim() });
       draft = await importer.toDraft(raw);
-    } else if (process.env.AI_GATEWAY_API_KEY) {
+    } else if (isAiGatewayConfigured(process.env)) {
       const importer = createPasteImporter();
       const raw = await importer.extract({ text: body.content });
       draft = await importer.toDraft(raw);
