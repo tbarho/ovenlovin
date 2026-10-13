@@ -1,13 +1,12 @@
 import { NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { getDatabase } from "@ovenlovin/db";
 import { ApiKeyService } from "@ovenlovin/core";
-import { eq } from "drizzle-orm";
-import { household } from "@ovenlovin/db/schema";
+import { getSessionContext } from "@/lib/session";
 import { UnauthorizedError } from "./errors";
 
 export type RequestContext = {
   userId?: string;
+  clerkUserId?: string;
   householdId?: string;
   isBot?: boolean;
   clientId?: string;
@@ -17,51 +16,22 @@ export type RequestContext = {
 export async function getRequestContext(request: NextRequest): Promise<RequestContext> {
   const authHeader = request.headers.get("Authorization");
 
-  if (!authHeader) {
-    throw new UnauthorizedError("Missing authorization header");
+  if (authHeader?.startsWith("ApiKey ")) {
+    return parseApiKey(authHeader.slice(7).trim());
   }
 
-  if (authHeader.startsWith("Bearer ")) {
-    return parseClerkAuth();
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+    if (token.startsWith("rkapi_")) {
+      return parseApiKey(token);
+    }
   }
 
-  if (authHeader.startsWith("ApiKey ")) {
-    const apiKey = authHeader.slice(7);
-    return parseApiKey(apiKey);
-  }
-
-  throw new UnauthorizedError("Invalid authorization scheme. Use Bearer or ApiKey.");
+  return parseClerkAuth();
 }
 
 async function parseClerkAuth(): Promise<RequestContext> {
-  const { userId, orgId, orgRole } = await auth();
-
-  if (!userId) {
-    throw new UnauthorizedError("Authentication required");
-  }
-
-  if (!orgId) {
-    throw new UnauthorizedError("Organization membership required");
-  }
-
-  const db = getDatabase();
-  const [householdRecord] = await db
-    .select()
-    .from(household)
-    .where(eq(household.clerkOrgId, orgId))
-    .limit(1);
-
-  if (!householdRecord) {
-    throw new UnauthorizedError("Household not found for organization");
-  }
-
-  const role = orgRole as "owner" | "admin" | "member" | "viewer" | undefined;
-
-  return {
-    userId,
-    householdId: householdRecord.id,
-    membershipRole: role ?? "member",
-  };
+  return getSessionContext();
 }
 
 async function parseApiKey(apiKey: string): Promise<RequestContext> {
@@ -103,6 +73,7 @@ export function requireUserId(context: RequestContext): string {
 }
 
 export function requireAdminRole(context: RequestContext): void {
+  if (context.isBot) return;
   if (!context.membershipRole || !["owner", "admin"].includes(context.membershipRole)) {
     throw new UnauthorizedError("Admin or owner role required");
   }
