@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Cookbook, Recipe } from "@ovenlovin/core";
-import { recipeMainImage } from "@ovenlovin/core";
+import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 import { ConfirmDialog } from "./ConfirmDialog";

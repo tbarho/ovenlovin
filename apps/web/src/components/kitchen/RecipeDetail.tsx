@@ -4,13 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
+import { recipeGalleryImages, recipeMainImage } from "@ovenlovin/core/media";
 import {
   clampServings,
   formatDurationMinutes,
-  recipeGalleryImages,
-  recipeMainImage,
   scaleIngredientDisplay,
-} from "@ovenlovin/core";
+} from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 
