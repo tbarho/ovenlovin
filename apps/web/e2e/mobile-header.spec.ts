@@ -18,7 +18,9 @@ test.describe("mobile kitchen chrome", () => {
       if (inKitchen > 0) {
         await expect(tabbar).toBeVisible();
         await expect(page.locator(".kitchen-shell .kitchen-nav")).toBeHidden();
-        await expect(topbar.locator(".brand-wordmark-short")).toBeVisible();
+        await expect(topbar.getByRole("link", { name: "OvenLovin" })).toBeVisible();
+        await expect(topbar.locator(".brand-wordmark")).toBeHidden();
+        await expect(topbar.locator(".brand img")).toBeVisible();
         await expect(page.getByRole("navigation", { name: "Kitchen" })).toBeVisible();
       } else {
         await expect(page.getByRole("heading", { name: /sign in|recipes/i }).first()).toBeVisible();
