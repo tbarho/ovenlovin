@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bagel_Fat_One, Geist, Geist_Mono } from "next/font/google";
+import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { ClerkReadyProvider } from "@/components/ClerkReadyProvider";
 import "./globals.css";
@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-const bagel = Bagel_Fat_One({
+const fascinate = Fascinate_Inline({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-display",
@@ -47,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${bagel.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${fascinate.variable}`}>
       <body>
         <ClerkReadyProvider>{children}</ClerkReadyProvider>
       </body>

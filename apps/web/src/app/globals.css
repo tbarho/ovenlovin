@@ -18,7 +18,7 @@
   --bad: #c4473a;
   --sans: var(--font-geist-sans, "Geist"), ui-sans-serif, system-ui, sans-serif;
   --mono: var(--font-geist-mono, ui-monospace), "SFMono-Regular", Menlo, monospace;
-  --display: var(--font-display, "Bagel Fat One"), cursive;
+  --display: var(--font-display, "Fascinate Inline"), cursive;
   --max: 1080px;
   --gut: 24px;
   --r: 14px;
@@ -126,9 +126,9 @@ select {
   gap: 10px;
   font-family: var(--display);
   font-weight: 400;
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
-  letter-spacing: 0;
+  letter-spacing: 0.01em;
 }
 
 .brand img {

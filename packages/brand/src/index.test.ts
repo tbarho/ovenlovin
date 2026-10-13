@@ -19,8 +19,8 @@ describe("@ovenlovin/brand", () => {
     expect(BRAND_NAME).not.toMatch(/\s/);
   });
 
-  it("uses Bagel Fat One for the wordmark", () => {
-    expect(BRAND_DISPLAY_FONT).toBe("Bagel Fat One");
+  it("uses Fascinate Inline for the wordmark", () => {
+    expect(BRAND_DISPLAY_FONT).toBe("Fascinate Inline");
   });
 
   it("lists every asset and public path", () => {

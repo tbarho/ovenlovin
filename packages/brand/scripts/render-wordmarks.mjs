@@ -1,9 +1,9 @@
 /**
- * Rasterize Bagel Fat One wordmarks for GitHub/OG (no webfonts there).
+ * Rasterize Fascinate Inline wordmarks for GitHub/OG (no webfonts there).
  *
- *   BAGEL_TTF=/path/to/bagel.ttf node packages/brand/scripts/render-wordmarks.mjs
+ *   FONT_TTF=/path/to/FascinateInline-Regular.ttf node packages/brand/scripts/render-wordmarks.mjs
  *
- * Does not embed the TTF in the repo. Live apps load Bagel Fat One via next/font.
+ * Does not embed the TTF in the repo. Live apps load Fascinate Inline via next/font.
  */
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -14,9 +14,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const assets = join(root, "assets");
-const fontPath = process.env.BAGEL_TTF ?? "/tmp/ol-fonts/bagel.ttf";
+const fontFamily = process.env.FONT_FAMILY ?? "Fascinate Inline";
+const fontPath =
+  process.env.FONT_TTF ?? process.env.FASCINATE_TTF ?? "/tmp/ol-fonts/FascinateInline-Regular.ttf";
 const markUrl = pathToFileURL(join(assets, "mark.png")).href;
-const fontFace = `@font-face{font-family:'Bagel Fat One';src:url('${pathToFileURL(fontPath).href}') format('truetype');font-weight:400;font-style:normal;font-display:block;}`;
+const fontFace = `@font-face{font-family:'${fontFamily}';src:url('${pathToFileURL(fontPath).href}') format('truetype');font-weight:400;font-style:normal;font-display:block;}`;
 
 const INK = "#161310";
 const CREAM = "#FFF8F2";
@@ -29,19 +31,19 @@ const html = `<!doctype html>
 <style>
 ${fontFace}
 html,body{margin:0;background:transparent;}
-.word{font-family:'Bagel Fat One',cursive;font-weight:400;line-height:1;white-space:nowrap;letter-spacing:0;}
-#wordmark,#wordmark-dark{display:inline-block;padding:12px 16px;}
+.word{font-family:'${fontFamily}',cursive;font-weight:400;line-height:1;white-space:nowrap;letter-spacing:0.01em;}
+#wordmark,#wordmark-dark{display:inline-block;padding:20px 24px;}
 #wordmark{color:${INK};font-size:128px;}
 #wordmark-dark{color:${CREAM};font-size:128px;}
-#lockup{display:inline-flex;flex-direction:column;align-items:center;gap:18px;padding:28px 32px;}
+#lockup{display:inline-flex;flex-direction:column;align-items:center;gap:18px;padding:28px 36px;}
 #lockup img{width:168px;height:168px;}
 #lockup .word{color:${INK};font-size:72px;}
 #og,#og-dark{width:1200px;height:630px;display:flex;align-items:center;justify-content:center;gap:48px;box-sizing:border-box;padding:48px 72px;}
 #og{background:${CREAM};}
 #og-dark{background:${DARK};}
 #og img,#og-dark img{width:280px;height:280px;}
-#og .word{color:${INK};font-size:92px;}
-#og-dark .word{color:${CREAM};font-size:92px;}
+#og .word{color:${INK};font-size:84px;}
+#og-dark .word{color:${CREAM};font-size:84px;}
 </style>
 </head>
 <body>
@@ -69,7 +71,7 @@ writeFileSync(outHtml, html);
 const browser = await chromium.launch();
 const page = await browser.newPage({
   deviceScaleFactor: 2,
-  viewport: { width: 1400, height: 900 },
+  viewport: { width: 1600, height: 900 },
 });
 await page.goto(pathToFileURL(outHtml).href, { waitUntil: "networkidle" });
 await page.evaluate(async () => document.fonts.ready);
