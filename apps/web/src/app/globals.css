@@ -1644,6 +1644,8 @@ select {
   }
 }
 
+body:has(.sheet-root) .kitchen-tabbar,
+body:has(.olp-sheet-root) .kitchen-tabbar,
 .kitchen-shell:has(.sheet-root) .kitchen-tabbar,
 .kitchen-shell:has(.olp-sheet-root) .kitchen-tabbar {
   display: none;

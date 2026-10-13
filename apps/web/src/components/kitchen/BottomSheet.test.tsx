@@ -59,6 +59,14 @@ describe("BottomSheet", () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it("portals the overlay onto document.body so it covers the app header", () => {
+    const { container } = render(<SheetHarness />);
+    const root = document.querySelector(".sheet-root");
+    expect(root).toBeTruthy();
+    expect(root?.parentElement).toBe(document.body);
+    expect(container.querySelector(".sheet-root")).toBeNull();
+  });
+
   it("does not move focus to Close while typing", async () => {
     const user = userEvent.setup();
     render(<SheetHarness />);
