@@ -48,8 +48,8 @@ export function generateOpenApiDocument(): oas30.OpenAPIObject {
     },
     servers: [
       {
-        url: "https://ovenlovin.dev/api/v1",
-        description: "Production",
+        url: "https://your-app.vercel.app/api/v1",
+        description: "Your OvenLovin instance",
       },
       {
         url: "http://localhost:3000/api/v1",

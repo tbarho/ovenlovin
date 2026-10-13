@@ -63,6 +63,7 @@ export function createPasteImporter(config: ImporterConfig = {}): Importer<Paste
     async extract(input: PasteImportInput): Promise<RawExtraction> {
       const result = await generateObject({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
         model: gateway(modelId) as any,
         schema: recipeSchema,
         prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.

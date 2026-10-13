@@ -25,23 +25,25 @@ export function LandingPage({
       <main>
         <section className="hero">
           <div className="wrap rise">
-            <Image
-              className="hero-mark"
-              src={brandPublicPath.mark}
-              alt="OvenLovin oven mark"
-              width={164}
-              height={164}
-              priority
-              unoptimized
-            />
-            <div className="badge">
-              <i />
-              {instanceName}
+            <div className="hero-identity">
+              <Image
+                className="hero-mark"
+                src={brandPublicPath.mark}
+                alt="OvenLovin oven mark"
+                width={164}
+                height={164}
+                priority
+                unoptimized
+              />
+              <div className="badge">
+                <i />
+                {instanceName}
+              </div>
             </div>
             <h1>Family recipes, ready for your agents.</h1>
             <p className="lead">
               Import a recipe, set per-person rules, and hand the same kitchen to Grok, Claude, or
-              ChatGPT. This deploy is {instanceName}.
+              ChatGPT. This is {instanceName}.
             </p>
             <div className="hero-ctas" id="start">
               {signedIn ? (

@@ -9,7 +9,7 @@ const DEPLOY_URL = VERCEL_DEPLOY_URL;
 const MCP_SAMPLE = `{
   "mcpServers": {
     "ovenlovin": {
-      "url": "https://ovenlovin.dev/mcp",
+      "url": "https://your-app.vercel.app/mcp",
       "apiKey": "your-api-key"
     }
   }

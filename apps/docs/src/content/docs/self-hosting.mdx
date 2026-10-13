@@ -13,7 +13,7 @@ OvenLovin requires the following environment variables to function. Set these in
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for authentication | [Clerk Dashboard](https://dashboard.clerk.com) → API Keys |
 | `CLERK_SECRET_KEY` | Yes | Clerk secret key for server-side auth | [Clerk Dashboard](https://dashboard.clerk.com) → API Keys |
 | `BLOB_READ_WRITE_TOKEN` | Yes | Vercel Blob storage token for recipe photos and OCR | [Vercel Storage](https://vercel.com/dashboard/stores) → Create Blob Store |
-| `AI_GATEWAY_API_KEY` | Yes | Vercel AI Gateway API key for LLM operations | [Vercel AI Gateway](https://vercel.com/docs/ai) |
+| `AI_GATEWAY_API_KEY` | No | Optional API key for local or non-Vercel hosts. On Vercel, AI Gateway authenticates with OIDC (`VERCEL_OIDC_TOKEN`) | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc) |
 | `USDA_FDC_API_KEY` | Yes | USDA FoodData Central API key for nutrition data | [FoodData Central](https://fdc.nal.usda.gov/api-key-signup.html) |
 | `NEXT_PUBLIC_INSTANCE_NAME` | No | Name shown on the landing page (defaults to `Your OvenLovin`) | Set this so the deployed site feels like yours |
 | `RK_MODEL_DEFAULT` | No | Default LLM model (default: `spacexai/grok-4.7`) | N/A - set custom model |
@@ -47,9 +47,13 @@ OvenLovin requires the following environment variables to function. Set these in
 
 #### Vercel AI Gateway
 
+On a Vercel deployment, AI Gateway authenticates with OIDC automatically. You do not need `AI_GATEWAY_API_KEY`.
+
+For local development or a non-Vercel host:
+
 1. Follow the [Vercel AI Gateway setup guide](https://vercel.com/docs/ai)
-2. Create a gateway and obtain an API key
-3. Set as `AI_GATEWAY_API_KEY`
+2. Create a key, or run `vercel env pull` to get `VERCEL_OIDC_TOKEN`
+3. Set `AI_GATEWAY_API_KEY` only if you are not using OIDC
 
 #### USDA FoodData Central
 
@@ -63,14 +67,14 @@ The fastest way to deploy OvenLovin is using Vercel's one-click deployment.
 
 ### One-Click Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=AI_GATEWAY_API_KEY,USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=AI%20Gateway%2C%20USDA%2C%20and%20optional%20instance%20name.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=USDA%20key%20and%20optional%20instance%20name.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
 
 The one-click deploy will:
 
 1. Fork the repository to your GitHub account
 2. Create a new Vercel project
 3. Provision Neon Postgres, Vercel Blob, and Clerk (auto-configures `DATABASE_URL`, the blob token, and Clerk keys)
-4. Prompt for `AI_GATEWAY_API_KEY`, `USDA_FDC_API_KEY`, and optional `NEXT_PUBLIC_INSTANCE_NAME`
+4. Prompt for `USDA_FDC_API_KEY` and optional `NEXT_PUBLIC_INSTANCE_NAME` (AI Gateway uses OIDC on Vercel)
 5. Run database migrations during the build
 6. Deploy the Next.js application
 
@@ -96,8 +100,8 @@ vercel env add DATABASE_URL
 vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 vercel env add CLERK_SECRET_KEY
 vercel env add BLOB_READ_WRITE_TOKEN
-vercel env add AI_GATEWAY_API_KEY
 vercel env add USDA_FDC_API_KEY
+# AI_GATEWAY_API_KEY is optional — Vercel OIDC covers the gateway
 
 # Deploy
 vercel --prod

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { ClerkReadyProvider } from "@/components/ClerkReadyProvider";
 import "./globals.css";
@@ -12,6 +12,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
+});
+
+const fascinate = Fascinate_Inline({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
@@ -41,8 +47,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${fascinate.variable}`}>
+      <body>
         <ClerkReadyProvider>{children}</ClerkReadyProvider>
       </body>
     </html>
