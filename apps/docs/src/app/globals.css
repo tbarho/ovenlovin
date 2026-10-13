@@ -89,3 +89,53 @@ samp,
 #nd-sidebar {
   background-color: hsl(var(--fd-background));
 }
+
+/* Landing hero: Vercel-style grid + warm glow */
+.ol-hero-grid {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgb(0 0 0 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 20%, #000 35%, transparent 75%);
+}
+
+.dark .ol-hero-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+}
+
+.ol-hero-glow {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: -4rem;
+  width: min(52rem, 100%);
+  height: 28rem;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(closest-side, rgb(255 140 40 / 0.22), transparent 72%),
+    radial-gradient(closest-side at 72% 42%, rgb(99 102 241 / 0.14), transparent 70%);
+  filter: blur(8px);
+}
+
+.dark .ol-hero-glow {
+  background:
+    radial-gradient(closest-side, rgb(255 140 40 / 0.16), transparent 72%),
+    radial-gradient(closest-side at 72% 42%, rgb(129 140 248 / 0.14), transparent 70%);
+}
+
+.ol-hero-flourish {
+  height: 1px;
+  width: 7rem;
+  background: linear-gradient(to right, #ff8c28, #fbbf24, transparent);
+}
+
+.ol-code-sample .fd-codeblock {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
