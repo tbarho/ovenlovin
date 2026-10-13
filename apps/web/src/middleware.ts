@@ -15,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   "/mcp(.*)",
   "/brand(.*)",
   "/prototype(.*)",
+  "/dev/people-preview(.*)",
 ]);
 
 export default clerkConfigured
