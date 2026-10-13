@@ -88,7 +88,7 @@ if (importer.canHandle({ url: "https://example.com/recipe" })) {
 - **Servings** and yield
 - **Times** (prep, cook, total)
 - **Nutrition** (if available in JSON-LD)
-- **Images** (primary and gallery)
+- **Main image** (largest or first schema.org Recipe `image`, else `og:image`). Extra gallery photos are not saved on import; people can add more later.
 - **Cuisine** and course/category
 - **Author** and attribution
 - **Method tags** (detected from ingredients/steps)

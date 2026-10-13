@@ -12,8 +12,8 @@ import {
   extractJsonLd,
   parseDuration,
   extractAuthor,
-  extractImages,
   extractPageImages,
+  pickImportRecipeImage,
 } from "../utils/url";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 
@@ -83,10 +83,8 @@ export function createUrlImporter(): Importer<UrlImportInput> {
       const ingredients = parseIngredients(recipe.recipeIngredient);
       const steps = parseSteps(recipe.recipeInstructions);
 
-      const images = extractImages(recipe);
-      if (images.length === 0 && raw.pageImages?.length) {
-        images.push(...raw.pageImages);
-      }
+      const mainImage = pickImportRecipeImage(recipe, raw.pageImages);
+      const images = mainImage ? [mainImage] : [];
 
       const cuisine =
         typeof recipe.recipeCuisine === "string"
