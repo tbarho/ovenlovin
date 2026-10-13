@@ -16,8 +16,9 @@
   --ok: #2f9e62;
   --warn: #c46a1b;
   --bad: #c4473a;
-  --sans: var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, sans-serif;
-  --mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --sans: var(--font-geist-sans, "Geist"), ui-sans-serif, system-ui, sans-serif;
+  --mono: var(--font-geist-mono, ui-monospace), "SFMono-Regular", Menlo, monospace;
+  --display: var(--font-display, "Bagel Fat One"), cursive;
   --max: 1080px;
   --gut: 24px;
   --r: 14px;
@@ -123,8 +124,11 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .brand img {

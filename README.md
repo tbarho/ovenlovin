@@ -1,8 +1,6 @@
-<p align="center">
-  <img src="packages/brand/assets/mark.png" width="128" alt="OvenLovin" />
-</p>
-
-<h1 align="center">OvenLovin</h1>
+<h1 align="center">
+  <img src="packages/brand/assets/lockup.png" width="280" alt="OvenLovin" />
+</h1>
 
 <p align="center">
   <strong>LLM-optimized recipe and family meal-planning platform</strong>
