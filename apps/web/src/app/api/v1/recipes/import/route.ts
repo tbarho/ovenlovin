@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       const importer = createUrlImporter();
       const raw = await importer.extract({ url: body.content.trim() });
       draft = await importer.toDraft(raw);
-    } else if (isAiGatewayConfigured()) {
+    } else if (isAiGatewayConfigured(process.env)) {
       const importer = createPasteImporter();
       const raw = await importer.extract({ text: body.content });
       draft = await importer.toDraft(raw);

@@ -10,7 +10,7 @@ export async function getConfigStatus(): Promise<ConfigStatus> {
   const clerkConfigured = Boolean(
     process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY
   );
-  const aiGatewayConfigured = isAiGatewayConfigured();
+  const aiGatewayConfigured = isAiGatewayConfigured(process.env);
 
   let databaseReachable: boolean | undefined;
   if (databaseConfigured) {

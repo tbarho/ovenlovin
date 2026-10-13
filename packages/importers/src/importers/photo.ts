@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import { generateObject } from "ai";
+import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
-import { gatewayModel } from "../ai-gateway";
 import type {
   Importer,
   PhotoImportInput,
@@ -75,7 +75,8 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
 
       const result = await generateObject({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        model: gatewayModel(visionModelId) as any,
+        // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
+        model: gateway(visionModelId) as any,
         messages: [
           {
             role: "user",
