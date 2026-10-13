@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { migrationHash, resolveMigrateDatabaseUrl, shouldBaseline } from "./migrate-utils";
+import {
+  migrationHash,
+  resolveMigrateDatabaseUrl,
+  shouldBaseline,
+  splitMigrationSql,
+} from "./migrate-utils";
 
 describe("migrate helpers", () => {
   it("hashes migration SQL the same way drizzle-orm does", () => {
@@ -11,6 +16,13 @@ describe("migrate helpers", () => {
     expect(shouldBaseline({ householdExists: true, appliedCount: 0 })).toBe(true);
     expect(shouldBaseline({ householdExists: true, appliedCount: 1 })).toBe(false);
     expect(shouldBaseline({ householdExists: false, appliedCount: 0 })).toBe(false);
+  });
+
+  it("splits drizzle statement breakpoints", () => {
+    expect(splitMigrationSql("create type a;--> statement-breakpoint\ncreate table b;")).toEqual([
+      "create type a;",
+      "create table b;",
+    ]);
   });
 
   it("prefers an unpooled Neon URL for migrations", () => {

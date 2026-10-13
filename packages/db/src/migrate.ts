@@ -2,13 +2,18 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
-import { migrationHash, resolveMigrateDatabaseUrl, shouldBaseline } from "./migrate-utils";
+import {
+  migrationHash,
+  resolveMigrateDatabaseUrl,
+  shouldBaseline,
+  splitMigrationSql,
+} from "./migrate-utils";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsFolder = join(here, "../drizzle");
+
+type Journal = { entries: Array<{ tag: string; when: number }> };
 
 async function main() {
   const connectionString = resolveMigrateDatabaseUrl(process.env);
@@ -17,50 +22,61 @@ async function main() {
     return;
   }
 
-  const sql = postgres(connectionString, { max: 1 });
+  const sql = postgres(connectionString, { max: 1, prepare: false });
 
   try {
+    const journal = JSON.parse(
+      readFileSync(join(migrationsFolder, "meta/_journal.json"), "utf8")
+    ) as Journal;
+    const migrations = journal.entries.map((entry) => {
+      const query = readFileSync(join(migrationsFolder, `${entry.tag}.sql`), "utf8");
+      return { ...entry, query, hash: migrationHash(query) };
+    });
+
     const household = await sql`
       select 1 from pg_tables
       where schemaname = 'public' and tablename = 'household'
     `;
-    const applied = await sql`
-      select count(*)::int as count
-      from information_schema.tables
-      where table_schema = 'drizzle' and table_name = '__drizzle_migrations'
+
+    await sql`create schema if not exists drizzle`;
+    await sql`
+      create table if not exists drizzle.__drizzle_migrations (
+        id serial primary key,
+        hash text not null,
+        created_at bigint
+      )
     `;
-    let appliedCount = 0;
-    if ((applied[0]?.count ?? 0) > 0) {
-      const rows = await sql`select count(*)::int as count from drizzle.__drizzle_migrations`;
-      appliedCount = rows[0]?.count ?? 0;
+
+    const appliedRows = await sql`select hash from drizzle.__drizzle_migrations`;
+
+    if (
+      shouldBaseline({ householdExists: household.length > 0, appliedCount: appliedRows.length })
+    ) {
+      for (const migration of migrations) {
+        await sql`
+          insert into drizzle.__drizzle_migrations (hash, created_at)
+          values (${migration.hash}, ${migration.when})
+        `;
+      }
+      console.log(`Baselined existing schema (${migrations.map((item) => item.tag).join(", ")})`);
     }
 
-    if (shouldBaseline({ householdExists: household.length > 0, appliedCount })) {
-      const journal = JSON.parse(
-        readFileSync(join(migrationsFolder, "meta/_journal.json"), "utf8")
-      ) as {
-        entries: Array<{ tag: string; when: number }>;
-      };
-      const first = journal.entries[0];
-      if (!first) throw new Error("No migrations found to baseline");
-      const query = readFileSync(join(migrationsFolder, `${first.tag}.sql`), "utf8");
-      await sql`create schema if not exists drizzle`;
-      await sql`
-        create table if not exists drizzle.__drizzle_migrations (
-          id serial primary key,
-          hash text not null,
-          created_at bigint
-        )
-      `;
+    const applied = new Set(
+      (await sql`select hash from drizzle.__drizzle_migrations`).map((row) => String(row.hash))
+    );
+
+    for (const migration of migrations) {
+      if (applied.has(migration.hash)) continue;
+      for (const statement of splitMigrationSql(migration.query)) {
+        await sql.unsafe(statement);
+      }
       await sql`
         insert into drizzle.__drizzle_migrations (hash, created_at)
-        values (${migrationHash(query)}, ${first.when})
+        values (${migration.hash}, ${migration.when})
       `;
-      console.log(`Baselined existing schema as ${first.tag}`);
+      console.log(`Applied ${migration.tag}`);
     }
 
-    const db = drizzle(sql);
-    await migrate(db, { migrationsFolder });
     console.log("Migrations applied.");
   } finally {
     await sql.end({ timeout: 5 });

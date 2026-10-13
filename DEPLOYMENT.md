@@ -18,7 +18,7 @@ The `apps/web/vercel.json` file contains:
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "cd ../.. && pnpm install && pnpm turbo run build --filter=@ovenlovin/web... && pnpm --filter @ovenlovin/db db:migrate:deploy"
+  "buildCommand": "cd ../.. && pnpm install --prod=false && pnpm turbo run build --filter=@ovenlovin/web... && pnpm exec tsx packages/db/src/migrate.ts"
 }
 ```
 
