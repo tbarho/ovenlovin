@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { CookbookService, PeopleService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { RecipeDetail } from "@/components/kitchen/RecipeDetail";
 import { getSessionContext } from "@/lib/session";
@@ -14,6 +14,11 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
   if (!recipe || recipe.householdId !== context.householdId) notFound();
 
   const cookbooks = await new CookbookService(db).listCookbooks(context.householdId, { limit: 50 });
+  const peopleService = new PeopleService(db);
+  const people = await peopleService.listPeopleByHousehold(context.householdId, { limit: 40 });
+  const rules = await peopleService.getRulesForPeople(people.items.map((person) => person.id));
 
-  return <RecipeDetail recipe={recipe} cookbooks={cookbooks.items} />;
+  return (
+    <RecipeDetail recipe={recipe} cookbooks={cookbooks.items} people={people.items} rules={rules} />
+  );
 }

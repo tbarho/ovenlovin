@@ -28,4 +28,14 @@ test("unsigned people preview shows the production people cards", async ({ page 
     path: `../../e2e-artifacts/people-preview-add-${testInfo.project.name}.png`,
     fullPage: true,
   });
+
+  await page.goto("/dev/people-preview?view=recipe");
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByTestId("who-can-eat")).toBeVisible();
+  await page.getByTestId(/mark-/).first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.screenshot({
+    path: `../../e2e-artifacts/people-preview-recipe-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
 });

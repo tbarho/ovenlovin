@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./onboarding": "./src/onboarding/index.ts",
     "./media": "./src/media/recipe-images.ts",
+    "./parsing": "./src/parsing/ingredient-line.ts",
     "./scaling": "./src/scaling/servings.ts"
   },
   "scripts": {

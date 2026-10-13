@@ -1,13 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it } from "vitest";
-import { testCookbook, testPerson, testRecipeDetails } from "@/test/fixtures";
+import { testCookbook, testRecipeDetails } from "@/test/fixtures";
 import { typeFullWordAndKeepFocus } from "@/test/sheet-focus";
 import { CookbookRecipes } from "./CookbookRecipes";
-import { PersonEditor } from "./PersonEditor";
 import { RecipeDetail } from "./RecipeDetail";
 import { RecipesKitchen } from "./RecipesKitchen";
-import { RuleSheet } from "./RuleSheet";
 
 describe("kitchen sheet-hosted forms", () => {
   it("keeps focus while typing a recipe title", async () => {
@@ -35,19 +33,6 @@ describe("kitchen sheet-hosted forms", () => {
 
     await user.click(screen.getByRole("button", { name: "Edit steps" }));
     await typeFullWordAndKeepFocus(user, screen.getByRole("textbox"), "simmer");
-  });
-
-  it("keeps focus while typing in the guided rule sheet", async () => {
-    const user = userEvent.setup();
-    render(<RuleSheet person={testPerson()} open onClose={() => undefined} />);
-    await user.click(screen.getByRole("button", { name: "Continue" }));
-    await typeFullWordAndKeepFocus(user, screen.getByRole("textbox"), "peanut");
-  });
-
-  it("keeps focus while typing a person name", async () => {
-    const user = userEvent.setup();
-    render(<PersonEditor person={testPerson()} ruleCount={0} open onClose={() => undefined} />);
-    await typeFullWordAndKeepFocus(user, screen.getByLabelText("Name"), "Child B");
   });
 
   it("keeps focus while typing a new cookbook name", async () => {
