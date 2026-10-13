@@ -3,3 +3,89 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Vercel-style canvas: pure white light theme, true-black dark theme.
+ * Surfaces stay white/black (not gray). Borders stay crisp and thin.
+ */
+:root {
+  --fd-background: 0 0% 100%;
+  --fd-foreground: 0 0% 4%;
+  --fd-muted: 0 0% 100%;
+  --fd-muted-foreground: 0 0% 36%;
+  --fd-popover: 0 0% 100%;
+  --fd-popover-foreground: 0 0% 4%;
+  --fd-card: 0 0% 100%;
+  --fd-card-foreground: 0 0% 4%;
+  --fd-border: 0 0% 91.8%;
+  --fd-primary: 0 0% 0%;
+  --fd-primary-foreground: 0 0% 100%;
+  --fd-secondary: 0 0% 100%;
+  --fd-secondary-foreground: 0 0% 4%;
+  --fd-accent: 0 0% 98%;
+  --fd-accent-foreground: 0 0% 4%;
+  --fd-ring: 0 0% 0%;
+  --ol-border: #eaeaea;
+  --ol-code-bg: #ffffff;
+}
+
+.dark {
+  --fd-background: 0 0% 0%;
+  --fd-foreground: 0 0% 93%;
+  --fd-muted: 0 0% 4%;
+  --fd-muted-foreground: 0 0% 64%;
+  --fd-popover: 0 0% 4%;
+  --fd-popover-foreground: 0 0% 93%;
+  --fd-card: 0 0% 0%;
+  --fd-card-foreground: 0 0% 93%;
+  --fd-border: 0 0% 16%;
+  --fd-primary: 0 0% 100%;
+  --fd-primary-foreground: 0 0% 0%;
+  --fd-secondary: 0 0% 4%;
+  --fd-secondary-foreground: 0 0% 93%;
+  --fd-accent: 0 0% 8%;
+  --fd-accent-foreground: 0 0% 93%;
+  --fd-ring: 0 0% 100%;
+  --ol-border: #262626;
+  --ol-code-bg: #0a0a0a;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+code,
+kbd,
+pre,
+samp,
+.fd-codeblock {
+  font-family:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Code blocks: white / near-black with a crisp 1px border (not gray wells) */
+.fd-codeblock {
+  background-color: var(--ol-code-bg) !important;
+  border-color: var(--ol-border) !important;
+}
+
+.fd-codeblock > div.border-b,
+.fd-codeblock [class*="bg-fd-muted"] {
+  background-color: var(--ol-code-bg);
+  border-color: var(--ol-border);
+}
+
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  background-color: var(--ol-code-bg);
+  border: 1px solid var(--ol-border);
+  border-radius: 4px;
+}
+
+#nd-sidebar {
+  background-color: hsl(var(--fd-background));
+}
