@@ -24,6 +24,9 @@ export function SiteHeader({
             <a href="#connect">Connect an agent</a>
           </li>
           <li>
+            <a href="#migrate">Migrate ReciMe</a>
+          </li>
+          <li>
             <a href="https://tbarho.github.io/ovenlovin/" target="_blank" rel="noreferrer">
               Docs
             </a>
