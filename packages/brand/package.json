@@ -1,0 +1,21 @@
+{
+  "name": "@ovenlovin/brand",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OvenLovin logo, wordmark, and favicon assets",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./assets/*": "./assets/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf node_modules .turbo"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
