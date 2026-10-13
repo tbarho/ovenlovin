@@ -14,6 +14,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/v1/openapi.json",
   "/mcp(.*)",
   "/brand(.*)",
+  "/prototype(.*)",
 ]);
 
 export default clerkConfigured
