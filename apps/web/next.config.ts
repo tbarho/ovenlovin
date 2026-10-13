@@ -2,7 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@ovenlovin/core", "@ovenlovin/mcp", "@ovenlovin/db", "@ovenlovin/allergens"],
+  transpilePackages: [
+    "@ovenlovin/core",
+    "@ovenlovin/mcp",
+    "@ovenlovin/db",
+    "@ovenlovin/allergens",
+    "@ovenlovin/brand",
+  ],
 };
 
 export default nextConfig;

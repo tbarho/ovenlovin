@@ -94,6 +94,9 @@ importers:
       '@ovenlovin/allergens':
         specifier: workspace:*
         version: link:../../packages/allergens
+      '@ovenlovin/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@ovenlovin/core':
         specifier: workspace:*
         version: link:../../packages/core
