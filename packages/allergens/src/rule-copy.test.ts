@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { describeRuleChip, describeRuleSummary, severityPhrase } from "./rule-copy";
+import {
+  describeRuleChip,
+  describeRuleSummary,
+  personRemovalCopy,
+  ruleRemovalCopy,
+  severityPhrase,
+} from "./rule-copy";
 
 describe("describeRuleChip", () => {
   it("formats a blocking tree nut allergy", () => {
@@ -64,6 +70,24 @@ describe("describeRuleSummary", () => {
       sharedFacility: "ignore",
     });
     expect(summary).toBe("Child B: Allergic to peanuts, blocks.");
+  });
+});
+
+describe("removal copy", () => {
+  it("names the person and their rules", () => {
+    expect(personRemovalCopy("Parent A", 2).body).toContain("2 rules");
+    expect(personRemovalCopy("Child B", 1).body).toContain("1 rule");
+    expect(personRemovalCopy("Child B", 0).body).not.toContain("rules");
+  });
+
+  it("explains what removing a block rule stops doing", () => {
+    const copy = ruleRemovalCopy("Parent A", {
+      kind: "allergen",
+      target: "tree_nut",
+      severity: "block",
+    });
+    expect(copy.body).toContain("Parent A");
+    expect(copy.body).toContain("Allergic to tree nuts, blocks");
   });
 });
 

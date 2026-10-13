@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { AddPersonForm } from "@/components/kitchen/AddPersonForm";
+import { PersonActions } from "@/components/kitchen/PersonActions";
 import { PersonCard } from "@/components/kitchen/PersonCard";
 import { getSessionContext } from "@/lib/session";
 
@@ -45,6 +46,12 @@ export default async function PeoplePage() {
               key={person.id}
               person={person}
               rules={rulesByPerson.get(person.id) ?? []}
+              actions={
+                <PersonActions
+                  person={person}
+                  ruleCount={(rulesByPerson.get(person.id) ?? []).length}
+                />
+              }
             />
           ))}
         </div>
