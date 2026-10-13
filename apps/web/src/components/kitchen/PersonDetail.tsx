@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import type { Person, PersonRule } from "@ovenlovin/core";
 import { PersonEditor } from "./PersonEditor";
@@ -10,6 +10,8 @@ import { RuleSheet } from "./RuleSheet";
 export function PersonDetail({ person, rules }: { person: Person; rules: PersonRule[] }) {
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const closeAdd = useCallback(() => setAddOpen(false), []);
+  const closeEdit = useCallback(() => setEditOpen(false), []);
 
   return (
     <>
@@ -31,13 +33,8 @@ export function PersonDetail({ person, rules }: { person: Person; rules: PersonR
         </div>
       </div>
       <RuleList person={person} rules={rules} />
-      <RuleSheet person={person} open={addOpen} onClose={() => setAddOpen(false)} />
-      <PersonEditor
-        person={person}
-        ruleCount={rules.length}
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-      />
+      <RuleSheet person={person} open={addOpen} onClose={closeAdd} />
+      <PersonEditor person={person} ruleCount={rules.length} open={editOpen} onClose={closeEdit} />
     </>
   );
 }

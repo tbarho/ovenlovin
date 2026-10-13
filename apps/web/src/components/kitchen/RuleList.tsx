@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Person, PersonRule } from "@ovenlovin/core";
 import { describeRuleChip, describeSharedFacility, ruleRemovalCopy } from "@ovenlovin/allergens";
@@ -12,6 +12,7 @@ import { RuleSheet } from "./RuleSheet";
 export function RuleList({ person, rules }: { person: Person; rules: PersonRule[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState<PersonRule | null>(null);
+  const closeEdit = useCallback(() => setEditing(null), []);
   const [removing, setRemoving] = useState<PersonRule | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,12 +75,7 @@ export function RuleList({ person, rules }: { person: Person; rules: PersonRule[
         })}
       </div>
       {error ? <p className="form-error">{error}</p> : null}
-      <RuleSheet
-        person={person}
-        rule={editing}
-        open={Boolean(editing)}
-        onClose={() => setEditing(null)}
-      />
+      <RuleSheet person={person} rule={editing} open={Boolean(editing)} onClose={closeEdit} />
       <ConfirmDialog
         open={Boolean(removing)}
         title={removing ? ruleRemovalCopy(person.displayName, removing).title : "Remove this rule?"}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type DragEvent } from "react";
+import { useCallback, useMemo, useState, type DragEvent } from "react";
 import { LayoutGroup } from "framer-motion";
 import {
   bucketHint,
@@ -35,6 +35,9 @@ export function PersonProfile({ personId }: { personId: string }) {
   const [adding, setAdding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dropBucket, setDropBucket] = useState<Bucket | null>(null);
+  const closeEditing = useCallback(() => setEditing(null), []);
+  const closeAdding = useCallback(() => setAdding(false), []);
+  const closeDelete = useCallback(() => setConfirmDelete(false), []);
 
   const grouped = useMemo(() => {
     const map: Record<Bucket, Restriction[]> = {
@@ -151,7 +154,7 @@ export function PersonProfile({ personId }: { personId: string }) {
       <Sheet
         open={Boolean(editing)}
         title={editing ? restrictionLabel(editing) : "Edit"}
-        onClose={() => setEditing(null)}
+        onClose={closeEditing}
       >
         {editing ? (
           <RestrictionEditor
@@ -161,7 +164,7 @@ export function PersonProfile({ personId }: { personId: string }) {
               updateRestriction(person.id, next);
               setEditing(next);
             }}
-            onClose={() => setEditing(null)}
+            onClose={closeEditing}
           />
         ) : null}
       </Sheet>
@@ -169,7 +172,7 @@ export function PersonProfile({ personId }: { personId: string }) {
       <Sheet
         open={adding}
         title={`Anything ${person.name} can’t or won’t eat?`}
-        onClose={() => setAdding(false)}
+        onClose={closeAdding}
       >
         <FoodPicker
           selectedIds={person.restrictions.map((item) => item.itemId)}
@@ -198,7 +201,7 @@ export function PersonProfile({ personId }: { personId: string }) {
         title={`Remove ${person.name}?`}
         body={`This takes ${person.name} out of the household. Their rules go with them. You can add them again from setup.`}
         confirmLabel={`Delete ${person.name}`}
-        onCancel={() => setConfirmDelete(false)}
+        onCancel={closeDelete}
         onConfirm={() => {
           deletePerson(person.id);
           setConfirmDelete(false);

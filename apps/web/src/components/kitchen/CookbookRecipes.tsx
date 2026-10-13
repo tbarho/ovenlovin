@@ -2,20 +2,33 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 import { ConfirmDialog } from "./ConfirmDialog";
 
-export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; recipes: Recipe[] }) {
+function RenameCookbookSheet({
+  cookbook,
+  open,
+  onClose,
+}: {
+  cookbook: Cookbook;
+  open: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const [name, setName] = useState(cookbook.name);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setName(cookbook.name);
+      setError(null);
+    }
+  }, [open, cookbook.name]);
 
   async function rename(event: React.FormEvent) {
     event.preventDefault();
@@ -26,7 +39,7 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
         method: "PATCH",
         body: JSON.stringify({ name }),
       });
-      setRenameOpen(false);
+      onClose();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not rename cookbook");
@@ -34,6 +47,27 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
       setPending(false);
     }
   }
+
+  return (
+    <BottomSheet open={open} title="Rename cookbook" onClose={onClose}>
+      <form className="form-card" style={{ margin: 0 }} onSubmit={rename}>
+        <input value={name} onChange={(event) => setName(event.target.value)} required />
+        {error ? <p className="muted">{error}</p> : null}
+        <button className="btn primary" type="submit" disabled={pending}>
+          {pending ? "Saving…" : "Save name"}
+        </button>
+      </form>
+    </BottomSheet>
+  );
+}
+
+export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; recipes: Recipe[] }) {
+  const router = useRouter();
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const closeRename = useCallback(() => setRenameOpen(false), []);
 
   async function remove() {
     setPending(true);
@@ -74,6 +108,8 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
         </div>
       </div>
 
+      {error ? <p className="muted">{error}</p> : null}
+
       {recipes.length === 0 ? (
         <p className="empty-note">This cookbook is empty. Open a recipe and add it from Edit.</p>
       ) : (
@@ -100,15 +136,7 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
         </div>
       )}
 
-      <BottomSheet open={renameOpen} title="Rename cookbook" onClose={() => setRenameOpen(false)}>
-        <form className="form-card" style={{ margin: 0 }} onSubmit={rename}>
-          <input value={name} onChange={(event) => setName(event.target.value)} required />
-          {error ? <p className="muted">{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save name"}
-          </button>
-        </form>
-      </BottomSheet>
+      <RenameCookbookSheet cookbook={cookbook} open={renameOpen} onClose={closeRename} />
       <ConfirmDialog
         open={deleteOpen}
         title="Delete cookbook"

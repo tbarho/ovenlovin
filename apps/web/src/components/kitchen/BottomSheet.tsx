@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
+import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
 
 export function BottomSheet({
   open,
@@ -16,30 +17,12 @@ export function BottomSheet({
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const panel = panelRef.current;
-    const focusable = panel?.querySelector<HTMLElement>(
-      "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
-    );
-    focusable?.focus();
-
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open, onClose]);
+  useSheetOpenEffects({ open, onClose, panelRef });
 
   if (!open) return null;
 
   return (
-    <div className="sheet-root">
+    <div className="sheet-root" data-sheet="bottom">
       <button type="button" className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div
         ref={panelRef}
@@ -47,6 +30,7 @@ export function BottomSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
       >
         <div className="sheet-handle" aria-hidden="true" />
         <header className="sheet-head">
