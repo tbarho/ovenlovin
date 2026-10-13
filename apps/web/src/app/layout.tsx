@@ -18,7 +18,20 @@ export const metadata: Metadata = {
   title: "OvenLovin",
   description: "LLM-optimized recipe and family meal-planning platform",
   icons: {
-    icon: brandPublicPath.favicon,
+    icon: [
+      { url: brandPublicPath.favicon, type: "image/svg+xml" },
+      { url: brandPublicPath.favicon32, sizes: "32x32", type: "image/png" },
+    ],
+    apple: brandPublicPath.appleTouch,
+  },
+  openGraph: {
+    title: "OvenLovin",
+    description: "LLM-optimized recipe and family meal-planning platform",
+    images: [{ url: brandPublicPath.og, width: 1200, height: 630, alt: "OvenLovin" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [brandPublicPath.og],
   },
 };
 

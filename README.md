@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="packages/brand/assets/mark.svg" width="128" alt="OvenLovin" />
+  <img src="packages/brand/assets/mark.png" width="128" alt="OvenLovin" />
 </p>
 
 <h1 align="center">OvenLovin</h1>

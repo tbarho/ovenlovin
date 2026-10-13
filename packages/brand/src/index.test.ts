@@ -15,19 +15,32 @@ describe("@ovenlovin/brand", () => {
     const names = Object.keys(brandAssets);
     expect(names).toEqual(Object.keys(brandPublicPath));
     expect(names).toContain("mark");
-    expect(names).toContain("logo");
     expect(names).toContain("favicon");
+    expect(names).toContain("appleTouch");
+    expect(names).toContain("og");
   });
 
-  it("ships valid SVG files for every asset", () => {
+  it("ships every listed asset file", () => {
     for (const file of Object.values(brandAssets)) {
       const path = join(assetsDir, file);
       expect(existsSync(path), `${file} should exist`).toBe(true);
-      const svg = readFileSync(path, "utf8");
-      expect(svg).toMatch(/^<svg\s/);
-      expect(svg).toContain('xmlns="http://www.w3.org/2000/svg"');
-      expect(svg).toContain("</svg>");
+    }
+  });
+
+  it("keeps wordmarks and the favicon labeled OvenLovin", () => {
+    for (const file of [brandAssets.wordmark, brandAssets.wordmarkDark, brandAssets.favicon]) {
+      const svg = readFileSync(join(assetsDir, file), "utf8");
+      expect(svg).toMatch(/^<svg\s|^<\?xml/);
       expect(svg).toContain("OvenLovin");
+    }
+  });
+
+  it("ships a PNG mark and OG images", () => {
+    for (const file of [brandAssets.mark, brandAssets.og, brandAssets.appleTouch]) {
+      const bytes = readFileSync(join(assetsDir, file));
+      expect(bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))).toBe(
+        true
+      );
     }
   });
 
