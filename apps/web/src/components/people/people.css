@@ -11,6 +11,13 @@
   display: none;
 }
 
+/* Tokens stay; do not inherit the page-shell layout onto a portaled overlay. */
+.olp.olp-sheet-root {
+  z-index: 40;
+  min-height: 0;
+  background: transparent;
+}
+
 .kitchen-people .olp-person-chip {
   text-decoration: none;
   color: inherit;

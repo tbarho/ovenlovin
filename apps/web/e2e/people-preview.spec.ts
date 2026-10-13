@@ -24,9 +24,25 @@ test("unsigned people preview shows the production people cards", async ({ page 
   await expect(dialog).toHaveCSS("opacity", "1");
   const background = await dialog.evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(background.replace(/\s/g, "")).toMatch(/^rgba?\(255,255,255(?:,1)?\)$/);
+  await expect(page.locator(".olp-sheet-root")).toHaveCount(1);
+  const sheetParent = await page
+    .locator(".olp-sheet-root")
+    .evaluate((el) => el.parentElement?.tagName);
+  expect(sheetParent).toBe("BODY");
+  const headerBox = await page.locator(".kitchen-topbar").boundingBox();
+  expect(headerBox).toBeTruthy();
+  expect(headerBox!.y).toBeGreaterThanOrEqual(-1);
+  const cover = await page.evaluate(() => {
+    const el = document.elementFromPoint(24, 16);
+    return el?.className ?? "";
+  });
+  expect(cover).toMatch(/sheet-backdrop|olp-sheet/);
   await page.screenshot({
     path: `../../e2e-artifacts/people-preview-add-${testInfo.project.name}.png`,
     fullPage: true,
+  });
+  await page.screenshot({
+    path: `../../e2e-artifacts/people-preview-add-viewport-${testInfo.project.name}.png`,
   });
 
   await page.goto("/dev/people-preview?view=recipe");
@@ -34,8 +50,19 @@ test("unsigned people preview shows the production people cards", async ({ page 
   await expect(page.getByTestId("who-can-eat")).toBeVisible();
   await page.getByTestId(/mark-/).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  const recipeHeader = await page.locator(".kitchen-topbar").boundingBox();
+  expect(recipeHeader).toBeTruthy();
+  expect(recipeHeader!.y).toBeGreaterThanOrEqual(-1);
+  const recipeCover = await page.evaluate(() => {
+    const el = document.elementFromPoint(24, 16);
+    return el?.className ?? "";
+  });
+  expect(recipeCover).toMatch(/sheet-backdrop|olp-sheet/);
   await page.screenshot({
     path: `../../e2e-artifacts/people-preview-recipe-${testInfo.project.name}.png`,
     fullPage: true,
+  });
+  await page.screenshot({
+    path: `../../e2e-artifacts/people-preview-recipe-viewport-${testInfo.project.name}.png`,
   });
 });
