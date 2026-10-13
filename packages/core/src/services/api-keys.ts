@@ -104,31 +104,37 @@ export class ApiKeyService extends BaseService {
     };
   }
 
-  async revoke(keyId: string, householdId: string): Promise<void> {
-    await this._db
+  async revoke(keyId: string, householdId: string): Promise<boolean> {
+    const [updated] = await this._db
       .update(apiKey)
       .set({ revokedAt: new Date() })
-      .where(and(eq(apiKey.id, keyId), eq(apiKey.householdId, householdId)));
+      .where(and(eq(apiKey.id, keyId), eq(apiKey.householdId, householdId)))
+      .returning({ id: apiKey.id });
+
+    return Boolean(updated);
   }
 
   async listForHousehold(householdId: string): Promise<ApiKey[]> {
     const keys = await this._db.select().from(apiKey).where(eq(apiKey.householdId, householdId));
 
-    return keys.map((k) => ({
-      id: k.id,
-      createdAt: k.createdAt.toISOString(),
-      updatedAt: k.updatedAt.toISOString(),
-      deletedAt: k.deletedAt?.toISOString() ?? null,
-      createdBy: k.createdBy,
-      householdId: k.householdId,
-      name: k.name,
-      keyHash: k.keyHash,
-      keyPrefix: k.keyPrefix,
-      scopes: k.scopes as ApiKeyScope[],
-      lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
-      expiresAt: k.expiresAt?.toISOString() ?? null,
-      revokedAt: k.revokedAt?.toISOString() ?? null,
-    }));
+    return keys
+      .filter((k) => !k.deletedAt)
+      .map((k) => ({
+        id: k.id,
+        createdAt: k.createdAt.toISOString(),
+        updatedAt: k.updatedAt.toISOString(),
+        deletedAt: null,
+        createdBy: k.createdBy,
+        householdId: k.householdId,
+        name: k.name,
+        keyHash: k.keyHash,
+        keyPrefix: k.keyPrefix,
+        scopes: k.scopes as ApiKeyScope[],
+        lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
+        expiresAt: k.expiresAt?.toISOString() ?? null,
+        revokedAt: k.revokedAt?.toISOString() ?? null,
+      }))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
   }
 
   private generateKey(): string {
@@ -136,6 +142,7 @@ export class ApiKeyService extends BaseService {
     return `rkapi_${bytes.toString("hex")}`;
   }
 
+  /** SHA-256 hex digest. Keep this hashing as-is — callers never store plaintext. */
   private hashKey(plaintext: string): string {
     return createHash("sha256").update(plaintext).digest("hex");
   }

@@ -22,6 +22,9 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
             <li>
               <Link href="/#connect">Agents</Link>
             </li>
+            <li>
+              <Link href="/settings">Settings</Link>
+            </li>
           </ul>
           {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? <UserButton /> : null}
         </div>
