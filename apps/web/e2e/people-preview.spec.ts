@@ -29,6 +29,7 @@ test("unsigned people preview shows the production people cards", async ({ page 
     .locator(".olp-sheet-root")
     .evaluate((el) => el.parentElement?.tagName);
   expect(sheetParent).toBe("BODY");
+  await page.evaluate(() => window.scrollTo(0, 0));
   const headerBox = await page.locator(".kitchen-topbar").boundingBox();
   expect(headerBox).toBeTruthy();
   expect(headerBox!.y).toBeGreaterThanOrEqual(-1);
@@ -48,8 +49,9 @@ test("unsigned people preview shows the production people cards", async ({ page 
   await page.goto("/dev/people-preview?view=recipe");
   await page.waitForLoadState("networkidle");
   await expect(page.getByTestId("who-can-eat")).toBeVisible();
-  await page.getByTestId(/mark-/).first().click();
+  await page.locator("[data-testid^='mark-'][data-mark='block']").click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
   const recipeHeader = await page.locator(".kitchen-topbar").boundingBox();
   expect(recipeHeader).toBeTruthy();
   expect(recipeHeader!.y).toBeGreaterThanOrEqual(-1);

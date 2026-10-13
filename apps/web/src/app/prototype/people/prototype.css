@@ -1274,10 +1274,10 @@
 
   .olp-sheet-root {
     align-items: center;
-    padding: 24px;
   }
 
   .olp-sheet {
+    margin: 24px;
     border-bottom: 1px solid var(--olp-line);
     border-radius: 24px;
   }

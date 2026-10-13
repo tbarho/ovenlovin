@@ -268,7 +268,7 @@ select {
 .sheet-root {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 80;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -452,10 +452,10 @@ select {
 @media (min-width: 720px) {
   .sheet-root {
     align-items: center;
-    padding: 24px;
   }
 
   .sheet-panel {
+    margin: 24px;
     max-height: min(84%, 720px);
     border-bottom: 1px solid #eaeaea;
     border-radius: 16px;
