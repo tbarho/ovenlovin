@@ -20,6 +20,19 @@ describe("describeConfigStatus", () => {
     expect(missing.checks.find((c) => c.id === "database")?.detail).toMatch(/DATABASE_URL/);
   });
 
+  it("does not tell Vercel deploys to set AI_GATEWAY_API_KEY when the gateway is configured", () => {
+    const status = describeConfigStatus({
+      databaseConfigured: true,
+      databaseReachable: true,
+      clerkConfigured: true,
+      aiGatewayConfigured: true,
+    });
+    expect(status.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/OIDC/);
+    expect(status.checks.find((c) => c.id === "aiGateway")?.detail).not.toMatch(
+      /Set AI_GATEWAY_API_KEY/
+    );
+  });
+
   it("does not claim the database is fine when the URL is set but unreachable", () => {
     const status = describeConfigStatus({
       databaseConfigured: true,
