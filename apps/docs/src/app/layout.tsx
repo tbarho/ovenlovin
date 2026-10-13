@@ -2,7 +2,7 @@ import { withBasePath } from "@/lib/base-path";
 import { brandPublicPath } from "@ovenlovin/brand";
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bagel_Fat_One, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +13,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
+});
+
+const bagel = Bagel_Fat_One({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-display",
 });
 
 export const metadata = {
@@ -52,8 +58,12 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }): React.ReactElement {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${bagel.variable}`}
+    >
+      <body className="font-sans">
         <RootProvider>{children}</RootProvider>
       </body>
     </html>
