@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Chocolate chip cookies">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f3e0c2"/>
+      <stop offset="1" stop-color="#8a5a2b"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <circle cx="320" cy="280" r="90" fill="#d4a15a"/>
+  <circle cx="480" cy="310" r="80" fill="#c48a3a"/>
+  <circle cx="300" cy="260" r="10" fill="#4a2a14"/>
+  <circle cx="350" cy="300" r="12" fill="#4a2a14"/>
+  <circle cx="500" cy="290" r="11" fill="#4a2a14"/>
+  <text x="400" y="520" text-anchor="middle" fill="#161310" font-family="Georgia, serif" font-size="34">Cookies</text>
+</svg>

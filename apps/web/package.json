@@ -12,6 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
+    "e2e:kitchen": "playwright test -c playwright.kitchen.config.ts",
+    "e2e:kitchen:seed": "tsx scripts/seed-e2e-kitchen.ts",
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {

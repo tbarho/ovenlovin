@@ -59,3 +59,45 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
+
+  kitchen-e2e:
+    name: Signed-in kitchen e2e
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ovenlovin
+          POSTGRES_PASSWORD: ovenlovin
+          POSTGRES_DB: ovenlovin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ovenlovin -d ovenlovin"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
+      E2E_AUTH_BYPASS: "1"
+      E2E_SHOT_LABEL: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ovenlovin/db db:migrate:deploy
+      - run: pnpm --filter @ovenlovin/web e2e:kitchen:seed
+      - run: pnpm --filter @ovenlovin/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @ovenlovin/web e2e:kitchen
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kitchen-e2e
+          path: |
+            e2e-artifacts/kitchen
+            apps/web/playwright-report
+          if-no-files-found: ignore

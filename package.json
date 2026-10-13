@@ -18,7 +18,10 @@
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean && rm -rf node_modules .turbo"
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "e2e:kitchen": "pnpm --filter @ovenlovin/web e2e:kitchen",
+    "e2e:kitchen:seed": "pnpm --filter @ovenlovin/web e2e:kitchen:seed",
+    "db:migrate": "pnpm --filter @ovenlovin/db db:migrate:deploy"
   },
   "devDependencies": {
     "@turbo/gen": "^2.3.3",

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Roast chicken">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6e3c2"/>
+      <stop offset="1" stop-color="#c46a1b"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <ellipse cx="400" cy="300" rx="150" ry="110" fill="#e0a35a"/>
+  <ellipse cx="400" cy="260" rx="90" ry="70" fill="#d4893a"/>
+  <circle cx="520" cy="360" r="28" fill="#c45d28"/>
+  <text x="400" y="520" text-anchor="middle" fill="#161310" font-family="Georgia, serif" font-size="34">Roast chicken</text>
+</svg>

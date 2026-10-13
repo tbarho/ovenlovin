@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
 
 const clerkConfigured = Boolean(
   process.env.CLERK_SECRET_KEY && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -18,14 +19,20 @@ const isPublicRoute = createRouteMatcher([
   "/dev/people-preview(.*)",
 ]);
 
-export default clerkConfigured
-  ? clerkMiddleware(async (auth, req) => {
-      if (isPublicRoute(req)) return;
-      await auth.protect();
-    })
-  : function middleware() {
-      return NextResponse.next();
-    };
+const clerk = clerkMiddleware(async (auth, req) => {
+  if (isPublicRoute(req)) return;
+  await auth.protect();
+});
+
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  if (isE2eAuthBypassEnabled()) {
+    return NextResponse.next();
+  }
+  if (clerkConfigured) {
+    return clerk(req, event);
+  }
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

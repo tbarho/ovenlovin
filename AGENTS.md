@@ -65,7 +65,61 @@ pnpm typecheck
 
 # Clean
 pnpm clean
+
+# Signed-in kitchen (local e2e harness — see below)
+./scripts/e2e-kitchen-up.sh
+E2E_AUTH_BYPASS=1 DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin pnpm --filter @ovenlovin/web dev
+pnpm --filter @ovenlovin/web e2e:kitchen
 ```
+
+## Signed-in kitchen e2e harness
+
+Clerk sits in front of `/recipes`, `/people`, and `/settings`, so agents cannot visually QA those pages without a session. Do **not** use production Clerk credentials for this. The harness is a test-only auth shim plus a seeded local household.
+
+### Safety
+
+`E2E_AUTH_BYPASS` is implemented in `apps/web/src/lib/e2e-auth.ts`.
+
+- It is **only** active when `NODE_ENV=test` or `E2E_AUTH_BYPASS=1`.
+- It is **never** active when `VERCEL_ENV=production` (or `VERCEL=1` + `NODE_ENV=production`).
+- `next build` calls `assertE2eAuthBypassSafeForBuild()`. A Vercel production build **fails** if the bypass is requested.
+- Unit tests in `apps/web/src/lib/e2e-auth.test.ts` lock that gate.
+
+Never set `E2E_AUTH_BYPASS` in Vercel production env vars.
+
+### Local Postgres + seed
+
+```bash
+# Starts postgres:16 via docker-compose.e2e.yml, migrates, and seeds
+./scripts/e2e-kitchen-up.sh
+
+# Then run the signed-in app
+E2E_AUTH_BYPASS=1 DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin \
+  pnpm --filter @ovenlovin/web dev
+```
+
+If Docker is unavailable, point `DATABASE_URL` at any local Postgres 16 database and run `pnpm db:migrate` then `pnpm e2e:kitchen:seed`.
+
+The seed (`apps/web/src/lib/e2e-kitchen.ts`) is the one fixture allowed to use the product household so agents can see a realistic kitchen:
+
+- People: Ty, Bec, Ellie, Laynie, Jake
+- Jake has **severe** peanut and tree nut `block` rules (descendants + shared facility)
+- Eight recipes with images, including pesto pasta (pine nuts) and kung pao (peanuts)
+- Cookbooks: Weeknight dinners, Weekend treats
+- A draft meal plan for the week of 2026-10-12
+- One API key so Settings is not empty
+
+Other tests and docs still use generic names ("Parent A", "Child B"). This kitchen is visual UAT only.
+
+Open `/recipes` while the bypass is on — `getSessionContext()` returns the seeded household without Clerk.
+
+### Screenshots
+
+```bash
+E2E_SHOT_LABEL=before pnpm --filter @ovenlovin/web e2e:kitchen
+```
+
+Playwright walks recipes, a cookbook, recipe detail, people, Jake's person page, settings, and every sheet at 1440 / 1280 / 1024 / 768 / 390. PNGs land in `e2e-artifacts/kitchen/<label>/` (gitignored). CI runs the same spec and uploads the artifact.
 
 ## Core Principles
 

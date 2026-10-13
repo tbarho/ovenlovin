@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { assertE2eAuthBypassSafeForBuild } from "./src/lib/e2e-auth";
+
+assertE2eAuthBypassSafeForBuild();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
