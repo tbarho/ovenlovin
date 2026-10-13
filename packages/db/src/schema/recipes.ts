@@ -171,6 +171,7 @@ export const collection = pgTable("collection", {
   slug: varchar("slug", { length: 255 }).notNull(),
   description: text("description"),
   visibility: recipeVisibilityEnum("visibility").notNull().default("private"),
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 export const collectionRecipe = pgTable("collection_recipe", {

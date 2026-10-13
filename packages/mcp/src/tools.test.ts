@@ -13,6 +13,9 @@ import {
   exportShoppingListTool,
   saveMealPlanTool,
   getMealPlanTool,
+  listCookbooksTool,
+  getCookbookTool,
+  manageCookbookTool,
 } from "./index.js";
 
 describe("MCP Tool Schemas", () => {
@@ -194,6 +197,52 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(true);
     });
 
+    it("defaults includeSource to true", () => {
+      const result = getRecipeTool.inputSchema.safeParse({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.includeSource).toBe(true);
+      }
+    });
+  });
+
+  describe("cookbooks", () => {
+    it("validates list_cookbooks defaults", () => {
+      const result = listCookbooksTool.inputSchema.safeParse({});
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.includeEmpty).toBe(true);
+      }
+    });
+
+    it("validates get_cookbook id", () => {
+      expect(
+        getCookbookTool.inputSchema.safeParse({
+          id: "550e8400-e29b-41d4-a716-446655440000",
+        }).success
+      ).toBe(true);
+    });
+
+    it("validates manage_cookbook actions", () => {
+      expect(
+        manageCookbookTool.inputSchema.safeParse({
+          action: "create",
+          name: "Weeknight dinners",
+        }).success
+      ).toBe(true);
+      expect(
+        manageCookbookTool.inputSchema.safeParse({
+          action: "add_recipe",
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          recipeId: "550e8400-e29b-41d4-a716-446655440001",
+        }).success
+      ).toBe(true);
+    });
+  });
+
+  describe("import_recipe extra", () => {
     it("applies default skipReview", () => {
       const result = importRecipeTool.inputSchema.safeParse({
         source: "url",

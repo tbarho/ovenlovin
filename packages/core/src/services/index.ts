@@ -3,6 +3,7 @@ export * from "./households";
 export * from "./people";
 export * from "./plans";
 export * from "./recipes";
+export * from "./cookbooks";
 export * from "./plans";
 export * from "./api-keys";
 export * from "./shopping-list";

@@ -1248,6 +1248,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'private'"
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         }
       },
       "indexes": {},

@@ -30,6 +30,7 @@
     "@ovenlovin/core": "workspace:*",
     "@ovenlovin/db": "workspace:*",
     "@ovenlovin/importers": "workspace:*",
+    "@vercel/blob": "^2.8.1",
     "drizzle-orm": "^0.38.3",
     "globals": "^17.13.0",
     "zod": "^4.0.0"

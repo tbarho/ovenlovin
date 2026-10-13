@@ -26,6 +26,9 @@ import { checkMealPlanTool } from "./tools/check-meal-plan";
 import { exportShoppingListTool } from "./tools/export-shopping-list";
 import { saveMealPlanTool } from "./tools/save-meal-plan";
 import { getMealPlanTool } from "./tools/get-meal-plan";
+import { listCookbooksTool } from "./tools/list-cookbooks";
+import { getCookbookTool } from "./tools/get-cookbook";
+import { manageCookbookTool } from "./tools/manage-cookbook";
 
 // Resource implementations (will be implemented)
 import { listResources, readResource } from "./resources/index";
@@ -46,6 +49,9 @@ const TOOLS = [
   exportShoppingListTool,
   saveMealPlanTool,
   getMealPlanTool,
+  listCookbooksTool,
+  getCookbookTool,
+  manageCookbookTool,
 ] as const;
 
 /**

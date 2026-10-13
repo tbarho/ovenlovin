@@ -1,0 +1,43 @@
+import { z } from "zod";
+import { baseEntitySchema, createdBySchema, uuidSchema } from "./common";
+import { recipeVisibilitySchema } from "./recipes";
+
+export const cookbookSchema = baseEntitySchema.merge(createdBySchema).extend({
+  householdId: uuidSchema,
+  name: z.string().min(1).max(255),
+  slug: z.string().min(1).max(255),
+  description: z.string().nullable().optional(),
+  visibility: recipeVisibilitySchema.default("private"),
+  sortOrder: z.number().int().nonnegative().default(0),
+});
+
+export const cookbookSummarySchema = z.object({
+  id: uuidSchema,
+  name: z.string(),
+  slug: z.string(),
+});
+
+export const cookbookCardSchema = cookbookSchema.extend({
+  recipeCount: z.number().int().nonnegative(),
+  previewImages: z.array(z.string()).default([]),
+});
+
+export const cookbookRecipeSchema = baseEntitySchema.extend({
+  cookbookId: uuidSchema,
+  recipeId: uuidSchema,
+  order: z.number().int().nonnegative().nullable().optional(),
+});
+
+export type Cookbook = z.infer<typeof cookbookSchema>;
+export type CookbookSummary = z.infer<typeof cookbookSummarySchema>;
+export type CookbookCard = z.infer<typeof cookbookCardSchema>;
+export type CookbookRecipe = z.infer<typeof cookbookRecipeSchema>;
+
+export function slugifyCookbookName(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return slug || "cookbook";
+}

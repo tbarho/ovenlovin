@@ -1,0 +1,16 @@
+---
+title: manage_cookbook
+description: Create, rename, delete, or file recipes in a cookbook
+---
+
+Cookbooks are many-to-many. Creating or deleting a cookbook never deletes recipes.
+
+## Input Schema
+
+| Parameter     | Type          | Required                         | Default | Description                                                 |
+| ------------- | ------------- | -------------------------------- | ------- | ----------------------------------------------------------- |
+| `action`      | enum          | Yes                              | -       | `create`, `rename`, `delete`, `add_recipe`, `remove_recipe` |
+| `id`          | string (UUID) | For every action except `create` | -       | Cookbook ID                                                 |
+| `name`        | string        | For `create` and `rename`        | -       | Cookbook name                                               |
+| `description` | string        | No                               | -       | Optional description                                        |
+| `recipeId`    | string (UUID) | For add/remove                   | -       | Recipe to file or remove                                    |

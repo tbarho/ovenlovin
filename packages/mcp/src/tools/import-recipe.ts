@@ -1,12 +1,12 @@
 /**
  * Tool: import_recipe
  *
- * Import a recipe from URL, paste, or file
+ * Import a recipe from URL or pasted text
  */
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { RecipeService, type RecipeMethodTag } from "@ovenlovin/core";
+import { copyRemoteImages, RecipeService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
@@ -14,6 +14,7 @@ export const importRecipeSchema = z.object({
   source: z.enum(["url", "paste"]),
   content: z.string().describe("URL or pasted recipe text"),
   skipReview: z.boolean().default(false).describe("Skip review queue and publish immediately"),
+  cookbookId: z.string().uuid().optional().describe("Optional cookbook to file the recipe in"),
 });
 
 export type ImportRecipeInput = z.infer<typeof importRecipeSchema>;
@@ -21,9 +22,35 @@ export type ImportRecipeInput = z.infer<typeof importRecipeSchema>;
 export interface ImportRecipeOutput {
   recipeId: string;
   status: "draft" | "needs_review" | "published";
+  title: string;
+  servings?: number;
+  prepTimeMinutes?: number;
+  cookTimeMinutes?: number;
+  images: string[];
   confidence: number;
   lowConfidenceFields?: string[];
   message: string;
+}
+
+async function persistImages(urls: string[], householdId: string): Promise<string[]> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN || urls.length === 0) return urls;
+  const { put } = await import("@vercel/blob");
+  return copyRemoteImages(
+    urls,
+    async ({ pathname, body, contentType }) => {
+      try {
+        const stored = await put(pathname, body, {
+          access: "public",
+          contentType,
+          addRandomSuffix: true,
+        });
+        return stored.url;
+      } catch {
+        return null;
+      }
+    },
+    `recipes/${householdId}`
+  );
 }
 
 async function handler(
@@ -44,44 +71,34 @@ async function handler(
     draft = await importer.toDraft(raw);
   }
 
-  // Generate slug from title
-  const slug = draft.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+  if (input.skipReview) {
+    draft.needsReview = false;
+  }
 
-  // Create recipe
-  const recipe = await recipeService.createRecipe({
+  draft.images = await persistImages(draft.images ?? [], context.householdId);
+
+  const recipe = await recipeService.createRecipeFromDraft(draft, {
     householdId: context.householdId,
-    title: draft.title,
-    slug,
-    description: draft.description ?? null,
-    yieldQuantity: draft.yieldQuantity ?? null,
-    yieldUnit: draft.yieldUnit ?? null,
-    servings: draft.servings ?? null,
-    prepTimeMinutes: draft.prepTimeMinutes ?? null,
-    cookTimeMinutes: draft.cookTimeMinutes ?? null,
-    totalTimeMinutes: draft.totalTimeMinutes ?? null,
-    activeTimeMinutes: draft.activeTimeMinutes ?? null,
-    methodTags: (draft.methodTags ?? []) as RecipeMethodTag[],
-    cuisine: draft.cuisine ?? null,
-    course: draft.course ?? null,
-    difficulty: draft.difficulty ?? null,
-    equipment: draft.equipment ?? [],
-    images: draft.images ?? [],
-    status: input.skipReview || !draft.needsReview ? "published" : "needs_review",
-    visibility: "private",
-    version: 1,
-    isFamilyRecipe: false,
-    createdBy: context.userId as string,
+    createdBy: context.userId ?? context.apiKeyId ?? context.householdId,
   });
 
-  // TODO: Create ingredients and steps (need to add those methods to RecipeService)
-  // For now, just return the recipe ID
+  if (input.cookbookId) {
+    const { CookbookService } = await import("@ovenlovin/core");
+    const cookbooks = new CookbookService(db);
+    const cookbook = await cookbooks.getCookbook(input.cookbookId);
+    if (cookbook && cookbook.householdId === context.householdId) {
+      await cookbooks.addRecipe(input.cookbookId, recipe.id);
+    }
+  }
 
   return {
     recipeId: recipe.id,
     status: recipe.status,
+    title: recipe.title,
+    servings: recipe.servings ?? undefined,
+    prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
+    cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
+    images: recipe.images,
     confidence: draft.overallConfidence,
     lowConfidenceFields: draft.needsReview ? draft.reviewReasons : undefined,
     message: draft.needsReview
@@ -93,7 +110,7 @@ async function handler(
 export const importRecipeTool = {
   name: "import_recipe",
   description:
-    "Import a recipe from a URL or pasted text. Returns a draft recipe that may need review if confidence is low.",
+    "Import a recipe from a URL or pasted text. Pulls schema.org prep/cook times, servings, and the main image (copied into Vercel Blob).",
   inputSchema: importRecipeSchema,
   handler,
 } as const;

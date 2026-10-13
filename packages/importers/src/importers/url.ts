@@ -6,12 +6,14 @@ import type {
   ParsedIngredient,
   ParsedStep,
 } from "../types/importer";
+import { parseIngredientLine } from "@ovenlovin/core";
 import {
   fetchHtml,
   extractJsonLd,
   parseDuration,
   extractAuthor,
   extractImages,
+  extractPageImages,
 } from "../utils/url";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 
@@ -44,6 +46,7 @@ export function createUrlImporter(): Importer<UrlImportInput> {
       return {
         sourceType: "url",
         sourceUrl: finalUrl,
+        pageImages: extractPageImages(html),
         author: extractAuthor(jsonLd),
         attribution: jsonLd.publisher
           ? typeof jsonLd.publisher === "string"
@@ -81,6 +84,9 @@ export function createUrlImporter(): Importer<UrlImportInput> {
       const steps = parseSteps(recipe.recipeInstructions);
 
       const images = extractImages(recipe);
+      if (images.length === 0 && raw.pageImages?.length) {
+        images.push(...raw.pageImages);
+      }
 
       const cuisine =
         typeof recipe.recipeCuisine === "string"
@@ -153,10 +159,18 @@ function parseIngredients(recipeIngredient: unknown): ParsedIngredient[] {
     }
   }
 
-  return ingredientStrings.map((rawText) => ({
-    rawText,
-    confidence: 1.0,
-  }));
+  return ingredientStrings.map((rawText) => {
+    const parsed = parseIngredientLine(rawText);
+    return {
+      rawText,
+      quantity:
+        parsed.quantityMin != null
+          ? { min: parsed.quantityMin, max: parsed.quantityMax ?? undefined }
+          : undefined,
+      unit: parsed.unit ?? undefined,
+      confidence: 1.0,
+    };
+  });
 }
 
 function parseSteps(recipeInstructions: unknown): ParsedStep[] {

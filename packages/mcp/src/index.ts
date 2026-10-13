@@ -12,3 +12,6 @@ export * from "./tools/check-meal-plan";
 export * from "./tools/export-shopping-list";
 export * from "./tools/save-meal-plan";
 export * from "./tools/get-meal-plan";
+export * from "./tools/list-cookbooks";
+export * from "./tools/get-cookbook";
+export * from "./tools/manage-cookbook";

@@ -42,6 +42,8 @@ describe("URL Importer", () => {
 
       expect(draft.ingredients).toHaveLength(9);
       expect(draft.ingredients[0].rawText).toBe("2 1/4 cups all-purpose flour");
+      expect(draft.ingredients[0].quantity?.min).toBe(2.25);
+      expect(draft.ingredients[0].unit).toBe("cup");
       expect(draft.ingredients[0].confidence).toBe(1.0);
 
       expect(draft.steps).toHaveLength(6);
@@ -57,6 +59,19 @@ describe("URL Importer", () => {
       expect(draft.source.type).toBe("url");
       expect(draft.source.author).toBe("Chef Baker");
       expect(draft.source.importerName).toBe("url-importer");
+    });
+
+    it("falls back to page og:image when schema.org has no image", async () => {
+      const { image: _image, ...withoutImage } = chocolateChipCookiesJson;
+      const draft = await importer.toDraft({
+        sourceType: "url",
+        sourceUrl: "https://example.com/cookies",
+        pageImages: ["https://example.com/og.jpg"],
+        rawData: withoutImage,
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+      expect(draft.images).toEqual(["https://example.com/og.jpg"]);
     });
 
     it("should extract timers from steps", async () => {

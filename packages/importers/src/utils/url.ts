@@ -71,16 +71,36 @@ export function extractJsonLd(html: string): Record<string, unknown> | null {
  * Normalize a schema.org time duration to minutes
  * Handles ISO 8601 durations like "PT1H30M", "PT45M", "P1DT2H"
  */
-export function parseDuration(duration: string): number | undefined {
-  if (!duration || typeof duration !== "string") return undefined;
+export function parseDuration(duration: unknown): number | undefined {
+  if (duration == null) return undefined;
+  if (typeof duration === "number" && Number.isFinite(duration)) {
+    return Math.max(0, Math.round(duration));
+  }
+  if (typeof duration !== "string") return undefined;
 
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-  if (!match) return undefined;
+  const iso = duration
+    .trim()
+    .match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i);
+  if (iso) {
+    const days = iso[1] ? parseInt(iso[1], 10) : 0;
+    const hours = iso[2] ? parseInt(iso[2], 10) : 0;
+    const minutes = iso[3] ? parseInt(iso[3], 10) : 0;
+    const seconds = iso[4] ? parseFloat(iso[4]) : 0;
+    return days * 24 * 60 + hours * 60 + minutes + Math.round(seconds / 60);
+  }
 
-  const hours = match[1] ? parseInt(match[1]) : 0;
-  const minutes = match[2] ? parseInt(match[2]) : 0;
+  const days = duration.match(/(\d+)\s*(?:days?|d)\b/i);
+  const hours = duration.match(/(\d+)\s*(?:hours?|hrs?|h)\b/i);
+  const minutes = duration.match(/(\d+)\s*(?:minutes?|mins?|m)\b/i);
+  if (days || hours || minutes) {
+    const total =
+      (days?.[1] ? parseInt(days[1], 10) : 0) * 24 * 60 +
+      (hours?.[1] ? parseInt(hours[1], 10) : 0) * 60 +
+      (minutes?.[1] ? parseInt(minutes[1], 10) : 0);
+    return total > 0 ? total : undefined;
+  }
 
-  return hours * 60 + minutes;
+  return undefined;
 }
 
 /**
@@ -134,6 +154,29 @@ export function extractImages(recipe: Record<string, unknown>): string[] {
     const imgObj = image as Record<string, unknown>;
     if (typeof imgObj.url === "string") {
       images.push(imgObj.url);
+    }
+  }
+
+  return images;
+}
+
+/**
+ * Fall back to Open Graph / Twitter images when schema.org Recipe has none.
+ */
+export function extractPageImages(html: string): string[] {
+  const $ = cheerio.load(html);
+  const images: string[] = [];
+  const candidates = [
+    $('meta[property="og:image"]').attr("content"),
+    $('meta[property="og:image:url"]').attr("content"),
+    $('meta[name="og:image"]').attr("content"),
+    $('meta[name="twitter:image"]').attr("content"),
+    $('meta[property="twitter:image"]').attr("content"),
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate && candidate.trim() && !images.includes(candidate.trim())) {
+      images.push(candidate.trim());
     }
   }
 

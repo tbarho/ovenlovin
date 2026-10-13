@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { createPasteImporter, createUrlImporter } from "@ovenlovin/importers";
-import { RecipeService } from "@ovenlovin/core";
+import { copyRemoteImages, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
 import { draftFromPlainText } from "@/lib/plain-import";
+import { createVercelImagePut } from "@/lib/blob-store";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +34,12 @@ export async function POST(request: NextRequest) {
     } else {
       draft = draftFromPlainText(body.content);
     }
+
+    draft.images = await copyRemoteImages(
+      draft.images ?? [],
+      createVercelImagePut(),
+      `recipes/${householdId}`
+    );
 
     const db = getDatabase();
     const service = new RecipeService(db);

@@ -1,0 +1,28 @@
+---
+title: list_cookbooks
+description: List household cookbooks with preview images
+---
+
+List cookbooks for the authenticated household. Each card includes a recipe count and up to four preview images for the kitchen mosaic.
+
+## Input Schema
+
+| Parameter      | Type    | Required | Default | Description                                |
+| -------------- | ------- | -------- | ------- | ------------------------------------------ |
+| `includeEmpty` | boolean | No       | `true`  | Include cookbooks that have no recipes yet |
+
+## Example Result
+
+```json
+{
+  "cookbooks": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Weeknight dinners",
+      "slug": "weeknight-dinners",
+      "recipeCount": 4,
+      "previewImages": ["https://example.public.blob.vercel-storage.com/pasta.jpg"]
+    }
+  ]
+}
+```
