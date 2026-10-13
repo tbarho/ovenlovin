@@ -1,4 +1,5 @@
 import { AppChrome } from "@/components/kitchen/AppChrome";
+import { WhoCanEat } from "@/components/kitchen/WhoCanEat";
 import { PeopleHome } from "@/components/people/PeopleHome";
 import { PersonPage } from "@/components/people/PersonPage";
 import { writePersonNotes } from "@/lib/person-appearance";
@@ -56,6 +57,19 @@ export default async function PeoplePreviewPage({
       {view === "person" ? (
         <div data-testid="preview-person">
           <PersonPage person={child} rules={rules.filter((rule) => rule.personId === child.id)} />
+        </div>
+      ) : view === "recipe" ? (
+        <div data-testid="preview-recipe" className="kitchen">
+          <h1>Basil pesto pasta</h1>
+          <WhoCanEat
+            people={[parent, child]}
+            rules={rules}
+            ingredients={[
+              { id: "pesto", name: "1/3 cup pesto" },
+              { id: "basil", name: "basil" },
+              { id: "parmesan", name: "1/2 cup Parmesan" },
+            ]}
+          />
         </div>
       ) : (
         <div data-testid="preview-list">

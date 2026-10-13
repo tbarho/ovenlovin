@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
-import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
+import type { Cookbook, Person, PersonRule, RecipeDetails } from "@ovenlovin/core";
 import { recipeGalleryImages, recipeMainImage } from "@ovenlovin/core/media";
 import {
   clampServings,
@@ -16,6 +16,7 @@ import {
   PhotosSheet,
   StepsSheet,
 } from "./RecipeEditSheets";
+import { WhoCanEat } from "./WhoCanEat";
 
 function sourceHost(url: string): string {
   try {
@@ -28,9 +29,13 @@ function sourceHost(url: string): string {
 export function RecipeDetail({
   recipe,
   cookbooks,
+  people = [],
+  rules = [],
 }: {
   recipe: RecipeDetails;
   cookbooks: Cookbook[];
+  people?: Person[];
+  rules?: PersonRule[];
 }) {
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
   const [servings, setServings] = useState(storedServings);
@@ -135,6 +140,16 @@ export function RecipeDetail({
       </div>
 
       {recipe.description ? <p>{recipe.description}</p> : null}
+
+      <WhoCanEat
+        people={people}
+        rules={rules}
+        ingredients={recipe.ingredients.map((ingredient) => ({
+          id: ingredient.id,
+          name: ingredient.rawText,
+          substitutionNotes: ingredient.substitutionNotes,
+        }))}
+      />
 
       <div className="recipe-view">
         <section>
