@@ -211,10 +211,20 @@ select {
   overflow: hidden;
 }
 
+.hero-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+}
+
 .hero-mark {
+  display: block;
   width: clamp(108px, 17vw, 164px);
   height: auto;
-  margin: 0 auto 10px;
+  margin: 0;
   animation: float 6s ease-in-out infinite;
   filter: drop-shadow(0 16px 24px rgba(196, 93, 40, 0.18));
 }
@@ -247,6 +257,12 @@ select {
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.hero-identity .badge {
+  margin: 0;
+  padding: 6px 14px;
+  justify-content: center;
 }
 
 .badge i {
