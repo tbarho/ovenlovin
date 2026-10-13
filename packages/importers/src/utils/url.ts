@@ -128,36 +128,80 @@ export function extractAuthor(recipe: Record<string, unknown>): string | undefin
   return undefined;
 }
 
+type SchemaImageCandidate = {
+  url: string;
+  area?: number;
+};
+
+function schemaImageUrl(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    const url = value.trim();
+    return url.length > 0 ? url : undefined;
+  }
+  if (typeof value !== "object" || value === null) return undefined;
+  const img = value as Record<string, unknown>;
+  for (const key of ["url", "contentUrl"] as const) {
+    const candidate = img[key];
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return undefined;
+}
+
+function schemaImageArea(value: unknown): number | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const img = value as Record<string, unknown>;
+  const width = Number(img.width);
+  const height = Number(img.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return undefined;
+  }
+  return width * height;
+}
+
+function schemaRecipeImageCandidates(recipe: Record<string, unknown>): SchemaImageCandidate[] {
+  const image = recipe.image;
+  if (!image) return [];
+
+  const values = Array.isArray(image) ? image : [image];
+  const candidates: SchemaImageCandidate[] = [];
+  for (const value of values) {
+    const url = schemaImageUrl(value);
+    if (!url) continue;
+    candidates.push({ url, area: schemaImageArea(value) });
+  }
+  return candidates;
+}
+
 /**
  * Extract image URLs from schema.org Recipe
  */
 export function extractImages(recipe: Record<string, unknown>): string[] {
-  const image = recipe.image;
-  if (!image) return [];
+  return schemaRecipeImageCandidates(recipe).map((candidate) => candidate.url);
+}
 
-  const images: string[] = [];
-
-  if (typeof image === "string") {
-    images.push(image);
-  } else if (Array.isArray(image)) {
-    for (const img of image) {
-      if (typeof img === "string") {
-        images.push(img);
-      } else if (typeof img === "object" && img !== null) {
-        const imgObj = img as Record<string, unknown>;
-        if (typeof imgObj.url === "string") {
-          images.push(imgObj.url);
-        }
-      }
+/**
+ * One hero image for URL import: largest schema.org Recipe image (or the first
+ * if sizes are missing), then the first Open Graph / page fallback.
+ */
+export function pickImportRecipeImage(
+  recipe: Record<string, unknown>,
+  pageImages?: string[]
+): string | undefined {
+  const schema = schemaRecipeImageCandidates(recipe);
+  if (schema.length > 0) {
+    const measured = schema.filter((candidate) => candidate.area != null);
+    if (measured[0]) {
+      return measured.reduce((best, current) =>
+        (current.area ?? 0) > (best.area ?? 0) ? current : best
+      ).url;
     }
-  } else if (typeof image === "object" && image !== null) {
-    const imgObj = image as Record<string, unknown>;
-    if (typeof imgObj.url === "string") {
-      images.push(imgObj.url);
-    }
+    return schema[0]?.url;
   }
 
-  return images;
+  const fallback = pageImages?.find((url) => url.trim().length > 0);
+  return fallback?.trim();
 }
 
 /**

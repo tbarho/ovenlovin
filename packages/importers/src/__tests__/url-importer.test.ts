@@ -74,6 +74,37 @@ describe("URL Importer", () => {
       expect(draft.images).toEqual(["https://example.com/og.jpg"]);
     });
 
+    it("stores only one schema.org image even when the recipe lists a gallery", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "url",
+        sourceUrl: "https://example.com/cookies",
+        pageImages: ["https://example.com/og.jpg", "https://example.com/tw.jpg"],
+        rawData: {
+          ...chocolateChipCookiesJson,
+          image: [
+            { url: "https://example.com/thumb.jpg", width: 200, height: 200 },
+            { url: "https://example.com/hero.jpg", width: 1600, height: 900 },
+          ],
+        },
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+      expect(draft.images).toEqual(["https://example.com/hero.jpg"]);
+    });
+
+    it("stores only the first page image when schema.org has no image", async () => {
+      const { image: _image, ...withoutImage } = chocolateChipCookiesJson;
+      const draft = await importer.toDraft({
+        sourceType: "url",
+        sourceUrl: "https://example.com/cookies",
+        pageImages: ["https://example.com/og.jpg", "https://example.com/tw.jpg"],
+        rawData: withoutImage,
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+      expect(draft.images).toEqual(["https://example.com/og.jpg"]);
+    });
+
     it("should extract timers from steps", async () => {
       const rawExtraction = {
         sourceType: "url" as const,
