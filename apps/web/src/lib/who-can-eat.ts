@@ -4,7 +4,8 @@ import {
   type RuleCheckFinding,
   type RuleCheckResult,
 } from "@ovenlovin/allergens";
-import { parseIngredientLine, type Person, type PersonRule } from "@ovenlovin/core";
+import type { Person, PersonRule } from "@ovenlovin/core";
+import { parseIngredientLine } from "@ovenlovin/core/parsing";
 import type { EatMark } from "@/components/people/ui";
 
 export type WhoCanEatPerson = {
