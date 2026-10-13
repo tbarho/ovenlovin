@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Person, PersonRule } from "@ovenlovin/core";
 import type { SharedFacility, Severity } from "@ovenlovin/core";
@@ -63,6 +63,9 @@ export function RuleSheet({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
     setDraft(rule ? draftFromRule(rule) : emptyDraft());
@@ -72,18 +75,14 @@ export function RuleSheet({
     setPending(false);
   }, [open, rule]);
 
-  function reset() {
+  const close = useCallback(() => {
     setDraft(rule ? draftFromRule(rule) : emptyDraft());
     setStep("type");
     setQuery("");
     setError(null);
     setPending(false);
-  }
-
-  function close() {
-    reset();
-    onClose();
-  }
+    onCloseRef.current();
+  }, [rule]);
 
   const results = useMemo(
     () => searchCatalog(query, { intent: draft.intent, limit: 12 }),

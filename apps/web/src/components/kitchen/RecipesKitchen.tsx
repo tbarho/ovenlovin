@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { CookbookCard, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
@@ -36,22 +36,11 @@ function CookbookMosaic({ cookbook }: { cookbook: CookbookCard }) {
   );
 }
 
-export function RecipesKitchen({
-  cookbooks,
-  uncategorized,
-  recipes,
-}: {
-  cookbooks: CookbookCard[];
-  uncategorized: Recipe[];
-  recipes: Recipe[];
-}) {
+function NewCookbookSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-
-  const listed = cookbooks.length > 0 ? uncategorized : recipes;
 
   async function createCookbook(event: React.FormEvent) {
     event.preventDefault();
@@ -63,7 +52,7 @@ export function RecipesKitchen({
         body: JSON.stringify({ name }),
       });
       setName("");
-      setOpen(false);
+      onClose();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create cookbook");
@@ -71,6 +60,38 @@ export function RecipesKitchen({
       setPending(false);
     }
   }
+
+  return (
+    <BottomSheet open={open} title="New cookbook" onClose={onClose}>
+      <form className="form-card" style={{ margin: 0 }} onSubmit={createCookbook}>
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Weeknight dinners"
+          required
+        />
+        {error ? <p className="muted">{error}</p> : null}
+        <button className="btn primary" type="submit" disabled={pending}>
+          {pending ? "Creating…" : "Create cookbook"}
+        </button>
+      </form>
+    </BottomSheet>
+  );
+}
+
+export function RecipesKitchen({
+  cookbooks,
+  uncategorized,
+  recipes,
+}: {
+  cookbooks: CookbookCard[];
+  uncategorized: Recipe[];
+  recipes: Recipe[];
+}) {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+
+  const listed = cookbooks.length > 0 ? uncategorized : recipes;
 
   return (
     <>
@@ -145,20 +166,7 @@ export function RecipesKitchen({
         </>
       )}
 
-      <BottomSheet open={open} title="New cookbook" onClose={() => setOpen(false)}>
-        <form className="form-card" style={{ margin: 0 }} onSubmit={createCookbook}>
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Weeknight dinners"
-            required
-          />
-          {error ? <p className="muted">{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={pending}>
-            {pending ? "Creating…" : "Create cookbook"}
-          </button>
-        </form>
-      </BottomSheet>
+      <NewCookbookSheet open={open} onClose={close} />
     </>
   );
 }

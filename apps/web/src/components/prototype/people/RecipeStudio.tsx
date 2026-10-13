@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { tapFeedback } from "./haptics";
 import {
@@ -27,6 +27,8 @@ export function RecipeStudio() {
   } = usePrototype();
   const [explain, setExplain] = useState<Finding | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
+  const closeExplain = useCallback(() => setExplain(null), []);
+  const closeCustom = useCallback(() => setCustomOpen(false), []);
   const [customIds, setCustomIds] = useState<string[]>(
     cookingFor.mode === "custom"
       ? cookingFor.personIds
@@ -245,12 +247,12 @@ export function RecipeStudio() {
       <Sheet
         open={Boolean(explain)}
         title={explain?.title ?? "Who can eat this"}
-        onClose={() => setExplain(null)}
+        onClose={closeExplain}
       >
         {explain ? <FindingDetail finding={explain} /> : null}
       </Sheet>
 
-      <Sheet open={customOpen} title="Cooking for" onClose={() => setCustomOpen(false)}>
+      <Sheet open={customOpen} title="Cooking for" onClose={closeCustom}>
         <CustomCookForm
           people={household.people}
           selectedIds={customIds}
