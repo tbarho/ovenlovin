@@ -12,7 +12,7 @@ import {
   scaleIngredientDisplay,
 } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
-import { Sheet } from "./Sheet";
+import { BottomSheet } from "./BottomSheet";
 
 function sourceHost(url: string): string {
   try {
@@ -202,15 +202,10 @@ export function RecipeDetail({
         )}
       </div>
       {extraImages.length > 0 ? (
-        <div className="recipe-actions">
+        <div className="recipe-thumbs">
           {extraImages.map((src) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={src}
-              src={src}
-              alt=""
-              style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10 }}
-            />
+            <img key={src} src={src} alt="" />
           ))}
         </div>
       ) : null}
@@ -279,7 +274,7 @@ export function RecipeDetail({
         </section>
       </div>
 
-      <Sheet open={sheet === "details"} title="Edit details" onClose={() => setSheet(null)}>
+      <BottomSheet open={sheet === "details"} title="Edit details" onClose={() => setSheet(null)}>
         <form className="form-card" style={{ margin: 0 }} onSubmit={saveDetails}>
           <label>
             Title
@@ -318,9 +313,9 @@ export function RecipeDetail({
             {pending ? "Saving…" : "Save details"}
           </button>
         </form>
-      </Sheet>
+      </BottomSheet>
 
-      <Sheet open={sheet === "image"} title="Recipe photos" onClose={() => setSheet(null)}>
+      <BottomSheet open={sheet === "image"} title="Recipe photos" onClose={() => setSheet(null)}>
         <form className="form-card" style={{ margin: 0 }} onSubmit={addImageFromUrl}>
           <p className="muted">The first photo is the main image on cards and this page.</p>
           <input
@@ -341,9 +336,13 @@ export function RecipeDetail({
           />
           {error && sheet === "image" ? <p className="muted">{error}</p> : null}
         </form>
-      </Sheet>
+      </BottomSheet>
 
-      <Sheet open={sheet === "ingredients"} title="Edit ingredients" onClose={() => setSheet(null)}>
+      <BottomSheet
+        open={sheet === "ingredients"}
+        title="Edit ingredients"
+        onClose={() => setSheet(null)}
+      >
         <form className="form-card" style={{ margin: 0 }} onSubmit={saveIngredients}>
           <p className="muted">One ingredient per line. Quantities scale when you move servings.</p>
           <textarea
@@ -356,9 +355,9 @@ export function RecipeDetail({
             {pending ? "Saving…" : "Save ingredients"}
           </button>
         </form>
-      </Sheet>
+      </BottomSheet>
 
-      <Sheet open={sheet === "steps"} title="Edit steps" onClose={() => setSheet(null)}>
+      <BottomSheet open={sheet === "steps"} title="Edit steps" onClose={() => setSheet(null)}>
         <form className="form-card" style={{ margin: 0 }} onSubmit={saveSteps}>
           <p className="muted">One step per line.</p>
           <textarea
@@ -371,15 +370,15 @@ export function RecipeDetail({
             {pending ? "Saving…" : "Save steps"}
           </button>
         </form>
-      </Sheet>
+      </BottomSheet>
 
-      <Sheet open={sheet === "cookbook"} title="Cookbooks" onClose={() => setSheet(null)}>
+      <BottomSheet open={sheet === "cookbook"} title="Cookbooks" onClose={() => setSheet(null)}>
         <form className="form-card" style={{ margin: 0 }} onSubmit={saveCookbooks}>
           {cookbooks.length === 0 ? (
             <p className="muted">Create a cookbook from the Recipes shelf first.</p>
           ) : (
             cookbooks.map((book) => (
-              <label key={book.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <label className="check-row" key={book.id}>
                 <input
                   type="checkbox"
                   checked={selectedBooks.includes(book.id)}
@@ -400,7 +399,7 @@ export function RecipeDetail({
             {pending ? "Saving…" : "Save cookbooks"}
           </button>
         </form>
-      </Sheet>
+      </BottomSheet>
     </>
   );
 }

@@ -289,7 +289,13 @@ export class CookbookService extends BaseService {
         })
         .from(collectionRecipe)
         .innerJoin(collection, eq(collection.id, collectionRecipe.collectionId))
-        .where(and(isNull(collectionRecipe.deletedAt), isNull(collection.deletedAt))),
+        .where(
+          and(
+            eq(collection.householdId, householdId),
+            isNull(collectionRecipe.deletedAt),
+            isNull(collection.deletedAt)
+          )
+        ),
     ]);
 
     const filed = new Set(memberships.filter((row) => row.cookbookId).map((row) => row.recipeId));

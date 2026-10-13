@@ -7,7 +7,7 @@ import type { CookbookCard, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
 import { ImportRecipeForm } from "./ImportRecipeForm";
-import { Sheet } from "./Sheet";
+import { BottomSheet } from "./BottomSheet";
 
 function RecipeThumb({ recipe }: { recipe: Recipe }) {
   const image = recipeMainImage(recipe.images);
@@ -85,9 +85,6 @@ export function RecipesKitchen({
           <button className="btn" type="button" onClick={() => setOpen(true)}>
             New cookbook
           </button>
-          <Link className="btn" href="/people">
-            People and rules
-          </Link>
         </div>
       </div>
       <ImportRecipeForm />
@@ -104,9 +101,7 @@ export function RecipesKitchen({
               >
                 <CookbookMosaic cookbook={cookbook} />
                 <div>
-                  <h2 style={{ margin: 0, fontSize: 18, letterSpacing: "-0.03em" }}>
-                    {cookbook.name}
-                  </h2>
+                  <h2>{cookbook.name}</h2>
                   <p className="muted">
                     {cookbook.recipeCount} {cookbook.recipeCount === 1 ? "recipe" : "recipes"}
                   </p>
@@ -150,7 +145,7 @@ export function RecipesKitchen({
         </>
       )}
 
-      <Sheet open={open} title="New cookbook" onClose={() => setOpen(false)}>
+      <BottomSheet open={open} title="New cookbook" onClose={() => setOpen(false)}>
         <form className="form-card" style={{ margin: 0 }} onSubmit={createCookbook}>
           <input
             value={name}
@@ -163,7 +158,7 @@ export function RecipesKitchen({
             {pending ? "Creating…" : "Create cookbook"}
           </button>
         </form>
-      </Sheet>
+      </BottomSheet>
     </>
   );
 }

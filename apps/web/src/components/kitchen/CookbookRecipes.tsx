@@ -6,11 +6,13 @@ import { useState } from "react";
 import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
-import { Sheet } from "./Sheet";
+import { BottomSheet } from "./BottomSheet";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; recipes: Recipe[] }) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [name, setName] = useState(cookbook.name);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,6 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
   }
 
   async function remove() {
-    if (!confirm(`Delete “${cookbook.name}”? Recipes stay in your kitchen.`)) return;
     setPending(true);
     try {
       await api(`/api/v1/cookbooks/${cookbook.id}`, { method: "DELETE" });
@@ -62,7 +63,12 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
           <button className="btn" type="button" onClick={() => setRenameOpen(true)}>
             Rename
           </button>
-          <button className="btn" type="button" onClick={remove} disabled={pending}>
+          <button
+            className="btn"
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            disabled={pending}
+          >
             Delete
           </button>
         </div>
@@ -94,7 +100,7 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
         </div>
       )}
 
-      <Sheet open={renameOpen} title="Rename cookbook" onClose={() => setRenameOpen(false)}>
+      <BottomSheet open={renameOpen} title="Rename cookbook" onClose={() => setRenameOpen(false)}>
         <form className="form-card" style={{ margin: 0 }} onSubmit={rename}>
           <input value={name} onChange={(event) => setName(event.target.value)} required />
           {error ? <p className="muted">{error}</p> : null}
@@ -102,7 +108,17 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
             {pending ? "Saving…" : "Save name"}
           </button>
         </form>
-      </Sheet>
+      </BottomSheet>
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete cookbook"
+        body={`Delete “${cookbook.name}”? Recipes stay in your kitchen.`}
+        confirmLabel="Delete cookbook"
+        danger
+        pending={pending}
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={remove}
+      />
     </>
   );
 }
