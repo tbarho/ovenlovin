@@ -7,7 +7,9 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./onboarding": "./src/onboarding/index.ts"
+    "./onboarding": "./src/onboarding/index.ts",
+    "./media": "./src/media/recipe-images.ts",
+    "./scaling": "./src/scaling/servings.ts"
   },
   "scripts": {
     "test": "vitest run",

@@ -276,23 +276,30 @@ export class CookbookService extends BaseService {
   }
 
   async listUncategorizedRecipeIds(householdId: string): Promise<string[]> {
-    const rows = await this._db
-      .select({ id: recipe.id })
-      .from(recipe)
-      .leftJoin(
-        collectionRecipe,
-        and(eq(collectionRecipe.recipeId, recipe.id), isNull(collectionRecipe.deletedAt))
-      )
-      .leftJoin(
-        collection,
-        and(eq(collection.id, collectionRecipe.collectionId), isNull(collection.deletedAt))
-      )
-      .where(and(eq(recipe.householdId, householdId), isNull(recipe.deletedAt)))
-      .groupBy(recipe.id, recipe.createdAt)
-      .having(sql`count(${collection.id}) = 0`)
-      .orderBy(desc(recipe.createdAt));
+    const [recipes, memberships] = await Promise.all([
+      this._db
+        .select({ id: recipe.id })
+        .from(recipe)
+        .where(and(eq(recipe.householdId, householdId), isNull(recipe.deletedAt)))
+        .orderBy(desc(recipe.createdAt)),
+      this._db
+        .select({
+          recipeId: collectionRecipe.recipeId,
+          cookbookId: collection.id,
+        })
+        .from(collectionRecipe)
+        .innerJoin(collection, eq(collection.id, collectionRecipe.collectionId))
+        .where(
+          and(
+            eq(collection.householdId, householdId),
+            isNull(collectionRecipe.deletedAt),
+            isNull(collection.deletedAt)
+          )
+        ),
+    ]);
 
-    return rows.map((row) => row.id);
+    const filed = new Set(memberships.filter((row) => row.cookbookId).map((row) => row.recipeId));
+    return recipes.filter((row) => !filed.has(row.id)).map((row) => row.id);
   }
 
   private mapCookbook(row: CookbookRow): Cookbook {

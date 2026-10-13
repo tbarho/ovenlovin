@@ -1,52 +1,41 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { RecipeService } from "@ovenlovin/core";
+import { CookbookService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
-import { ImportRecipeForm } from "@/components/kitchen/ImportRecipeForm";
+import { CookbookRecipes } from "@/components/kitchen/CookbookRecipes";
+import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { getSessionContext } from "@/lib/session";
 
-export default async function RecipesPage() {
+export default async function RecipesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cookbook?: string }>;
+}) {
   const context = await getSessionContext().catch(() => null);
   if (!context?.householdId) redirect("/sign-in");
   const householdId = context.householdId;
+  const { cookbook: cookbookId } = await searchParams;
 
-  const recipes = await new RecipeService(getDatabase()).listRecipes(householdId, {
-    pagination: { limit: 40 },
-  });
+  const db = getDatabase();
+  const recipes = new RecipeService(db);
+  const cookbooks = new CookbookService(db);
+
+  if (cookbookId) {
+    const cookbook = await cookbooks.getCookbook(cookbookId);
+    if (!cookbook || cookbook.householdId !== householdId) redirect("/recipes");
+    const members = await recipes.listRecipes(householdId, {
+      cookbookId,
+      pagination: { limit: 80 },
+    });
+    return <CookbookRecipes cookbook={cookbook} recipes={members.items} />;
+  }
+
+  const [cards, uncategorized, all] = await Promise.all([
+    cookbooks.listCookbookCards(householdId),
+    recipes.listRecipes(householdId, { uncategorized: true, pagination: { limit: 40 } }),
+    recipes.listRecipes(householdId, { pagination: { limit: 40 } }),
+  ]);
 
   return (
-    <>
-      <div className="kitchen-head">
-        <div>
-          <p className="badge">
-            <i />
-            Kitchen
-          </p>
-          <h1>Recipes</h1>
-          <p className="muted">
-            Import from a URL or paste. Your household was created with this sign-in.
-          </p>
-        </div>
-        <Link className="btn" href="/people">
-          People and rules
-        </Link>
-      </div>
-      <ImportRecipeForm />
-      {recipes.items.length === 0 ? (
-        <p className="empty-note">No recipes yet. Import one above to start cooking.</p>
-      ) : (
-        <div className="recipe-grid">
-          {recipes.items.map((recipe) => (
-            <Link className="recipe-card" key={recipe.id} href={`/recipes/${recipe.id}`}>
-              <h2>{recipe.title}</h2>
-              <p className="muted">
-                {recipe.cuisine || recipe.course || recipe.status}
-                {recipe.totalTimeMinutes ? ` · ${recipe.totalTimeMinutes} min` : ""}
-              </p>
-            </Link>
-          ))}
-        </div>
-      )}
-    </>
+    <RecipesKitchen cookbooks={cards} uncategorized={uncategorized.items} recipes={all.items} />
   );
 }
