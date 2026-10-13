@@ -74,3 +74,18 @@ export {
   type RuleDraft,
   type RuleWritePayload,
 } from "./rule-write";
+
+export {
+  RULE_UI_BUCKETS,
+  SHARED_FACILITY_PROMPTS,
+  defaultBucketForCatalogGroup,
+  defaultSharedFacilityPrompt,
+  intentAndSeverityForBucket,
+  promptFromSharedFacility,
+  sharedFacilityFromPrompt,
+  showsCoconutToggle,
+  showsSharedFacilityPrompt,
+  uiBucketForRule,
+  type RuleUiBucket,
+  type SharedFacilityPrompt,
+} from "./rule-ui";
