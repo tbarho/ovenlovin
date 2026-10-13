@@ -9,6 +9,9 @@
     "save-meal-plan",
     "get-meal-plan",
     "export-shopping-list",
-    "import-recipe"
+    "import-recipe",
+    "list-cookbooks",
+    "get-cookbook",
+    "manage-cookbook"
   ]
 }

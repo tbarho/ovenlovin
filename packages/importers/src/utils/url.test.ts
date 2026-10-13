@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseDuration, extractAuthor, extractImages } from "./url";
+import { parseDuration, extractAuthor, extractImages, extractPageImages } from "./url";
 
 describe("parseDuration", () => {
   it("should parse hours and minutes", () => {
@@ -16,6 +16,14 @@ describe("parseDuration", () => {
   it("should return undefined for invalid durations", () => {
     expect(parseDuration("")).toBeUndefined();
     expect(parseDuration("invalid")).toBeUndefined();
+  });
+
+  it("should parse day-length ISO durations", () => {
+    expect(parseDuration("P1DT2H")).toBe(1560);
+  });
+
+  it("should parse human-readable durations", () => {
+    expect(parseDuration("1 hour 15 minutes")).toBe(75);
   });
 });
 
@@ -69,5 +77,22 @@ describe("extractImages", () => {
 
   it("should return empty array for missing image", () => {
     expect(extractImages({})).toEqual([]);
+  });
+});
+
+describe("extractPageImages", () => {
+  it("reads og:image and twitter:image", () => {
+    const html = `
+      <html>
+        <head>
+          <meta property="og:image" content="https://example.com/og.jpg" />
+          <meta name="twitter:image" content="https://example.com/tw.jpg" />
+        </head>
+      </html>
+    `;
+    expect(extractPageImages(html)).toEqual([
+      "https://example.com/og.jpg",
+      "https://example.com/tw.jpg",
+    ]);
   });
 });

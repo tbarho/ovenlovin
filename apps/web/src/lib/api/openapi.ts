@@ -5,10 +5,13 @@ import {
 } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
 import { oas30 } from "openapi3-ts";
+import { registerApiPaths } from "./openapi-paths";
 
 extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
+
+registerApiPaths(registry);
 
 export function generateOpenApiDocument(): oas30.OpenAPIObject {
   registry.registerComponent("securitySchemes", "bearerAuth", {

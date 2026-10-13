@@ -7,11 +7,12 @@ Import a recipe from a URL or pasted text. Automatically extracts and parses rec
 
 ## Input Schema
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `source` | enum | Yes | - | Import source: `"url"` or `"paste"` |
-| `content` | string | Yes | - | URL to fetch from or pasted recipe text |
-| `skipReview` | boolean | No | `false` | Skip review queue and publish immediately |
+| Parameter    | Type          | Required | Default | Description                               |
+| ------------ | ------------- | -------- | ------- | ----------------------------------------- |
+| `source`     | enum          | Yes      | -       | Import source: `"url"` or `"paste"`       |
+| `content`    | string        | Yes      | -       | URL to fetch from or pasted recipe text   |
+| `skipReview` | boolean       | No       | `false` | Skip review queue and publish immediately |
+| `cookbookId` | string (UUID) | No       | -       | File the imported recipe in this cookbook |
 
 ## Output Schema
 
@@ -28,12 +29,14 @@ Import a recipe from a URL or pasted text. Automatically extracts and parses rec
 ## Import Sources
 
 ### URL Import (`source: "url"`)
+
 - Fetches recipe from provided URL
 - Supports major recipe sites with schema.org markup
 - Extracts metadata, ingredients, and instructions
 - Best for recipes from cooking blogs and recipe aggregators
 
 ### Paste Import (`source: "paste"`)
+
 - Parses freeform recipe text
 - Handles various text formats
 - Attempts to identify title, ingredients, and steps
@@ -42,11 +45,13 @@ Import a recipe from a URL or pasted text. Automatically extracts and parses rec
 ## Confidence Scoring
 
 The importer calculates an `overallConfidence` score (0.0 - 1.0):
+
 - **≥ 0.90**: High confidence, auto-publish safe
 - **0.70 - 0.89**: Medium confidence, review recommended
 - **< 0.70**: Low confidence, needs review
 
 When confidence is low:
+
 - Recipe is marked `status: "needs_review"`
 - `lowConfidenceFields` lists problematic fields
 - Manual review and editing recommended
@@ -89,11 +94,7 @@ When confidence is low:
   "recipeId": "recipe-def-456",
   "status": "needs_review",
   "confidence": 0.68,
-  "lowConfidenceFields": [
-    "ingredient quantities",
-    "cooking times",
-    "servings"
-  ],
+  "lowConfidenceFields": ["ingredient quantities", "cooking times", "servings"],
   "message": "Recipe imported but needs review (confidence: 68%)"
 }
 ```

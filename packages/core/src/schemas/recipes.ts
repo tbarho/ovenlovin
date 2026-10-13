@@ -136,6 +136,30 @@ export type RecipeDetails = Recipe & {
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
   source: RecipeSource | null;
+  cookbooks: Array<{ id: string; name: string; slug: string }>;
+};
+
+export type RecipeContentUpdate = {
+  title?: string;
+  description?: string | null;
+  servings?: number | null;
+  prepTimeMinutes?: number | null;
+  cookTimeMinutes?: number | null;
+  totalTimeMinutes?: number | null;
+  images?: string[];
+  cookbookIds?: string[];
+  ingredients?: Array<{
+    rawText: string;
+    quantityMin?: number | null;
+    quantityMax?: number | null;
+    unit?: string | null;
+    preparation?: string | null;
+    isOptional?: boolean;
+  }>;
+  steps?: Array<{
+    text: string;
+    timers?: Array<{ duration: number; label?: string }>;
+  }>;
 };
 
 export type RecipeImportDraft = {

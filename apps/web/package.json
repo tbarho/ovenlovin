@@ -22,6 +22,7 @@
     "@ovenlovin/db": "workspace:^",
     "@ovenlovin/importers": "workspace:*",
     "@ovenlovin/mcp": "workspace:*",
+    "@vercel/blob": "^2.8.1",
     "drizzle-orm": "^0.38.3",
     "next": "^15.1.4",
     "openapi3-ts": "^4.6.1",

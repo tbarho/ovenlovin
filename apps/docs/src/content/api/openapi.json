@@ -38,8 +38,584 @@
         "description": "API key for bot clients. Format: `ApiKey <key>`"
       }
     },
-    "schemas": {},
+    "schemas": {
+      "Recipe": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "householdId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "servings": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "prepTimeMinutes": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "cookTimeMinutes": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "totalTimeMinutes": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "needs_review", "published"]
+          },
+          "cuisine": {
+            "type": "string",
+            "nullable": true
+          },
+          "course": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["id", "householdId", "title", "slug", "images", "status"]
+      },
+      "CookbookCard": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Cookbook"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "recipeCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "previewImages": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["recipeCount", "previewImages"]
+          }
+        ]
+      },
+      "Cookbook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "householdId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": ["id", "householdId", "name", "slug", "sortOrder"]
+      }
+    },
     "parameters": {}
   },
-  "paths": {}
+  "paths": {
+    "/recipes": {
+      "get": {
+        "tags": ["recipes"],
+        "summary": "List recipes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "cookbookId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "required": false,
+            "name": "uncategorized",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recipe page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Recipe"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipes/{id}": {
+      "get": {
+        "tags": ["recipes"],
+        "summary": "Get a recipe with ingredients, steps, times, images, and source",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recipe details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["recipes"],
+        "summary": "Update recipe metadata, ingredients, steps, images, or cookbook membership",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "servings": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "prepTimeMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "cookTimeMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "totalTimeMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cookbookIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "ingredients": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "rawText": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["rawText"]
+                    }
+                  },
+                  "steps": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["text"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipes/import": {
+      "post": {
+        "tags": ["recipes"],
+        "summary": "Import a recipe from a URL or pasted text, copying the main image into Vercel Blob",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": ["url", "paste"]
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                },
+                "required": ["source", "content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Imported recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cookbooks": {
+      "get": {
+        "tags": ["cookbooks"],
+        "summary": "List cookbooks",
+        "responses": {
+          "200": {
+            "description": "Cookbook page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CookbookCard"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["cookbooks"],
+        "summary": "Create a cookbook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created cookbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cookbook"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cookbooks/{id}": {
+      "get": {
+        "tags": ["cookbooks"],
+        "summary": "Get a cookbook and its recipes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cookbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cookbook"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["cookbooks"],
+        "summary": "Rename a cookbook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated cookbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cookbook"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["cookbooks"],
+        "summary": "Delete a cookbook without deleting its recipes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/cookbooks/{id}/recipes": {
+      "post": {
+        "tags": ["cookbooks"],
+        "summary": "Add a recipe to a cookbook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recipeId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": ["recipeId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Membership saved"
+          }
+        }
+      }
+    },
+    "/uploads/images": {
+      "post": {
+        "tags": ["recipes"],
+        "summary": "Upload or copy a recipe image into Vercel Blob",
+        "responses": {
+          "201": {
+            "description": "Stored image URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["url"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

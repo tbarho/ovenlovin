@@ -396,6 +396,66 @@ POST /api/v1/recipes/{recipeId}/check
 }
 ```
 
+#### Update Recipe
+
+```
+PATCH /api/v1/recipes/{recipeId}
+```
+
+Updates title, servings, prep/cook times, images, ingredients, steps, and cookbook membership. Replacing `ingredients` or `steps` soft-deletes the previous rows and inserts the new list.
+
+#### Upload Recipe Image
+
+```
+POST /api/v1/uploads/images
+```
+
+Accepts `multipart/form-data` (`file`) or `{ "url": "https://..." }`. Copies the file into Vercel Blob and returns `{ "url": "https://....blob.vercel-storage.com/..." }`.
+
+### Cookbooks
+
+Recipes optionally belong to one or more cookbooks (many-to-many). A weeknight pasta can live in both "Weeknights" and "Kid favorites" without being duplicated. Recipes with no cookbook membership appear as uncategorized.
+
+#### List Cookbooks
+
+```
+GET /api/v1/cookbooks
+GET /api/v1/cookbooks?view=cards
+```
+
+`view=cards` includes `recipeCount` and up to four `previewImages` for the kitchen mosaic.
+
+#### Create Cookbook
+
+```
+POST /api/v1/cookbooks
+```
+
+```json
+{ "name": "Weeknight dinners", "description": "Fast after-practice meals" }
+```
+
+#### Get / Rename / Delete Cookbook
+
+```
+GET /api/v1/cookbooks/{cookbookId}
+PATCH /api/v1/cookbooks/{cookbookId}
+DELETE /api/v1/cookbooks/{cookbookId}
+```
+
+Deleting a cookbook removes memberships only. Recipes stay in the household.
+
+#### Add or Remove a Recipe
+
+```
+POST /api/v1/cookbooks/{cookbookId}/recipes
+{ "recipeId": "..." }
+
+DELETE /api/v1/cookbooks/{cookbookId}/recipes?recipeId=...
+```
+
+List recipes in a cookbook with `GET /api/v1/recipes?cookbookId=...`. Unfiled recipes: `GET /api/v1/recipes?uncategorized=true`.
+
 ### Households
 
 #### Get Household Context

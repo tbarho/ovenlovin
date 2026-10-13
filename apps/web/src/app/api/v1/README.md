@@ -12,6 +12,8 @@ src/
 │   ├── health/
 │   ├── openapi.json/
 │   ├── recipes/
+│   ├── cookbooks/
+│   ├── uploads/
 │   ├── people/
 │   ├── households/
 │   ├── meal-plans/

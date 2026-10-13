@@ -24,6 +24,7 @@ export interface RawExtraction {
   sourceType: RecipeSourceType;
   sourceUrl?: string;
   sourceBlobs?: string[];
+  pageImages?: string[];
   author?: string;
   attribution?: string;
   rawData: Record<string, unknown>;

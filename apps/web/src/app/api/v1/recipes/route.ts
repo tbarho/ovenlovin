@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const cursor = url.searchParams.get("cursor") || undefined;
     const status = url.searchParams.get("status") || undefined;
     const search = url.searchParams.get("search") || undefined;
+    const cookbookId = url.searchParams.get("cookbookId") || undefined;
+    const uncategorized = url.searchParams.get("uncategorized") === "true";
 
     const db = getDatabase();
     const service = new RecipeService(db);
@@ -22,6 +24,8 @@ export async function GET(request: NextRequest) {
     const result = await service.listRecipes(householdId, {
       status,
       search,
+      cookbookId,
+      uncategorized,
       pagination: { limit, cursor },
     });
 

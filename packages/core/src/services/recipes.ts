@@ -1,9 +1,17 @@
-import { eq, and, isNull, desc, like, sql, asc } from "drizzle-orm";
+import { eq, and, isNull, desc, like, sql, asc, inArray } from "drizzle-orm";
 import { recipe, recipeIngredient, recipeStep, recipeSource } from "@ovenlovin/db";
-import type { Recipe, RecipeDetails, RecipeImportDraft, RecipeMethodTag } from "../schemas/recipes";
+import type {
+  Recipe,
+  RecipeContentUpdate,
+  RecipeDetails,
+  RecipeImportDraft,
+  RecipeMethodTag,
+} from "../schemas/recipes";
 import { recipeMethodTagSchema, slugifyTitle } from "../schemas/recipes";
+import { parseIngredientLine } from "../parsing/ingredient-line";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
+import { CookbookService } from "./cookbooks";
 
 export class RecipeService extends BaseService {
   async getRecipe(id: string): Promise<Recipe | null> {
@@ -33,6 +41,9 @@ export class RecipeService extends BaseService {
     options?: {
       status?: string;
       search?: string;
+      cookbookId?: string;
+      uncategorized?: boolean;
+      ids?: string[];
       pagination?: Pagination;
     }
   ): Promise<PaginatedResponse<Recipe>> {
@@ -46,6 +57,28 @@ export class RecipeService extends BaseService {
 
     if (options?.search) {
       conditions.push(like(recipe.title, `%${options.search}%`));
+    }
+
+    if (options?.ids && options.ids.length > 0) {
+      conditions.push(inArray(recipe.id, options.ids));
+    }
+
+    if (options?.cookbookId) {
+      const cookbooks = new CookbookService(this._db);
+      const recipeIds = await cookbooks.listRecipeIds(options.cookbookId);
+      if (recipeIds.length === 0) {
+        return this.buildPaginatedResponse([], limit);
+      }
+      conditions.push(inArray(recipe.id, recipeIds));
+    }
+
+    if (options?.uncategorized) {
+      const cookbooks = new CookbookService(this._db);
+      const recipeIds = await cookbooks.listUncategorizedRecipeIds(householdId);
+      if (recipeIds.length === 0) {
+        return this.buildPaginatedResponse([], limit);
+      }
+      conditions.push(inArray(recipe.id, recipeIds));
     }
 
     const results = await this._db
@@ -102,7 +135,10 @@ export class RecipeService extends BaseService {
     data: Partial<Omit<Recipe, "id" | "createdAt" | "updatedAt" | "deletedAt" | "createdBy">>
   ): Promise<Recipe | null> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = { ...data, updatedAt: new Date() };
+    const updateData: any = { updatedAt: new Date() };
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) updateData[key] = value;
+    }
     if (data.yieldQuantity !== undefined) {
       updateData.yieldQuantity = data.yieldQuantity ? String(data.yieldQuantity) : null;
     }
@@ -114,6 +150,91 @@ export class RecipeService extends BaseService {
       .returning();
 
     return updated ? this.mapRecipe(updated) : null;
+  }
+
+  async updateRecipeDetails(id: string, data: RecipeContentUpdate): Promise<RecipeDetails | null> {
+    const existing = await this.getRecipe(id);
+    if (!existing) return null;
+
+    const nextTotal =
+      data.totalTimeMinutes !== undefined
+        ? data.totalTimeMinutes
+        : data.prepTimeMinutes !== undefined || data.cookTimeMinutes !== undefined
+          ? (data.prepTimeMinutes ?? existing.prepTimeMinutes ?? 0) +
+            (data.cookTimeMinutes ?? existing.cookTimeMinutes ?? 0)
+          : undefined;
+
+    await this.updateRecipe(id, {
+      title: data.title,
+      description: data.description,
+      servings: data.servings,
+      prepTimeMinutes: data.prepTimeMinutes,
+      cookTimeMinutes: data.cookTimeMinutes,
+      totalTimeMinutes: nextTotal,
+      images: data.images,
+      slug: data.title && data.title !== existing.title ? slugifyTitle(data.title) : undefined,
+    });
+
+    if (data.ingredients) {
+      const now = new Date();
+      await this._db
+        .update(recipeIngredient)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(recipeIngredient.recipeId, id), isNull(recipeIngredient.deletedAt)));
+
+      if (data.ingredients.length > 0) {
+        await this._db.insert(recipeIngredient).values(
+          data.ingredients.map((ingredient, order) => {
+            const parsed = parseIngredientLine(ingredient.rawText);
+            return {
+              recipeId: id,
+              order,
+              rawText: ingredient.rawText,
+              quantityMin:
+                ingredient.quantityMin != null
+                  ? String(ingredient.quantityMin)
+                  : parsed.quantityMin != null
+                    ? String(parsed.quantityMin)
+                    : null,
+              quantityMax:
+                ingredient.quantityMax != null
+                  ? String(ingredient.quantityMax)
+                  : parsed.quantityMax != null
+                    ? String(parsed.quantityMax)
+                    : null,
+              unit: ingredient.unit ?? parsed.unit,
+              preparation: ingredient.preparation ?? null,
+              isOptional: ingredient.isOptional ?? false,
+            };
+          })
+        );
+      }
+    }
+
+    if (data.steps) {
+      const now = new Date();
+      await this._db
+        .update(recipeStep)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(recipeStep.recipeId, id), isNull(recipeStep.deletedAt)));
+
+      if (data.steps.length > 0) {
+        await this._db.insert(recipeStep).values(
+          data.steps.map((step, order) => ({
+            recipeId: id,
+            order,
+            text: step.text,
+            timers: step.timers ?? [],
+          }))
+        );
+      }
+    }
+
+    if (data.cookbookIds) {
+      await new CookbookService(this._db).setRecipeCookbooks(id, data.cookbookIds);
+    }
+
+    return this.getRecipeDetails(id);
   }
 
   async deleteRecipe(id: string): Promise<boolean> {
@@ -148,8 +269,11 @@ export class RecipeService extends BaseService {
         .limit(1),
     ]);
 
+    const cookbooks = await new CookbookService(this._db).listCookbooksForRecipe(id);
+
     return {
       ...found,
+      cookbooks,
       ingredients: ingredients.map((row) => ({
         id: row.id,
         createdAt: row.createdAt.toISOString(),
@@ -245,19 +369,32 @@ export class RecipeService extends BaseService {
 
     if (draft.ingredients.length > 0) {
       await this._db.insert(recipeIngredient).values(
-        draft.ingredients.map((ingredient, order) => ({
-          recipeId: created.id,
-          order,
-          rawText: ingredient.rawText,
-          quantityMin: ingredient.quantity?.min != null ? String(ingredient.quantity.min) : null,
-          quantityMax: ingredient.quantity?.max != null ? String(ingredient.quantity.max) : null,
-          unit: ingredient.unit ?? null,
-          originalUnit: ingredient.originalUnit ?? null,
-          preparation: ingredient.preparation ?? null,
-          isOptional: ingredient.isOptional ?? false,
-          substitutionNotes: ingredient.substitutionNotes ?? null,
-          parseConfidence: ingredient.confidence != null ? String(ingredient.confidence) : null,
-        }))
+        draft.ingredients.map((ingredient, order) => {
+          const parsed = parseIngredientLine(ingredient.rawText);
+          return {
+            recipeId: created.id,
+            order,
+            rawText: ingredient.rawText,
+            quantityMin:
+              ingredient.quantity?.min != null
+                ? String(ingredient.quantity.min)
+                : parsed.quantityMin != null
+                  ? String(parsed.quantityMin)
+                  : null,
+            quantityMax:
+              ingredient.quantity?.max != null
+                ? String(ingredient.quantity.max)
+                : parsed.quantityMax != null
+                  ? String(parsed.quantityMax)
+                  : null,
+            unit: ingredient.unit ?? parsed.unit,
+            originalUnit: ingredient.originalUnit ?? null,
+            preparation: ingredient.preparation ?? null,
+            isOptional: ingredient.isOptional ?? false,
+            substitutionNotes: ingredient.substitutionNotes ?? null,
+            parseConfidence: ingredient.confidence != null ? String(ingredient.confidence) : null,
+          };
+        })
       );
     }
 

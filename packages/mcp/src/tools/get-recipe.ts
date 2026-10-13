@@ -6,14 +6,20 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { RecipeService } from "@ovenlovin/core";
-import { createDbClient, recipeIngredient, recipeStep, recipeNutrition } from "@ovenlovin/db";
+import { CookbookService, RecipeService } from "@ovenlovin/core";
+import {
+  createDbClient,
+  recipeIngredient,
+  recipeStep,
+  recipeNutrition,
+  recipeSource,
+} from "@ovenlovin/db";
 import { eq, asc, and, isNull } from "drizzle-orm";
 
 export const getRecipeSchema = z.object({
   id: z.string().uuid(),
   includeNutrition: z.boolean().default(true),
-  includeSource: z.boolean().default(false),
+  includeSource: z.boolean().default(true),
 });
 
 export type GetRecipeInput = z.infer<typeof getRecipeSchema>;
@@ -68,6 +74,7 @@ export interface GetRecipeOutput {
     author?: string;
     attribution?: string;
   };
+  cookbooks: Array<{ id: string; name: string; slug: string }>;
 }
 
 async function handler(input: GetRecipeInput, context: AuthContext): Promise<GetRecipeOutput> {
@@ -146,6 +153,25 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     }
   }
 
+  const cookbooks = await new CookbookService(db).listCookbooksForRecipe(input.id);
+
+  let source: GetRecipeOutput["source"] = undefined;
+  if (input.includeSource) {
+    const [sourceRow] = await db
+      .select()
+      .from(recipeSource)
+      .where(and(eq(recipeSource.recipeId, input.id), isNull(recipeSource.deletedAt)))
+      .limit(1);
+    if (sourceRow) {
+      source = {
+        type: sourceRow.type,
+        url: sourceRow.url ?? undefined,
+        author: sourceRow.author ?? undefined,
+        attribution: sourceRow.attribution ?? undefined,
+      };
+    }
+  }
+
   return {
     id: recipe.id,
     title: recipe.title,
@@ -163,16 +189,18 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     difficulty: recipe.difficulty ?? undefined,
     equipment: recipe.equipment || [],
     images: recipe.images || [],
+    cookbooks,
     ingredients,
     steps,
     nutrition,
+    source,
   };
 }
 
 export const getRecipeTool = {
   name: "get_recipe",
   description:
-    "Get full recipe details including ingredients, steps, nutrition, and optionally source provenance.",
+    "Get full recipe details including ingredients, steps, prep/cook times, images, cookbooks, and source URL.",
   inputSchema: getRecipeSchema,
   handler,
 } as const;
