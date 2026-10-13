@@ -32,3 +32,42 @@ export {
   type PersonCheckResult,
   type MealPlanCheckResult,
 } from "./meal-plan-checker";
+
+export {
+  dietCatalog,
+  allergenCatalog,
+  dietCatalogEntries,
+  catalogForIntent,
+  findCatalogEntry,
+  searchCatalog,
+  humanizeTarget,
+  displayNameForTarget,
+  normalizeSearch,
+  type RuleIntent,
+  type CatalogGroup,
+  type CatalogEntry,
+  type DietCatalogEntry,
+} from "./catalog";
+
+export {
+  describeRuleChip,
+  describeRuleSummary,
+  describeSharedFacility,
+  severityPhrase,
+  severityTitle,
+  severityExplanation,
+  sharedFacilityTitle,
+  sharedFacilityExplanation,
+  type RuleCopyInput,
+  type RuleChipCopy,
+} from "./rule-copy";
+
+export {
+  intentToKind,
+  kindToIntent,
+  defaultSeverityForIntent,
+  buildRuleWrite,
+  draftFromRule,
+  type RuleDraft,
+  type RuleWritePayload,
+} from "./rule-write";
