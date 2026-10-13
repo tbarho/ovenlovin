@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { tapFeedback } from "./haptics";
 import {
   RECIPES,
   checkRecipe,
@@ -45,8 +43,6 @@ export function RecipeStudio() {
     [household, recipe, swapIds, cookingFor]
   );
   const eaters = cookingForPeople(household, cookingFor);
-  const blocked = findings.filter((item) => item.mark === "block").length;
-  const warned = findings.filter((item) => item.mark === "warn").length;
 
   if (!recipe) {
     return (
@@ -56,10 +52,7 @@ export function RecipeStudio() {
 
   if (household.people.length === 0) {
     return (
-      <EmptyState
-        title="Add people first"
-        body="Once someone is in the household, we’ll mark who can eat each recipe."
-      />
+      <EmptyState title="Add people first" body="Marks show up once someone is in the household." />
     );
   }
 
@@ -73,82 +66,50 @@ export function RecipeStudio() {
 
   return (
     <div className="olp-stack">
-      <div className="olp-section-head">
-        <div>
-          <p className="olp-kicker">Who can eat this</p>
-          <h1>{recipe.title}</h1>
-          <p className="olp-muted">
-            {recipe.lede} · {recipe.minutes} min · {recipe.servings} servings
+      <header>
+        <h1>{recipe.title}</h1>
+        <p className="olp-muted">
+          {recipe.lede} · {recipe.minutes} min
+        </p>
+      </header>
+
+      <section data-testid="who-can-eat">
+        <h2>Who can eat this</h2>
+        <Segmented
+          label="Cooking for"
+          value={cookingFor.mode}
+          onChange={setMode}
+          options={[
+            { value: "everyone", label: "Everyone" },
+            { value: "kids", label: "Kids" },
+            { value: "custom", label: "Custom" },
+          ]}
+        />
+        {cookingFor.mode === "custom" ? (
+          <p className="olp-caption">
+            {eaters.map((person) => person.name).join(", ") || "Pick people"}
           </p>
-        </div>
-      </div>
-
-      <div className="olp-recipe-hero" data-testid="who-can-eat">
-        <div className="olp-recipe-emoji" aria-hidden="true">
-          {recipe.emoji}
-        </div>
-        <div>
-          <p className="olp-kicker">Cooking for</p>
-          <Segmented
-            label="Cooking for"
-            value={cookingFor.mode}
-            onChange={setMode}
-            options={[
-              { value: "everyone", label: "Everyone" },
-              { value: "kids", label: "Kids" },
-              { value: "custom", label: "Custom" },
-            ]}
-          />
-          {cookingFor.mode === "custom" ? (
-            <p className="olp-caption">
-              {eaters.map((person) => person.name).join(", ") || "Pick people"}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      <section>
-        <div className="olp-stack-faces" aria-hidden="true">
+        ) : null}
+        <div className="olp-who-row" data-testid="avatar-marks">
           {findings.map((finding) => {
             const person = household.people.find((item) => item.id === finding.personId);
             if (!person) return null;
-            return <Avatar key={person.id} person={person} size={36} mark={finding.mark} />;
+            return (
+              <button
+                key={person.id}
+                type="button"
+                className="olp-who-person"
+                data-testid={`mark-${person.id}`}
+                data-mark={finding.mark}
+                onClick={() => setExplain(finding)}
+              >
+                <Avatar person={person} size={58} mark={finding.mark} />
+                <span>{person.name}</span>
+              </button>
+            );
           })}
         </div>
-        <p className="olp-hero-line">
-          {blocked === 0 && warned === 0
-            ? "Everyone here can eat this."
-            : blocked === 0
-              ? "Clear with a couple of check-ins."
-              : `${blocked} ${blocked === 1 ? "person needs" : "people need"} a swap.`}
-        </p>
       </section>
-
-      <div className="olp-who-row" data-testid="avatar-marks">
-        {findings.map((finding) => {
-          const person = household.people.find((item) => item.id === finding.personId);
-          if (!person) return null;
-          return (
-            <motion.button
-              key={person.id}
-              type="button"
-              className="olp-who-person"
-              data-testid={`mark-${person.id}`}
-              data-mark={finding.mark}
-              layout
-              whileTap={{ scale: 0.94 }}
-              onClick={() => {
-                tapFeedback(10);
-                setExplain(finding);
-              }}
-            >
-              <Avatar person={person} size={58} mark={finding.mark} />
-              <span>{person.name}</span>
-            </motion.button>
-          );
-        })}
-      </div>
-      <p className="olp-hint">Tap a face to see why.</p>
 
       <section>
         <h2>Ingredients</h2>
@@ -168,26 +129,22 @@ export function RecipeStudio() {
 
       {recipe.swaps.length > 0 ? (
         <section>
-          <h2>Try a swap</h2>
+          <h2>Swap</h2>
           <div className="olp-swap-list">
             {recipe.swaps.map((swap) => {
               const on = swapIds.includes(swap.id);
               return (
-                <motion.button
+                <button
                   key={swap.id}
                   type="button"
                   data-testid={`swap-${swap.id}`}
                   className={`olp-swap${on ? " is-on" : ""}`}
                   aria-pressed={on}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    tapFeedback(12);
-                    toggleSwap(recipe.id, swap.id);
-                  }}
+                  onClick={() => toggleSwap(recipe.id, swap.id)}
                 >
                   <b>{swap.label}</b>
-                  <span>{on ? "Applied — marks update live." : swap.detail}</span>
-                </motion.button>
+                  <span>{on ? "Applied" : swap.detail}</span>
+                </button>
               );
             })}
           </div>
@@ -195,14 +152,11 @@ export function RecipeStudio() {
       ) : null}
 
       <section>
-        <div className="olp-section-head">
-          <h2>More recipes</h2>
-          <p className="olp-caption">Same marks, filtered by who you&apos;re cooking for.</p>
-        </div>
+        <h2>More recipes</h2>
         {eaters.length === 0 ? (
           <EmptyState
             title="No one in this group"
-            body="Kids mode needs someone marked as a kid. Custom needs at least one person."
+            body="Kids mode needs a kid. Custom needs at least one person."
           />
         ) : (
           <div className="olp-recipe-grid">
@@ -274,14 +228,7 @@ export function RecipeStudio() {
 }
 
 function FindingDetail({ finding }: { finding: Finding }) {
-  return (
-    <div className="olp-stack-sm">
-      <p className="olp-lead">{finding.reason}</p>
-      {finding.ingredientName ? (
-        <p className="olp-caption">Ingredient: {finding.ingredientName}</p>
-      ) : null}
-    </div>
-  );
+  return <p className="olp-lead">{finding.reason}</p>;
 }
 
 function CustomCookForm({
@@ -297,7 +244,6 @@ function CustomCookForm({
 }) {
   return (
     <>
-      <p className="olp-lead">Pick anyone. Marks update for just this group.</p>
       <div className="olp-choice-list">
         {people.map((person) => {
           const on = selectedIds.includes(person.id);
@@ -315,7 +261,7 @@ function CustomCookForm({
         })}
       </div>
       <button type="button" className="olp-btn olp-btn-primary" onClick={onApply}>
-        Use this group
+        Done
       </button>
     </>
   );
@@ -328,7 +274,7 @@ function worstOf(marks: Mark[]): Mark {
 }
 
 function labelForMark(mark: Mark): string {
-  if (mark === "block") return "blocked for someone";
+  if (mark === "block") return "blocked";
   if (mark === "warn") return "check first";
-  return "clear for this group";
+  return "clear";
 }

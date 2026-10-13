@@ -10,20 +10,14 @@ import { usePrototype } from "./store";
 import { Toast } from "./ui";
 
 const TABS = [
-  { href: "/prototype/people", label: "Household", icon: "home" as const, match: "home" },
-  { href: "/prototype/people/setup", label: "Setup", icon: "setup" as const, match: "setup" },
+  { href: "/prototype/people", label: "People", icon: "home" as const, match: "home" },
   { href: "/prototype/people/recipe", label: "Recipes", icon: "recipe" as const, match: "recipe" },
 ] as const;
 
 function tabActive(pathname: string, match: (typeof TABS)[number]["match"]): boolean {
-  if (match === "setup") return pathname.startsWith("/prototype/people/setup");
   if (match === "recipe") return pathname.startsWith("/prototype/people/recipe");
   if (pathname === "/prototype/people") return true;
-  if (
-    pathname.startsWith("/prototype/people/") &&
-    !pathname.includes("/setup") &&
-    !pathname.includes("/recipe")
-  ) {
+  if (pathname.startsWith("/prototype/people/") && !pathname.includes("/recipe")) {
     return true;
   }
   return false;
@@ -53,7 +47,9 @@ export function PrototypeShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <PrototypeJump resetDemo={resetDemo} />
+        <button type="button" className="olp-text-btn" onClick={resetDemo}>
+          Reset demo
+        </button>
       </aside>
 
       <div className="olp-main">
@@ -62,11 +58,11 @@ export function PrototypeShell({ children }: { children: ReactNode }) {
             <Image src={brandPublicPath.mark} alt="" width={30} height={30} unoptimized />
             <span className="olp-wordmark">OvenLovin</span>
           </Link>
-          <span className="olp-proto-pill">UX prototype · mock data</span>
+          <span className="olp-proto-pill">Prototype · mock data</span>
+          <button type="button" className="olp-text-btn olp-reset-mobile" onClick={resetDemo}>
+            Reset demo
+          </button>
         </header>
-        <div className="olp-jump-mobile">
-          <PrototypeJump resetDemo={resetDemo} compact />
-        </div>
         <main className="olp-content">{children}</main>
       </div>
 
@@ -89,23 +85,6 @@ export function PrototypeShell({ children }: { children: ReactNode }) {
         onUndo={toast ? undoRemove : undefined}
         onDismiss={dismissToast}
       />
-    </div>
-  );
-}
-
-function PrototypeJump({ resetDemo, compact }: { resetDemo: () => void; compact?: boolean }) {
-  return (
-    <div className={`olp-jump${compact ? " is-compact" : ""}`}>
-      {!compact ? <p className="olp-kicker">Jump the flows</p> : null}
-      <div className="olp-jump-links">
-        <Link href="/prototype/people/setup">Wizard</Link>
-        <Link href="/prototype/people">Household</Link>
-        <Link href="/prototype/people/jake">Jake</Link>
-        <Link href="/prototype/people/recipe">Recipe</Link>
-        <button type="button" onClick={resetDemo}>
-          Reset demo
-        </button>
-      </div>
     </div>
   );
 }

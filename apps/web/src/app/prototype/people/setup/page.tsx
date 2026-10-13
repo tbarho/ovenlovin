@@ -1,5 +1,5 @@
-import { SetupWizard } from "@/components/prototype/people/SetupWizard";
+import { redirect } from "next/navigation";
 
 export default function PrototypeSetupPage() {
-  return <SetupWizard />;
+  redirect("/prototype/people");
 }

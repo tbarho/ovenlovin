@@ -1,47 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
-import type { CSSProperties } from "react";
-import { FoodIcon } from "./icons";
+import { useState } from "react";
 import {
-  personTheme,
+  AVATAR_COLORS,
+  AVATAR_EMOJIS,
+  newId,
   restrictionLabel,
-  safeToCookLine,
-  severePeople,
+  slugPersonName,
   summarizeHousehold,
   type Person,
 } from "./model";
 import { usePrototype } from "./store";
 import { Avatar, Chip, EmptyState } from "./ui";
 
-function IdentityCard({ person }: { person: Person }) {
-  const theme = personTheme(person.color);
-  const chips = person.restrictions.slice(0, 5);
+function PersonCard({ person }: { person: Person }) {
   return (
     <Link
       href={`/prototype/people/${person.id}`}
-      className="olp-identity-card"
+      className="olp-person-chip"
       data-testid={`person-chip-${person.id}`}
-      style={
-        {
-          "--olp-theme": person.color,
-          "--olp-theme-wash": theme.wash,
-          "--olp-theme-glow": theme.glow,
-        } as CSSProperties
-      }
     >
-      <div className="olp-identity-wash">
-        <Avatar person={person} size={72} />
-      </div>
-      <div className="olp-identity-body">
-        <span>
-          <b>{person.name}</b>
-          <small>{person.generation === "kid" ? "Kid" : "Adult"}</small>
-        </span>
-        {chips.length > 0 ? (
-          <div className="olp-passport" aria-label={`${person.name}'s food passport`}>
-            {chips.map((restriction) => (
+      <Avatar person={person} size={48} />
+      <span>
+        <b>{person.name}</b>
+        {person.restrictions.length > 0 ? (
+          <span className="olp-passport">
+            {person.restrictions.map((restriction) => (
               <Chip
                 key={restriction.id}
                 itemId={restriction.itemId}
@@ -49,88 +34,120 @@ function IdentityCard({ person }: { person: Person }) {
                 bucket={restriction.bucket}
               />
             ))}
-          </div>
+          </span>
         ) : (
-          <p className="olp-passport-empty">Eats everything — for now.</p>
+          <small>No rules</small>
         )}
-      </div>
+      </span>
     </Link>
+  );
+}
+
+function AddPersonForm() {
+  const { household, upsertPerson } = usePrototype();
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState<(typeof AVATAR_EMOJIS)[number]>("🧑‍🍳");
+  const [color, setColor] = useState<(typeof AVATAR_COLORS)[number]>(AVATAR_COLORS[0] ?? "#e07a3d");
+
+  function onSubmit() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const idBase = slugPersonName(trimmed);
+    const id = household.people.some((person) => person.id === idBase) ? newId(idBase) : idBase;
+    upsertPerson({
+      id,
+      name: trimmed,
+      emoji,
+      color,
+      generation: "adult",
+      restrictions: [],
+    });
+    setName("");
+  }
+
+  return (
+    <form
+      className="olp-add-person"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit();
+      }}
+    >
+      <label className="olp-field">
+        Name
+        <input
+          key="add-person-name"
+          value={name}
+          autoComplete="off"
+          placeholder="Name"
+          onChange={(event) => setName(event.target.value)}
+        />
+      </label>
+      <div className="olp-identity-preview">
+        <Avatar person={{ name: name || "?", emoji, color }} size={44} />
+      </div>
+      <div className="olp-emoji-grid">
+        {AVATAR_EMOJIS.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={emoji === item ? "is-on" : undefined}
+            onClick={() => setEmoji(item)}
+            aria-label={`Use ${item}`}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+      <div className="olp-color-grid">
+        {AVATAR_COLORS.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={color === item ? "is-on" : undefined}
+            style={{ background: item }}
+            onClick={() => setColor(item)}
+            aria-label={`Use color ${item}`}
+          />
+        ))}
+      </div>
+      <button type="submit" className="olp-btn olp-btn-primary" disabled={!name.trim()}>
+        Add person
+      </button>
+    </form>
   );
 }
 
 export function HouseholdHome() {
   const { household } = usePrototype();
   const summary = summarizeHousehold(household);
-  const severe = severePeople(household);
-
-  if (household.people.length === 0) {
-    return (
-      <EmptyState
-        title="Who do you cook for?"
-        body="Add people first — a name and a face is enough. Rules come next, one person at a time."
-        action={
-          <Link href="/prototype/people/setup" className="olp-btn olp-btn-primary">
-            Start household setup
-          </Link>
-        }
-      />
-    );
-  }
 
   return (
     <div className="olp-stack">
-      <motion.section
-        className={`olp-hero-card${summary.severeCount > 0 ? " is-severe" : ""}`}
-        data-testid="household-summary"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 280, damping: 24 }}
-      >
-        <div className="olp-hero-faces" aria-hidden="true">
-          {household.people.map((person) => (
-            <Avatar key={person.id} person={person} size={40} />
-          ))}
-        </div>
-        <div className="olp-hero-status">
-          <span className="olp-hero-dot" />
-          Safe to cook
-        </div>
-        <p className="olp-kicker">Household</p>
+      <header>
         <h1>{household.name}</h1>
-        <p className="olp-hero-line">{safeToCookLine(summary)}</p>
-        <p className="olp-hero-avoids">{summary.line}</p>
-        {summary.badge ? (
-          <span className="olp-badge-severe" data-testid="severe-badge">
-            <FoodIcon id="peanut" size={16} />
-            {summary.badge}
-            {severe[0] ? ` · ${severe[0].name}` : null}
-          </span>
-        ) : null}
-      </motion.section>
+        <p className="olp-lead" data-testid="household-summary">
+          {summary.line}
+          {summary.badge ? (
+            <>
+              {" · "}
+              <span data-testid="severe-badge">{summary.badge}</span>
+            </>
+          ) : null}
+        </p>
+      </header>
 
-      <section>
-        <div className="olp-section-head">
-          <div>
-            <p className="olp-kicker">Food passports</p>
-            <h2>People</h2>
-          </div>
-          <Link href="/prototype/people/setup" className="olp-text-btn">
-            Add someone
-          </Link>
-        </div>
+      {household.people.length === 0 ? (
+        <EmptyState title="No one yet" body="Add a name and avatar." />
+      ) : (
         <div className="olp-person-row">
-          {household.people.map((person, index) => (
-            <motion.div
-              key={person.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.04, type: "spring", stiffness: 320, damping: 24 }}
-            >
-              <IdentityCard person={person} />
-            </motion.div>
+          {household.people.map((person) => (
+            <PersonCard key={person.id} person={person} />
           ))}
         </div>
-      </section>
+      )}
+
+      <AddPersonForm />
     </div>
   );
 }
