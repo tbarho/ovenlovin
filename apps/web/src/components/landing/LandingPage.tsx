@@ -97,6 +97,9 @@ export function LandingPage({
               <a className="btn ghost" href="#connect">
                 Connect your agent
               </a>
+              <a className="btn ghost" href="#migrate">
+                Migrate from ReciMe
+              </a>
             </div>
             <VercelBand deploy={deploy} />
           </div>
@@ -129,6 +132,14 @@ export function LandingPage({
               <h2>Connect an agent</h2>
               <p>Copy a ready-to-paste prompt for Grok, Claude, ChatGPT, or any MCP client.</p>
             </a>
+            <a className="path-card" href="#migrate">
+              <span className="kicker">04</span>
+              <h2>Migrate from ReciMe</h2>
+              <p>
+                A copyable agent prompt that signs into ReciMe, walks every folder, and imports
+                cookbooks and recipes here.
+              </p>
+            </a>
           </div>
         </div>
 
@@ -142,16 +153,7 @@ export function LandingPage({
           </div>
         </section>
 
-        <section className="section" id="connect">
-          <div className="wrap">
-            <h2>Connect your agent</h2>
-            <p className="intro">
-              These snippets already use this origin ({origin}). Sign in to generate an API key,
-              then paste.
-            </p>
-            <ConnectAgentSection origin={origin} signedIn={signedIn} />
-          </div>
-        </section>
+        <ConnectAgentSection origin={origin} signedIn={signedIn} />
       </main>
       <footer className="footer wrap">
         <span>
