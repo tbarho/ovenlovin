@@ -38,8 +38,6 @@ function ruleFromUi(opts: {
     deletedAt: null,
     createdBy: "admin-1",
     setBy: "admin-1",
-    label: null,
-    note: null,
     activeFrom: null,
     activeUntil: null,
     includeUnmappedIngredients: false,
@@ -166,7 +164,10 @@ describe("UI write → checker (severe nut allergy)", () => {
     expect(ignore.includeCrossContact).toBe(false);
 
     const asked = checkIngredientsAgainstRules([{ name: "chocolate chips" }], [contextFor(ask)]);
-    const ignored = checkIngredientsAgainstRules([{ name: "chocolate chips" }], [contextFor(ignore)]);
+    const ignored = checkIngredientsAgainstRules(
+      [{ name: "chocolate chips" }],
+      [contextFor(ignore)]
+    );
 
     // Ask me persists sharedFacility=warn and turns cross-contact on. Finding
     // severity still comes from the rule (Can't have → block), not the prompt.
