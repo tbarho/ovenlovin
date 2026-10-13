@@ -210,6 +210,238 @@ select {
   background: transparent;
 }
 
+.btn.compact {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.btn.danger {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+.btn.danger:hover {
+  background: #a83b30;
+  border-color: #a83b30;
+}
+
+.btn.danger-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--bad);
+}
+
+.form-error {
+  margin: 0;
+  color: var(--bad);
+  font-size: 14px;
+}
+
+.rule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(16, 14, 12, 0.36);
+  cursor: pointer;
+}
+
+.sheet-panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 100%);
+  max-height: min(92vh, 760px);
+  padding: 8px 16px 20px;
+  border: 1px solid #eaeaea;
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  background: #fff;
+  box-shadow: 0 -16px 50px rgba(0, 0, 0, 0.12);
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  margin: 6px auto 10px;
+  border-radius: 999px;
+  background: #eaeaea;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.sheet-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sheet-body {
+  display: grid;
+  gap: 16px;
+  overflow: auto;
+  padding: 8px 0 4px;
+}
+
+.sheet-lead {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.sheet-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.sheet-steps {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sheet-steps .is-current {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.choice {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice b {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.choice span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.choice.is-selected {
+  border-color: var(--orange);
+  background: #fffaf4;
+  box-shadow: 0 0 0 1px var(--orange);
+}
+
+.choice-block.is-selected {
+  border-color: var(--bad);
+  background: #fdf6f5;
+  box-shadow: 0 0 0 1px var(--bad);
+}
+
+.choice-warn.is-selected {
+  border-color: var(--warn);
+  background: #fff8ef;
+  box-shadow: 0 0 0 1px var(--warn);
+}
+
+.safety-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #f2d6d3;
+  border-radius: 10px;
+  background: #fdf6f5;
+  color: #7a2f28;
+  font-size: 13px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+}
+
+.toggle-row input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.toggle-row span {
+  display: grid;
+  gap: 2px;
+}
+
+@media (min-width: 720px) {
+  .sheet-root {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .sheet-panel {
+    max-height: min(84vh, 720px);
+    border-bottom: 1px solid #eaeaea;
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+  }
+
+  .sheet-handle {
+    display: none;
+  }
+}
+
 .hero {
   position: relative;
   padding: 88px 0 72px;
@@ -583,6 +815,7 @@ select {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -930,6 +1163,10 @@ select {
 
   .nav-inner {
     gap: 10px;
+  }
+
+  .kitchen-head {
+    align-items: flex-start;
   }
 
   .paths,

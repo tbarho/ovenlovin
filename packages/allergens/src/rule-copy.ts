@@ -81,3 +81,33 @@ export function describeRuleSummary(personName: string, rule: RuleCopyInput): st
   const lead = `${personName}: ${chip.text}`;
   return facility ? `${lead}. ${facility}.` : `${lead}.`;
 }
+
+export function personRemovalCopy(
+  personName: string,
+  ruleCount: number
+): {
+  title: string;
+  body: string;
+} {
+  return {
+    title: `Remove ${personName}?`,
+    body:
+      ruleCount === 0
+        ? `${personName} will be removed from this household.`
+        : `${personName} and their ${ruleCount} ${ruleCount === 1 ? "rule" : "rules"} will be removed. Meal checks will no longer include ${personName}.`,
+  };
+}
+
+export function ruleRemovalCopy(
+  personName: string,
+  rule: RuleCopyInput
+): {
+  title: string;
+  body: string;
+} {
+  const chip = describeRuleChip(rule);
+  return {
+    title: "Remove this rule?",
+    body: `Meals will no longer apply “${chip.text}” for ${personName}.`,
+  };
+}

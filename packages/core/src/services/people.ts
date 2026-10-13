@@ -72,13 +72,21 @@ export class PeopleService extends BaseService {
   }
 
   async deletePerson(id: string): Promise<boolean> {
-    const [deleted] = await this._db
-      .update(person)
-      .set({ deletedAt: new Date() })
-      .where(and(eq(person.id, id), isNull(person.deletedAt)))
-      .returning();
+    const now = new Date();
+    return this._db.transaction(async (tx) => {
+      await tx
+        .update(personRule)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(personRule.personId, id), isNull(personRule.deletedAt)));
 
-    return !!deleted;
+      const [deleted] = await tx
+        .update(person)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(person.id, id), isNull(person.deletedAt)))
+        .returning();
+
+      return !!deleted;
+    });
   }
 
   async getRulesForPerson(personId: string): Promise<PersonRule[]> {

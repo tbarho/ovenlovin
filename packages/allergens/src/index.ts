@@ -35,6 +35,7 @@ export {
 
 export {
   dietCatalog,
+  dislikeCatalog,
   allergenCatalog,
   dietCatalogEntries,
   catalogForIntent,
@@ -53,6 +54,8 @@ export {
   describeRuleChip,
   describeRuleSummary,
   describeSharedFacility,
+  personRemovalCopy,
+  ruleRemovalCopy,
   severityPhrase,
   severityTitle,
   severityExplanation,

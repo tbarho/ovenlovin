@@ -211,10 +211,56 @@ export function dietCatalogEntries(): CatalogEntry[] {
   }));
 }
 
+export const dislikeCatalog: CatalogEntry[] = [
+  {
+    code: "cilantro",
+    name: "Cilantro",
+    phraseName: "cilantro",
+    description: "Fresh coriander leaf",
+    group: "ingredient",
+    aliases: ["coriander", "coriander leaf"],
+  },
+  {
+    code: "olives",
+    name: "Olives",
+    phraseName: "olives",
+    group: "ingredient",
+    aliases: ["olive"],
+  },
+  {
+    code: "mushrooms",
+    name: "Mushrooms",
+    phraseName: "mushrooms",
+    group: "ingredient",
+    aliases: ["mushroom"],
+  },
+  {
+    code: "onions",
+    name: "Onions",
+    phraseName: "onions",
+    group: "ingredient",
+    aliases: ["onion"],
+  },
+  {
+    code: "garlic",
+    name: "Garlic",
+    phraseName: "garlic",
+    group: "ingredient",
+    aliases: [],
+  },
+  {
+    code: "spicy",
+    name: "Spicy food",
+    phraseName: "spicy food",
+    group: "ingredient",
+    aliases: ["spice", "hot"],
+  },
+];
+
 export function catalogForIntent(intent: RuleIntent): CatalogEntry[] {
   if (intent === "allergy") return allergenCatalog();
   if (intent === "diet") return dietCatalogEntries();
-  return [];
+  return dislikeCatalog;
 }
 
 export function findCatalogEntry(code: string, group?: CatalogGroup): CatalogEntry | undefined {
@@ -223,7 +269,9 @@ export function findCatalogEntry(code: string, group?: CatalogGroup): CatalogEnt
       ? dietCatalogEntries()
       : group === "allergen"
         ? allergenCatalog()
-        : [...allergenCatalog(), ...dietCatalogEntries()];
+        : group === "ingredient"
+          ? dislikeCatalog
+          : [...allergenCatalog(), ...dietCatalogEntries(), ...dislikeCatalog];
   return pools.find((entry) => entry.code === code);
 }
 

@@ -52,8 +52,11 @@ describe("searchCatalog", () => {
     expect(results.every((entry) => entry.group === "diet")).toBe(true);
   });
 
-  it("does not invent catalog entries for dislike intent", () => {
-    expect(catalogForIntent("dislike")).toEqual([]);
+  it("offers common dislike suggestions instead of allergens", () => {
+    const results = searchCatalog("", { intent: "dislike" });
+    expect(results.every((entry) => entry.group === "ingredient")).toBe(true);
+    expect(results.some((entry) => entry.code === "cilantro")).toBe(true);
+    expect(catalogForIntent("dislike").every((entry) => entry.group === "ingredient")).toBe(true);
   });
 });
 
