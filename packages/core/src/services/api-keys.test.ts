@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { toPublicApiKey, toPublicApiKeyWithPlaintext } from "../schemas/households";
 import { ApiKeyService } from "./api-keys";
 import type { DbClient } from "@ovenlovin/db/client";
 
@@ -252,13 +253,15 @@ describe("ApiKeyService", () => {
     it("should revoke an API key", async () => {
       const mockUpdate = {
         set: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue(undefined),
+        where: vi.fn().mockReturnThis(),
+        returning: vi.fn().mockResolvedValue([{ id: "key-123" }]),
       };
 
       (mockDb.update as any) = vi.fn().mockReturnValue(mockUpdate);
 
-      await service.revoke("key-123", "household-123");
+      const revoked = await service.revoke("key-123", "household-123");
 
+      expect(revoked).toBe(true);
       expect(mockUpdate.set).toHaveBeenCalledWith(
         expect.objectContaining({ revokedAt: expect.any(Date) })
       );
@@ -308,8 +311,82 @@ describe("ApiKeyService", () => {
       const result = await service.listForHousehold("household-123");
 
       expect(result).toHaveLength(2);
-      expect(result[0].name).toBe("Key 1");
-      expect(result[1].name).toBe("Key 2");
+      expect(result[0].name).toBe("Key 2");
+      expect(result[1].name).toBe("Key 1");
+    });
+
+    it("omits soft-deleted keys and keeps hashing out of the public shape helper", async () => {
+      const mockSelect = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([
+          {
+            id: "key-1",
+            createdAt: new Date("2024-01-01"),
+            updatedAt: new Date("2024-01-01"),
+            deletedAt: new Date("2024-01-03"),
+            createdBy: "user-123",
+            householdId: "household-123",
+            name: "Deleted",
+            keyHash: "hash1",
+            keyPrefix: "rkapi_aa",
+            scopes: ["recipes:read"],
+            lastUsedAt: null,
+            expiresAt: null,
+            revokedAt: null,
+          },
+          {
+            id: "key-2",
+            createdAt: new Date("2024-01-02"),
+            updatedAt: new Date("2024-01-02"),
+            deletedAt: null,
+            createdBy: "user-123",
+            householdId: "household-123",
+            name: "Active",
+            keyHash: "hash2",
+            keyPrefix: "rkapi_bb",
+            scopes: ["recipes:read"],
+            lastUsedAt: null,
+            expiresAt: null,
+            revokedAt: null,
+          },
+        ]),
+      };
+
+      (mockDb.select as any) = vi.fn().mockReturnValue(mockSelect);
+
+      const result = await service.listForHousehold("household-123");
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("Active");
+    });
+  });
+
+  describe("public presentation", () => {
+    it("strips the hash and keeps the masked prefix fields", () => {
+      const key = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-01T00:00:00.000Z",
+        deletedAt: null,
+        createdBy: "550e8400-e29b-41d4-a716-446655440001",
+        householdId: "550e8400-e29b-41d4-a716-446655440002",
+        name: "Grok",
+        keyHash: "should-not-leak",
+        keyPrefix: "rkapi_ab",
+        scopes: ["recipes:read"] as const,
+        lastUsedAt: null,
+        expiresAt: null,
+        revokedAt: null,
+      };
+
+      const pub = toPublicApiKey(key);
+      expect(pub).not.toHaveProperty("keyHash");
+      expect(pub.keyPrefix).toBe("rkapi_ab");
+      expect(pub.name).toBe("Grok");
+
+      const withSecret = toPublicApiKeyWithPlaintext({ ...key, plaintext: "rkapi_secret" });
+      expect(withSecret).not.toHaveProperty("keyHash");
+      expect(withSecret.plaintext).toBe("rkapi_secret");
     });
   });
 });
