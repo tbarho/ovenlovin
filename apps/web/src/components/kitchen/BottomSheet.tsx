@@ -2,6 +2,7 @@
 
 import { useId, useRef, type ReactNode } from "react";
 import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
+import { useSheetViewport } from "@/components/sheet/useSheetViewport";
 
 export function BottomSheet({
   open,
@@ -15,14 +16,16 @@ export function BottomSheet({
   children: ReactNode;
 }) {
   const titleId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useSheetOpenEffects({ open, onClose, panelRef });
+  useSheetViewport({ open, rootRef, panelRef });
 
   if (!open) return null;
 
   return (
-    <div className="sheet-root" data-sheet="bottom">
+    <div ref={rootRef} className="sheet-root" data-sheet="bottom">
       <button type="button" className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div
         ref={panelRef}
