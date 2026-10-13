@@ -1,6 +1,12 @@
-# OvenLovin
+<p align="center">
+  <img src="packages/brand/assets/mark.svg" width="128" alt="OvenLovin" />
+</p>
 
-> **LLM-optimized recipe and family meal-planning platform**
+<h1 align="center">OvenLovin</h1>
+
+<p align="center">
+  <strong>LLM-optimized recipe and family meal-planning platform</strong>
+</p>
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://github.com/tbarho/ovenlovin/blob/main/docs/bot-setup.md&project-name=ovenlovin&repository-name=ovenlovin&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://github.com/tbarho/ovenlovin&demo-image=https://vercel.com/api/www/avatar?u=ovenlovin&s=128&integration-ids=oac_nEXJBbvUWwjlcyqXeFz6ybeh)
 
