@@ -21,7 +21,14 @@ export default async function Home() {
   const status = await getConfigStatus();
   const signedIn = await isSignedIn();
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-  const deploy = describeDeploy(process.env, { origin });
+  const deploy = describeDeploy(
+    {
+      ...process.env,
+      // Next only inlines next.config `env` on a static property access, not via process.env spread.
+      NEXT_PUBLIC_BUILD_TIME: process.env.NEXT_PUBLIC_BUILD_TIME,
+    },
+    { origin }
+  );
 
   return (
     <LandingPage
