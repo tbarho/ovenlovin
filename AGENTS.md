@@ -125,6 +125,7 @@ No real family names, photos, or private data in fixtures, tests, or docs. Use g
 - **Errors**: descriptive messages with remediation hints
 - **API**: cursor pagination, idempotency keys on writes, problem+json errors
 - **Naming**: camelCase for variables/functions, PascalCase for types/components
+- **Sheet-hosted inputs**: Never define a component inside another component’s render body — that remounts the tree (and blurs the field) on every keystroke. Keep `key` props stable; never use `Math.random()`, `Date.now()`, or the value being edited. Give each sheet a stable identity while it is open. Autofocus and focus-trap effects may depend only on `open`, not on inline `onClose` or draft state, so they run once when the sheet opens. Keep draft input state in the sheet form, not in a parent that rebuilds the sheet on every character.
 
 ## Safety Invariants (Do Not Break)
 
