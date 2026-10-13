@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
-import { PersonDetail } from "@/components/kitchen/PersonDetail";
+import { PersonPage } from "@/components/people/PersonPage";
 import { getSessionContext } from "@/lib/session";
 
-export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PersonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const context = await getSessionContext().catch(() => null);
   if (!context) redirect("/sign-in");
 
@@ -14,5 +14,5 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   if (!person) notFound();
   const rules = await service.getRulesForPerson(id);
 
-  return <PersonDetail person={person} rules={rules} />;
+  return <PersonPage person={person} rules={rules} />;
 }

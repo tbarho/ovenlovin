@@ -1,0 +1,21 @@
+.kitchen-people {
+  display: grid;
+  gap: 8px;
+}
+
+.kitchen-people.olp {
+  background: transparent;
+}
+
+.kitchen-shell:has(.olp-sheet-root) .kitchen-tabbar {
+  display: none;
+}
+
+.kitchen-people .olp-person-chip {
+  text-decoration: none;
+  color: inherit;
+}
+
+.kitchen-people .olp-add-person {
+  margin-top: 8px;
+}

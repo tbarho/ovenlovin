@@ -1,4 +1,4 @@
-import type { Cookbook, Person, Recipe, RecipeDetails } from "@ovenlovin/core";
+import type { Cookbook, Person, PersonRule, Recipe, RecipeDetails } from "@ovenlovin/core";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 const HOUSEHOLD_ID = "00000000-0000-4000-8000-000000000001";
@@ -9,6 +9,29 @@ export function testPerson(overrides: Partial<Person> = {}): Person {
     id: "00000000-0000-4000-8000-000000000010",
     householdId: HOUSEHOLD_ID,
     displayName: "Parent A",
+    createdAt: NOW,
+    updatedAt: NOW,
+    createdBy: USER_ID,
+    ...overrides,
+  };
+}
+
+export function testPersonRule(overrides: Partial<PersonRule> = {}): PersonRule {
+  return {
+    id: "00000000-0000-4000-8000-000000000011",
+    personId: "00000000-0000-4000-8000-000000000010",
+    kind: "allergen",
+    target: "tree_nut",
+    severity: "block",
+    includeMayContain: true,
+    includeCrossContact: true,
+    sharedFacility: "warn",
+    includeUnmappedIngredients: false,
+    includeDescendants: true,
+    treatCoconutAsTreeNut: false,
+    label: null,
+    note: null,
+    setBy: USER_ID,
     createdAt: NOW,
     updatedAt: NOW,
     createdBy: USER_ID,
