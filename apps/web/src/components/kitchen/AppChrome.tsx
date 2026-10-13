@@ -12,9 +12,6 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <Link href="/" className="brand" aria-label="OvenLovin">
             <Image src={brandPublicPath.mark} alt="" width={34} height={34} unoptimized />
             <span className="brand-wordmark">OvenLovin</span>
-            <span className="brand-wordmark-short" aria-hidden="true">
-              Oven
-            </span>
           </Link>
           <KitchenNav />
           <div className="nav-user">

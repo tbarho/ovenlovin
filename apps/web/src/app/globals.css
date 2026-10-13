@@ -190,10 +190,6 @@ select {
   margin-left: auto;
 }
 
-.brand-wordmark-short {
-  display: none;
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1675,10 +1671,6 @@ select {
 
   .kitchen-topbar .brand-wordmark {
     display: none;
-  }
-
-  .kitchen-topbar .brand-wordmark-short {
-    display: inline;
   }
 
   .kitchen-shell .kitchen {
