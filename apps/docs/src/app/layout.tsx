@@ -1,3 +1,4 @@
+import { withBasePath } from "@/lib/base-path";
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -14,6 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  icons: {
+    icon: withBasePath("/brand/favicon.svg"),
+  },
   title: {
     default: "OvenLovin Documentation",
     template: "%s | OvenLovin",
