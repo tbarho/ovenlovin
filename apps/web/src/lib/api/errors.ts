@@ -45,15 +45,27 @@ export class ApiError extends Error {
 
 export class BadRequestError extends ApiError {
   constructor(detail?: string, extensions?: Record<string, unknown>) {
-    super(400, "https://your-app.vercel.app/problems/bad-request", "Bad Request", detail, extensions);
+    super(
+      400,
+      "https://your-app.vercel.app/problems/bad-request",
+      "Bad Request",
+      detail,
+      extensions
+    );
   }
 }
 
 export class ValidationError extends ApiError {
   constructor(detail: string, errors: unknown) {
-    super(400, "https://your-app.vercel.app/problems/validation-error", "Validation Error", detail, {
-      errors,
-    });
+    super(
+      400,
+      "https://your-app.vercel.app/problems/validation-error",
+      "Validation Error",
+      detail,
+      {
+        errors,
+      }
+    );
   }
 
   static fromZodError(error: ZodError): ValidationError {
