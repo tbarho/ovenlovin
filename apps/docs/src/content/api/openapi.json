@@ -89,11 +89,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "needs_review",
-              "published"
-            ]
+            "enum": ["draft", "needs_review", "published"]
           },
           "cuisine": {
             "type": "string",
@@ -104,14 +100,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "id",
-          "householdId",
-          "title",
-          "slug",
-          "images",
-          "status"
-        ]
+        "required": ["id", "householdId", "title", "slug", "images", "status"]
       },
       "CookbookCard": {
         "allOf": [
@@ -132,10 +121,7 @@
                 }
               }
             },
-            "required": [
-              "recipeCount",
-              "previewImages"
-            ]
+            "required": ["recipeCount", "previewImages"]
           }
         ]
       },
@@ -165,13 +151,7 @@
             "minimum": 0
           }
         },
-        "required": [
-          "id",
-          "householdId",
-          "name",
-          "slug",
-          "sortOrder"
-        ]
+        "required": ["id", "householdId", "name", "slug", "sortOrder"]
       }
     },
     "parameters": {}
@@ -179,9 +159,7 @@
   "paths": {
     "/recipes": {
       "get": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "List recipes",
         "parameters": [
           {
@@ -223,10 +201,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
+              "enum": ["true", "false"]
             },
             "required": false,
             "name": "uncategorized",
@@ -248,9 +223,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -260,9 +233,7 @@
     },
     "/recipes/{id}": {
       "get": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Get a recipe with ingredients, steps, times, images, and source",
         "parameters": [
           {
@@ -289,9 +260,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Update recipe metadata, ingredients, steps, images, or cookbook membership",
         "parameters": [
           {
@@ -360,9 +329,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "rawText"
-                      ]
+                      "required": ["rawText"]
                     }
                   },
                   "steps": {
@@ -374,9 +341,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "text"
-                      ]
+                      "required": ["text"]
                     }
                   }
                 }
@@ -400,9 +365,7 @@
     },
     "/recipes/import": {
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Import a recipe from a URL or pasted text, copying the main image into Vercel Blob",
         "requestBody": {
           "content": {
@@ -412,19 +375,13 @@
                 "properties": {
                   "source": {
                     "type": "string",
-                    "enum": [
-                      "url",
-                      "paste"
-                    ]
+                    "enum": ["url", "paste"]
                   },
                   "content": {
                     "type": "string"
                   }
                 },
-                "required": [
-                  "source",
-                  "content"
-                ]
+                "required": ["source", "content"]
               }
             }
           }
@@ -445,9 +402,7 @@
     },
     "/cookbooks": {
       "get": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "List cookbooks",
         "responses": {
           "200": {
@@ -464,9 +419,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -474,9 +427,7 @@
         }
       },
       "post": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Create a cookbook",
         "requestBody": {
           "content": {
@@ -491,9 +442,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           }
@@ -514,9 +463,7 @@
     },
     "/cookbooks/{id}": {
       "get": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Get a cookbook and its recipes",
         "parameters": [
           {
@@ -543,9 +490,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Rename a cookbook",
         "parameters": [
           {
@@ -590,9 +535,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Delete a cookbook without deleting its recipes",
         "parameters": [
           {
@@ -614,9 +557,7 @@
     },
     "/cookbooks/{id}/recipes": {
       "post": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Add a recipe to a cookbook",
         "parameters": [
           {
@@ -640,9 +581,7 @@
                     "format": "uuid"
                   }
                 },
-                "required": [
-                  "recipeId"
-                ]
+                "required": ["recipeId"]
               }
             }
           }
@@ -656,9 +595,7 @@
     },
     "/uploads/images": {
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Upload or copy a recipe image into Vercel Blob",
         "responses": {
           "201": {
@@ -672,9 +609,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "url"
-                  ]
+                  "required": ["url"]
                 }
               }
             }
