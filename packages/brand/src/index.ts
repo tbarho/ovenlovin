@@ -21,3 +21,5 @@ export const brandPublicPath = {
 } as const;
 
 export type BrandAssetName = keyof typeof brandAssets;
+
+export { VERCEL_DEPLOY_URL } from "./deploy";

@@ -27,25 +27,26 @@ An open-source Next.js template for Vercel that provides a bot-first backend for
 
 The fastest way to get started is to deploy OvenLovin to Vercel with one click:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://github.com/tbarho/ovenlovin/blob/main/docs/bot-setup.md&project-name=ovenlovin&repository-name=ovenlovin&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://github.com/tbarho/ovenlovin&demo-image=https://vercel.com/api/www/avatar?u=ovenlovin&s=128&integration-ids=oac_nEXJBbvUWwjlcyqXeFz6ybeh)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=AI_GATEWAY_API_KEY,USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=AI%20Gateway%2C%20USDA%2C%20and%20optional%20instance%20name.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
 
 The one-click deploy will:
 - Clone the repository to your GitHub account
 - Create a new Vercel project
-- Connect a Neon Postgres database (auto-configured `DATABASE_URL`)
-- Prompt for required API keys and secrets
+- Provision Neon Postgres, Vercel Blob, and Clerk
+- Prompt for AI Gateway, USDA, and an optional instance name
+- Run database migrations during the Vercel build
 - Deploy the Next.js app with all environment variables
 
-#### Required Environment Variables
+If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the Vercel project.
 
-You'll need to obtain API keys for the following services:
+#### Environment Variables
 
-- **DATABASE_URL** - Neon Postgres connection string (auto-configured if using Neon integration)
-- **NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY** - Clerk publishable key ([get one](https://clerk.com))
-- **CLERK_SECRET_KEY** - Clerk secret key
-- **BLOB_READ_WRITE_TOKEN** - Vercel Blob storage token ([create one](https://vercel.com/docs/storage/vercel-blob))
+- **DATABASE_URL** - Neon Postgres (auto-configured by the Neon store)
+- **NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY** / **CLERK_SECRET_KEY** - Clerk (auto-configured by the Clerk store, or [get keys](https://clerk.com))
+- **BLOB_READ_WRITE_TOKEN** - Vercel Blob (auto-configured by the Blob store)
 - **AI_GATEWAY_API_KEY** - Vercel AI Gateway API key ([create one](https://vercel.com/docs/ai))
 - **USDA_FDC_API_KEY** - USDA FoodData Central API key ([get one](https://fdc.nal.usda.gov/api-key-signup.html))
+- **NEXT_PUBLIC_INSTANCE_NAME** - optional landing-page name (defaults to "Your OvenLovin")
 
 ### Local Development
 

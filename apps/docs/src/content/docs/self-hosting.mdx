@@ -15,6 +15,7 @@ OvenLovin requires the following environment variables to function. Set these in
 | `BLOB_READ_WRITE_TOKEN` | Yes | Vercel Blob storage token for recipe photos and OCR | [Vercel Storage](https://vercel.com/dashboard/stores) → Create Blob Store |
 | `AI_GATEWAY_API_KEY` | Yes | Vercel AI Gateway API key for LLM operations | [Vercel AI Gateway](https://vercel.com/docs/ai) |
 | `USDA_FDC_API_KEY` | Yes | USDA FoodData Central API key for nutrition data | [FoodData Central](https://fdc.nal.usda.gov/api-key-signup.html) |
+| `NEXT_PUBLIC_INSTANCE_NAME` | No | Name shown on the landing page (defaults to `Your OvenLovin`) | Set this so the deployed site feels like yours |
 | `RK_MODEL_DEFAULT` | No | Default LLM model (default: `spacexai/grok-4.7`) | N/A - set custom model |
 | `RK_MODEL_VISION` | No | Vision model for OCR (default: `spacexai/grok-4.7`) | N/A - set custom model |
 | `RK_MODEL_STT` | No | Speech-to-text model (default: `openai/whisper-1`) | N/A - set custom model |
@@ -62,14 +63,18 @@ The fastest way to deploy OvenLovin is using Vercel's one-click deployment.
 
 ### One-Click Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&project-name=ovenlovin&repository-name=ovenlovin&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://github.com/tbarho/ovenlovin&demo-image=https://vercel.com/api/www/avatar?u=ovenlovin&s=128&integration-ids=oac_nEXJBbvUWwjlcyqXeFz6ybeh)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=AI_GATEWAY_API_KEY,USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=AI%20Gateway%2C%20USDA%2C%20and%20optional%20instance%20name.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
 
 The one-click deploy will:
 
 1. Fork the repository to your GitHub account
 2. Create a new Vercel project
-3. Prompt for environment variables
-4. Deploy the Next.js application
+3. Provision Neon Postgres, Vercel Blob, and Clerk (auto-configures `DATABASE_URL`, the blob token, and Clerk keys)
+4. Prompt for `AI_GATEWAY_API_KEY`, `USDA_FDC_API_KEY`, and optional `NEXT_PUBLIC_INSTANCE_NAME`
+5. Run database migrations during the build
+6. Deploy the Next.js application
+
+If the Clerk store is not offered in the clone flow, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the Vercel project.
 
 ### Manual Vercel Deploy
 
@@ -165,57 +170,26 @@ For families, you typically want:
 
 ## Database Migrations
 
-After deploying and connecting your database, run migrations to create the schema.
+On Vercel, migrations run automatically at the end of the web app build (`pnpm --filter @ovenlovin/db db:migrate:deploy`). The script prefers a direct (non-pooled) Neon URL when one is available.
 
-### Using pnpm (Recommended)
+If the database already has tables — for example from an earlier `drizzle-kit push` — and Drizzle has no migration history, the deploy script baselines `drizzle.__drizzle_migrations` so the initial migration is not re-applied.
+
+### Local / manual
 
 ```bash
 # Install dependencies
 pnpm install
 
-# Run migrations
+# Run migrations (Drizzle Kit)
 pnpm --filter @ovenlovin/db db:migrate
-```
 
-### Using Drizzle Kit Directly
-
-```bash
-cd packages/db
-npx drizzle-kit migrate
+# Or the same deploy script used on Vercel
+pnpm --filter @ovenlovin/db db:migrate:deploy
 ```
 
 ### Migration Location
 
-Migrations are in `packages/db/drizzle/`. The initial migration `0000_yellow_shooting_star.sql` creates:
-
-- `households` table
-- `people` table with dietary rules
-- `recipes` table with ingredients
-- `meal_plans` and `meals` tables
-- `shopping_lists` and `shopping_list_items` tables
-- Indexes and foreign key constraints
-
-### Important: Drizzle Push Caveat
-
-> **⚠️ Warning:** If you used `drizzle-kit push` to create your database schema (instead of migrations), you'll need to mark the initial migration as applied before running subsequent migrations:
-
-```sql
--- Connect to your database
-psql $DATABASE_URL
-
--- Create drizzle migrations table
-CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
-  id SERIAL PRIMARY KEY,
-  hash TEXT NOT NULL,
-  created_at BIGINT
-);
-
--- Mark 0000 as applied (use the actual hash from meta/_journal.json)
-INSERT INTO "__drizzle_migrations" (hash, created_at)
-VALUES ('0000_yellow_shooting_star', EXTRACT(EPOCH FROM NOW()) * 1000);
-```
-
-This tells Drizzle to skip the initial migration since the schema already exists.
+Migrations are in `packages/db/drizzle/`. History lives in the `drizzle` schema (`drizzle.__drizzle_migrations`), not in `public`. The initial migration `0000_yellow_shooting_star.sql` creates household, person, recipe, meal-plan, and shopping-list tables.
 
 ## Verify Deployment
 
@@ -287,7 +261,7 @@ Should return:
 **Error:** relation already exists
 
 - You may have run `drizzle-kit push` before migrations
-- Follow the [Drizzle Push Caveat](#important-drizzle-push-caveat) section above
+- Re-run `pnpm --filter @ovenlovin/db db:migrate:deploy` — it baselines `drizzle.__drizzle_migrations` when the `household` table already exists and no history is recorded
 
 **Error:** Cannot connect to database
 
