@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
 import type { ConfigStatus } from "@ovenlovin/core/onboarding";
-import { ConnectAgent } from "./ConnectAgent";
+import { ConnectAgentSection } from "./ConnectAgentSection";
 import { SiteHeader } from "./SiteHeader";
 import { StatusStrip } from "./StatusStrip";
 
@@ -119,11 +119,7 @@ export function LandingPage({
               These snippets already use this origin ({origin}). Sign in to generate an API key,
               then paste.
             </p>
-            <ConnectAgent origin={origin} />
-            <p className="empty-note">
-              Signed-in key generation lands with the kitchen UI. Until then, create a key after you
-              sign in, or use <code>Authorization: ApiKey …</code> against {origin}/api/v1.
-            </p>
+            <ConnectAgentSection origin={origin} signedIn={signedIn} />
           </div>
         </section>
       </main>

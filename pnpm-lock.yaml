@@ -103,6 +103,9 @@ importers:
       '@ovenlovin/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@ovenlovin/importers':
+        specifier: workspace:*
+        version: link:../../packages/importers
       '@ovenlovin/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp

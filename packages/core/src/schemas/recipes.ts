@@ -131,3 +131,65 @@ export type RecipeStep = z.infer<typeof recipeStepSchema>;
 export type RecipeNutrition = z.infer<typeof recipeNutritionSchema>;
 export type RecipeSourceType = z.infer<typeof recipeSourceTypeSchema>;
 export type RecipeSource = z.infer<typeof recipeSourceSchema>;
+
+export type RecipeDetails = Recipe & {
+  ingredients: RecipeIngredient[];
+  steps: RecipeStep[];
+  source: RecipeSource | null;
+};
+
+export type RecipeImportDraft = {
+  title: string;
+  description?: string;
+  yieldQuantity?: number;
+  yieldUnit?: string;
+  servings?: number;
+  prepTimeMinutes?: number;
+  cookTimeMinutes?: number;
+  totalTimeMinutes?: number;
+  activeTimeMinutes?: number;
+  methodTags?: string[];
+  cuisine?: string;
+  course?: string;
+  difficulty?: string;
+  equipment?: string[];
+  images?: string[];
+  ingredients: Array<{
+    rawText: string;
+    quantity?: { min: number; max?: number };
+    unit?: string;
+    originalUnit?: string;
+    preparation?: string;
+    isOptional?: boolean;
+    substitutionNotes?: string;
+    confidence?: number;
+  }>;
+  steps: Array<{
+    text: string;
+    order?: number;
+    timers?: Array<{ duration: number; label?: string }>;
+  }>;
+  source: {
+    type: RecipeSourceType;
+    url?: string;
+    canonicalUrl?: string;
+    author?: string;
+    attribution?: string;
+    blobRefs?: string[];
+    importerName: string;
+    importerVersion: string;
+    modelUsed?: string;
+    rawExtractionJson: Record<string, unknown>;
+    licenseNote?: string;
+  };
+  needsReview?: boolean;
+};
+
+export function slugifyTitle(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return slug || "recipe";
+}

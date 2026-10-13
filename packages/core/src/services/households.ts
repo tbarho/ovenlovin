@@ -77,6 +77,16 @@ export class HouseholdService extends BaseService {
     return this.mapUser(created);
   }
 
+  async getHouseholdByClerkOrgId(clerkOrgId: string): Promise<Household | null> {
+    const [result] = await this._db
+      .select()
+      .from(household)
+      .where(and(eq(household.clerkOrgId, clerkOrgId), isNull(household.deletedAt)))
+      .limit(1);
+
+    return result ? this.mapHousehold(result) : null;
+  }
+
   async getMemberships(householdId: string): Promise<Membership[]> {
     const results = await this._db
       .select()
@@ -84,6 +94,77 @@ export class HouseholdService extends BaseService {
       .where(and(eq(membership.householdId, householdId), isNull(membership.deletedAt)));
 
     return results.map((r) => this.mapMembership(r));
+  }
+
+  async getMembershipsForUser(userId: string): Promise<Membership[]> {
+    const results = await this._db
+      .select()
+      .from(membership)
+      .where(and(eq(membership.userId, userId), isNull(membership.deletedAt)));
+
+    return results.map((r) => this.mapMembership(r));
+  }
+
+  async ensureHouseholdForClerkUser(input: {
+    clerkUserId: string;
+    email: string;
+    displayName?: string | null;
+    clerkOrgId?: string | null;
+  }): Promise<{ user: User; household: Household; membership: Membership; created: boolean }> {
+    let existingUser = await this.getUserByClerkId(input.clerkUserId);
+    const user =
+      existingUser ??
+      (await this.createUser({
+        clerkUserId: input.clerkUserId,
+        email: input.email,
+        displayName: input.displayName ?? null,
+      }));
+
+    if (input.clerkOrgId) {
+      const orgHousehold = await this.getHouseholdByClerkOrgId(input.clerkOrgId);
+      if (orgHousehold) {
+        const memberships = await this.getMembershipsForUser(user.id);
+        const existing = memberships.find((m) => m.householdId === orgHousehold.id);
+        const member =
+          existing ??
+          (await this.createMembership({
+            userId: user.id,
+            householdId: orgHousehold.id,
+            role: "owner",
+          }));
+        return { user, household: orgHousehold, membership: member, created: !existing };
+      }
+    }
+
+    const memberships = await this.getMembershipsForUser(user.id);
+    const firstMembership = memberships[0];
+    if (firstMembership) {
+      const householdRecord = await this.getHousehold(firstMembership.householdId);
+      if (householdRecord) {
+        return { user, household: householdRecord, membership: firstMembership, created: false };
+      }
+    }
+
+    const name = `${input.displayName?.trim() || "Your"} Kitchen`;
+    const slug = `kitchen-${user.id.replace(/-/g, "").slice(0, 16)}`;
+    const createdHousehold = await this.createHousehold({
+      name,
+      slug,
+      clerkOrgId: input.clerkOrgId ?? null,
+      createdBy: user.id,
+    });
+    const createdMembership = await this.createMembership({
+      userId: user.id,
+      householdId: createdHousehold.id,
+      role: "owner",
+    });
+
+    return {
+      user,
+      household: createdHousehold,
+      membership: createdMembership,
+      created: true,
+    };
   }
 
   async createMembership(

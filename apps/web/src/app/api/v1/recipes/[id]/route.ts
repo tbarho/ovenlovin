@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const db = getDatabase();
     const service = new RecipeService(db);
 
-    const recipe = await service.getRecipe(id);
+    const recipe = await service.getRecipeDetails(id);
 
     if (!recipe) {
       throw new NotFoundError("Recipe", id);

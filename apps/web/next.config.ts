@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "@ovenlovin/db",
     "@ovenlovin/allergens",
     "@ovenlovin/brand",
+    "@ovenlovin/importers",
   ],
 };
 

@@ -18,6 +18,7 @@
     "@ovenlovin/brand": "workspace:*",
     "@ovenlovin/core": "workspace:*",
     "@ovenlovin/db": "workspace:^",
+    "@ovenlovin/importers": "workspace:*",
     "@ovenlovin/mcp": "workspace:*",
     "drizzle-orm": "^0.38.3",
     "next": "^15.1.4",
