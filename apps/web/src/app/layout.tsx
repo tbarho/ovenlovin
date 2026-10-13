@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { ClerkReadyProvider } from "@/components/ClerkReadyProvider";
@@ -19,6 +19,14 @@ const fascinate = Fascinate_Inline({
   subsets: ["latin"],
   variable: "--font-display",
 });
+
+/** Safe-area + keyboard resize only. Do not set maximumScale or userScalable=false. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   title: "OvenLovin",
