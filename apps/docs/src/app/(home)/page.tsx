@@ -38,8 +38,8 @@ export default function HomePage(): React.ReactElement {
           <p className="mb-6 rounded-full border border-[var(--ol-border)] bg-background px-3 py-1 text-xs font-medium tracking-wide text-muted-foreground">
             Agent-first meal planning
           </p>
-          <h1 className="text-5xl font-semibold tracking-tight sm:text-7xl">
-            <BrandWordmark />
+          <h1>
+            <BrandWordmark size="hero" />
           </h1>
           <div className="ol-hero-flourish mx-auto mt-5" aria-hidden />
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
