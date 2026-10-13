@@ -19,11 +19,6 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
   const rules = await peopleService.getRulesForPeople(people.items.map((person) => person.id));
 
   return (
-    <RecipeDetail
-      recipe={recipe}
-      cookbooks={cookbooks.items}
-      people={people.items}
-      rules={rules}
-    />
+    <RecipeDetail recipe={recipe} cookbooks={cookbooks.items} people={people.items} rules={rules} />
   );
 }

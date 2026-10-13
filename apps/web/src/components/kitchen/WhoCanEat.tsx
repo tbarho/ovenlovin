@@ -68,11 +68,7 @@ export function WhoCanEat({
       </div>
 
       {selected ? (
-        <Sheet
-          open
-          title={selected.title}
-          onClose={() => setSelected(null)}
-        >
+        <Sheet open title={selected.title} onClose={() => setSelected(null)}>
           <div className="olp-stack-sm">
             {selected.reasons.map((reason) => (
               <p key={reason} className="olp-lead">

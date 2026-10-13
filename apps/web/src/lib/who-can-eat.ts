@@ -100,7 +100,7 @@ export function whoCanEat(opts: {
         findings.length > 0
           ? findings.map((finding) => finding.message)
           : result.status === "incomplete"
-            ? result.incompleteReasons ?? ["This check could not finish."]
+            ? (result.incompleteReasons ?? ["This check could not finish."])
             : [`Nothing in this recipe matches ${person.displayName}'s rules.`];
       return {
         personId: person.id,
