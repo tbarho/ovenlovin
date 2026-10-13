@@ -18,7 +18,7 @@ export function SiteHeader({
         </Link>
         <ul className="nav-links">
           <li>
-            <a href="#start">Start cooking</a>
+            <a href="#live">You&apos;re live</a>
           </li>
           <li>
             <a href="#connect">Connect an agent</a>

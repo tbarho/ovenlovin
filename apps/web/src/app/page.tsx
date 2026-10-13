@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { getInstanceName } from "@ovenlovin/core/onboarding";
+import { describeDeploy, getInstanceName } from "@ovenlovin/core/onboarding";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { resolveOrigin } from "@/lib/origin";
 import { getConfigStatus } from "@/lib/status";
@@ -21,6 +21,7 @@ export default async function Home() {
   const status = await getConfigStatus();
   const signedIn = await isSignedIn();
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const deploy = describeDeploy(process.env, { origin });
 
   return (
     <LandingPage
@@ -29,6 +30,7 @@ export default async function Home() {
       status={status}
       signedIn={signedIn}
       clerkEnabled={clerkEnabled}
+      deploy={deploy}
     />
   );
 }
