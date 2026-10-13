@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { tapFeedback } from "./haptics";
 import {
   RECIPES,
   checkRecipe,
@@ -11,7 +13,7 @@ import {
   type Mark,
 } from "./model";
 import { usePrototype } from "./store";
-import { Avatar, EmptyState, MarkBadge, Segmented, Sheet } from "./ui";
+import { Avatar, EmptyState, Segmented, Sheet } from "./ui";
 
 export function RecipeStudio() {
   const {
@@ -43,6 +45,8 @@ export function RecipeStudio() {
     [household, recipe, swapIds, cookingFor]
   );
   const eaters = cookingForPeople(household, cookingFor);
+  const blocked = findings.filter((item) => item.mark === "block").length;
+  const warned = findings.filter((item) => item.mark === "warn").length;
 
   if (!recipe) {
     return (
@@ -103,22 +107,44 @@ export function RecipeStudio() {
         </div>
       </div>
 
+      <section>
+        <div className="olp-stack-faces" aria-hidden="true">
+          {findings.map((finding) => {
+            const person = household.people.find((item) => item.id === finding.personId);
+            if (!person) return null;
+            return <Avatar key={person.id} person={person} size={36} mark={finding.mark} />;
+          })}
+        </div>
+        <p className="olp-hero-line">
+          {blocked === 0 && warned === 0
+            ? "Everyone here can eat this."
+            : blocked === 0
+              ? "Clear with a couple of check-ins."
+              : `${blocked} ${blocked === 1 ? "person needs" : "people need"} a swap.`}
+        </p>
+      </section>
+
       <div className="olp-who-row" data-testid="avatar-marks">
         {findings.map((finding) => {
           const person = household.people.find((item) => item.id === finding.personId);
           if (!person) return null;
           return (
-            <button
+            <motion.button
               key={person.id}
               type="button"
               className="olp-who-person"
               data-testid={`mark-${person.id}`}
               data-mark={finding.mark}
-              onClick={() => setExplain(finding)}
+              layout
+              whileTap={{ scale: 0.94 }}
+              onClick={() => {
+                tapFeedback(10);
+                setExplain(finding);
+              }}
             >
-              <Avatar person={person} size={52} mark={finding.mark} />
+              <Avatar person={person} size={58} mark={finding.mark} />
               <span>{person.name}</span>
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -147,17 +173,21 @@ export function RecipeStudio() {
             {recipe.swaps.map((swap) => {
               const on = swapIds.includes(swap.id);
               return (
-                <button
+                <motion.button
                   key={swap.id}
                   type="button"
                   data-testid={`swap-${swap.id}`}
                   className={`olp-swap${on ? " is-on" : ""}`}
                   aria-pressed={on}
-                  onClick={() => toggleSwap(recipe.id, swap.id)}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    tapFeedback(12);
+                    toggleSwap(recipe.id, swap.id);
+                  }}
                 >
                   <b>{swap.label}</b>
                   <span>{on ? "Applied — marks update live." : swap.detail}</span>
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -219,45 +249,75 @@ export function RecipeStudio() {
         title={explain?.title ?? "Who can eat this"}
         onClose={closeExplain}
       >
-        {explain ? <p className="olp-lead">{explain.reason}</p> : null}
+        {explain ? <FindingDetail finding={explain} /> : null}
       </Sheet>
 
       <Sheet open={customOpen} title="Cooking for" onClose={closeCustom}>
-        <p className="olp-lead">Pick anyone. Marks update for just this group.</p>
-        <div className="olp-choice-list">
-          {household.people.map((person) => {
-            const on = customIds.includes(person.id);
-            return (
-              <button
-                key={person.id}
-                type="button"
-                className={`olp-choice${on ? " is-on" : ""}`}
-                onClick={() =>
-                  setCustomIds((current) =>
-                    current.includes(person.id)
-                      ? current.filter((id) => id !== person.id)
-                      : [...current, person.id]
-                  )
-                }
-              >
-                <Avatar person={person} size={32} />
-                <b>{person.name}</b>
-              </button>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          className="olp-btn olp-btn-primary"
-          onClick={() => {
+        <CustomCookForm
+          people={household.people}
+          selectedIds={customIds}
+          onToggle={(personId) =>
+            setCustomIds((current) =>
+              current.includes(personId)
+                ? current.filter((id) => id !== personId)
+                : [...current, personId]
+            )
+          }
+          onApply={() => {
             setCookingFor({ mode: "custom", personIds: customIds });
             setCustomOpen(false);
           }}
-        >
-          Use this group
-        </button>
+        />
       </Sheet>
     </div>
+  );
+}
+
+function FindingDetail({ finding }: { finding: Finding }) {
+  return (
+    <div className="olp-stack-sm">
+      <p className="olp-lead">{finding.reason}</p>
+      {finding.ingredientName ? (
+        <p className="olp-caption">Ingredient: {finding.ingredientName}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function CustomCookForm({
+  people,
+  selectedIds,
+  onToggle,
+  onApply,
+}: {
+  people: { id: string; name: string; emoji: string; color: string }[];
+  selectedIds: string[];
+  onToggle: (personId: string) => void;
+  onApply: () => void;
+}) {
+  return (
+    <>
+      <p className="olp-lead">Pick anyone. Marks update for just this group.</p>
+      <div className="olp-choice-list">
+        {people.map((person) => {
+          const on = selectedIds.includes(person.id);
+          return (
+            <button
+              key={person.id}
+              type="button"
+              className={`olp-choice${on ? " is-on" : ""}`}
+              onClick={() => onToggle(person.id)}
+            >
+              <Avatar person={person} size={32} />
+              <b>{person.name}</b>
+            </button>
+          );
+        })}
+      </div>
+      <button type="button" className="olp-btn olp-btn-primary" onClick={onApply}>
+        Use this group
+      </button>
+    </>
   );
 }
 

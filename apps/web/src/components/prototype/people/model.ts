@@ -887,3 +887,168 @@ export function slugPersonName(name: string): string {
     .replace(/^-|-$/g, "");
   return slug || newId("p");
 }
+
+export function defaultBucketForItem(item: CatalogItem): Bucket {
+  if (item.group === "allergen") return "cant_have";
+  if (item.group === "diet") return "doesnt_eat";
+  return "rather_not";
+}
+
+export function defaultOptionsForItem(item: CatalogItem): RestrictionOptions {
+  if (item.id === "tree_nut" || item.id === "peanut") {
+    return { sharedEquipment: "ask", coconutAsTreeNut: false };
+  }
+  return {};
+}
+
+export type ParsedFood = {
+  itemId: string;
+  bucket: Bucket;
+  raw: string;
+};
+
+const CUE_CANT = /\b(allergic to|allergy to|can't have|cannot have|cant have|no more)\b/i;
+const CUE_DOESNT = /\b(doesn't eat|does not eat|won't eat|will not eat|avoid|avoids)\b/i;
+const CUE_RATHER =
+  /\b(hates|hate|doesn't like|does not like|rather not|picky about|dislikes|dislike)\b/i;
+const CUE_NO = /^(?:no|without)\s+/i;
+
+function detectBucket(clause: string, item: CatalogItem): Bucket {
+  if (CUE_CANT.test(clause)) return "cant_have";
+  if (CUE_RATHER.test(clause)) return "rather_not";
+  if (CUE_DOESNT.test(clause)) return item.group === "allergen" ? "cant_have" : "doesnt_eat";
+  if (CUE_NO.test(clause.trim())) {
+    return item.group === "allergen" ? "cant_have" : defaultBucketForItem(item);
+  }
+  return defaultBucketForItem(item);
+}
+
+function clauseScore(clause: string, item: CatalogItem): number {
+  const n = clause.toLowerCase();
+  let score = 0;
+  const label = item.label.toLowerCase();
+  if (n.includes(label)) score = Math.max(score, label.length + 12);
+  if (item.avoidLabel && n.includes(item.avoidLabel.toLowerCase())) {
+    score = Math.max(score, item.avoidLabel.length + 10);
+  }
+  for (const tag of item.matchTags) {
+    const token = tag.replace(/_/g, " ");
+    if (token.length < 3) continue;
+    if (n.includes(token) || n.includes(tag)) {
+      score = Math.max(score, token.length + 6);
+    }
+  }
+  if (score > 0 && item.group === "allergen") score += 1;
+  return score;
+}
+
+function matchClause(clause: string): CatalogItem | undefined {
+  let best: { item: CatalogItem; score: number } | undefined;
+  for (const item of CATALOG) {
+    const score = clauseScore(clause, item);
+    if (score === 0) continue;
+    if (!best || score > best.score) best = { item, score };
+  }
+  return best && best.score >= 8 ? best.item : undefined;
+}
+
+export function parseFoodPhrase(input: string): ParsedFood[] {
+  const chunks = input
+    .split(/,|;|\band\b/i)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const parsed: ParsedFood[] = [];
+  for (const raw of chunks) {
+    const item = matchClause(raw);
+    if (!item || seen.has(item.id)) continue;
+    seen.add(item.id);
+    parsed.push({ itemId: item.id, bucket: detectBucket(raw, item), raw });
+  }
+  return parsed;
+}
+
+export type RelatedSuggestion = {
+  itemId: string;
+  reason: string;
+};
+
+const RELATED: Record<string, RelatedSuggestion[]> = {
+  tree_nut: [
+    {
+      itemId: "coconut",
+      reason: "Tree nuts? Also check coconut — some families count it.",
+    },
+  ],
+  peanut: [
+    {
+      itemId: "tree_nut",
+      reason: "Peanuts often travel with tree nuts. Want to add those too?",
+    },
+  ],
+  milk: [
+    {
+      itemId: "dairy_free",
+      reason: "Milk allergy is already covered. A dairy-free diet is a different, softer rule.",
+    },
+  ],
+  wheat: [
+    {
+      itemId: "gluten_free",
+      reason: "Wheat is in. Gluten-free also covers barley and rye if you need that.",
+    },
+  ],
+};
+
+export function suggestionsFor(itemIds: string[]): RelatedSuggestion[] {
+  const have = new Set(itemIds);
+  const out: RelatedSuggestion[] = [];
+  const seen = new Set<string>();
+  for (const id of itemIds) {
+    for (const suggestion of RELATED[id] ?? []) {
+      if (have.has(suggestion.itemId) || seen.has(suggestion.itemId)) continue;
+      seen.add(suggestion.itemId);
+      out.push(suggestion);
+    }
+  }
+  return out;
+}
+
+export function hexToRgba(hex: string, alpha: number): string {
+  const raw = hex.replace("#", "");
+  const full =
+    raw.length === 3
+      ? raw
+          .split("")
+          .map((part) => part + part)
+          .join("")
+      : raw;
+  const int = Number.parseInt(full, 16);
+  if (Number.isNaN(int)) return `rgba(224, 122, 61, ${alpha})`;
+  const r = (int >> 16) & 255;
+  const g = (int >> 8) & 255;
+  const b = int & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function personTheme(color: string): { wash: string; glow: string; ink: string } {
+  return {
+    wash: hexToRgba(color, 0.2),
+    glow: hexToRgba(color, 0.38),
+    ink: color,
+  };
+}
+
+export function severePeople(household: Household): Person[] {
+  return household.people.filter((person) =>
+    person.restrictions.some((restriction) => {
+      const item = catalogById(restriction.itemId);
+      return restriction.bucket === "cant_have" && item?.group === "allergen";
+    })
+  );
+}
+
+export function safeToCookLine(summary: HouseholdSummary): string {
+  if (summary.avoids.length === 0) return summary.line;
+  return `Tonight is clear if we skip ${formatList(summary.avoids)}.`;
+}

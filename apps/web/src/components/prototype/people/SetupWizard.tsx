@@ -6,8 +6,9 @@ import {
   AVATAR_COLORS,
   AVATAR_EMOJIS,
   DEMO_HOUSEHOLD,
+  defaultBucketForItem,
+  defaultOptionsForItem,
   newId,
-  restrictionEmoji,
   restrictionLabel,
   slugPersonName,
   summarizeHousehold,
@@ -302,8 +303,8 @@ function Foods({
       <p className="olp-kicker">{name}</p>
       <h1>Anything they can&apos;t or won&apos;t eat?</h1>
       <p className="olp-lead">
-        Tap a tile and it lands instantly as Can&apos;t have. You can drag it to Doesn&apos;t eat or
-        Would rather not later.
+        Tap a tile or type it in plain language. Allergens land as Can&apos;t have; you can move
+        them later.
       </p>
       <FoodPicker
         selectedIds={draft.restrictions.map((item) => item.itemId)}
@@ -317,11 +318,19 @@ function Foods({
             {
               id: newId("r"),
               itemId: item.id,
-              bucket: "cant_have",
-              options:
-                item.id === "tree_nut" || item.id === "peanut"
-                  ? { sharedEquipment: "ask", coconutAsTreeNut: false }
-                  : {},
+              bucket: defaultBucketForItem(item),
+              options: defaultOptionsForItem(item),
+            },
+            true
+          );
+        }}
+        onAddParsed={(item, bucket) => {
+          onToggle(
+            {
+              id: newId("r"),
+              itemId: item.id,
+              bucket,
+              options: defaultOptionsForItem(item),
             },
             true
           );
@@ -333,8 +342,8 @@ function Foods({
             <Chip
               key={restriction.id}
               label={restrictionLabel(restriction)}
-              emoji={restrictionEmoji(restriction)}
-              bucket="cant_have"
+              itemId={restriction.itemId}
+              bucket={restriction.bucket}
               onRemove={() => onToggle(restriction, false)}
             />
           ))}

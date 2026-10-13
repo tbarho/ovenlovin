@@ -5,13 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { brandPublicPath } from "@ovenlovin/brand";
 import type { ReactNode } from "react";
+import { NavIcon } from "./icons";
 import { usePrototype } from "./store";
 import { Toast } from "./ui";
 
 const TABS = [
-  { href: "/prototype/people", label: "Household", icon: "🏠", match: "home" },
-  { href: "/prototype/people/setup", label: "Setup", icon: "✨", match: "setup" },
-  { href: "/prototype/people/recipe", label: "Recipes", icon: "🍝", match: "recipe" },
+  { href: "/prototype/people", label: "Household", icon: "home" as const, match: "home" },
+  { href: "/prototype/people/setup", label: "Setup", icon: "setup" as const, match: "setup" },
+  { href: "/prototype/people/recipe", label: "Recipes", icon: "recipe" as const, match: "recipe" },
 ] as const;
 
 function tabActive(pathname: string, match: (typeof TABS)[number]["match"]): boolean {
@@ -47,7 +48,7 @@ export function PrototypeShell({ children }: { children: ReactNode }) {
               className={tabActive(pathname, tab.match) ? "is-on" : undefined}
               aria-current={tabActive(pathname, tab.match) ? "page" : undefined}
             >
-              <span aria-hidden="true">{tab.icon}</span>
+              <NavIcon name={tab.icon} />
               {tab.label}
             </Link>
           ))}
@@ -77,7 +78,7 @@ export function PrototypeShell({ children }: { children: ReactNode }) {
             className={tabActive(pathname, tab.match) ? "is-on" : undefined}
             aria-current={tabActive(pathname, tab.match) ? "page" : undefined}
           >
-            <span aria-hidden="true">{tab.icon}</span>
+            <NavIcon name={tab.icon} />
             {tab.label}
           </Link>
         ))}

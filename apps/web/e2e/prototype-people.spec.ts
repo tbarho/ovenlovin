@@ -19,6 +19,13 @@ test("people rules prototype is public and clickable", async ({ page }, testInfo
   await expect(page.getByTestId("bucket-cant_have")).toContainText(/peanuts/i);
   await expect(page.getByTestId("bucket-cant_have")).toContainText(/tree nuts/i);
 
+  await page.getByRole("button", { name: "Add something" }).click();
+  await expect(page.getByTestId("suggest-coconut")).toContainText(/coconut/i);
+  await page.getByPlaceholder(/no dairy/i).fill("no dairy, hates mushrooms");
+  await expect(page.getByTestId("parsed-chips")).toContainText(/milk/i);
+  await expect(page.getByTestId("parsed-chips")).toContainText(/mushrooms/i);
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+
   await page.screenshot({
     path: `../../e2e-artifacts/prototype-jake-${testInfo.project.name}.png`,
     fullPage: true,

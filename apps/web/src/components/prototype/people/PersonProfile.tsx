@@ -2,21 +2,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, type DragEvent } from "react";
-import { LayoutGroup } from "framer-motion";
+import { useCallback, useMemo, useState, type CSSProperties, type DragEvent } from "react";
+import { AnimatePresence, LayoutGroup } from "framer-motion";
+import { tapFeedback } from "./haptics";
 import {
   bucketHint,
   bucketLabel,
   catalogById,
+  defaultBucketForItem,
+  defaultOptionsForItem,
   newId,
-  restrictionEmoji,
+  personTheme,
   restrictionLabel,
   type Bucket,
   type Restriction,
 } from "./model";
 import { FoodPicker } from "./FoodPicker";
 import { usePrototype } from "./store";
-import { Avatar, Chip, ConfirmSheet, EmptyState, Segmented, Sheet } from "./ui";
+import { Avatar, Chip, ConfirmSheet, EmptyState, Segmented, SeverityLanes, Sheet } from "./ui";
 
 const BUCKETS: Bucket[] = ["cant_have", "doesnt_eat", "rather_not"];
 
@@ -65,6 +68,8 @@ export function PersonProfile({ personId }: { personId: string }) {
     );
   }
 
+  const theme = personTheme(person.color);
+
   function onDrop(bucket: Bucket, event: DragEvent<HTMLElement>) {
     event.preventDefault();
     const restrictionId = event.dataTransfer.getData("text/olp-restriction");
@@ -77,13 +82,21 @@ export function PersonProfile({ personId }: { personId: string }) {
       <Link href="/prototype/people" className="olp-back">
         ← Household
       </Link>
-      <header className="olp-person-head">
-        <Avatar person={person} size={56} />
-        <div>
+      <header
+        className="olp-person-theme"
+        style={
+          {
+            "--olp-theme-wash": theme.wash,
+            "--olp-theme-glow": theme.glow,
+          } as CSSProperties
+        }
+      >
+        <Avatar person={person} size={84} />
+        <div className="olp-person-head">
           <p className="olp-kicker">{person.generation === "kid" ? "Kid" : "Adult"}</p>
           <h1>{person.name}</h1>
           <p className="olp-muted">
-            Three lists, one meaning each. Drag a chip — or open it and move it.
+            A food passport. Drag a chip between lanes, or tap to fine-tune.
           </p>
         </div>
       </header>
@@ -92,7 +105,7 @@ export function PersonProfile({ personId }: { personId: string }) {
         {BUCKETS.map((bucket) => (
           <section
             key={bucket}
-            className={`olp-bucket${dropBucket === bucket ? " is-drop" : ""}`}
+            className={`olp-lane olp-lane-${bucket}${dropBucket === bucket ? " is-drop" : ""}`}
             data-testid={`bucket-${bucket}`}
             onDragOver={(event) => {
               event.preventDefault();
@@ -117,21 +130,23 @@ export function PersonProfile({ personId }: { personId: string }) {
               </p>
             ) : (
               <div className="olp-chip-row">
-                {grouped[bucket].map((restriction) => (
-                  <Chip
-                    key={restriction.id}
-                    label={restrictionLabel(restriction)}
-                    emoji={restrictionEmoji(restriction)}
-                    bucket={restriction.bucket}
-                    draggable
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData("text/olp-restriction", restriction.id);
-                      event.dataTransfer.effectAllowed = "move";
-                    }}
-                    onClick={() => setEditing(restriction)}
-                    onRemove={() => removeRestriction(person.id, restriction.id)}
-                  />
-                ))}
+                <AnimatePresence initial={false}>
+                  {grouped[bucket].map((restriction) => (
+                    <Chip
+                      key={restriction.id}
+                      label={restrictionLabel(restriction)}
+                      itemId={restriction.itemId}
+                      bucket={restriction.bucket}
+                      draggable
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData("text/olp-restriction", restriction.id);
+                        event.dataTransfer.effectAllowed = "move";
+                      }}
+                      onClick={() => setEditing(restriction)}
+                      onRemove={() => removeRestriction(person.id, restriction.id)}
+                    />
+                  ))}
+                </AnimatePresence>
               </div>
             )}
           </section>
@@ -158,6 +173,7 @@ export function PersonProfile({ personId }: { personId: string }) {
       >
         {editing ? (
           <RestrictionEditor
+            key={editing.id}
             restriction={editing}
             personName={person.name}
             onChange={(next) => {
@@ -175,22 +191,29 @@ export function PersonProfile({ personId }: { personId: string }) {
         onClose={closeAdding}
       >
         <FoodPicker
+          key="add-food-picker"
           selectedIds={person.restrictions.map((item) => item.itemId)}
-          caption="A tap adds it as Can’t have. Open the chip to move or fine-tune it."
+          caption="Tap a tile, or type it in plain language. Allergens default to Can’t have."
           onToggle={(item) => {
             const existing = person.restrictions.find((entry) => entry.itemId === item.id);
             if (existing) {
               removeRestriction(person.id, existing.id);
               return;
             }
+            tapFeedback();
             addRestriction(person.id, {
               id: newId("r"),
               itemId: item.id,
-              bucket: "cant_have",
-              options:
-                item.id === "tree_nut" || item.id === "peanut"
-                  ? { sharedEquipment: "ask", coconutAsTreeNut: false }
-                  : {},
+              bucket: defaultBucketForItem(item),
+              options: defaultOptionsForItem(item),
+            });
+          }}
+          onAddParsed={(item, bucket) => {
+            addRestriction(person.id, {
+              id: newId("r"),
+              itemId: item.id,
+              bucket,
+              options: defaultOptionsForItem(item),
             });
           }}
         />
@@ -230,14 +253,13 @@ function RestrictionEditor({
   return (
     <div className="olp-stack-sm">
       <p className="olp-lead">
-        How should OvenLovin treat this for {personName}? Plain language, same three lists as the
-        profile.
+        How should OvenLovin treat this for {personName}? Slide between the three lanes — same
+        meaning as the passport.
       </p>
-      <Segmented
-        label="Severity"
+      <SeverityLanes
         value={restriction.bucket}
+        personName={personName}
         onChange={(bucket) => onChange({ ...restriction, bucket })}
-        options={BUCKETS.map((bucket) => ({ value: bucket, label: bucketLabel(bucket) }))}
       />
       {showShared ? (
         <fieldset className="olp-fieldset">
