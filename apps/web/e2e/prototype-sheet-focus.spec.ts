@@ -7,7 +7,7 @@ test("prototype sheet inputs keep focus for a full word", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Jake" })).toBeVisible();
 
   await page.getByRole("button", { name: "Add something" }).click();
-  const search = page.getByPlaceholder(/search garlic, coconut, pork/i);
+  const search = page.getByLabel(/search foods or type a phrase/i);
   await expect(search).toBeVisible();
   await search.click();
   await search.pressSequentially("garlic", { delay: 40 });
