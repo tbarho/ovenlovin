@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
-import { ApiKeyService, createApiKeyInputSchema } from "@ovenlovin/core";
+import {
+  ApiKeyService,
+  createApiKeyInputSchema,
+  toPublicApiKey,
+  toPublicApiKeyWithPlaintext,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { handleApiError } from "@/lib/api/errors";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
@@ -26,7 +31,7 @@ export async function GET(request: NextRequest) {
     const householdId = requireHouseholdId(context);
     const db = getDatabase();
     const keys = await new ApiKeyService(db).listForHousehold(householdId);
-    return jsonResponse({ items: keys });
+    return jsonResponse({ items: keys.map(toPublicApiKey) });
   } catch (error) {
     return handleApiError(error, request.url);
   }
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     const db = getDatabase();
     const key = await new ApiKeyService(db).create(input, createdBy);
-    return createdResponse(key, `/api/v1/api-keys/${key.id}`);
+    return createdResponse(toPublicApiKeyWithPlaintext(key), `/api/v1/api-keys/${key.id}`);
   } catch (error) {
     return handleApiError(error, request.url);
   }

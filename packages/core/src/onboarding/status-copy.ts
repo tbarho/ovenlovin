@@ -42,8 +42,8 @@ export function describeConfigStatus(input: {
       label: "AI Gateway",
       configured: input.aiGatewayConfigured,
       detail: input.aiGatewayConfigured
-        ? "Recipe paste import can use the gateway."
-        : "Set AI_GATEWAY_API_KEY to enable AI-backed paste import. URL import still works without it.",
+        ? "Recipe paste import can use the gateway via OIDC or an API key."
+        : "On Vercel, AI Gateway authenticates with OIDC — no API key needed. For local or non-Vercel hosts, set AI_GATEWAY_API_KEY. URL import still works without it.",
     },
   ];
 

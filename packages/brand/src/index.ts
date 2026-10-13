@@ -1,10 +1,14 @@
 export const BRAND_NAME = "OvenLovin";
 
+/** Playful display face for the single-word wordmark. Body text stays Geist. */
+export const BRAND_DISPLAY_FONT = "Fascinate Inline";
+
 export const brandAssets = {
   mark: "mark.png",
   markDark: "mark.png",
-  wordmark: "wordmark.svg",
-  wordmarkDark: "wordmark-dark.svg",
+  wordmark: "wordmark.png",
+  wordmarkDark: "wordmark-dark.png",
+  lockup: "lockup.png",
   favicon: "favicon.svg",
   favicon32: "favicon-32.png",
   appleTouch: "apple-touch-icon.png",
@@ -15,8 +19,9 @@ export const brandAssets = {
 export const brandPublicPath = {
   mark: "/brand/mark.png",
   markDark: "/brand/mark.png",
-  wordmark: "/brand/wordmark.svg",
-  wordmarkDark: "/brand/wordmark-dark.svg",
+  wordmark: "/brand/wordmark.png",
+  wordmarkDark: "/brand/wordmark-dark.png",
+  lockup: "/brand/lockup.png",
   favicon: "/brand/favicon.svg",
   favicon32: "/brand/favicon-32.png",
   appleTouch: "/brand/apple-touch-icon.png",
