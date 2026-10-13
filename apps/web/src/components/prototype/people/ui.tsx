@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useId, type DragEvent, type ReactNode } from "react";
+import { useId, useRef, type DragEvent, type ReactNode } from "react";
+import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
 import type { Bucket, Mark, Person } from "./model";
 
 export function Avatar({
@@ -144,26 +145,15 @@ export function Sheet({
   children: ReactNode;
 }) {
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
 
-  useEffect(() => {
-    if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open, onClose]);
+  useSheetOpenEffects({ open, onClose, panelRef });
 
   return (
     <AnimatePresence>
       {open ? (
-        <div className="olp-sheet-root">
+        <div key="prototype-sheet" className="olp-sheet-root" data-sheet="prototype">
           <motion.button
             type="button"
             className="olp-sheet-backdrop"
@@ -174,10 +164,12 @@ export function Sheet({
             exit={{ opacity: 0 }}
           />
           <motion.div
+            ref={panelRef}
             className="olp-sheet"
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
+            tabIndex={-1}
             initial={reduce ? { opacity: 0 } : { y: 24, opacity: 0 }}
             animate={reduce ? { opacity: 1 } : { y: 0, opacity: 1 }}
             exit={reduce ? { opacity: 0 } : { y: 24, opacity: 0 }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   RECIPES,
   checkRecipe,
@@ -25,6 +25,8 @@ export function RecipeStudio() {
   } = usePrototype();
   const [explain, setExplain] = useState<Finding | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
+  const closeExplain = useCallback(() => setExplain(null), []);
+  const closeCustom = useCallback(() => setCustomOpen(false), []);
   const [customIds, setCustomIds] = useState<string[]>(
     cookingFor.mode === "custom"
       ? cookingFor.personIds
@@ -215,12 +217,12 @@ export function RecipeStudio() {
       <Sheet
         open={Boolean(explain)}
         title={explain?.title ?? "Who can eat this"}
-        onClose={() => setExplain(null)}
+        onClose={closeExplain}
       >
         {explain ? <p className="olp-lead">{explain.reason}</p> : null}
       </Sheet>
 
-      <Sheet open={customOpen} title="Cooking for" onClose={() => setCustomOpen(false)}>
+      <Sheet open={customOpen} title="Cooking for" onClose={closeCustom}>
         <p className="olp-lead">Pick anyone. Marks update for just this group.</p>
         <div className="olp-choice-list">
           {household.people.map((person) => {

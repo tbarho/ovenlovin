@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
 import { recipeGalleryImages, recipeMainImage } from "@ovenlovin/core/media";
 import {
@@ -10,8 +9,13 @@ import {
   formatDurationMinutes,
   scaleIngredientDisplay,
 } from "@ovenlovin/core/scaling";
-import { api } from "@/lib/browser-api";
-import { BottomSheet } from "./BottomSheet";
+import {
+  CookbooksSheet,
+  DetailsSheet,
+  IngredientsSheet,
+  PhotosSheet,
+  StepsSheet,
+} from "./RecipeEditSheets";
 
 function sourceHost(url: string): string {
   try {
@@ -28,25 +32,12 @@ export function RecipeDetail({
   recipe: RecipeDetails;
   cookbooks: Cookbook[];
 }) {
-  const router = useRouter();
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
   const [servings, setServings] = useState(storedServings);
   const [sheet, setSheet] = useState<
     null | "details" | "image" | "ingredients" | "steps" | "cookbook"
   >(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [title, setTitle] = useState(recipe.title);
-  const [prep, setPrep] = useState(recipe.prepTimeMinutes?.toString() ?? "");
-  const [cook, setCook] = useState(recipe.cookTimeMinutes?.toString() ?? "");
-  const [baseServings, setBaseServings] = useState(storedServings.toString());
-  const [ingredientText, setIngredientText] = useState(
-    recipe.ingredients.map((item) => item.rawText).join("\n")
-  );
-  const [stepText, setStepText] = useState(recipe.steps.map((item) => item.text).join("\n"));
-  const [imageUrl, setImageUrl] = useState("");
-  const [selectedBooks, setSelectedBooks] = useState(recipe.cookbooks.map((item) => item.id));
+  const closeSheet = useCallback(() => setSheet(null), []);
 
   const mainImage = recipeMainImage(recipe.images);
   const extraImages = recipeGalleryImages(recipe.images).slice(1);
@@ -60,107 +51,6 @@ export function RecipeDetail({
       })),
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );
-
-  async function save(body: Record<string, unknown>) {
-    setPending(true);
-    setError(null);
-    try {
-      await api(`/api/v1/recipes/${recipe.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
-      setSheet(null);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save recipe");
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function saveDetails(event: React.FormEvent) {
-    event.preventDefault();
-    const nextServings = clampServings(Number(baseServings) || storedServings);
-    await save({
-      title,
-      servings: nextServings,
-      prepTimeMinutes: prep ? Number(prep) : null,
-      cookTimeMinutes: cook ? Number(cook) : null,
-    });
-    setServings(nextServings);
-  }
-
-  async function saveIngredients(event: React.FormEvent) {
-    event.preventDefault();
-    await save({
-      ingredients: ingredientText
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((rawText) => ({ rawText })),
-    });
-  }
-
-  async function saveSteps(event: React.FormEvent) {
-    event.preventDefault();
-    await save({
-      steps: stepText
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((text) => ({ text })),
-    });
-  }
-
-  async function addImageFromUrl(event: React.FormEvent) {
-    event.preventDefault();
-    setPending(true);
-    setError(null);
-    try {
-      const stored = await api<{ url: string }>("/api/v1/uploads/images", {
-        method: "POST",
-        body: JSON.stringify({ url: imageUrl }),
-      });
-      const next = recipe.images[0] ? [stored.url, ...recipe.images] : [stored.url];
-      await save({ images: next });
-      setImageUrl("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add image");
-      setPending(false);
-    }
-  }
-
-  async function addImageFile(file: File) {
-    setPending(true);
-    setError(null);
-    try {
-      const data = new FormData();
-      data.append("file", file);
-      const response = await fetch("/api/v1/uploads/images", {
-        method: "POST",
-        credentials: "include",
-        body: data,
-      });
-      if (!response.ok) {
-        const problem = (await response.json().catch(() => ({ title: response.statusText }))) as {
-          detail?: string;
-          title?: string;
-        };
-        throw new Error(problem.detail || problem.title || "Upload failed");
-      }
-      const stored = (await response.json()) as { url: string };
-      const next = recipe.images[0] ? [stored.url, ...recipe.images] : [stored.url];
-      await save({ images: next });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not upload image");
-      setPending(false);
-    }
-  }
-
-  async function saveCookbooks(event: React.FormEvent) {
-    event.preventDefault();
-    await save({ cookbookIds: selectedBooks });
-  }
 
   return (
     <>
@@ -273,132 +163,21 @@ export function RecipeDetail({
         </section>
       </div>
 
-      <BottomSheet open={sheet === "details"} title="Edit details" onClose={() => setSheet(null)}>
-        <form className="form-card" style={{ margin: 0 }} onSubmit={saveDetails}>
-          <label>
-            Title
-            <input value={title} onChange={(event) => setTitle(event.target.value)} required />
-          </label>
-          <label>
-            Servings
-            <input
-              type="number"
-              min={1}
-              max={24}
-              value={baseServings}
-              onChange={(event) => setBaseServings(event.target.value)}
-            />
-          </label>
-          <label>
-            Prep time (minutes)
-            <input
-              type="number"
-              min={0}
-              value={prep}
-              onChange={(event) => setPrep(event.target.value)}
-            />
-          </label>
-          <label>
-            Cook time (minutes)
-            <input
-              type="number"
-              min={0}
-              value={cook}
-              onChange={(event) => setCook(event.target.value)}
-            />
-          </label>
-          {error && sheet === "details" ? <p className="muted">{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save details"}
-          </button>
-        </form>
-      </BottomSheet>
-
-      <BottomSheet open={sheet === "image"} title="Recipe photos" onClose={() => setSheet(null)}>
-        <form className="form-card" style={{ margin: 0 }} onSubmit={addImageFromUrl}>
-          <p className="muted">The first photo is the main image on cards and this page.</p>
-          <input
-            value={imageUrl}
-            onChange={(event) => setImageUrl(event.target.value)}
-            placeholder="https://example.com/pasta.jpg"
-          />
-          <button className="btn primary" type="submit" disabled={pending || !imageUrl}>
-            {pending ? "Saving…" : "Use this URL"}
-          </button>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void addImageFile(file);
-            }}
-          />
-          {error && sheet === "image" ? <p className="muted">{error}</p> : null}
-        </form>
-      </BottomSheet>
-
-      <BottomSheet
-        open={sheet === "ingredients"}
-        title="Edit ingredients"
-        onClose={() => setSheet(null)}
-      >
-        <form className="form-card" style={{ margin: 0 }} onSubmit={saveIngredients}>
-          <p className="muted">One ingredient per line. Quantities scale when you move servings.</p>
-          <textarea
-            value={ingredientText}
-            onChange={(event) => setIngredientText(event.target.value)}
-            required
-          />
-          {error && sheet === "ingredients" ? <p className="muted">{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save ingredients"}
-          </button>
-        </form>
-      </BottomSheet>
-
-      <BottomSheet open={sheet === "steps"} title="Edit steps" onClose={() => setSheet(null)}>
-        <form className="form-card" style={{ margin: 0 }} onSubmit={saveSteps}>
-          <p className="muted">One step per line.</p>
-          <textarea
-            value={stepText}
-            onChange={(event) => setStepText(event.target.value)}
-            required
-          />
-          {error && sheet === "steps" ? <p className="muted">{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save steps"}
-          </button>
-        </form>
-      </BottomSheet>
-
-      <BottomSheet open={sheet === "cookbook"} title="Cookbooks" onClose={() => setSheet(null)}>
-        <form className="form-card" style={{ margin: 0 }} onSubmit={saveCookbooks}>
-          {cookbooks.length === 0 ? (
-            <p className="muted">Create a cookbook from the Recipes shelf first.</p>
-          ) : (
-            cookbooks.map((book) => (
-              <label className="check-row" key={book.id}>
-                <input
-                  type="checkbox"
-                  checked={selectedBooks.includes(book.id)}
-                  onChange={(event) => {
-                    setSelectedBooks((current) =>
-                      event.target.checked
-                        ? [...current, book.id]
-                        : current.filter((id) => id !== book.id)
-                    );
-                  }}
-                />
-                {book.name}
-              </label>
-            ))
-          )}
-          {error && sheet === "cookbook" ? <p className="muted">{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save cookbooks"}
-          </button>
-        </form>
-      </BottomSheet>
+      <DetailsSheet
+        recipe={recipe}
+        open={sheet === "details"}
+        onClose={closeSheet}
+        onSavedServings={setServings}
+      />
+      <PhotosSheet recipe={recipe} open={sheet === "image"} onClose={closeSheet} />
+      <IngredientsSheet recipe={recipe} open={sheet === "ingredients"} onClose={closeSheet} />
+      <StepsSheet recipe={recipe} open={sheet === "steps"} onClose={closeSheet} />
+      <CookbooksSheet
+        recipe={recipe}
+        cookbooks={cookbooks}
+        open={sheet === "cookbook"}
+        onClose={closeSheet}
+      />
     </>
   );
 }
