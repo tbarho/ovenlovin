@@ -3,7 +3,7 @@ import { BRAND_NAME, brandPublicPath } from "@ovenlovin/brand";
 import Image from "next/image";
 
 const sizes = {
-  nav: { mark: 28, word: "text-[1.35rem] leading-none" },
+  nav: { mark: 28, word: "text-[1.5rem] leading-none tracking-[0.01em]" },
   hero: { mark: 112, word: "text-5xl leading-none sm:text-6xl" },
 } as const;
 

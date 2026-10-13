@@ -1,7 +1,7 @@
 export const BRAND_NAME = "OvenLovin";
 
 /** Playful display face for the single-word wordmark. Body text stays Geist. */
-export const BRAND_DISPLAY_FONT = "Bagel Fat One";
+export const BRAND_DISPLAY_FONT = "Fascinate Inline";
 
 export const brandAssets = {
   mark: "mark.png",

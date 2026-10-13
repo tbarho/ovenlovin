@@ -4,7 +4,7 @@ Shared OvenLovin logo, wordmark, and social images.
 
 The mark is Ty's illustrated toaster oven — a red oven with a heart-shaped bun — in the same isolated-object spirit as [barrito](https://tbarho.github.io/barrito/). It is a PNG (the source is a 3D render; an SVG trace would not stay faithful). The same mark reads on light and dark backgrounds.
 
-The wordmark is the single word **OvenLovin** (capital O, capital L, no space) set in [Bagel Fat One](https://fonts.google.com/specimen/Bagel+Fat+One). Live apps load the face with `next/font`; static PNGs are rasterized for GitHub and Open Graph, which cannot load webfonts. Body copy stays Geist.
+The wordmark is the single word **OvenLovin** (capital O, capital L, no space) set in [Fascinate Inline](https://fonts.google.com/specimen/Fascinate+Inline). Live apps load the face with `next/font`; static PNGs are rasterized for GitHub and Open Graph, which cannot load webfonts. Body copy stays Geist.
 
 ## Assets
 
@@ -30,5 +30,5 @@ Use the public paths from `brandPublicPath` (`/brand/mark.png`, `/brand/wordmark
 To regenerate the raster wordmarks after a font change:
 
 ```bash
-BAGEL_TTF=/path/to/BagelFatOne-Regular.ttf node packages/brand/scripts/render-wordmarks.mjs
+FONT_TTF=/path/to/FascinateInline-Regular.ttf node packages/brand/scripts/render-wordmarks.mjs
 ```
