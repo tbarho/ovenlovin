@@ -226,7 +226,7 @@ function AddRuleForm({
           </button>
         </>
       ) : (
-        <FoodPicker selectedId={item?.id} onSelect={selectItem} />
+        <FoodPicker onSelect={selectItem} />
       )}
     </div>
   );
