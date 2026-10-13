@@ -1,10 +1,10 @@
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { CodeSample } from "@/components/code-sample";
+import { VERCEL_DEPLOY_URL } from "@ovenlovin/brand";
 import { BookOpen, Bot, Code, Shield, Users, Zap } from "lucide-react";
 import Link from "next/link";
 
-const DEPLOY_URL =
-  "https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&env=DATABASE_URL,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,BLOB_READ_WRITE_TOKEN,AI_GATEWAY_API_KEY,USDA_FDC_API_KEY&envDescription=Required%20API%20keys%20and%20connection%20strings%20for%20OvenLovin&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&project-name=ovenlovin&repository-name=ovenlovin&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform";
+const DEPLOY_URL = VERCEL_DEPLOY_URL;
 
 const MCP_SAMPLE = `{
   "mcpServers": {

@@ -235,6 +235,9 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.9
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
@@ -254,6 +257,9 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.5)
 
   packages/importers:
     dependencies:
