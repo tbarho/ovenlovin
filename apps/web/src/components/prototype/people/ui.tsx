@@ -188,10 +188,11 @@ export function Sheet({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            initial={reduce ? { opacity: 0 } : { y: 28, opacity: 0 }}
-            animate={reduce ? { opacity: 1 } : { y: 0, opacity: 1 }}
-            exit={reduce ? { opacity: 0 } : { y: 28, opacity: 0 }}
+            initial={reduce ? { y: 0 } : { y: 28 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={reduce ? { y: 0 } : { y: 28 }}
             transition={{ type: "spring", damping: 28, stiffness: 340 }}
+            style={{ opacity: 1 }}
           >
             <div className="olp-sheet-handle" aria-hidden="true" />
             <header className="olp-sheet-head">
