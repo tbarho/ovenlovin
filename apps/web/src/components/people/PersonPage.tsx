@@ -45,7 +45,13 @@ const FACILITY_OPTIONS: Array<{ value: SharedFacilityPrompt; label: string }> = 
   { value: "no", label: "No" },
 ];
 
-export function PersonPage({ person, rules: initialRules }: { person: Person; rules: PersonRule[] }) {
+export function PersonPage({
+  person,
+  rules: initialRules,
+}: {
+  person: Person;
+  rules: PersonRule[];
+}) {
   const router = useRouter();
   const [rules, setRules] = useState(initialRules);
   const [adding, setAdding] = useState(false);
@@ -78,11 +84,15 @@ export function PersonPage({ person, rules: initialRules }: { person: Person; ru
   const appearance = appearanceForPerson(person);
   const removal = personRemovalCopy(person.displayName, rules.length);
 
-  async function persistRule(entry: CatalogEntry, bucket: RuleUiBucket, extras: {
-    facility: SharedFacilityPrompt;
-    coconut: boolean;
-    existing?: PersonRule;
-  }) {
+  async function persistRule(
+    entry: CatalogEntry,
+    bucket: RuleUiBucket,
+    extras: {
+      facility: SharedFacilityPrompt;
+      coconut: boolean;
+      existing?: PersonRule;
+    }
+  ) {
     const { intent, severity } = intentAndSeverityForBucket(bucket, entry.group);
     const payload = buildRuleWrite({
       intent,
@@ -105,10 +115,14 @@ export function PersonPage({ person, rules: initialRules }: { person: Person; ru
     });
   }
 
-  async function addRule(entry: CatalogEntry, bucket: RuleUiBucket, extras: {
-    facility: SharedFacilityPrompt;
-    coconut: boolean;
-  }) {
+  async function addRule(
+    entry: CatalogEntry,
+    bucket: RuleUiBucket,
+    extras: {
+      facility: SharedFacilityPrompt;
+      coconut: boolean;
+    }
+  ) {
     setError(null);
     try {
       const created = await persistRule(entry, bucket, extras);
@@ -120,10 +134,14 @@ export function PersonPage({ person, rules: initialRules }: { person: Person; ru
     }
   }
 
-  async function updateRule(rule: PersonRule, bucket: RuleUiBucket, extras: {
-    facility: SharedFacilityPrompt;
-    coconut: boolean;
-  }) {
+  async function updateRule(
+    rule: PersonRule,
+    bucket: RuleUiBucket,
+    extras: {
+      facility: SharedFacilityPrompt;
+      coconut: boolean;
+    }
+  ) {
     const entry = entryForRule(rule.target, rule.kind);
     if (!entry) return;
     setError(null);
