@@ -89,6 +89,16 @@ describe("PersonPage", () => {
     });
   });
 
+  it("portals the add-rule sheet onto document.body so it covers the kitchen header", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<PersonPage person={testPerson()} rules={[]} />);
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    const root = document.querySelector(".olp-sheet-root");
+    expect(root).toBeTruthy();
+    expect(root?.parentElement).toBe(document.body);
+    expect(container.querySelector(".olp-sheet-root")).toBeNull();
+  });
+
   it("keeps focus while typing in the add-rule search", async () => {
     const user = userEvent.setup();
     render(<PersonPage person={testPerson()} rules={[]} />);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
 import { useSheetViewport } from "@/components/sheet/useSheetViewport";
 
@@ -24,7 +25,7 @@ export function BottomSheet({
 
   if (!open) return null;
 
-  return (
+  const tree = (
     <div ref={rootRef} className="sheet-root" data-sheet="bottom">
       <button type="button" className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div
@@ -46,4 +47,7 @@ export function BottomSheet({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return tree;
+  return createPortal(tree, document.body);
 }

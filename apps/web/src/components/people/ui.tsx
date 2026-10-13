@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { RuleUiBucket } from "@ovenlovin/allergens";
 import { FoodIcon } from "@/components/prototype/people/icons";
 import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
@@ -174,10 +175,10 @@ export function Sheet({
 
   useSheetOpenEffects({ open, onClose, panelRef });
 
-  return (
+  const tree = (
     <AnimatePresence>
       {open ? (
-        <div key="people-sheet" className="olp-sheet-root" data-sheet="people">
+        <div key="people-sheet" className="olp olp-sheet-root" data-sheet="people">
           <motion.button
             type="button"
             className="olp-sheet-backdrop"
@@ -213,6 +214,9 @@ export function Sheet({
       ) : null}
     </AnimatePresence>
   );
+
+  if (typeof document === "undefined") return tree;
+  return createPortal(tree, document.body);
 }
 
 export function ConfirmSheet({
