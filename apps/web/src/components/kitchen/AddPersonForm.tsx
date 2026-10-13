@@ -32,12 +32,15 @@ export function AddPersonForm() {
   return (
     <form className="form-card" onSubmit={onSubmit}>
       <h2>Add a person</h2>
-      <input
-        value={displayName}
-        onChange={(event) => setDisplayName(event.target.value)}
-        placeholder="Parent A"
-        required
-      />
+      <label className="field">
+        <span className="field-label">Name</span>
+        <input
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          placeholder="Parent A"
+          required
+        />
+      </label>
       {error ? <p className="muted">{error}</p> : null}
       <button className="btn primary" type="submit" disabled={pending}>
         {pending ? "Adding…" : "Add person"}

@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, inArray } from "drizzle-orm";
 import { person, personRule } from "@ovenlovin/db";
 import type { Person, PersonRule } from "../schemas/people";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
@@ -86,6 +86,18 @@ export class PeopleService extends BaseService {
       .select()
       .from(personRule)
       .where(and(eq(personRule.personId, personId), isNull(personRule.deletedAt)))
+      .orderBy(desc(personRule.createdAt));
+
+    return results.map((r) => this.mapPersonRule(r));
+  }
+
+  async getRulesForPeople(personIds: string[]): Promise<PersonRule[]> {
+    if (personIds.length === 0) return [];
+
+    const results = await this._db
+      .select()
+      .from(personRule)
+      .where(and(inArray(personRule.personId, personIds), isNull(personRule.deletedAt)))
       .orderBy(desc(personRule.createdAt));
 
     return results.map((r) => this.mapPersonRule(r));

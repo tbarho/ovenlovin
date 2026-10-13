@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { describeRuleChip, describeSharedFacility } from "@ovenlovin/allergens";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { AddRuleForm } from "@/components/kitchen/AddRuleForm";
+import { RuleChip } from "@/components/kitchen/RuleChip";
 import { getSessionContext } from "@/lib/session";
 
 export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,19 +33,22 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         {rules.length === 0 ? (
           <p className="empty-note">No rules yet. Add a block or warn rule above.</p>
         ) : (
-          rules.map((rule) => (
-            <div className="rule" key={rule.id}>
-              <div>
-                <b className={`sev-${rule.severity}`}>
-                  {rule.severity.replace("_", " ")} · {rule.kind}
-                </b>
-                <p>
-                  {person.displayName}: {rule.target}
-                </p>
+          rules.map((rule) => {
+            const chip = describeRuleChip(rule);
+            const facility = describeSharedFacility(rule.sharedFacility);
+            return (
+              <div className="rule" key={rule.id}>
+                <div>
+                  <RuleChip text={chip.text} severity={chip.severity} />
+                  <p>
+                    {person.displayName}: {chip.text}
+                  </p>
+                  {facility ? <p className="muted">{facility}</p> : null}
+                </div>
+                {rule.note ? <span className="muted">{rule.note}</span> : null}
               </div>
-              {rule.note ? <span className="muted">{rule.note}</span> : null}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </>
