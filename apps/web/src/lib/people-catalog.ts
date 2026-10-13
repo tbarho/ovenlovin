@@ -47,8 +47,7 @@ export function searchPeopleCatalog(query: string, limit = 24): CatalogEntry[] {
   }
 
   const exact = unique.some(
-    (entry) =>
-      entry.code === slugTarget(q) || entry.name.toLowerCase() === q.toLowerCase()
+    (entry) => entry.code === slugTarget(q) || entry.name.toLowerCase() === q.toLowerCase()
   );
   if (!exact) {
     unique.push(customIngredientEntry(q));
@@ -59,9 +58,7 @@ export function searchPeopleCatalog(query: string, limit = 24): CatalogEntry[] {
 export function entryForRule(target: string, kind: string): CatalogEntry | undefined {
   const group = catalogGroupForKind(kind);
   return (
-    findCatalogEntry(target, group) ??
-    findCatalogEntry(target) ??
-    customIngredientEntry(target)
+    findCatalogEntry(target, group) ?? findCatalogEntry(target) ?? customIngredientEntry(target)
   );
 }
 
@@ -84,4 +81,3 @@ function slugTarget(value: string): string {
     .replace(/^_|_$/g, "");
   return slug || "custom";
 }
-

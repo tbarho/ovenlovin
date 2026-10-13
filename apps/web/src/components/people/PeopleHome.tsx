@@ -96,11 +96,7 @@ function AddPersonForm() {
         />
       </label>
       <div className="olp-identity-preview">
-        <Avatar
-          name={name || "?"}
-          appearance={{ emoji, color }}
-          size={44}
-        />
+        <Avatar name={name || "?"} appearance={{ emoji, color }} size={44} />
       </div>
       <div className="olp-emoji-grid">
         {AVATAR_EMOJIS.map((item) => (
@@ -128,11 +124,7 @@ function AddPersonForm() {
         ))}
       </div>
       {error ? <p className="olp-muted">{error}</p> : null}
-      <button
-        type="submit"
-        className="olp-btn olp-btn-primary"
-        disabled={!name.trim() || pending}
-      >
+      <button type="submit" className="olp-btn olp-btn-primary" disabled={!name.trim() || pending}>
         {pending ? "Adding…" : "Add person"}
       </button>
     </form>
