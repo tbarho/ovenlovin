@@ -35,6 +35,7 @@ First, set up your environment variables:
 ```bash
 # .env.local (for local development)
 DATABASE_URL=postgresql://...
+# Optional off Vercel. On Vercel, AI Gateway uses OIDC (VERCEL_OIDC_TOKEN).
 AI_GATEWAY_API_KEY=your-vercel-ai-gateway-key
 
 # For production deployment

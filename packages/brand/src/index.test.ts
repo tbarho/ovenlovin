@@ -19,8 +19,8 @@ describe("@ovenlovin/brand", () => {
     expect(BRAND_NAME).not.toMatch(/\s/);
   });
 
-  it("uses Bagel Fat One for the wordmark", () => {
-    expect(BRAND_DISPLAY_FONT).toBe("Bagel Fat One");
+  it("uses Fascinate Inline for the wordmark", () => {
+    expect(BRAND_DISPLAY_FONT).toBe("Fascinate Inline");
   });
 
   it("lists every asset and public path", () => {
@@ -67,5 +67,8 @@ describe("@ovenlovin/brand", () => {
     expect(VERCEL_DEPLOY_URL).toContain("blob");
     expect(VERCEL_DEPLOY_URL).toContain("clerk");
     expect(VERCEL_DEPLOY_URL).toContain("NEXT_PUBLIC_INSTANCE_NAME");
+    expect(VERCEL_DEPLOY_URL).toMatch(/[?&]env=USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME/);
+    expect(VERCEL_DEPLOY_URL).not.toMatch(/[?&]env=[^&]*AI_GATEWAY_API_KEY/);
+    expect(VERCEL_DEPLOY_URL).toContain("OIDC");
   });
 });

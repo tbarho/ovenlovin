@@ -17,6 +17,11 @@ describe("isKitchenNavActive", () => {
     expect(isKitchenNavActive("/recipes/abc", "/recipes")).toBe(true);
   });
 
+  it("marks Settings as current on the settings page", () => {
+    expect(isKitchenNavActive("/settings", "/settings")).toBe(true);
+    expect(isKitchenNavActive("/settings", "/people")).toBe(false);
+  });
+
   it("never marks hash links as current", () => {
     expect(isKitchenNavActive("/people", null)).toBe(false);
     expect(isKitchenNavActive("/", null)).toBe(false);

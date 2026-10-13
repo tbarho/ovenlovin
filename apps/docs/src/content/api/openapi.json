@@ -15,7 +15,7 @@
   },
   "servers": [
     {
-      "url": "https://ovenlovin.dev/api/v1",
+      "url": "https://your-app.vercel.app/api/v1",
       "description": "Production"
     },
     {

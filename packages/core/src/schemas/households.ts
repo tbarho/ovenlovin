@@ -53,6 +53,12 @@ export const apiKeyWithPlaintextSchema = apiKeySchema.extend({
   plaintext: z.string(),
 });
 
+export const publicApiKeySchema = apiKeySchema.omit({ keyHash: true });
+
+export const publicApiKeyWithPlaintextSchema = publicApiKeySchema.extend({
+  plaintext: z.string(),
+});
+
 export type MembershipRole = z.infer<typeof membershipRoleSchema>;
 export type Household = z.infer<typeof householdSchema>;
 export type User = z.infer<typeof userSchema>;
@@ -61,3 +67,13 @@ export type ApiKeyScope = z.infer<typeof apiKeyScopeSchema>;
 export type ApiKey = z.infer<typeof apiKeySchema>;
 export type CreateApiKeyInput = z.infer<typeof createApiKeyInputSchema>;
 export type ApiKeyWithPlaintext = z.infer<typeof apiKeyWithPlaintextSchema>;
+export type PublicApiKey = z.infer<typeof publicApiKeySchema>;
+export type PublicApiKeyWithPlaintext = z.infer<typeof publicApiKeyWithPlaintextSchema>;
+
+export function toPublicApiKey(key: ApiKey): PublicApiKey {
+  return publicApiKeySchema.parse(key);
+}
+
+export function toPublicApiKeyWithPlaintext(key: ApiKeyWithPlaintext): PublicApiKeyWithPlaintext {
+  return publicApiKeyWithPlaintextSchema.parse(key);
+}

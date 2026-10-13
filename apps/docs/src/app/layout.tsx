@@ -2,7 +2,7 @@ import { withBasePath } from "@/lib/base-path";
 import { brandPublicPath } from "@ovenlovin/brand";
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider";
-import { Bagel_Fat_One, Geist, Geist_Mono } from "next/font/google";
+import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-const bagel = Bagel_Fat_One({
+const fascinate = Fascinate_Inline({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-display",
@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: ReactNode }): React
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${bagel.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fascinate.variable}`}
     >
       <body className="font-sans">
         <RootProvider>{children}</RootProvider>
