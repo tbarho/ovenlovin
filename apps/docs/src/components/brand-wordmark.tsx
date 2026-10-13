@@ -3,8 +3,8 @@ import { BRAND_NAME, brandPublicPath } from "@ovenlovin/brand";
 import Image from "next/image";
 
 const sizes = {
-  nav: { width: 132, height: 40 },
-  hero: { width: 280, height: 85 },
+  nav: { mark: 28, wordmark: { width: 118, height: 36 } },
+  hero: { mark: 112, wordmark: { width: 220, height: 56 } },
 } as const;
 
 export function BrandWordmark({
@@ -14,28 +14,43 @@ export function BrandWordmark({
   className?: string;
   size?: keyof typeof sizes;
 }): React.ReactElement {
-  const { width, height } = sizes[size];
+  const { mark, wordmark } = sizes[size];
+  const stacked = size === "hero";
 
   return (
-    <span className={["inline-flex items-center", className].filter(Boolean).join(" ")}>
+    <span
+      className={["inline-flex items-center", stacked ? "flex-col gap-4" : "gap-2", className]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <Image
-        src={withBasePath(brandPublicPath.logo)}
-        alt={BRAND_NAME}
-        width={width}
-        height={height}
-        className="dark:hidden"
+        src={withBasePath(brandPublicPath.mark)}
+        alt={stacked ? BRAND_NAME : ""}
+        width={mark}
+        height={mark}
         priority
         unoptimized
       />
-      <Image
-        src={withBasePath(brandPublicPath.logoDark)}
-        alt=""
-        width={width}
-        height={height}
-        className="hidden dark:block"
-        priority
-        unoptimized
-      />
+      <span className="relative inline-flex">
+        <Image
+          src={withBasePath(brandPublicPath.wordmark)}
+          alt={stacked ? "" : BRAND_NAME}
+          width={wordmark.width}
+          height={wordmark.height}
+          className="dark:hidden"
+          priority
+          unoptimized
+        />
+        <Image
+          src={withBasePath(brandPublicPath.wordmarkDark)}
+          alt=""
+          width={wordmark.width}
+          height={wordmark.height}
+          className="hidden dark:block"
+          priority
+          unoptimized
+        />
+      </span>
     </span>
   );
 }
