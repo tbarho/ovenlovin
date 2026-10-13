@@ -13,11 +13,7 @@ describe("prototype people sheets", () => {
         <PersonProfile personId="jake" />
       </PrototypeProvider>
     );
-    await user.click(screen.getByRole("button", { name: "Add something" }));
-    await typeFullWordAndKeepFocus(
-      user,
-      screen.getByLabelText(/search foods or type a phrase/i),
-      "garlic"
-    );
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    await typeFullWordAndKeepFocus(user, screen.getByLabelText(/search foods/i), "garlic");
   });
 });

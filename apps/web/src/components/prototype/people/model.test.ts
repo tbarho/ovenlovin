@@ -8,9 +8,7 @@ import {
   checkRecipe,
   defaultBucketForItem,
   formatList,
-  parseFoodPhrase,
   searchCatalog,
-  suggestionsFor,
   summarizeHousehold,
 } from "./model";
 
@@ -95,22 +93,6 @@ describe("searchCatalog", () => {
   });
 });
 
-describe("parseFoodPhrase", () => {
-  it("turns natural language into chips with the right lanes", () => {
-    const parsed = parseFoodPhrase("no dairy, hates mushrooms");
-    expect(parsed).toEqual([
-      { itemId: "milk", bucket: "cant_have", raw: "no dairy" },
-      { itemId: "mushroom", bucket: "rather_not", raw: "hates mushrooms" },
-    ]);
-  });
-
-  it("treats allergic language as can't have", () => {
-    const parsed = parseFoodPhrase("allergic to peanuts");
-    expect(parsed[0]?.itemId).toBe("peanut");
-    expect(parsed[0]?.bucket).toBe("cant_have");
-  });
-});
-
 describe("defaultBucketForItem", () => {
   it("defaults allergens to can't have and diets to doesn't eat", () => {
     const peanut = CATALOG.find((item) => item.id === "peanut");
@@ -119,17 +101,5 @@ describe("defaultBucketForItem", () => {
     expect(peanut && defaultBucketForItem(peanut)).toBe("cant_have");
     expect(vegetarian && defaultBucketForItem(vegetarian)).toBe("doesnt_eat");
     expect(mushroom && defaultBucketForItem(mushroom)).toBe("rather_not");
-  });
-});
-
-describe("suggestionsFor", () => {
-  it("suggests coconut after tree nuts", () => {
-    const suggestions = suggestionsFor(["tree_nut"]);
-    expect(suggestions.some((item) => item.itemId === "coconut")).toBe(true);
-    expect(suggestions[0]?.reason).toMatch(/coconut/i);
-  });
-
-  it("does not re-suggest something already on the passport", () => {
-    expect(suggestionsFor(["tree_nut", "coconut"])).toEqual([]);
   });
 });

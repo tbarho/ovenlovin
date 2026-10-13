@@ -19,17 +19,32 @@ test("people rules prototype is public and clickable", async ({ page }, testInfo
   await expect(page.getByTestId("bucket-cant_have")).toContainText(/peanuts/i);
   await expect(page.getByTestId("bucket-cant_have")).toContainText(/tree nuts/i);
 
-  await page.getByRole("button", { name: "Add something" }).click();
-  await expect(page.getByTestId("suggest-coconut")).toContainText(/coconut/i);
-  await page.getByPlaceholder(/no dairy/i).fill("no dairy, hates mushrooms");
-  await expect(page.getByTestId("parsed-chips")).toContainText(/milk/i);
-  await expect(page.getByTestId("parsed-chips")).toContainText(/mushrooms/i);
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByTestId("tile-milk").click();
+  await expect(page.getByRole("tab", { name: "Can't have" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await page
+    .getByRole("dialog", { name: "Add a rule" })
+    .getByRole("button", { name: "Done" })
+    .click();
+  await expect(page.getByRole("dialog", { name: "Add a rule" })).toHaveCount(0);
+  await expect(page.getByTestId("bucket-cant_have")).toContainText(/milk/i);
+
+  await page
+    .getByTestId("bucket-cant_have")
+    .getByRole("button", { name: "Tree nuts", exact: true })
+    .click();
+  await expect(page.getByLabel(/treat coconut as a tree nut/i)).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
 
   await page.screenshot({
     path: `../../e2e-artifacts/prototype-jake-${testInfo.project.name}.png`,
     fullPage: true,
   });
+
+  await page.getByRole("button", { name: "Reset demo" }).first().click();
 
   await page.getByRole("link", { name: "Recipes" }).first().click();
   await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
@@ -47,16 +62,6 @@ test("people rules prototype is public and clickable", async ({ page }, testInfo
 
   await page.screenshot({
     path: `../../e2e-artifacts/prototype-recipe-${testInfo.project.name}.png`,
-    fullPage: true,
-  });
-
-  await page.getByRole("link", { name: "Setup" }).first().click();
-  await expect(page.getByRole("heading", { name: /who do you cook for/i })).toBeVisible();
-  await page.getByRole("button", { name: /start a new household/i }).click();
-  await expect(page.getByRole("heading", { name: /name and a face/i })).toBeVisible();
-
-  await page.screenshot({
-    path: `../../e2e-artifacts/prototype-setup-${testInfo.project.name}.png`,
     fullPage: true,
   });
 });

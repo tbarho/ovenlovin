@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useId, useRef, type DragEvent, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
 import { FoodIcon } from "./icons";
 import type { Bucket, Mark, Person } from "./model";
@@ -55,17 +55,12 @@ export function Chip({
   bucket,
   onClick,
   onRemove,
-  draggable,
-  onDragStart,
 }: {
   label: string;
   itemId?: string;
-  emoji?: string;
   bucket: Bucket;
   onClick?: () => void;
   onRemove?: () => void;
-  draggable?: boolean;
-  onDragStart?: (event: DragEvent<HTMLDivElement>) => void;
 }) {
   return (
     <motion.div
@@ -76,7 +71,7 @@ export function Chip({
       exit={{ scale: 0.9, opacity: 0 }}
       transition={{ type: "spring", stiffness: 420, damping: 22 }}
     >
-      <div className="olp-chip-drag" draggable={draggable} onDragStart={onDragStart}>
+      <div className="olp-chip-drag">
         {onClick ? (
           <button type="button" className="olp-chip-main" onClick={onClick}>
             {itemId ? <FoodIcon id={itemId} size={16} /> : null}
@@ -152,54 +147,6 @@ export function Segmented<T extends string>({
           {option.label}
         </button>
       ))}
-    </div>
-  );
-}
-
-export function SeverityLanes({
-  value,
-  onChange,
-  personName,
-}: {
-  value: Bucket;
-  onChange: (value: Bucket) => void;
-  personName: string;
-}) {
-  return (
-    <div className="olp-severity" role="radiogroup" aria-label={`How ${personName} treats this`}>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === "cant_have"}
-        className={`olp-sev-cant_have${value === "cant_have" ? " is-on" : ""}`}
-        onClick={() => onChange("cant_have")}
-      >
-        <FoodIcon id="spicy" size={18} />
-        <b>Can&apos;t have</b>
-        <small>Allergy — keep it out</small>
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === "doesnt_eat"}
-        className={`olp-sev-doesnt_eat${value === "doesnt_eat" ? " is-on" : ""}`}
-        onClick={() => onChange("doesnt_eat")}
-      >
-        <FoodIcon id="vegetarian" size={18} />
-        <b>Doesn&apos;t eat</b>
-        <small>Diet or hard no</small>
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === "rather_not"}
-        className={`olp-sev-rather_not${value === "rather_not" ? " is-on" : ""}`}
-        onClick={() => onChange("rather_not")}
-      >
-        <FoodIcon id="mushroom" size={18} />
-        <b>Rather not</b>
-        <small>Preference — just warn</small>
-      </button>
     </div>
   );
 }

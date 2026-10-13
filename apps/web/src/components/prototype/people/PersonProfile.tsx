@@ -2,42 +2,40 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, type CSSProperties, type DragEvent } from "react";
-import { AnimatePresence, LayoutGroup } from "framer-motion";
-import { tapFeedback } from "./haptics";
+import { useCallback, useMemo, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import {
-  bucketHint,
   bucketLabel,
   catalogById,
   defaultBucketForItem,
   defaultOptionsForItem,
   newId,
-  personTheme,
   restrictionLabel,
   type Bucket,
+  type CatalogItem,
   type Restriction,
 } from "./model";
 import { FoodPicker } from "./FoodPicker";
+import { FoodIcon } from "./icons";
 import { usePrototype } from "./store";
-import { Avatar, Chip, ConfirmSheet, EmptyState, Segmented, SeverityLanes, Sheet } from "./ui";
+import { Avatar, Chip, ConfirmSheet, EmptyState, Segmented, Sheet } from "./ui";
 
 const BUCKETS: Bucket[] = ["cant_have", "doesnt_eat", "rather_not"];
 
+const SEVERITY_OPTIONS = [
+  { value: "cant_have" as const, label: "Can't have" },
+  { value: "doesnt_eat" as const, label: "Doesn't eat" },
+  { value: "rather_not" as const, label: "Would rather not" },
+];
+
 export function PersonProfile({ personId }: { personId: string }) {
-  const {
-    household,
-    addRestriction,
-    updateRestriction,
-    moveRestriction,
-    removeRestriction,
-    deletePerson,
-  } = usePrototype();
+  const { household, addRestriction, updateRestriction, removeRestriction, deletePerson } =
+    usePrototype();
   const router = useRouter();
   const person = household.people.find((item) => item.id === personId);
   const [editing, setEditing] = useState<Restriction | null>(null);
   const [adding, setAdding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [dropBucket, setDropBucket] = useState<Bucket | null>(null);
   const closeEditing = useCallback(() => setEditing(null), []);
   const closeAdding = useCallback(() => setAdding(false), []);
   const closeDelete = useCallback(() => setConfirmDelete(false), []);
@@ -57,105 +55,58 @@ export function PersonProfile({ personId }: { personId: string }) {
   if (!person) {
     return (
       <EmptyState
-        title="That person isn’t in this kitchen"
-        body="They may have been removed. Jump back to the household, or add someone in setup."
+        title="Not in this kitchen"
+        body="They may have been removed."
         action={
           <Link href="/prototype/people" className="olp-btn olp-btn-primary">
-            Back to household
+            Back to People
           </Link>
         }
       />
     );
   }
 
-  const theme = personTheme(person.color);
-
-  function onDrop(bucket: Bucket, event: DragEvent<HTMLElement>) {
-    event.preventDefault();
-    const restrictionId = event.dataTransfer.getData("text/olp-restriction");
-    if (restrictionId) moveRestriction(personId, restrictionId, bucket);
-    setDropBucket(null);
-  }
-
   return (
     <div className="olp-stack">
       <Link href="/prototype/people" className="olp-back">
-        ← Household
+        ← People
       </Link>
-      <header
-        className="olp-person-theme"
-        style={
-          {
-            "--olp-theme-wash": theme.wash,
-            "--olp-theme-glow": theme.glow,
-          } as CSSProperties
-        }
-      >
-        <Avatar person={person} size={84} />
-        <div className="olp-person-head">
-          <p className="olp-kicker">{person.generation === "kid" ? "Kid" : "Adult"}</p>
-          <h1>{person.name}</h1>
-          <p className="olp-muted">
-            A food passport. Drag a chip between lanes, or tap to fine-tune.
-          </p>
-        </div>
+      <header className="olp-person-head">
+        <Avatar person={person} size={48} />
+        <h1>{person.name}</h1>
       </header>
 
-      <LayoutGroup>
-        {BUCKETS.map((bucket) => (
-          <section
-            key={bucket}
-            className={`olp-lane olp-lane-${bucket}${dropBucket === bucket ? " is-drop" : ""}`}
-            data-testid={`bucket-${bucket}`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDropBucket(bucket);
-            }}
-            onDragLeave={() => setDropBucket(null)}
-            onDrop={(event) => onDrop(bucket, event)}
-          >
-            <div className="olp-section-head">
-              <div>
-                <h2>{bucketLabel(bucket)}</h2>
-                <p className="olp-caption">{bucketHint(bucket)}</p>
-              </div>
+      {BUCKETS.map((bucket) => (
+        <section
+          key={bucket}
+          className={`olp-lane olp-lane-${bucket}`}
+          data-testid={`bucket-${bucket}`}
+        >
+          <h2>{bucketLabel(bucket)}</h2>
+          {grouped[bucket].length === 0 ? (
+            <p className="olp-empty-inline">None</p>
+          ) : (
+            <div className="olp-chip-row">
+              <AnimatePresence initial={false}>
+                {grouped[bucket].map((restriction) => (
+                  <Chip
+                    key={restriction.id}
+                    label={restrictionLabel(restriction)}
+                    itemId={restriction.itemId}
+                    bucket={restriction.bucket}
+                    onClick={() => setEditing(restriction)}
+                    onRemove={() => removeRestriction(person.id, restriction.id)}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
-            {grouped[bucket].length === 0 ? (
-              <p className="olp-empty-inline">
-                {bucket === "cant_have"
-                  ? `Nothing ${person.name} is allergic to — yet.`
-                  : bucket === "doesnt_eat"
-                    ? `${person.name} hasn’t marked a diet.`
-                    : `No soft preferences for ${person.name}.`}
-              </p>
-            ) : (
-              <div className="olp-chip-row">
-                <AnimatePresence initial={false}>
-                  {grouped[bucket].map((restriction) => (
-                    <Chip
-                      key={restriction.id}
-                      label={restrictionLabel(restriction)}
-                      itemId={restriction.itemId}
-                      bucket={restriction.bucket}
-                      draggable
-                      onDragStart={(event) => {
-                        event.dataTransfer.setData("text/olp-restriction", restriction.id);
-                        event.dataTransfer.effectAllowed = "move";
-                      }}
-                      onClick={() => setEditing(restriction)}
-                      onRemove={() => removeRestriction(person.id, restriction.id)}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
-          </section>
-        ))}
-      </LayoutGroup>
+          )}
+        </section>
+      ))}
 
       <div className="olp-row">
         <button type="button" className="olp-btn olp-btn-primary" onClick={() => setAdding(true)}>
-          Add something
+          Add
         </button>
         <button
           type="button"
@@ -175,7 +126,6 @@ export function PersonProfile({ personId }: { personId: string }) {
           <RestrictionEditor
             key={editing.id}
             restriction={editing}
-            personName={person.name}
             onChange={(next) => {
               updateRestriction(person.id, next);
               setEditing(next);
@@ -185,36 +135,13 @@ export function PersonProfile({ personId }: { personId: string }) {
         ) : null}
       </Sheet>
 
-      <Sheet
-        open={adding}
-        title={`Anything ${person.name} can’t or won’t eat?`}
-        onClose={closeAdding}
-      >
-        <FoodPicker
-          key="add-food-picker"
+      <Sheet open={adding} title="Add a rule" onClose={closeAdding}>
+        <AddRuleForm
+          key="add-rule-form"
           selectedIds={person.restrictions.map((item) => item.itemId)}
-          caption="Tap a tile, or type it in plain language. Allergens default to Can’t have."
-          onToggle={(item) => {
-            const existing = person.restrictions.find((entry) => entry.itemId === item.id);
-            if (existing) {
-              removeRestriction(person.id, existing.id);
-              return;
-            }
-            tapFeedback();
-            addRestriction(person.id, {
-              id: newId("r"),
-              itemId: item.id,
-              bucket: defaultBucketForItem(item),
-              options: defaultOptionsForItem(item),
-            });
-          }}
-          onAddParsed={(item, bucket) => {
-            addRestriction(person.id, {
-              id: newId("r"),
-              itemId: item.id,
-              bucket,
-              options: defaultOptionsForItem(item),
-            });
+          onDone={(restriction) => {
+            addRestriction(person.id, restriction);
+            closeAdding();
           }}
         />
       </Sheet>
@@ -222,7 +149,7 @@ export function PersonProfile({ personId }: { personId: string }) {
       <ConfirmSheet
         open={confirmDelete}
         title={`Remove ${person.name}?`}
-        body={`This takes ${person.name} out of the household. Their rules go with them. You can add them again from setup.`}
+        body={`${person.name} and their rules will be removed.`}
         confirmLabel={`Delete ${person.name}`}
         onCancel={closeDelete}
         onConfirm={() => {
@@ -235,70 +162,110 @@ export function PersonProfile({ personId }: { personId: string }) {
   );
 }
 
+function AddRuleForm({
+  selectedIds,
+  onDone,
+}: {
+  selectedIds: string[];
+  onDone: (restriction: Restriction) => void;
+}) {
+  const [item, setItem] = useState<CatalogItem | null>(null);
+  const [bucket, setBucket] = useState<Bucket>("cant_have");
+  const [coconutAsTreeNut, setCoconutAsTreeNut] = useState(false);
+  const already = item ? selectedIds.includes(item.id) : false;
+
+  function selectItem(next: CatalogItem) {
+    setItem(next);
+    setBucket(defaultBucketForItem(next));
+    setCoconutAsTreeNut(false);
+  }
+
+  return (
+    <div className="olp-stack-sm">
+      {item ? (
+        <>
+          <button type="button" className="olp-choice is-on" onClick={() => setItem(null)}>
+            <span className="olp-tile-icon">
+              <FoodIcon id={item.id} size={22} />
+            </span>
+            <b>{item.label}</b>
+          </button>
+          <Segmented
+            label="Severity"
+            value={bucket}
+            onChange={setBucket}
+            options={SEVERITY_OPTIONS}
+          />
+          {item.id === "tree_nut" ? (
+            <label className="olp-check">
+              <input
+                type="checkbox"
+                checked={coconutAsTreeNut}
+                onChange={(event) => setCoconutAsTreeNut(event.target.checked)}
+              />
+              Treat coconut as a tree nut
+            </label>
+          ) : null}
+          <button
+            type="button"
+            className="olp-btn olp-btn-primary"
+            disabled={already}
+            onClick={() =>
+              onDone({
+                id: newId("r"),
+                itemId: item.id,
+                bucket,
+                options: {
+                  ...defaultOptionsForItem(item),
+                  coconutAsTreeNut: item.id === "tree_nut" ? coconutAsTreeNut : undefined,
+                },
+              })
+            }
+          >
+            Done
+          </button>
+        </>
+      ) : (
+        <FoodPicker selectedId={item?.id} onSelect={selectItem} />
+      )}
+    </div>
+  );
+}
+
 function RestrictionEditor({
   restriction,
-  personName,
   onChange,
   onClose,
 }: {
   restriction: Restriction;
-  personName: string;
   onChange: (restriction: Restriction) => void;
   onClose: () => void;
 }) {
   const item = catalogById(restriction.itemId);
-  const showShared = item?.advanced?.includes("sharedEquipment");
-  const showCoconut = item?.advanced?.includes("coconutAsTreeNut");
+  const showCoconut = item?.id === "tree_nut";
 
   return (
     <div className="olp-stack-sm">
-      <p className="olp-lead">
-        How should OvenLovin treat this for {personName}? Slide between the three lanes — same
-        meaning as the passport.
-      </p>
-      <SeverityLanes
+      <Segmented
+        label="Severity"
         value={restriction.bucket}
-        personName={personName}
         onChange={(bucket) => onChange({ ...restriction, bucket })}
+        options={SEVERITY_OPTIONS}
       />
-      {showShared ? (
-        <fieldset className="olp-fieldset">
-          <legend>Avoid foods made where nuts are processed?</legend>
-          <Segmented
-            label="Shared equipment"
-            value={restriction.options.sharedEquipment ?? "ask"}
-            onChange={(sharedEquipment) =>
-              onChange({
-                ...restriction,
-                options: { ...restriction.options, sharedEquipment },
-              })
-            }
-            options={[
-              { value: "yes", label: "Yes" },
-              { value: "ask", label: "Ask me" },
-              { value: "no", label: "No" },
-            ]}
-          />
-        </fieldset>
-      ) : null}
       {showCoconut ? (
-        <fieldset className="olp-fieldset">
-          <legend>Treat coconut as a tree nut?</legend>
-          <Segmented
-            label="Coconut"
-            value={restriction.options.coconutAsTreeNut ? "yes" : "no"}
-            onChange={(value) =>
+        <label className="olp-check">
+          <input
+            type="checkbox"
+            checked={Boolean(restriction.options.coconutAsTreeNut)}
+            onChange={(event) =>
               onChange({
                 ...restriction,
-                options: { ...restriction.options, coconutAsTreeNut: value === "yes" },
+                options: { ...restriction.options, coconutAsTreeNut: event.target.checked },
               })
             }
-            options={[
-              { value: "yes", label: "Yes" },
-              { value: "no", label: "No" },
-            ]}
           />
-        </fieldset>
+          Treat coconut as a tree nut
+        </label>
       ) : null}
       <button type="button" className="olp-btn olp-btn-primary" onClick={onClose}>
         Done
