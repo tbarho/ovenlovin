@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, inArray } from "drizzle-orm";
 import { person, personRule } from "@ovenlovin/db";
 import type { Person, PersonRule } from "../schemas/people";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
@@ -72,13 +72,21 @@ export class PeopleService extends BaseService {
   }
 
   async deletePerson(id: string): Promise<boolean> {
-    const [deleted] = await this._db
-      .update(person)
-      .set({ deletedAt: new Date() })
-      .where(and(eq(person.id, id), isNull(person.deletedAt)))
-      .returning();
+    const now = new Date();
+    return this._db.transaction(async (tx) => {
+      await tx
+        .update(personRule)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(personRule.personId, id), isNull(personRule.deletedAt)));
 
-    return !!deleted;
+      const [deleted] = await tx
+        .update(person)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(person.id, id), isNull(person.deletedAt)))
+        .returning();
+
+      return !!deleted;
+    });
   }
 
   async getRulesForPerson(personId: string): Promise<PersonRule[]> {
@@ -86,6 +94,18 @@ export class PeopleService extends BaseService {
       .select()
       .from(personRule)
       .where(and(eq(personRule.personId, personId), isNull(personRule.deletedAt)))
+      .orderBy(desc(personRule.createdAt));
+
+    return results.map((r) => this.mapPersonRule(r));
+  }
+
+  async getRulesForPeople(personIds: string[]): Promise<PersonRule[]> {
+    if (personIds.length === 0) return [];
+
+    const results = await this._db
+      .select()
+      .from(personRule)
+      .where(and(inArray(personRule.personId, personIds), isNull(personRule.deletedAt)))
       .orderBy(desc(personRule.createdAt));
 
     return results.map((r) => this.mapPersonRule(r));
