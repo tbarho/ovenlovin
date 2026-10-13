@@ -6,18 +6,24 @@ import { KitchenNav } from "./KitchenNav";
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   return (
-    <div className="shell">
-      <header className="nav">
+    <div className="shell kitchen-shell">
+      <header className="nav kitchen-topbar">
         <div className="wrap nav-inner">
-          <Link href="/" className="brand">
+          <Link href="/" className="brand" aria-label="OvenLovin">
             <Image src={brandPublicPath.mark} alt="" width={34} height={34} unoptimized />
-            OvenLovin
+            <span className="brand-wordmark">OvenLovin</span>
+            <span className="brand-wordmark-short" aria-hidden="true">
+              Oven
+            </span>
           </Link>
           <KitchenNav />
-          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? <UserButton /> : null}
+          <div className="nav-user">
+            {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? <UserButton /> : null}
+          </div>
         </div>
       </header>
       <div className="wrap kitchen">{children}</div>
+      <KitchenNav variant="tabs" />
     </div>
   );
 }
