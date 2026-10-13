@@ -45,15 +45,27 @@ export class ApiError extends Error {
 
 export class BadRequestError extends ApiError {
   constructor(detail?: string, extensions?: Record<string, unknown>) {
-    super(400, "https://ovenlovin.dev/problems/bad-request", "Bad Request", detail, extensions);
+    super(
+      400,
+      "https://your-app.vercel.app/problems/bad-request",
+      "Bad Request",
+      detail,
+      extensions
+    );
   }
 }
 
 export class ValidationError extends ApiError {
   constructor(detail: string, errors: unknown) {
-    super(400, "https://ovenlovin.dev/problems/validation-error", "Validation Error", detail, {
-      errors,
-    });
+    super(
+      400,
+      "https://your-app.vercel.app/problems/validation-error",
+      "Validation Error",
+      detail,
+      {
+        errors,
+      }
+    );
   }
 
   static fromZodError(error: ZodError): ValidationError {
@@ -69,26 +81,26 @@ export class ValidationError extends ApiError {
 
 export class UnauthorizedError extends ApiError {
   constructor(detail?: string) {
-    super(401, "https://ovenlovin.dev/problems/unauthorized", "Unauthorized", detail);
+    super(401, "https://your-app.vercel.app/problems/unauthorized", "Unauthorized", detail);
   }
 }
 
 export class ForbiddenError extends ApiError {
   constructor(detail?: string) {
-    super(403, "https://ovenlovin.dev/problems/forbidden", "Forbidden", detail);
+    super(403, "https://your-app.vercel.app/problems/forbidden", "Forbidden", detail);
   }
 }
 
 export class NotFoundError extends ApiError {
   constructor(resource: string, id?: string) {
     const detail = id ? `${resource} with id ${id} not found` : `${resource} not found`;
-    super(404, "https://ovenlovin.dev/problems/not-found", "Not Found", detail);
+    super(404, "https://your-app.vercel.app/problems/not-found", "Not Found", detail);
   }
 }
 
 export class ConflictError extends ApiError {
   constructor(detail: string, extensions?: Record<string, unknown>) {
-    super(409, "https://ovenlovin.dev/problems/conflict", "Conflict", detail, extensions);
+    super(409, "https://your-app.vercel.app/problems/conflict", "Conflict", detail, extensions);
   }
 }
 
@@ -96,7 +108,7 @@ export class InternalServerError extends ApiError {
   constructor(detail?: string) {
     super(
       500,
-      "https://ovenlovin.dev/problems/internal-server-error",
+      "https://your-app.vercel.app/problems/internal-server-error",
       "Internal Server Error",
       detail
     );

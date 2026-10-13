@@ -37,14 +37,14 @@ src/
 
 ```bash
 curl -H "Authorization: Bearer <jwt>" \
-  https://ovenlovin.dev/api/v1/recipes
+  https://your-app.vercel.app/api/v1/recipes
 ```
 
 ### Bot authentication (API key)
 
 ```bash
 curl -H "Authorization: ApiKey <key>" \
-  https://ovenlovin.dev/api/v1/recipes
+  https://your-app.vercel.app/api/v1/recipes
 ```
 
 ## Pagination
@@ -75,7 +75,7 @@ curl -X POST \
   -H "Idempotency-Key: <uuid>" \
   -H "Content-Type: application/json" \
   -d '{"title": "My Recipe"}' \
-  https://ovenlovin.dev/api/v1/recipes
+  https://your-app.vercel.app/api/v1/recipes
 ```
 
 ## Errors
@@ -84,7 +84,7 @@ All errors follow RFC 9457 (problem+json):
 
 ```json
 {
-  "type": "https://ovenlovin.dev/problems/not-found",
+  "type": "https://your-app.vercel.app/problems/not-found",
   "title": "Not Found",
   "status": 404,
   "detail": "Recipe with id abc123 not found",
@@ -97,7 +97,7 @@ All errors follow RFC 9457 (problem+json):
 View the full OpenAPI 3.1 spec:
 
 ```bash
-curl https://ovenlovin.dev/api/v1/openapi.json
+curl https://your-app.vercel.app/api/v1/openapi.json
 ```
 
 ## Testing
