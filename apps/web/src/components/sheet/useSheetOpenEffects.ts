@@ -32,14 +32,16 @@ export function useSheetOpenEffects({
     if (!open) return;
 
     const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     const panel = panelRef.current;
     const field = panel?.querySelector<HTMLElement>(SHEET_TEXT_FIELD_SELECTOR);
     if (field) {
-      field.focus();
+      field.focus({ preventScroll: true });
     } else {
-      panel?.focus();
+      panel?.focus({ preventScroll: true });
     }
 
     function onKey(event: KeyboardEvent) {
@@ -48,6 +50,7 @@ export function useSheetOpenEffects({
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener("keydown", onKey);
     };
   }, [open, panelRef]);

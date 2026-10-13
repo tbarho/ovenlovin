@@ -4,11 +4,19 @@
 }
 
 .kitchen-people.olp {
+  min-height: 0;
   background: transparent;
 }
 
 .kitchen-shell:has(.olp-sheet-root) .kitchen-tabbar {
   display: none;
+}
+
+/* Tokens stay; do not inherit the page-shell layout onto a portaled overlay. */
+.olp.olp-sheet-root {
+  z-index: 80;
+  min-height: 0;
+  background: transparent;
 }
 
 .kitchen-people .olp-person-chip {
@@ -22,4 +30,9 @@
 
 .who-can-eat {
   margin: 8px 0 20px;
+}
+
+.olp.who-can-eat {
+  min-height: 0;
+  background: transparent;
 }
