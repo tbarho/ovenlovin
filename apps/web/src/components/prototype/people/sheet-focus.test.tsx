@@ -16,7 +16,7 @@ describe("prototype people sheets", () => {
     await user.click(screen.getByRole("button", { name: "Add something" }));
     await typeFullWordAndKeepFocus(
       user,
-      screen.getByPlaceholderText("Search garlic, coconut, pork…"),
+      screen.getByLabelText(/search foods or type a phrase/i),
       "garlic"
     );
   });
