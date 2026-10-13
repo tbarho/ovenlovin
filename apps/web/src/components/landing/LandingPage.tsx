@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
-import type { ConfigStatus } from "@ovenlovin/core/onboarding";
+import type { ConfigStatus, DeployInfo } from "@ovenlovin/core/onboarding";
+import { formatDeployedAt } from "@ovenlovin/core/onboarding";
 import { ConnectAgentSection } from "./ConnectAgentSection";
 import { SiteHeader } from "./SiteHeader";
 import { StatusStrip } from "./StatusStrip";
+import { VercelBand } from "./VercelBand";
 
 export function LandingPage({
   instanceName,
@@ -12,18 +14,23 @@ export function LandingPage({
   status,
   signedIn,
   clerkEnabled,
+  deploy,
 }: {
   instanceName: string;
   origin: string;
   status: ConfigStatus;
   signedIn: boolean;
   clerkEnabled: boolean;
+  deploy: DeployInfo;
 }) {
+  const deployed = deploy.deployedAt ? formatDeployedAt(deploy.deployedAt) : null;
+  const pillLabel = deploy.live ? "Live" : deploy.environmentLabel;
+
   return (
     <div className="shell">
       <SiteHeader signedIn={signedIn} clerkEnabled={clerkEnabled} />
       <main>
-        <section className="hero">
+        <section className="hero" id="live">
           <div className="wrap rise">
             <div className="hero-identity">
               <Image
@@ -35,16 +42,36 @@ export function LandingPage({
                 priority
                 unoptimized
               />
-              <div className="badge">
-                <i />
-                {instanceName}
+              <div className={`live-pill ${deploy.live ? "is-live" : "is-local"}`}>
+                <i className="live-dot" aria-hidden="true" />
+                <span className="live-label">{pillLabel}</span>
+                <a className="live-url" href={deploy.instanceUrl}>
+                  {deploy.instanceHost}
+                </a>
               </div>
+              {deployed ? (
+                <p className="hero-deployed" title={deployed.iso}>
+                  Deployed {deployed.absolute}
+                  {deployed.relative ? ` · ${deployed.relative}` : ""}
+                </p>
+              ) : null}
             </div>
-            <h1>Family recipes, ready for your agents.</h1>
-            <p className="lead">
-              Import a recipe, set per-person rules, and hand the same kitchen to Grok, Claude, or
-              ChatGPT. This is {instanceName}.
-            </p>
+            <h1>{deploy.headline}</h1>
+            <p className="lead">This is yours — {instanceName}. Your household. Your data.</p>
+            <ul className="yours-row">
+              <li>
+                <span>Instance</span>
+                <b>{instanceName}</b>
+              </li>
+              <li>
+                <span>Household</span>
+                <b>Yours</b>
+              </li>
+              <li>
+                <span>Data</span>
+                <b>On this deploy</b>
+              </li>
+            </ul>
             <div className="hero-ctas" id="start">
               {signedIn ? (
                 <Link className="btn primary" href="/recipes">
@@ -71,6 +98,7 @@ export function LandingPage({
                 Connect your agent
               </a>
             </div>
+            <VercelBand deploy={deploy} />
           </div>
         </section>
 
@@ -126,8 +154,16 @@ export function LandingPage({
         </section>
       </main>
       <footer className="footer wrap">
-        <span>{instanceName} · OvenLovin</span>
-        <a href="https://github.com/tbarho/ovenlovin">GitHub</a>
+        <span>
+          {instanceName} · OvenLovin · {deploy.instanceHost}
+        </span>
+        {deploy.github.repoUrl ? (
+          <a href={deploy.github.repoUrl} target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+        ) : (
+          <a href="https://github.com/tbarho/ovenlovin">GitHub</a>
+        )}
       </footer>
     </div>
   );

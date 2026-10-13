@@ -454,7 +454,7 @@ select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 16px;
   width: 100%;
 }
 
@@ -510,6 +510,177 @@ select {
   background: var(--orange);
 }
 
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 7px 14px 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(47, 158, 98, 0.08);
+}
+
+.live-pill.is-local {
+  box-shadow: none;
+}
+
+.live-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ok);
+}
+
+.live-pill.is-local .live-label {
+  color: var(--muted);
+}
+
+.live-url {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.live-url:hover {
+  color: var(--orange);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(47, 158, 98, 0.45);
+  animation: live-pulse 2s ease-out infinite;
+}
+
+.live-pill.is-local .live-dot {
+  background: var(--faint);
+  animation: none;
+  box-shadow: none;
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 98, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(47, 158, 98, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 98, 0);
+  }
+}
+
+.hero-deployed {
+  margin: 0;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.yours-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 640px;
+  margin: 22px auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.yours-row li {
+  display: grid;
+  gap: 2px;
+  min-width: 148px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  text-align: left;
+}
+
+.yours-row span {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.yours-row b {
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+
+.vercel-band {
+  max-width: 640px;
+  margin: 36px auto 0;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.vercel-kicker {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.vercel-copy {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.vercel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.vercel-links a {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.vercel-links a:hover {
+  border-color: var(--orange);
+  color: var(--orange-deep);
+}
+
+.vercel-commit {
+  margin: 12px 0 0;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hero h1 {
   max-width: 14ch;
   margin: 22px auto 0;
@@ -554,6 +725,9 @@ select {
 .rise > *:nth-child(5) {
   animation-delay: 0.24s;
 }
+.rise > *:nth-child(6) {
+  animation-delay: 0.3s;
+}
 
 @keyframes rise {
   from {
@@ -568,6 +742,7 @@ select {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-mark,
+  .live-dot,
   .rise > * {
     animation: none;
     opacity: 1;
