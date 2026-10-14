@@ -9,6 +9,7 @@
  */
 
 import type { AllergenRelation } from "@ovenlovin/core";
+import { lineNegatesAllergen } from "./negation";
 import { findPhraseStarts, phraseTokens } from "./phrase-match";
 
 export interface IngredientAllergenMapping {
@@ -353,7 +354,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   },
   {
     name: "butternut nut",
-    aliases: ["butternuts", "white walnut", "butternut nuts"],
+    aliases: ["white walnut", "butternut nuts"],
     allergenCode: "butternut",
     relation: "contains",
   },
@@ -1047,9 +1048,14 @@ export function matchIngredient(
   ingredientName: string,
   map: Map<string, IngredientAllergenMapping[]> = defaultIngredientMap()
 ): IngredientAllergenMapping[] {
+  const keep = (mappings: IngredientAllergenMapping[]) =>
+    dedupeMappings(mappings).filter(
+      (mapping) => !lineNegatesAllergen(ingredientName, mapping.allergenCode)
+    );
+
   const exact = map.get(normalizeIngredientName(ingredientName));
   if (exact && exact.length > 0) {
-    return dedupeMappings(exact);
+    return keep(exact);
   }
 
   const phrases =
@@ -1070,5 +1076,5 @@ export function matchIngredient(
     }
   }
 
-  return dedupeMappings(found);
+  return keep(found);
 }

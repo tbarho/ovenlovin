@@ -14,6 +14,14 @@ describe("phraseMatchesLine", () => {
     expect(phraseMatchesLine("olive", "kalamata olives")).toBe(true);
   });
 
+  it("does not match X-free or no-X wording", () => {
+    expect(phraseMatchesLine("nut", "nut-free pesto")).toBe(false);
+    expect(phraseMatchesLine("egg", "egg-free mayonnaise")).toBe(false);
+    expect(phraseMatchesLine("dairy", "dairy-free milk")).toBe(false);
+    expect(phraseMatchesLine("peanut", "without peanuts")).toBe(false);
+    expect(phraseMatchesLine("peanut", "no peanuts")).toBe(false);
+  });
+
   it("does not treat olive oil as olives", () => {
     expect(phraseMatchesLine("olive", "2 tbsp olive oil")).toBe(false);
     expect(phraseMatchesLine("olives", "3 tbsp olive oil")).toBe(false);

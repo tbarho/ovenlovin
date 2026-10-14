@@ -17,10 +17,14 @@ export {
 export {
   defaultCompoundFoodExclusions,
   compoundsExcludingPhrase,
+  falseFriendCompounds,
   type CompoundFoodExclusion,
+  type FalseFriendCompound,
 } from "./compound-foods";
 
 export { hintPhrasesForTarget } from "./allergen-hints";
+
+export { freeClaimHintsForAllergen, lineNegatesAllergen, lineNegatesPhrase } from "./negation";
 
 export {
   isBlockedForAttendees,
@@ -73,9 +77,12 @@ export {
   phraseTokens,
   tokenSequenceStarts,
   occurrenceIsCompoundFood,
+  occurrenceIsFalseFriend,
+  occurrenceIsNegated,
   findPhraseStarts,
   phraseMatchesLine,
   phraseMatchesAny,
+  type PhraseMatchOptions,
 } from "./phrase-match";
 
 export {
