@@ -27,6 +27,9 @@ describe("isClerkProtectExempt", () => {
     expect(isClerkProtectExempt("/docs")).toBe(true);
     expect(isClerkProtectExempt("/docs/connect-your-agent")).toBe(true);
     expect(isClerkProtectExempt("/llms.txt")).toBe(true);
+    expect(isClerkProtectExempt("/robots.txt")).toBe(true);
+    expect(isClerkProtectExempt("/sitemap.xml")).toBe(true);
+    expect(isClerkProtectExempt("/manifest.webmanifest")).toBe(true);
     expect(isClerkProtectExempt("/api/cron/demo-cleanup")).toBe(true);
     expect(isClerkProtectExempt("/api/demo/enter")).toBe(true);
     expect(isClerkProtectExempt("/brand/og.png")).toBe(true);

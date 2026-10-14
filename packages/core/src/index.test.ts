@@ -3,6 +3,6 @@ import { VERSION } from "./index";
 
 describe("@ovenlovin/core", () => {
   it("exports VERSION", () => {
-    expect(VERSION).toBeDefined();
+    expect(VERSION).toBe("0.1.0");
   });
 });

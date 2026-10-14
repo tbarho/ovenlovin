@@ -71,5 +71,6 @@ describe("@ovenlovin/brand", () => {
     expect(VERCEL_DEPLOY_URL).not.toMatch(/[?&]env=[^&]*USDA_FDC_API_KEY/);
     expect(VERCEL_DEPLOY_URL).not.toMatch(/[?&]env=[^&]*AI_GATEWAY_API_KEY/);
     expect(VERCEL_DEPLOY_URL).toContain("OIDC");
+    expect(VERCEL_DEPLOY_URL).toContain("family%20recipe%20box");
   });
 });

@@ -1,8 +1,8 @@
 {
   "name": "ovenlovin",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "LLM-optimized recipe and family meal-planning template for Vercel",
+  "description": "The family recipe box your AI can actually use, and it knows who can't eat what.",
   "repository": {
     "type": "git",
     "url": "https://github.com/tbarho/ovenlovin.git"
