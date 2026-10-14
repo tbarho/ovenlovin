@@ -18,6 +18,12 @@ import {
   manageCookbookTool,
   managePersonLovesTool,
   reorderPeopleTool,
+  whoamiTool,
+  createRecipeTool,
+  deleteRecipeTool,
+  deleteMealPlanTool,
+  managePeopleTool,
+  managePersonRulesTool,
 } from "./index.js";
 
 describe("MCP Tool Schemas", () => {
@@ -267,6 +273,53 @@ describe("MCP Tool Schemas", () => {
           action: "add_recipe",
           id: "550e8400-e29b-41d4-a716-446655440000",
           recipeId: "550e8400-e29b-41d4-a716-446655440001",
+        }).success
+      ).toBe(true);
+    });
+  });
+
+  describe("new agent tools", () => {
+    it("validates whoami", () => {
+      expect(whoamiTool.inputSchema.safeParse({}).success).toBe(true);
+    });
+
+    it("validates create_recipe", () => {
+      expect(
+        createRecipeTool.inputSchema.safeParse({
+          title: "Toast",
+          ingredients: [{ rawText: "1 slice bread" }],
+          steps: [{ text: "Toast it." }],
+        }).success
+      ).toBe(true);
+      expect(createRecipeTool.inputSchema.safeParse({ title: "" }).success).toBe(false);
+    });
+
+    it("validates delete tools", () => {
+      expect(
+        deleteRecipeTool.inputSchema.safeParse({
+          id: "550e8400-e29b-41d4-a716-446655440000",
+        }).success
+      ).toBe(true);
+      expect(
+        deleteMealPlanTool.inputSchema.safeParse({
+          id: "550e8400-e29b-41d4-a716-446655440000",
+        }).success
+      ).toBe(true);
+    });
+
+    it("validates manage_people and manage_person_rules", () => {
+      expect(managePeopleTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
+      expect(
+        managePeopleTool.inputSchema.safeParse({ action: "create", displayName: "Parent A" })
+          .success
+      ).toBe(true);
+      expect(
+        managePersonRulesTool.inputSchema.safeParse({
+          action: "add",
+          personId: "550e8400-e29b-41d4-a716-446655440000",
+          kind: "allergen",
+          target: "peanut",
+          severity: "block",
         }).success
       ).toBe(true);
     });
