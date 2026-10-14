@@ -1,3 +1,4 @@
+import type { Active, Over } from "@dnd-kit/core";
 import { describe, expect, it } from "vitest";
 import {
   movedLiveMessage,
@@ -5,20 +6,17 @@ import {
   peopleReorderInstructions,
 } from "./people-reorder-a11y";
 
+const ty = { id: "a" } as Active;
+const jake = { id: "b" } as Over;
+
 describe("people reorder announcements", () => {
   const announcements = peopleReorderAnnouncements((id) => (id === "a" ? "Ty" : "Jake"));
 
   it("names the person on lift, move, drop, and cancel", () => {
-    expect(announcements.onDragStart({ active: { id: "a" } as never })).toBe("Picked up Ty.");
-    expect(
-      announcements.onDragOver({ active: { id: "a" } as never, over: { id: "b" } as never })
-    ).toBe("Ty is over Jake.");
-    expect(
-      announcements.onDragEnd({ active: { id: "a" } as never, over: { id: "b" } as never })
-    ).toBe("Moved Ty.");
-    expect(announcements.onDragCancel({ active: { id: "a" } as never })).toBe(
-      "Cancelled reordering Ty."
-    );
+    expect(announcements.onDragStart({ active: ty })).toBe("Picked up Ty.");
+    expect(announcements.onDragOver({ active: ty, over: jake })).toBe("Ty is over Jake.");
+    expect(announcements.onDragEnd({ active: ty, over: jake })).toBe("Moved Ty.");
+    expect(announcements.onDragCancel({ active: ty, over: null })).toBe("Cancelled reordering Ty.");
   });
 
   it("announces the new index after a move", () => {
