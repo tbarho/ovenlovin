@@ -1,4 +1,5 @@
 import { extendZodWithOpenApi, OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
+import { createMealPlanBodySchema, updateMealPlanBodySchema } from "@ovenlovin/core";
 import { z } from "zod";
 
 extendZodWithOpenApi(z);
@@ -538,6 +539,18 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: { 204: { description: "Deleted" } },
   });
 
+  const mealPlanEntrySchema = z
+    .object({
+      id: z.string().uuid(),
+      date: z.string(),
+      mealSlot: z.string(),
+      recipeId: z.string().uuid().nullable().optional(),
+      servings: z.number().int().positive().nullable().optional(),
+      attendees: z.array(z.string().uuid()),
+      prepAheadNotes: z.string().nullable().optional(),
+    })
+    .openapi("MealPlanEntry");
+
   const mealPlanSchema = z
     .object({
       id: z.string().uuid(),
@@ -547,6 +560,12 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       needsRecheck: z.boolean(),
     })
     .openapi("MealPlan");
+
+  const mealPlanDetailSchema = mealPlanSchema
+    .extend({
+      entries: z.array(mealPlanEntrySchema),
+    })
+    .openapi("MealPlanDetail");
 
   registry.registerPath({
     method: "get",
@@ -577,10 +596,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       body: {
         content: {
           "application/json": {
-            schema: z.object({
-              weekStart: z.string(),
-              status: z.enum(["draft", "approved"]).optional(),
-            }),
+            schema: createMealPlanBodySchema,
           },
         },
       },
@@ -588,7 +604,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: {
       201: {
         description: "Created plan",
-        content: { "application/json": { schema: mealPlanSchema } },
+        content: { "application/json": { schema: mealPlanDetailSchema } },
       },
     },
   });
@@ -602,7 +618,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: {
       200: {
         description: "Meal plan",
-        content: { "application/json": { schema: mealPlanSchema } },
+        content: { "application/json": { schema: mealPlanDetailSchema } },
       },
     },
   });
@@ -617,10 +633,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       body: {
         content: {
           "application/json": {
-            schema: z.object({
-              status: z.enum(["draft", "approved", "archived"]).optional(),
-              acknowledgedWarnings: z.array(z.string()).optional(),
-            }),
+            schema: updateMealPlanBodySchema,
           },
         },
       },
@@ -628,7 +641,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: {
       200: {
         description: "Updated plan",
-        content: { "application/json": { schema: mealPlanSchema } },
+        content: { "application/json": { schema: mealPlanDetailSchema } },
       },
     },
   });

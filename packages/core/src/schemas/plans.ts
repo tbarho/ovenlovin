@@ -58,6 +58,34 @@ export const mealPlanEntrySchema = baseEntitySchema.extend({
   leftoverSourceId: uuidSchema.nullable().optional(),
 });
 
+/** REST / MCP write shape for a plan entry. `meal` is the slot name. */
+export const mealPlanEntryWriteSchema = z
+  .object({
+    date: z.string().date(),
+    meal: z.string().min(1).max(50),
+    recipeId: uuidSchema.optional(),
+    servings: z.number().int().positive().optional(),
+    attendees: z.array(uuidSchema).default([]),
+    prepAheadNotes: z.string().optional(),
+  })
+  .strict();
+
+export const createMealPlanBodySchema = z
+  .object({
+    weekStart: z.string().date(),
+    status: z.enum(["draft", "approved"]).optional(),
+    entries: z.array(mealPlanEntryWriteSchema).optional(),
+  })
+  .strict();
+
+export const updateMealPlanBodySchema = z
+  .object({
+    status: mealPlanStatusSchema.optional(),
+    acknowledgedWarnings: z.array(z.string()).optional(),
+    entries: z.array(mealPlanEntryWriteSchema).optional(),
+  })
+  .strict();
+
 export const checkFindingSeveritySchema = z.enum(["block", "warn", "prefer_avoid"]);
 
 export const checkFindingSchema = z.object({
@@ -101,6 +129,9 @@ export type ScheduleOverride = z.infer<typeof scheduleOverrideSchema>;
 export type MealPlanStatus = z.infer<typeof mealPlanStatusSchema>;
 export type MealPlan = z.infer<typeof mealPlanSchema>;
 export type MealPlanEntry = z.infer<typeof mealPlanEntrySchema>;
+export type MealPlanEntryWrite = z.infer<typeof mealPlanEntryWriteSchema>;
+export type CreateMealPlanBody = z.infer<typeof createMealPlanBodySchema>;
+export type UpdateMealPlanBody = z.infer<typeof updateMealPlanBodySchema>;
 export type CheckFindingSeverity = z.infer<typeof checkFindingSeveritySchema>;
 export type CheckFinding = z.infer<typeof checkFindingSchema>;
 export type CheckResult = z.infer<typeof checkResultSchema>;
