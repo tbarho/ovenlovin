@@ -30,6 +30,8 @@ describe("generateOpenApiDocument", () => {
         "/api-keys",
       ])
     );
+    expect(spec.paths?.["/recipes"]?.get).toBeTruthy();
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("forAttendees");
     expect(spec.paths?.["/recipes"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/{id}"]?.delete).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}"]?.delete).toBeTruthy();

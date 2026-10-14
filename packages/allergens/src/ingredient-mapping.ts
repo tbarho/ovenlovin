@@ -9,6 +9,7 @@
  */
 
 import type { AllergenRelation } from "@ovenlovin/core";
+import { findPhraseStarts, phraseTokens } from "./phrase-match";
 
 export interface IngredientAllergenMapping {
   /** Canonical ingredient name */
@@ -242,6 +243,20 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
     relation: "contains",
     notes: "Italian chocolate-hazelnut confection",
   },
+  {
+    name: "Nutella",
+    aliases: ["nutella", "hazelnut spread", "chocolate hazelnut spread"],
+    allergenCode: "hazelnut",
+    relation: "contains",
+    notes: "Hazelnut-cocoa spread",
+  },
+  {
+    name: "Nutella",
+    aliases: ["nutella", "hazelnut spread", "chocolate hazelnut spread"],
+    allergenCode: "milk",
+    relation: "contains",
+    notes: "Commercial hazelnut-cocoa spread typically contains milk",
+  },
 
   // ===== TREE NUTS - MACADAMIA =====
   {
@@ -326,7 +341,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   // ===== TREE NUTS - OTHER =====
   {
     name: "hickory nut",
-    aliases: ["hickory nuts", "hickory"],
+    aliases: ["hickory nuts"],
     allergenCode: "hickory",
     relation: "contains",
   },
@@ -337,8 +352,8 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
     relation: "contains",
   },
   {
-    name: "butternut",
-    aliases: ["butternuts", "white walnut"],
+    name: "butternut nut",
+    aliases: ["butternuts", "white walnut", "butternut nuts"],
     allergenCode: "butternut",
     relation: "contains",
   },
@@ -417,7 +432,6 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
       "shredded coconut",
       "desiccated coconut",
       "copra",
-      "coco",
       // OCR / misspellings
       "coconu t",
     ],
@@ -451,6 +465,20 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
     allergenCode: "tree_nut",
     relation: "contains",
     notes: "Typically contains peanuts and/or tree nuts",
+  },
+  {
+    name: "mixed nuts",
+    aliases: ["chopped nuts", "nuts", "nut pieces"],
+    allergenCode: "tree_nut",
+    relation: "contains",
+    notes: "Unspecified nuts are treated as tree nuts",
+  },
+  {
+    name: "mixed nuts",
+    aliases: ["mixed nuts"],
+    allergenCode: "peanut",
+    relation: "contains",
+    notes: "Mixed-nut blends commonly include peanuts",
   },
   {
     name: "energy bar",
@@ -575,13 +603,35 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   },
   {
     name: "butter",
-    aliases: ["salted butter", "unsalted butter", "clarified butter", "ghee"],
+    aliases: ["salted butter", "unsalted butter", "clarified butter", "ghee", "cultured butter"],
     allergenCode: "milk",
     relation: "contains",
   },
   {
     name: "cheese",
-    aliases: ["cheddar", "mozzarella", "parmesan", "swiss", "fromage", "queso", "käse"],
+    aliases: [
+      "cheddar",
+      "mozzarella",
+      "parmesan",
+      "parmigiano",
+      "parmigiano reggiano",
+      "grated parmesan",
+      "swiss cheese",
+      "fromage",
+      "queso",
+      "käse",
+      "feta",
+      "ricotta",
+      "gouda",
+      "brie",
+      "provolone",
+      "pecorino",
+      "romano",
+      "gruyere",
+      "cottage cheese",
+      "goat cheese",
+      "mascarpone",
+    ],
     allergenCode: "milk",
     relation: "contains",
   },
@@ -591,17 +641,75 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
     allergenCode: "milk",
     relation: "contains",
   },
+  {
+    name: "sour cream",
+    aliases: ["soured cream", "creme fraiche", "crème fraîche"],
+    allergenCode: "milk",
+    relation: "contains",
+  },
+  {
+    name: "buttermilk",
+    aliases: ["butter milk"],
+    allergenCode: "milk",
+    relation: "contains",
+  },
+  {
+    name: "cream cheese",
+    aliases: ["creamed cheese"],
+    allergenCode: "milk",
+    relation: "contains",
+  },
+  {
+    name: "half and half",
+    aliases: ["half-and-half", "half & half"],
+    allergenCode: "milk",
+    relation: "contains",
+  },
+  {
+    name: "whey",
+    aliases: ["whey protein", "whey powder", "casein", "caseinate", "lactose"],
+    allergenCode: "milk",
+    relation: "contains",
+  },
+  {
+    name: "ice cream",
+    aliases: ["gelato", "frozen yogurt"],
+    allergenCode: "milk",
+    relation: "contains",
+  },
 
   // ===== EGG =====
   {
     name: "egg",
-    aliases: ["eggs", "chicken egg", "whole egg", "egg white", "egg yolk", "oeuf", "huevo"],
+    aliases: [
+      "eggs",
+      "chicken egg",
+      "whole egg",
+      "egg white",
+      "egg yolk",
+      "egg wash",
+      "oeuf",
+      "huevo",
+    ],
     allergenCode: "egg",
     relation: "contains",
   },
   {
     name: "mayonnaise",
     aliases: ["mayo"],
+    allergenCode: "egg",
+    relation: "contains",
+  },
+  {
+    name: "aioli",
+    aliases: ["garlic aioli"],
+    allergenCode: "egg",
+    relation: "contains",
+    notes: "Classic aioli is egg-based",
+  },
+  {
+    name: "meringue",
+    aliases: ["egg foam"],
     allergenCode: "egg",
     relation: "contains",
   },
@@ -619,6 +727,10 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
       "edamame",
       "soy protein",
       "soy lecithin",
+      "miso",
+      "tempeh",
+      "tamari",
+      "soya sauce",
     ],
     allergenCode: "soy",
     relation: "contains",
@@ -631,12 +743,17 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
       "wheat flour",
       "whole wheat",
       "all-purpose flour",
+      "all purpose flour",
       "bread flour",
       "durum",
       "semolina",
       "spelt",
       "farro",
       "kamut",
+      "seitan",
+      "breadcrumbs",
+      "bread crumbs",
+      "panko",
     ],
     allergenCode: "wheat",
     relation: "contains",
@@ -657,7 +774,7 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
   // ===== SHELLFISH =====
   {
     name: "shrimp",
-    aliases: ["prawns", "prawn", "crevette", "gamba"],
+    aliases: ["prawns", "prawn", "crevette", "gamba", "jumbo shrimp"],
     allergenCode: "shrimp",
     relation: "contains",
   },
@@ -673,13 +790,86 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
     allergenCode: "lobster",
     relation: "contains",
   },
+  {
+    name: "crayfish",
+    aliases: ["crawfish", "crawdad"],
+    allergenCode: "crayfish",
+    relation: "contains",
+  },
+  {
+    name: "clam",
+    aliases: ["clams"],
+    allergenCode: "clam",
+    relation: "contains",
+  },
+  {
+    name: "oyster",
+    aliases: ["oysters"],
+    allergenCode: "oyster",
+    relation: "contains",
+  },
+  {
+    name: "mussel",
+    aliases: ["mussels"],
+    allergenCode: "mussel",
+    relation: "contains",
+  },
+  {
+    name: "scallop",
+    aliases: ["scallops"],
+    allergenCode: "scallop",
+    relation: "contains",
+  },
+  {
+    name: "squid",
+    aliases: ["calamari"],
+    allergenCode: "squid",
+    relation: "contains",
+  },
+  {
+    name: "octopus",
+    aliases: ["octopi"],
+    allergenCode: "octopus",
+    relation: "contains",
+  },
 
   // ===== FISH =====
   {
     name: "fish",
-    aliases: ["salmon", "tuna", "cod", "halibut", "bass", "trout", "poisson", "pescado"],
+    aliases: [
+      "salmon",
+      "tuna",
+      "cod",
+      "halibut",
+      "bass",
+      "trout",
+      "tilapia",
+      "mackerel",
+      "sardine",
+      "sardines",
+      "anchovy",
+      "anchovies",
+      "swordfish",
+      "haddock",
+      "poisson",
+      "pescado",
+    ],
     allergenCode: "fish",
     relation: "contains",
+  },
+  {
+    name: "fish sauce",
+    aliases: ["nam pla", "nuoc mam", "shottsuru"],
+    allergenCode: "fish",
+    relation: "contains",
+    notes: "Fermented sauce made from fish",
+  },
+  {
+    name: "worcestershire",
+    aliases: ["worcestershire sauce", "worcester sauce"],
+    allergenCode: "fish",
+    relation: "contains",
+    notes: "Typically contains anchovies",
   },
 
   // ===== SESAME =====
@@ -797,14 +987,88 @@ export function normalizeIngredientName(name: string): string {
     .trim();
 }
 
+type IndexedPhrase = {
+  tokens: string[];
+  phrase: string;
+  mappings: IngredientAllergenMapping[];
+};
+
+function mappingIdentity(mapping: IngredientAllergenMapping): string {
+  return `${mapping.allergenCode}\0${mapping.relation}\0${mapping.name}`;
+}
+
+function dedupeMappings(mappings: IngredientAllergenMapping[]): IngredientAllergenMapping[] {
+  const seen = new Set<string>();
+  const result: IngredientAllergenMapping[] = [];
+  for (const mapping of mappings) {
+    const key = mappingIdentity(mapping);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(mapping);
+  }
+  return result;
+}
+
+function indexPhrases(map: Map<string, IngredientAllergenMapping[]>): IndexedPhrase[] {
+  const byPhrase = new Map<string, IndexedPhrase>();
+  for (const [key, mappings] of map) {
+    const tokens = phraseTokens(key);
+    if (tokens.length === 0) continue;
+    const existing = byPhrase.get(key);
+    if (existing) {
+      existing.mappings.push(...mappings);
+      continue;
+    }
+    byPhrase.set(key, { tokens, phrase: key, mappings: [...mappings] });
+  }
+  return [...byPhrase.values()]
+    .map((entry) => ({ ...entry, mappings: dedupeMappings(entry.mappings) }))
+    .sort((a, b) => {
+      if (b.tokens.length !== a.tokens.length) return b.tokens.length - a.tokens.length;
+      return b.phrase.length - a.phrase.length;
+    });
+}
+
+let cachedDefaultMap: Map<string, IngredientAllergenMapping[]> | undefined;
+let cachedDefaultPhrases: IndexedPhrase[] | undefined;
+
+function defaultIngredientMap(): Map<string, IngredientAllergenMapping[]> {
+  cachedDefaultMap ??= buildIngredientMap();
+  return cachedDefaultMap;
+}
+
 /**
- * Match an ingredient name to allergen mappings
- * Returns all matching mappings
+ * Match an ingredient line to allergen mappings.
+ * Exact lookup first, then word-boundary / plural phrase scan on raw text
+ * (so "1/2 cup roasted peanuts" matches peanut). Longer phrases win so
+ * "coconut milk" is coconut, not dairy milk.
  */
 export function matchIngredient(
   ingredientName: string,
-  map: Map<string, IngredientAllergenMapping[]> = buildIngredientMap()
+  map: Map<string, IngredientAllergenMapping[]> = defaultIngredientMap()
 ): IngredientAllergenMapping[] {
-  const normalized = normalizeIngredientName(ingredientName);
-  return map.get(normalized) || [];
+  const exact = map.get(normalizeIngredientName(ingredientName));
+  if (exact && exact.length > 0) {
+    return dedupeMappings(exact);
+  }
+
+  const phrases =
+    map === cachedDefaultMap ? (cachedDefaultPhrases ??= indexPhrases(map)) : indexPhrases(map);
+  const haystack = phraseTokens(ingredientName);
+  const used = haystack.map(() => false);
+  const found: IngredientAllergenMapping[] = [];
+
+  for (const entry of phrases) {
+    const starts = findPhraseStarts(entry.phrase, ingredientName);
+    for (const start of starts) {
+      const alreadyUsed = entry.tokens.some((_, offset) => used[start + offset]);
+      if (alreadyUsed) continue;
+      for (let offset = 0; offset < entry.tokens.length; offset++) {
+        used[start + offset] = true;
+      }
+      found.push(...entry.mappings);
+    }
+  }
+
+  return dedupeMappings(found);
 }

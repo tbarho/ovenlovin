@@ -4,6 +4,10 @@ import { jsonResponse, paginatedResponse, createdResponse } from "@/lib/api/resp
 import { getRequestContext, requireHouseholdId, getIdempotencyKey } from "@/lib/api/middleware";
 import { RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import {
+  excludeRecipesBlockedForAttendees,
+  parseForAttendeesParam,
+} from "@/lib/recipe-attendee-filter";
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +32,16 @@ export async function GET(request: NextRequest) {
       uncategorized,
       pagination: { limit, cursor },
     });
+
+    const forAttendees = parseForAttendeesParam(url.searchParams.getAll("forAttendees"));
+    if (forAttendees.length > 0) {
+      const visible = await excludeRecipesBlockedForAttendees(
+        result.items,
+        forAttendees,
+        householdId
+      );
+      return paginatedResponse({ ...result, items: visible });
+    }
 
     return paginatedResponse(result);
   } catch (error) {
