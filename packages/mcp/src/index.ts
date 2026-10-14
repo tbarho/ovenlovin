@@ -26,3 +26,4 @@ export * from "./tools/delete-recipe";
 export * from "./tools/delete-meal-plan";
 export * from "./tools/manage-people";
 export * from "./tools/manage-person-rules";
+export * from "./tools/manage-household-schedule";

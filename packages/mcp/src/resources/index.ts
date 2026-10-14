@@ -7,6 +7,8 @@
  * - Schedule templates
  */
 
+import { HouseholdService, PeopleService, ScheduleService } from "@ovenlovin/core";
+import { createDbClient } from "@ovenlovin/db";
 import type { AuthContext } from "../auth/index";
 
 export interface MCPResource {
@@ -83,32 +85,33 @@ export async function readResource(uri: string, _context: AuthContext): Promise<
 }
 
 async function getHouseholdProfile(_context: AuthContext) {
-  // TODO: Implement using @ovenlovin/core
+  const db = createDbClient(process.env.DATABASE_URL!);
+  const household = await new HouseholdService(db).getHousehold(_context.householdId);
+  const people = await new PeopleService(db).listPeopleByHousehold(_context.householdId, {
+    limit: 100,
+  });
   return {
     id: _context.householdId,
-    name: "Stub Household",
-    memberCount: 4,
+    name: household?.name ?? "Household",
+    memberCount: people.items.length,
   };
 }
 
 async function getHouseholdSchedule(_context: AuthContext) {
-  // TODO: Implement using @ovenlovin/core
-  return {
-    weeklyTemplate: [
-      {
-        day: "monday",
-        meal: "dinner",
-        busyLevel: "high",
-        timeBudgetMinutes: 30,
-        constraints: ["crock_pot_preferred"],
-      },
-    ],
-  };
+  const db = createDbClient(process.env.DATABASE_URL!);
+  return new ScheduleService(db).getSchedule(_context.householdId);
 }
 
 async function getHouseholdPeople(_context: AuthContext) {
-  // TODO: Implement using @ovenlovin/core
+  const db = createDbClient(process.env.DATABASE_URL!);
+  const people = await new PeopleService(db).listPeopleByHousehold(_context.householdId, {
+    limit: 100,
+  });
   return {
-    people: [],
+    people: people.items.map((person) => ({
+      id: person.id,
+      displayName: person.displayName,
+      sortOrder: person.sortOrder,
+    })),
   };
 }

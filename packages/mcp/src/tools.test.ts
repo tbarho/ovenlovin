@@ -24,6 +24,7 @@ import {
   deleteMealPlanTool,
   managePeopleTool,
   managePersonRulesTool,
+  manageHouseholdScheduleTool,
 } from "./index.js";
 
 describe("MCP Tool Schemas", () => {
@@ -320,6 +321,16 @@ describe("MCP Tool Schemas", () => {
           kind: "allergen",
           target: "peanut",
           severity: "block",
+        }).success
+      ).toBe(true);
+    });
+
+    it("validates manage_household_schedule", () => {
+      expect(manageHouseholdScheduleTool.inputSchema.safeParse({}).success).toBe(true);
+      expect(
+        manageHouseholdScheduleTool.inputSchema.safeParse({
+          action: "replace",
+          week: [{ day: "friday", busyLevel: "high", cooking: false }],
         }).success
       ).toBe(true);
     });
