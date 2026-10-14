@@ -55,6 +55,12 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         limit: z.coerce.number().int().positive().max(100).optional(),
         cursor: z.string().optional(),
         search: z.string().optional(),
+        forAttendees: z
+          .string()
+          .optional()
+          .describe(
+            "Comma-separated person IDs. Recipes that hit a block rule for any attendee are omitted."
+          ),
         cookbookId: z.string().uuid().optional(),
         uncategorized: z.enum(["true", "false"]).optional(),
       }),
@@ -672,6 +678,75 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     tags: ["households"],
     summary: "Get the authenticated household",
     responses: { 200: { description: "Household" } },
+  });
+
+  const weeklyNightSchema = z.object({
+    dayOfWeek: z.number().int().min(0).max(6),
+    day: z.string(),
+    meal: z.string(),
+    busyLevel: z.enum(["low", "medium", "high"]),
+    timeBudgetMinutes: z.number().int().positive(),
+    cooking: z.boolean(),
+    attendees: z.array(z.string()),
+    constraints: z.array(z.string()),
+  });
+
+  const householdScheduleSchema = z
+    .object({
+      weeklyTemplate: z.array(weeklyNightSchema),
+      overrides: z.array(
+        z.object({
+          date: z.string(),
+          meal: z.string(),
+          note: z.string(),
+        })
+      ),
+    })
+    .openapi("HouseholdSchedule");
+
+  registry.registerPath({
+    method: "get",
+    path: "/households/schedule",
+    tags: ["households"],
+    summary: "Get the household weekly availability and busy-night schedule",
+    responses: {
+      200: {
+        description: "Weekly schedule",
+        content: { "application/json": { schema: householdScheduleSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "put",
+    path: "/households/schedule",
+    tags: ["households"],
+    summary: "Replace the household weekly availability and busy-night schedule",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              week: z.array(
+                z.object({
+                  dayOfWeek: z.number().int().min(0).max(6).optional(),
+                  day: z.string().optional(),
+                  busyLevel: z.enum(["low", "medium", "high"]).optional(),
+                  timeBudgetMinutes: z.number().int().positive().optional(),
+                  cooking: z.boolean().optional(),
+                })
+              ),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Updated schedule",
+        content: { "application/json": { schema: householdScheduleSchema } },
+      },
+    },
   });
 
   registry.registerPath({

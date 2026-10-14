@@ -43,4 +43,18 @@ describe("describeConfigStatus", () => {
     expect(status.ready).toBe(false);
     expect(status.checks.find((c) => c.id === "database")?.detail).toMatch(/could not reach/);
   });
+
+  it("is ready on the demo when only the database works", () => {
+    const status = describeConfigStatus({
+      databaseConfigured: true,
+      databaseReachable: true,
+      clerkConfigured: false,
+      aiGatewayConfigured: false,
+      demoMode: true,
+    });
+    expect(status.ready).toBe(true);
+    expect(status.mode).toBe("demo");
+    expect(status.checks.find((c) => c.id === "clerk")?.detail).toMatch(/not required/);
+    expect(status.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/URL import works/);
+  });
 });

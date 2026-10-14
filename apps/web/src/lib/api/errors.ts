@@ -136,6 +136,16 @@ export class InternalServerError extends ApiError {
   }
 }
 
+export function isNextRedirectError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    String((error as { digest: string }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
 export function handleApiError(error: unknown, instance?: string): NextResponse {
   if (error instanceof ApiError) {
     return error.toResponse(instance);
@@ -143,6 +153,12 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
 
   if (error instanceof ZodError) {
     return ValidationError.fromZodError(error).toResponse(instance);
+  }
+
+  // Demo HTML routes redirect to /api/demo/enter. If that throw leaks into a
+  // REST handler, return problem+json 401 instead of a 500.
+  if (isNextRedirectError(error)) {
+    return new UnauthorizedError("Authentication required").toResponse(instance);
   }
 
   console.error("Unhandled API error:", error);
