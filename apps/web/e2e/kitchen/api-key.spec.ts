@@ -237,6 +237,99 @@ test.describe("REST + MCP with a real API key", () => {
     }
   });
 
+  test("REST meal-plan POST and PATCH persist entries and reject unknown fields", async ({
+    request,
+  }) => {
+    const key = await createKitchenKey(request);
+    const headers = { Authorization: `ApiKey ${key}` };
+
+    const recipes = await request.get("/api/v1/recipes", { headers });
+    expect(recipes.status()).toBe(200);
+    const recipeId = ((await recipes.json()) as { items: Array<{ id: string }> }).items[0]?.id;
+    expect(recipeId).toBeTruthy();
+
+    const people = await request.get("/api/v1/people", { headers });
+    expect(people.status()).toBe(200);
+    const personId = ((await people.json()) as { items: Array<{ id: string }> }).items[0]?.id;
+    expect(personId).toBeTruthy();
+
+    const rejected = await request.post("/api/v1/meal-plans", {
+      headers,
+      data: { weekStart: "2026-11-09", name: "should not be silently dropped" },
+    });
+    expect(rejected.status(), await rejected.text()).toBe(400);
+    expect(rejected.headers()["content-type"] ?? "").toMatch(/problem\+json|json/);
+
+    const created = await request.post("/api/v1/meal-plans", {
+      headers,
+      data: {
+        weekStart: "2026-11-09",
+        status: "draft",
+        entries: [
+          {
+            date: "2026-11-09",
+            meal: "dinner",
+            recipeId,
+            servings: 4,
+            attendees: [personId],
+          },
+        ],
+      },
+    });
+    expect(created.status(), await created.text()).toBe(201);
+    const createdBody = (await created.json()) as {
+      id?: string;
+      entries?: Array<{ mealSlot?: string; recipeId?: string | null }>;
+    };
+    expect(createdBody.id).toBeTruthy();
+    expect(createdBody.entries).toHaveLength(1);
+    expect(createdBody.entries?.[0]?.mealSlot).toBe("dinner");
+    expect(createdBody.entries?.[0]?.recipeId).toBe(recipeId);
+    const planId = createdBody.id!;
+
+    try {
+      const loaded = await request.get(`/api/v1/meal-plans/${planId}`, { headers });
+      expect(loaded.status()).toBe(200);
+      const loadedBody = (await loaded.json()) as {
+        entries?: Array<{ mealSlot?: string; recipeId?: string | null }>;
+      };
+      expect(loadedBody.entries).toHaveLength(1);
+
+      const unknownPatch = await request.patch(`/api/v1/meal-plans/${planId}`, {
+        headers,
+        data: { status: "draft", generator: "should-400" },
+      });
+      expect(unknownPatch.status(), await unknownPatch.text()).toBe(400);
+
+      const patched = await request.patch(`/api/v1/meal-plans/${planId}`, {
+        headers,
+        data: {
+          status: "approved",
+          entries: [
+            {
+              date: "2026-11-10",
+              meal: "lunch",
+              recipeId,
+              servings: 2,
+              attendees: [personId],
+            },
+          ],
+        },
+      });
+      expect(patched.status(), await patched.text()).toBe(200);
+      const patchedBody = (await patched.json()) as {
+        status?: string;
+        entries?: Array<{ date?: string; mealSlot?: string }>;
+      };
+      expect(patchedBody.status).toBe("approved");
+      expect(patchedBody.entries).toHaveLength(1);
+      expect(patchedBody.entries?.[0]?.date).toBe("2026-11-10");
+      expect(patchedBody.entries?.[0]?.mealSlot).toBe("lunch");
+    } finally {
+      await request.delete(`/api/v1/meal-plans/${planId}`, { headers });
+    }
+  });
+
   test("deletes a TEST Olive Cookbook if one exists in this kitchen", async ({ request }) => {
     const key = await createKitchenKey(request);
     const headers = { Authorization: `ApiKey ${key}` };

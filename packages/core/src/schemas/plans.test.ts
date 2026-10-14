@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { checkReportSchema, mealPlanSchema, checkFindingSchema } from "./plans";
+import {
+  checkReportSchema,
+  mealPlanSchema,
+  checkFindingSchema,
+  createMealPlanBodySchema,
+  updateMealPlanBodySchema,
+} from "./plans";
 
 describe("plans schemas", () => {
   describe("mealPlanSchema", () => {
@@ -15,6 +21,56 @@ describe("plans schemas", () => {
       });
       expect(plan.status).toBe("draft");
       expect(plan.needsRecheck).toBe(false);
+    });
+  });
+
+  describe("createMealPlanBodySchema", () => {
+    const recipeId = "550e8400-e29b-41d4-a716-446655440010";
+    const personId = "550e8400-e29b-41d4-a716-446655440011";
+
+    it("accepts weekStart, status, and entries", () => {
+      const body = createMealPlanBodySchema.parse({
+        weekStart: "2026-11-02",
+        status: "draft",
+        entries: [
+          {
+            date: "2026-11-02",
+            meal: "dinner",
+            recipeId,
+            servings: 4,
+            attendees: [personId],
+          },
+        ],
+      });
+      expect(body.entries).toHaveLength(1);
+      expect(body.entries?.[0]?.meal).toBe("dinner");
+    });
+
+    it("rejects unknown fields instead of dropping them", () => {
+      const result = createMealPlanBodySchema.safeParse({
+        weekStart: "2026-11-02",
+        name: "Week of Nov 2",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("updateMealPlanBodySchema", () => {
+    it("accepts entries and status", () => {
+      const body = updateMealPlanBodySchema.parse({
+        status: "approved",
+        entries: [{ date: "2026-11-03", meal: "lunch" }],
+      });
+      expect(body.status).toBe("approved");
+      expect(body.entries?.[0]?.attendees).toEqual([]);
+    });
+
+    it("rejects unknown fields instead of dropping them", () => {
+      const result = updateMealPlanBodySchema.safeParse({
+        status: "draft",
+        generator: "bot",
+      });
+      expect(result.success).toBe(false);
     });
   });
 

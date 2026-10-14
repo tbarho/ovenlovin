@@ -1,6 +1,6 @@
 import { eq, and, isNull, desc, gte, lte } from "drizzle-orm";
 import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db";
-import type { MealPlan, MealPlanEntry } from "../schemas/plans";
+import type { MealPlan, MealPlanEntry, MealPlanEntryWrite } from "../schemas/plans";
 import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
@@ -116,6 +116,50 @@ export class PlanService extends BaseService {
       .orderBy(mealPlanEntry.date, mealPlanEntry.mealSlot);
 
     return results.map((r) => this.mapMealPlanEntry(r));
+  }
+
+  async replaceMealPlanEntries(
+    planId: string,
+    entries: MealPlanEntryWrite[]
+  ): Promise<MealPlanEntry[]> {
+    await this._db
+      .update(mealPlanEntry)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(mealPlanEntry.mealPlanId, planId), isNull(mealPlanEntry.deletedAt)));
+
+    const created: MealPlanEntry[] = [];
+    for (const entry of entries) {
+      created.push(
+        await this.createMealPlanEntry({
+          mealPlanId: planId,
+          date: entry.date,
+          mealSlot: entry.meal,
+          recipeId: entry.recipeId ?? null,
+          freeformMeal: null,
+          servings: entry.servings ?? null,
+          attendees: entry.attendees ?? [],
+          scaleFactor: 1,
+          prepAheadNotes: entry.prepAheadNotes ?? null,
+          leftoverSourceId: null,
+        })
+      );
+    }
+
+    await this._db
+      .update(mealPlan)
+      .set({ needsRecheck: true, updatedAt: new Date() })
+      .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)));
+
+    return created;
+  }
+
+  async getMealPlanWithEntries(
+    id: string
+  ): Promise<(MealPlan & { entries: MealPlanEntry[] }) | null> {
+    const plan = await this.getMealPlan(id);
+    if (!plan) return null;
+    const entries = await this.getMealPlanEntries(id);
+    return { ...plan, entries };
   }
 
   async createMealPlanEntry(
