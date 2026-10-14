@@ -49,11 +49,13 @@ export function getRecipePageRenderer(): RecipePageRenderer | undefined {
 
 export class RecipeImportFetchError extends Error {
   readonly status: number;
+  readonly url: string;
 
   constructor(url: string, status: number, statusText: string) {
     super(importBlockedMessage(status, statusText || "Forbidden"));
     this.name = "RecipeImportFetchError";
     this.status = status;
+    this.url = url;
   }
 }
 
