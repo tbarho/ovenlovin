@@ -138,6 +138,23 @@ describe("ShoppingListService", () => {
     expect(list.ingredients[0]).toMatchObject({ name: "ziti", quantity: 1.5, unit: "lb" });
   });
 
+  it("agrees with a stored scaleFactor computed as entry servings / recipe servings", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "salmon", servings: 8, scaleFactor: 2 }),
+        recipeTitle: "Sheet-pan salmon",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 lb broccoli florets" }],
+      },
+    ]);
+
+    expect(list.ingredients[0]).toMatchObject({
+      name: "broccoli florets",
+      quantity: 2,
+      unit: "lb",
+    });
+  });
+
   it("scales REST plan entries that persist scaleFactor 1 and only set servings", () => {
     const list = build([
       {

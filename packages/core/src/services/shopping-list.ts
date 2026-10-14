@@ -1,11 +1,17 @@
 import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
+import { scaleFactorForPlanEntry } from "../scaling/servings";
 import {
   assignAisle,
   categorySectionName,
   isPantryStaple,
   type ShoppingListCategory,
 } from "./shopping-aisles";
+
+export {
+  DEFAULT_RECIPE_SERVINGS,
+  scaleFactorForPlanEntry as servingsScale,
+} from "../scaling/servings";
 
 export type ShoppingListGroupBy = "aisle" | "recipe" | "category";
 
@@ -91,27 +97,6 @@ const UNIT_TO_BASE: Record<string, { dimension: UnitDimension; toBase: number }>
   oz: { dimension: "weight", toBase: 28.349523125 },
   lb: { dimension: "weight", toBase: 453.59237 },
 };
-
-/**
- * REST `replaceMealPlanEntries` always persists `scaleFactor: 1`. Scale from
- * the plan entry's servings versus the recipe card. Imported recipes often
- * have a null yield — treat those as a 4-serving card so REST servings still
- * change the list.
- */
-export const DEFAULT_RECIPE_SERVINGS = 4;
-
-export function servingsScale(
-  entryServings?: number | null,
-  recipeServings?: number | null,
-  scaleFactor?: number | null
-): number {
-  if (entryServings && entryServings > 0) {
-    const base = recipeServings && recipeServings > 0 ? recipeServings : DEFAULT_RECIPE_SERVINGS;
-    return entryServings / base;
-  }
-  if (scaleFactor && scaleFactor > 0) return scaleFactor;
-  return 1;
-}
 
 function roundQuantity(value: number): number {
   return Math.round(value * 10000) / 10000;
@@ -236,7 +221,7 @@ export class ShoppingListService {
     const ingredientMap = new Map<string, ShoppingListIngredient>();
 
     for (const source of input.entries) {
-      const scale = servingsScale(
+      const scale = scaleFactorForPlanEntry(
         source.entry.servings,
         source.recipeServings,
         source.entry.scaleFactor
