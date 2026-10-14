@@ -10,8 +10,7 @@ import {
   decimal,
 } from "drizzle-orm/pg-core";
 import { commonFields, createdByField } from "./common";
-import { household } from "./households";
-import { user } from "./households";
+import { apiKey, household, user } from "./households";
 
 export const sexEnum = pgEnum("sex", ["male", "female", "other"]);
 
@@ -66,6 +65,7 @@ export const personRule = pgTable("person_rule", {
   setBy: uuid("set_by")
     .notNull()
     .references(() => user.id),
+  createdByApiKeyId: uuid("created_by_api_key_id").references(() => apiKey.id),
 });
 
 export const personLabelNote = pgTable("person_label_note", {

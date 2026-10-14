@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { PeopleService } from "@ovenlovin/core";
+import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const managePersonRulesSchema = z.object({
@@ -44,7 +44,11 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
     };
   }
 
-  const actor = context.userId ?? context.apiKeyId ?? context.householdId;
+  const actor = resolveWriteActor({
+    userId: context.userId,
+    apiKeyId: context.apiKeyId,
+    apiKeyCreatedBy: context.apiKeyCreatedBy,
+  });
 
   if (input.action === "add") {
     if (!input.kind || !input.target || !input.severity) {
@@ -63,8 +67,9 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
       treatCoconutAsTreeNut: true,
       label: input.label ?? null,
       note: input.note ?? null,
-      setBy: actor,
-      createdBy: actor,
+      setBy: actor.setBy,
+      createdBy: actor.createdBy,
+      createdByApiKeyId: actor.createdByApiKeyId,
     });
     return {
       personId: person.id,

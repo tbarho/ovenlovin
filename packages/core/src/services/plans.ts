@@ -68,6 +68,7 @@ export class PlanService extends BaseService {
         acknowledgedWarnings: data.acknowledgedWarnings ?? [],
         needsRecheck: data.needsRecheck ?? false,
         createdBy: data.createdBy,
+        createdByApiKeyId: data.createdByApiKeyId ?? null,
       })
       .returning();
 
@@ -192,6 +193,7 @@ export class PlanService extends BaseService {
       contentHash: row.contentHash ?? null,
       acknowledgedWarnings: (row.acknowledgedWarnings as string[]) ?? [],
       needsRecheck: row.needsRecheck ?? false,
+      createdByApiKeyId: row.createdByApiKeyId ?? null,
     };
   }
 
