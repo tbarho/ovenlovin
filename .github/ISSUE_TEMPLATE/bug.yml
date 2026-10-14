@@ -1,0 +1,40 @@
+name: Bug
+description: Something is broken in the kitchen, API, or MCP
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Allergen-check misses and leaked secrets go to
+        [private security advisories](https://github.com/tbarho/ovenlovin/security/advisories/new),
+        not here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      placeholder: Expected vs actual.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Kitchen UI
+        - REST /api/v1
+        - MCP /mcp
+        - Import
+        - Docs
+        - Other
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: ovenlovin.vercel.app, local, Node 20, …

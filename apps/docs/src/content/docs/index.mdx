@@ -1,13 +1,15 @@
 ---
 title: Introduction
-description: Get started with OvenLovin, the AI-powered recipe and meal planning platform
+description: The family recipe box your AI can actually use, and it knows who can't eat what.
 ---
 
 ## What is OvenLovin?
 
-OvenLovin is an LLM-optimized recipe and family meal-planning platform built specifically for AI agents. It helps families manage weekly meal planning with per-person dietary rules and comprehensive allergy checking.
+The family recipe box your AI can actually use, and it knows who can't eat what.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=USDA%20key%20and%20optional%20instance%20name.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
+Open-source recipe box and meal planner for families and their agents. Per-person allergen checks (US Big 9 + EU 14). Not medical advice — always read ingredient labels before serving.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=NEXT_PUBLIC_INSTANCE_NAME&envDescription=Optional%20instance%20name.%20USDA%20is%20optional%20and%20not%20required%20to%20deploy.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=The%20family%20recipe%20box%20your%20AI%20can%20actually%20use&demo-url=https://ovenlovin.vercel.app)
 
 ### Why OvenLovin?
 
@@ -20,10 +22,10 @@ Traditional meal planning tools aren't built for AI agents. OvenLovin is designe
 
 ### Key Features
 
-- **Agent-First APIs** - REST API with OpenAPI spec, MCP server, and CLI for seamless AI integration
-- **Safety-Critical Rules** - Per-person allergy and dietary restrictions with deterministic checking
-- **Smart Import** - Import recipes from URLs, photos with OCR, voice input, or app exports
-- **Multi-Household** - Clerk authentication with organization support for family accounts
+- **Agent-first APIs** — REST `/api/v1` with OpenAPI, MCP Streamable HTTP at `/mcp`, `/llms.txt`
+- **Safety-critical rules** — Per-person allergy and dietary restrictions with deterministic checking
+- **Import** — URL, paste, and photo. Voice and third-party app export are on the roadmap
+- **Multi-household** — Clerk organizations as households
 
 ### How It Works
 
@@ -36,13 +38,15 @@ Traditional meal planning tools aren't built for AI agents. OvenLovin is designe
 
 OvenLovin is built as a TypeScript monorepo with clear separation of concerns:
 
-- **@ovenlovin/core** - Pure TypeScript business logic, zod schemas, and services
-- **@ovenlovin/web** - Next.js 15 App Router UI with REST API routes
-- **@ovenlovin/mcp** - Model Context Protocol server for AI agents
-- **@ovenlovin/cli** - Command-line interface tool
-- **@ovenlovin/importers** - Recipe importers (URL, photo/OCR, text, app exports)
-- **@ovenlovin/allergens** - Allergen taxonomy and rule checker
-- **@ovenlovin/db** - Drizzle ORM schema and migrations for Neon Postgres
+- **@ovenlovin/core** — Pure TypeScript business logic, zod schemas, and services
+- **@ovenlovin/web** — Next.js 15 App Router UI with REST API routes
+- **@ovenlovin/mcp** — Model Context Protocol server for AI agents
+- **@ovenlovin/importers** — Recipe importers (URL, photo, paste)
+- **@ovenlovin/allergens** — Allergen taxonomy and rule checker
+- **@ovenlovin/db** — Drizzle ORM schema and migrations for Neon Postgres
+- **@ovenlovin/brand** — Wordmark, deploy URL, tokens
+
+CLI and a published SDK are on the roadmap.
 
 All business logic lives in `@ovenlovin/core` as pure TypeScript, ensuring that external bots get identical behavior through any interface.
 

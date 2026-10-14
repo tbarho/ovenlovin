@@ -22,6 +22,7 @@ const fascinate = Fascinate_Inline({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://tbarho.github.io/ovenlovin"),
   icons: {
     icon: [
       { url: withBasePath(brandPublicPath.favicon), type: "image/svg+xml" },
@@ -31,8 +32,7 @@ export const metadata = {
   },
   openGraph: {
     title: "OvenLovin Documentation",
-    description:
-      "LLM-optimized recipe and family meal-planning platform. Built for AI agents to help families manage weekly meal planning with per-person dietary rules and allergy checking.",
+    description: "The family recipe box your AI can actually use, and it knows who can't eat what.",
     images: [{ url: withBasePath(brandPublicPath.og), width: 1200, height: 630, alt: "OvenLovin" }],
   },
   twitter: {
@@ -43,8 +43,7 @@ export const metadata = {
     default: "OvenLovin Documentation",
     template: "%s | OvenLovin",
   },
-  description:
-    "LLM-optimized recipe and family meal-planning platform. Built for AI agents to help families manage weekly meal planning with per-person dietary rules and allergy checking.",
+  description: "The family recipe box your AI can actually use, and it knows who can't eat what.",
   keywords: [
     "recipe management",
     "meal planning",
