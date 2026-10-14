@@ -742,7 +742,10 @@ GET /api/v1/meal-plans/{planId}/shopping-list
 ```
 
 **Query parameters**:
-- `format` (string, optional) - `json` (default) or `text`
+- `format` (string, optional) - `json` (default), `csv`, `markdown`, or `text`
+- `groupBy` (string, optional) - `aisle` (default), `recipe`, or `category`
+- `includeStaples` (boolean, optional) - Include kitchen staples such as salt, pepper, and oil. Distinct from the **pantry** food-taxonomy category (flour, canned goods). Default `false`.
+- `includePantryItems` (boolean, optional) - Deprecated alias for `includeStaples`.
 
 **Response** (JSON):
 ```json

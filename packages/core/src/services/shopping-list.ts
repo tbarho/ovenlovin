@@ -47,6 +47,9 @@ export interface ShoppingListData {
   mealPlanId: string;
   weekStart: string;
   groupBy: ShoppingListGroupBy;
+  /** Kitchen staples (salt, oil, pepper) — not the pantry food-taxonomy category. */
+  includeStaples: boolean;
+  /** @deprecated Alias of {@link ShoppingListData.includeStaples} for existing clients. */
   includePantryItems: boolean;
   ingredients: ShoppingListIngredient[];
   sections: ShoppingListSection[];
@@ -76,9 +79,27 @@ export interface BuildShoppingListInput {
   weekStart: string;
   entries: ShoppingListEntryInput[];
   groupBy?: ShoppingListGroupBy;
+  includeStaples?: boolean;
+  /** @deprecated Alias of {@link BuildShoppingListInput.includeStaples}. */
   includePantryItems?: boolean;
   warnings?: ShoppingListWarning[];
   generatedAt?: string;
+}
+
+/** Section name for salt/oil when staples are included — distinct from category "Pantry". */
+export const KITCHEN_STAPLES_SECTION = "Kitchen staples";
+
+/**
+ * Canonical flag is `includeStaples`. `includePantryItems` is kept as an input
+ * alias so REST/MCP clients that still send the old name keep working.
+ */
+export function resolveIncludeStaples(input: {
+  includeStaples?: boolean;
+  includePantryItems?: boolean;
+}): boolean {
+  if (input.includeStaples != null) return input.includeStaples;
+  if (input.includePantryItems != null) return input.includePantryItems;
+  return false;
 }
 
 type UnitDimension = "volume" | "weight";
@@ -145,13 +166,13 @@ function mergeKey(name: string, unit: string | undefined, recipeKey: string): st
 function sectionForItem(
   item: ShoppingListIngredient,
   groupBy: ShoppingListGroupBy,
-  includePantryItems: boolean
+  includeStaples: boolean
 ): string {
   if (groupBy === "recipe") {
     return item.recipes[0]?.recipeTitle ?? "Other";
   }
-  if (includePantryItems && item.isPantryItem) {
-    return "Pantry staples";
+  if (includeStaples && item.isPantryItem) {
+    return KITCHEN_STAPLES_SECTION;
   }
   if (groupBy === "category") {
     return categorySectionName(item.category);
@@ -162,11 +183,11 @@ function sectionForItem(
 function groupSections(
   items: ShoppingListIngredient[],
   groupBy: ShoppingListGroupBy,
-  includePantryItems: boolean
+  includeStaples: boolean
 ): ShoppingListSection[] {
   const sections = new Map<string, ShoppingListIngredient[]>();
   for (const item of items) {
-    const name = sectionForItem(item, groupBy, includePantryItems);
+    const name = sectionForItem(item, groupBy, includeStaples);
     const list = sections.get(name) ?? [];
     list.push(item);
     sections.set(name, list);
@@ -217,7 +238,7 @@ export async function collectShoppingListEntries(
 export class ShoppingListService {
   build(input: BuildShoppingListInput): ShoppingListData {
     const groupBy = input.groupBy ?? "aisle";
-    const includePantryItems = input.includePantryItems ?? false;
+    const includeStaples = resolveIncludeStaples(input);
     const ingredientMap = new Map<string, ShoppingListIngredient>();
 
     for (const source of input.entries) {
@@ -279,7 +300,7 @@ export class ShoppingListService {
     }
 
     const ingredients = Array.from(ingredientMap.values())
-      .filter((item) => includePantryItems || !item.isPantryItem)
+      .filter((item) => includeStaples || !item.isPantryItem)
       .map((item) => ({
         ...item,
         quantity: item.quantity != null ? roundQuantity(item.quantity) : undefined,
@@ -294,9 +315,10 @@ export class ShoppingListService {
       mealPlanId: input.mealPlanId,
       weekStart: input.weekStart,
       groupBy,
-      includePantryItems,
+      includeStaples,
+      includePantryItems: includeStaples,
       ingredients,
-      sections: groupSections(ingredients, groupBy, includePantryItems),
+      sections: groupSections(ingredients, groupBy, includeStaples),
       itemCount: ingredients.length,
       generatedAt: input.generatedAt ?? new Date().toISOString(),
       warnings: input.warnings ?? [],
@@ -305,7 +327,7 @@ export class ShoppingListService {
 
   /**
    * @deprecated Prefer {@link build}. Kept for kitchen UI callers that still
-   * pass the older entry shape. Includes pantry staples so the UI does not
+   * pass the older entry shape. Includes kitchen staples so the UI does not
    * silently drop salt/oil.
    */
   aggregateIngredients(
@@ -325,7 +347,7 @@ export class ShoppingListService {
     return this.build({
       mealPlanId: "",
       weekStart: "",
-      includePantryItems: true,
+      includeStaples: true,
       entries: entries.map((source) => ({
         entry: source.entry,
         recipeTitle: source.recipeTitle,

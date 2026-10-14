@@ -49,6 +49,12 @@ describe("generateOpenApiDocument", () => {
     expect(spec.paths?.["/meal-plans/{id}"]?.delete).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}/check"]?.get).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}/check"]?.post).toBeTruthy();
+    expect(JSON.stringify(spec.paths?.["/meal-plans/{id}/shopping-list"]?.get)).toContain(
+      "includeStaples"
+    );
+    expect(JSON.stringify(spec.paths?.["/meal-plans/{id}/shopping-list"]?.get)).toContain(
+      "includePantryItems"
+    );
   });
 
   it("documents meal-plan POST and PATCH bodies with entries and no silent extras", () => {

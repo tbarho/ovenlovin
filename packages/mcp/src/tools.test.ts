@@ -192,6 +192,27 @@ describe("MCP Tool Schemas", () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it("accepts includeStaples and the includePantryItems alias", () => {
+      const canonical = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+        includeStaples: true,
+      });
+      expect(canonical.success).toBe(true);
+      if (canonical.success) {
+        expect(canonical.data.includeStaples).toBe(true);
+      }
+
+      const alias = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+        includePantryItems: true,
+      });
+      expect(alias.success).toBe(true);
+      if (alias.success) {
+        expect(alias.data.includePantryItems).toBe(true);
+        expect(alias.data.includeStaples).toBeUndefined();
+      }
+    });
   });
 
   describe("import_recipe", () => {

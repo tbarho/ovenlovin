@@ -12,6 +12,7 @@ import {
   PeopleService,
   ShoppingListService,
   collectShoppingListEntries,
+  resolveIncludeStaples,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import {
@@ -24,7 +25,13 @@ export const exportShoppingListSchema = z.object({
   planId: z.string().uuid(),
   format: z.enum(["json", "csv", "markdown", "text"]).default("markdown"),
   groupBy: z.enum(["aisle", "recipe", "category"]).default("aisle"),
-  includePantryItems: z.boolean().default(false),
+  includeStaples: z
+    .boolean()
+    .optional()
+    .describe(
+      "Include kitchen staples such as salt, pepper, and oil. Distinct from the pantry food-taxonomy category. Alias: includePantryItems."
+    ),
+  includePantryItems: z.boolean().optional().describe("Deprecated alias for includeStaples."),
   includeRuleWarnings: z.boolean().default(true),
 });
 
@@ -125,7 +132,7 @@ async function handler(
     weekStart: plan.weekStart,
     entries: sources,
     groupBy: input.groupBy,
-    includePantryItems: input.includePantryItems,
+    includeStaples: resolveIncludeStaples(input),
     warnings,
   });
 
