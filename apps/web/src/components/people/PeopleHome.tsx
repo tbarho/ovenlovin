@@ -155,11 +155,12 @@ export function PeopleHome({
         ) : (
           <PeopleReorder
             people={people}
-            renderPerson={(person) => (
+            renderPerson={(person, handle) => (
               <PersonCard
                 person={person}
                 rules={rulesByPerson.get(person.id) ?? []}
                 loves={lovesByPerson.get(person.id) ?? []}
+                handle={handle}
               />
             )}
             onReorder={async (personIds) => {

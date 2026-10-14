@@ -28,7 +28,12 @@ describe("PeopleReorder", () => {
     render(
       <PeopleReorder
         people={[ty]}
-        renderPerson={(person) => <span>{person.displayName}</span>}
+        renderPerson={(person, handle) => (
+          <>
+            {handle}
+            <span>{person.displayName}</span>
+          </>
+        )}
         onReorder={vi.fn()}
       />
     );
@@ -55,7 +60,12 @@ describe("PeopleReorder", () => {
     render(
       <PeopleReorder
         people={[ty, jake]}
-        renderPerson={(person) => <span>{person.displayName}</span>}
+        renderPerson={(person, handle) => (
+          <>
+            {handle}
+            <span>{person.displayName}</span>
+          </>
+        )}
         onReorder={onReorder}
       />
     );

@@ -146,6 +146,7 @@ describe("PeopleHome", () => {
     const handle = screen.getByRole("button", { name: "Reorder Ty" });
     expect(handle).toHaveStyle({ minWidth: "44px", minHeight: "44px", cursor: "grab" });
     expect(handle.closest(`[data-testid="person-card-shell-${ty.id}"]`)).toBeTruthy();
+    expect(handle.closest(".olp-person-card-head")).toBeTruthy();
   });
 
   it("adds a person with a chosen emoji", async () => {

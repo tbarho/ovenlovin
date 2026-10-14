@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   RULE_UI_BUCKETS,
   displayNameForTarget,
@@ -28,10 +28,12 @@ export function PersonCard({
   person,
   rules,
   loves,
+  handle,
 }: {
   person: Person;
   rules: PersonRule[];
   loves: Preference[];
+  handle?: ReactNode;
 }) {
   const appearance = appearanceForPerson(person);
   const grouped = useMemo(() => {
@@ -59,14 +61,19 @@ export function PersonCard({
   }, [loves, rules]);
 
   return (
-    <Link
-      href={`/people/${person.id}`}
-      className="olp-person-chip"
-      data-testid={`person-chip-${person.id}`}
-    >
-      <Avatar name={person.displayName} appearance={appearance} size={40} />
-      <span className="olp-person-card-body">
-        <b>{person.displayName}</b>
+    <>
+      <div className="olp-person-card-head">
+        {handle}
+        <Link
+          href={`/people/${person.id}`}
+          className="olp-person-identity"
+          data-testid={`person-chip-${person.id}`}
+        >
+          <Avatar name={person.displayName} appearance={appearance} size={40} />
+          <b>{person.displayName}</b>
+        </Link>
+      </div>
+      <Link href={`/people/${person.id}`} className="olp-person-card-body">
         <span className="olp-person-card-lanes">
           {CARD_LANES.map((lane) => {
             const items = grouped[lane.bucket];
@@ -108,7 +115,7 @@ export function PersonCard({
             );
           })}
         </span>
-      </span>
-    </Link>
+      </Link>
+    </>
   );
 }
