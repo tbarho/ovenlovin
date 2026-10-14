@@ -59,7 +59,7 @@ export function decideDemoWrite(input: {
         reason: `This demo sandbox allows ${DEMO_IMPORT_LIMIT} recipe imports.`,
       };
     }
-    next = { ...next, importCount: next.importCount + 1 };
+    // Import count increments only after a successful import (see recordSuccessfulDemoImport).
   }
 
   if (next.writesInWindow >= DEMO_WRITE_LIMIT_PER_HOUR) {
@@ -77,4 +77,8 @@ export function decideDemoWrite(input: {
       writesInWindow: next.writesInWindow + 1,
     },
   };
+}
+
+export function nextCountersAfterSuccessfulImport(counters: DemoLimitCounters): DemoLimitCounters {
+  return { ...counters, importCount: counters.importCount + 1 };
 }

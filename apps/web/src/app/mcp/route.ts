@@ -11,7 +11,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest, handleHttpRequest } from "@ovenlovin/mcp";
 import { ForbiddenError } from "@/lib/api/errors";
-import { enforceDemoMcpGuards } from "@/lib/demo/mcp-guard";
+import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
+import { enforceDemoMcpGuards, isSuccessfulImportRecipeCall } from "@/lib/demo/mcp-guard";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 
 const SERVER_INFO = {
@@ -80,6 +81,14 @@ export async function POST(request: NextRequest) {
         onAuth: async () => auth,
       }
     );
+
+    if (
+      isDemoModeEnabled() &&
+      result.status < 400 &&
+      isSuccessfulImportRecipeCall(body, result.body)
+    ) {
+      await recordSuccessfulDemoImport(auth.householdId);
+    }
 
     if (!result.body) {
       return new NextResponse(null, { status: result.status, headers: result.headers });

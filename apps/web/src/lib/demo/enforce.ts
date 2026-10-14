@@ -4,7 +4,7 @@ import { getDatabase } from "@ovenlovin/db";
 import { demoSandbox } from "@ovenlovin/db/schema";
 import { ForbiddenError } from "@/lib/api/errors";
 import type { RequestContext } from "@/lib/api/middleware";
-import { decideDemoWrite, isMutatingMethod } from "./limits";
+import { decideDemoWrite, isMutatingMethod, nextCountersAfterSuccessfulImport } from "./limits";
 import { isDemoModeEnabled } from "./mode";
 
 export async function enforceDemoRequestGuards(
@@ -45,6 +45,33 @@ export async function enforceDemoRequestGuards(
       writesInWindow: decision.next.writesInWindow,
       windowStartedAt: decision.next.windowStartedAt,
       writeCount: row.writeCount + 1,
+      updatedAt: new Date(),
+    })
+    .where(eq(demoSandbox.id, row.id));
+}
+
+/** Count a demo import only after the recipe was actually created. */
+export async function recordSuccessfulDemoImport(householdId: string): Promise<void> {
+  if (!isDemoModeEnabled()) return;
+
+  const db = getDatabase();
+  const [row] = await db
+    .select()
+    .from(demoSandbox)
+    .where(eq(demoSandbox.householdId, householdId))
+    .limit(1);
+  if (!row || row.deletedAt) return;
+
+  const next = nextCountersAfterSuccessfulImport({
+    importCount: row.importCount,
+    writesInWindow: row.writesInWindow,
+    windowStartedAt: row.windowStartedAt,
+  });
+
+  await db
+    .update(demoSandbox)
+    .set({
+      importCount: next.importCount,
       updatedAt: new Date(),
     })
     .where(eq(demoSandbox.id, row.id));
