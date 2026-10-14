@@ -38,7 +38,6 @@ Open-source recipe box and meal planner for families and their agents. Per-perso
 ## Roadmap
 
 - Meal plan week view and shopping list UI (API + MCP already exist)
-- Public no-signup demo kitchen
 - CLI, published SDK, voice import, and third-party app export
 - USDA FoodData Central nutrition (optional `USDA_FDC_API_KEY` — not required to deploy)
 - Native apps
@@ -66,6 +65,8 @@ The button provisions Neon, Blob, and Clerk. You may set an optional instance na
 If Clerk is not offered as a store, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel.
 
 On Vercel, AI Gateway uses OIDC — no `AI_GATEWAY_API_KEY`. See [DEPLOYMENT.md](./DEPLOYMENT.md) and [self-hosting](https://tbarho.github.io/ovenlovin/docs/self-hosting).
+
+The public no-signup demo is a **separate Vercel project**. See [docs/demo.md](docs/demo.md) for env vars, cron, and project settings. Never set `OVENLOVIN_DEMO_MODE` on the product production project.
 
 ## Local development
 

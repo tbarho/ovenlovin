@@ -57,6 +57,14 @@ describe("LandingPage", () => {
     expect(screen.queryByTestId("owner-status")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "You're live" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Connect an agent" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Try the demo" })).not.toBeInTheDocument();
+  });
+
+  it("shows the public demo CTA when a demo URL is configured", () => {
+    render(<LandingPage {...shared} signedIn={false} demoUrl="https://demo.example" />);
+    const demos = screen.getAllByRole("link", { name: "Try the demo" });
+    expect(demos.length).toBeGreaterThan(0);
+    expect(demos.every((link) => link.getAttribute("href") === "https://demo.example")).toBe(true);
   });
 
   it("shows owner internals after sign-in", () => {

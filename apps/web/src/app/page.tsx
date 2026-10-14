@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { describeDeployResolved, getInstanceName } from "@ovenlovin/core/onboarding";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { getPublicDemoUrl, isDemoModeEnabled } from "@/lib/demo/mode";
 import { resolveOrigin } from "@/lib/origin";
 import { getConfigStatus } from "@/lib/status";
 
@@ -15,6 +17,10 @@ async function isSignedIn(): Promise<boolean> {
 }
 
 export default async function Home() {
+  if (isDemoModeEnabled()) {
+    redirect("/recipes");
+  }
+
   const headerStore = await headers();
   const origin = resolveOrigin(headerStore);
   const instanceName = getInstanceName(process.env.NEXT_PUBLIC_INSTANCE_NAME);
@@ -38,6 +44,7 @@ export default async function Home() {
       signedIn={signedIn}
       clerkEnabled={clerkEnabled}
       deploy={deploy}
+      demoUrl={getPublicDemoUrl()}
     />
   );
 }

@@ -2253,3 +2253,42 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     --max: 1240px;
   }
 }
+
+.kitchen-shell:has(.demo-banner) .nav {
+  top: 52px;
+}
+
+.demo-banner {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 10px var(--gut);
+  background: #161310;
+  color: #fff8ee;
+  font-size: 14px;
+}
+
+.demo-banner-copy {
+  color: rgba(255, 248, 238, 0.78);
+}
+
+.demo-banner-cta {
+  background: var(--orange-2);
+  border-color: var(--orange-2);
+  color: #161310;
+}
+
+.demo-agent {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.demo-agent h2 {
+  margin: 0;
+}
