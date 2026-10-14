@@ -42,14 +42,14 @@ export async function authenticateRequest(headers: Record<string, string>): Prom
     } as AuthError;
   }
 
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    return parseClerkToken(token);
+  const apiKey = extractApiKeyFromAuthHeader(authHeader);
+  if (apiKey) {
+    return parseApiKey(apiKey);
   }
 
-  if (authHeader.startsWith("ApiKey ")) {
-    const apiKey = authHeader.slice(7);
-    return parseApiKey(apiKey);
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+    return parseClerkToken(token);
   }
 
   throw {
@@ -149,6 +149,23 @@ async function parseApiKey(apiKey: string): Promise<AuthContext> {
     scopes: result.key.scopes,
     apiKeyId: result.key.id,
   };
+}
+
+/**
+ * Accept `Authorization: ApiKey rkapi_…` or `Bearer rkapi_…`.
+ * Other Bearer tokens are treated as Clerk JWTs by the caller.
+ */
+export function extractApiKeyFromAuthHeader(authHeader: string): string | null {
+  const value = authHeader.trim();
+  if (value.toLowerCase().startsWith("apikey ")) {
+    const key = value.slice(7).trim();
+    return key || null;
+  }
+  if (value.startsWith("Bearer ")) {
+    const token = value.slice(7).trim();
+    if (token.startsWith("rkapi_")) return token;
+  }
+  return null;
 }
 
 /**

@@ -1,40 +1,65 @@
 /**
- * MCP Server HTTP Endpoint
+ * Stateless MCP over HTTP.
  *
- * Streamable HTTP transport for Model Context Protocol
- * Supports OAuth via Clerk + API key authentication
+ * Each POST creates a fresh server whose household comes from the API key
+ * (or Clerk token) on that request. No session id, no shared stub household.
  *
  * POST /mcp
- * Content-Type: application/json
- * Authorization: Bearer <token>
+ * Authorization: ApiKey rkapi_…   or   Bearer rkapi_…
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServer, handleHttpRequest } from "@ovenlovin/mcp";
+import {
+  authenticateRequest,
+  createServer,
+  handleHttpRequest,
+  type AuthError,
+} from "@ovenlovin/mcp";
 
-// Create singleton server instance
-const mcpServer = createServer({
-  name: "ovenlovin-mcp",
-  version: "0.1.0",
-  databaseUrl: process.env.DATABASE_URL,
-  clerkSecretKey: process.env.CLERK_SECRET_KEY,
-});
+function headersFrom(request: NextRequest): Record<string, string> {
+  const headers: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+  return headers;
+}
+
+function unauthorized(error: unknown): NextResponse {
+  const authError = error as AuthError | undefined;
+  const message =
+    authError && typeof authError === "object" && "message" in authError
+      ? String(authError.message)
+      : error instanceof Error
+        ? error.message
+        : "Unauthorized";
+  return NextResponse.json(
+    { error: "Unauthorized", message },
+    { status: 401, headers: { "Content-Type": "application/json" } }
+  );
+}
 
 /**
- * Handle MCP requests
+ * Handle one JSON-RPC MCP request. Transport is stateless: no Mcp-Session-Id.
  */
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
-    const body = await request.json();
+    const headers = headersFrom(request);
+    let auth;
+    try {
+      auth = await authenticateRequest(headers);
+    } catch (error) {
+      return unauthorized(error);
+    }
 
-    // Extract headers
-    const headers: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      headers[key] = value;
+    const body = await request.json();
+    const mcpServer = createServer({
+      name: "ovenlovin-mcp",
+      version: "0.1.0",
+      databaseUrl: process.env.DATABASE_URL,
+      clerkSecretKey: process.env.CLERK_SECRET_KEY,
+      auth,
     });
 
-    // Handle the MCP request
     const result = await handleHttpRequest(
       mcpServer,
       {
@@ -43,20 +68,14 @@ export async function POST(request: NextRequest) {
         headers,
       },
       {
-        // Auth will be implemented in a later PR
-        onAuth: async (authHeader: string) => {
-          // TODO: Validate Clerk OAuth token or API key
-          // For now, stub implementation
-          return {
-            householdId: "stub-household",
-            userId: "stub-user",
-            scopes: ["recipes:read", "recipes:write", "plans:write"],
-          };
-        },
+        onAuth: async () => ({
+          householdId: auth.householdId,
+          userId: auth.userId ?? auth.apiKeyId ?? auth.householdId,
+          scopes: auth.scopes,
+        }),
       }
     );
 
-    // Return response
     if (typeof result.body === "string") {
       return new NextResponse(result.body, {
         status: result.status,
@@ -64,7 +83,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Handle streaming response (future enhancement)
     return new NextResponse(JSON.stringify(result.body), {
       status: result.status,
       headers: result.headers,
@@ -82,13 +100,15 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Health check
+ * Discovery / health. Auth is not required so agents can probe the URL.
  */
 export async function GET() {
   return NextResponse.json({
     service: "ovenlovin-mcp",
     version: "0.1.0",
     status: "ok",
+    transport: "stateless-http",
+    auth: "ApiKey or Bearer rkapi_",
     timestamp: new Date().toISOString(),
   });
 }

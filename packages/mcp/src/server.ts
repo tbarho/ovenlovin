@@ -66,6 +66,12 @@ export interface ServerConfig {
   version?: string;
   databaseUrl?: string;
   clerkSecretKey?: string;
+  /**
+   * Per-request auth. HTTP handlers create a new server per call so the
+   * household is derived from the API key (or Clerk token) on that request.
+   * Tests that omit this keep the historical stub context.
+   */
+  auth?: AuthContext;
 }
 
 /**
@@ -114,12 +120,7 @@ export function createServer(config: ServerConfig = {}) {
       throw new Error(`Unknown tool: ${name}`);
     }
 
-    // TODO: Extract auth context from request headers
-    const authContext: AuthContext = {
-      householdId: "stub", // From OAuth or API key
-      userId: "stub",
-      scopes: ["recipes:read", "recipes:write", "plans:write"],
-    };
+    const authContext = resolveAuthContext(config);
 
     // Validate arguments and execute tool
     const validated = tool.inputSchema.parse(args || {});
@@ -137,15 +138,8 @@ export function createServer(config: ServerConfig = {}) {
 
   // List available resources
   server.setRequestHandler(ListResourcesRequestSchema, async () => {
-    // TODO: Extract auth context
-    const authContext: AuthContext = {
-      householdId: "stub",
-      userId: "stub",
-      scopes: ["people:read"],
-    };
-
     return {
-      resources: await listResources(authContext),
+      resources: await listResources(resolveAuthContext(config)),
     };
   });
 
@@ -153,14 +147,7 @@ export function createServer(config: ServerConfig = {}) {
   server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const { uri } = request.params;
 
-    // TODO: Extract auth context
-    const authContext: AuthContext = {
-      householdId: "stub",
-      userId: "stub",
-      scopes: ["people:read"],
-    };
-
-    const content = await readResource(uri, authContext);
+    const content = await readResource(uri, resolveAuthContext(config));
 
     return {
       contents: [
@@ -174,6 +161,15 @@ export function createServer(config: ServerConfig = {}) {
   });
 
   return server;
+}
+
+export function resolveAuthContext(config: ServerConfig = {}): AuthContext {
+  if (config.auth) return config.auth;
+  return {
+    householdId: "stub",
+    userId: "stub",
+    scopes: ["recipes:read", "recipes:write", "plans:write", "people:read", "lists:export"],
+  };
 }
 
 /**
