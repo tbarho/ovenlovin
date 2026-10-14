@@ -28,6 +28,7 @@ export interface GetRecipeOutput {
   id: string;
   title: string;
   description?: string;
+  notes?: string;
   yieldQuantity?: number;
   yieldUnit?: string;
   servings?: number;
@@ -187,6 +188,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     id: recipe.id,
     title: recipe.title,
     description: recipe.description ?? undefined,
+    notes: recipe.notes ?? undefined,
     yieldQuantity: recipe.yieldQuantity ?? undefined,
     yieldUnit: recipe.yieldUnit ?? undefined,
     servings: recipe.servings ?? undefined,
@@ -211,7 +213,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
 export const getRecipeTool = {
   name: "get_recipe",
   description:
-    "Get full recipe details including ingredients, steps, prep/cook times, images, cookbooks, and source URL.",
+    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL.",
   inputSchema: getRecipeSchema,
   handler,
 } as const;

@@ -51,6 +51,7 @@ export function DetailsSheet({
 }) {
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
   const [title, setTitle] = useState(recipe.title);
+  const [notes, setNotes] = useState(recipe.notes ?? "");
   const [prep, setPrep] = useState(recipe.prepTimeMinutes?.toString() ?? "");
   const [cook, setCook] = useState(recipe.cookTimeMinutes?.toString() ?? "");
   const [baseServings, setBaseServings] = useState(storedServings.toString());
@@ -59,6 +60,7 @@ export function DetailsSheet({
   useEffect(() => {
     if (!open) return;
     setTitle(recipe.title);
+    setNotes(recipe.notes ?? "");
     setPrep(recipe.prepTimeMinutes?.toString() ?? "");
     setCook(recipe.cookTimeMinutes?.toString() ?? "");
     setBaseServings((recipe.servings && recipe.servings > 0 ? recipe.servings : 4).toString());
@@ -69,6 +71,7 @@ export function DetailsSheet({
     const nextServings = clampServings(Number(baseServings) || storedServings);
     const saved = await patch({
       title,
+      notes: notes.trim() ? notes.trim() : null,
       servings: nextServings,
       prepTimeMinutes: prep ? Number(prep) : null,
       cookTimeMinutes: cook ? Number(cook) : null,
@@ -82,6 +85,15 @@ export function DetailsSheet({
         <label>
           Title
           <input value={title} onChange={(event) => setTitle(event.target.value)} required />
+        </label>
+        <label>
+          Notes
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            rows={3}
+            placeholder="Make-ahead tips, substitutions, serving notes"
+          />
         </label>
         <label>
           Servings

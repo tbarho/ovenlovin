@@ -20,6 +20,7 @@ export const recipeSchema = baseEntitySchema.merge(createdBySchema).extend({
   title: z.string().min(1).max(500),
   slug: z.string().min(1).max(500),
   description: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
   yieldQuantity: z.number().positive().nullable().optional(),
   yieldUnit: z.string().max(50).nullable().optional(),
   servings: z.number().int().positive().nullable().optional(),
@@ -155,6 +156,7 @@ export type RecipeDetails = Recipe & {
 export type RecipeContentUpdate = {
   title?: string;
   description?: string | null;
+  notes?: string | null;
   servings?: number | null;
   prepTimeMinutes?: number | null;
   cookTimeMinutes?: number | null;
@@ -178,6 +180,7 @@ export type RecipeContentUpdate = {
 export type RecipeImportDraft = {
   title: string;
   description?: string;
+  notes?: string;
   yieldQuantity?: number;
   yieldUnit?: string;
   servings?: number;
