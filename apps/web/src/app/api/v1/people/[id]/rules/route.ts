@@ -7,7 +7,7 @@ import {
   requireAdminRole,
   getIdempotencyKey,
 } from "@/lib/api/middleware";
-import { PeopleService } from "@ovenlovin/core";
+import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -51,14 +51,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw new NotFoundError("Person", personId);
     }
 
-    const setBy = context.userId || "system";
-    const createdBy = context.userId || context.clientId || "system";
+    const actor = resolveWriteActor({
+      userId: context.userId,
+      apiKeyId: context.clientId,
+      apiKeyCreatedBy: context.apiKeyCreatedBy,
+    });
 
     const rule = await service.createRule({
       ...body,
       personId,
-      setBy,
-      createdBy,
+      setBy: actor.setBy,
+      createdBy: actor.createdBy,
+      createdByApiKeyId: actor.createdByApiKeyId,
     });
 
     return createdResponse(rule, `/api/v1/people/${personId}/rules/${rule.id}`);

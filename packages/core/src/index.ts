@@ -1,5 +1,6 @@
 export const VERSION = "0.1.0";
 
+export * from "./auth/write-actor";
 export * from "./schemas";
 export * from "./services";
 export * from "./parsing/ingredient-line";

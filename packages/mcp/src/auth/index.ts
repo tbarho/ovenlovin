@@ -18,6 +18,8 @@ export interface AuthContext {
   userId?: string;
   scopes: string[];
   apiKeyId?: string;
+  /** User who minted the API key. Used to attribute writes (set_by / created_by). */
+  apiKeyCreatedBy?: string;
   membershipRole?: "owner" | "admin" | "member" | "viewer";
 }
 
@@ -142,6 +144,7 @@ async function parseApiKey(apiKey: string): Promise<AuthContext> {
     householdId: result.key.householdId,
     scopes: result.key.scopes,
     apiKeyId: result.key.id,
+    apiKeyCreatedBy: result.key.createdBy,
   };
 }
 

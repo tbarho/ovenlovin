@@ -11,7 +11,7 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { commonFields, createdByField } from "./common";
-import { household } from "./households";
+import { apiKey, household } from "./households";
 import { recipe } from "./recipes";
 import { person, personRule } from "./people";
 
@@ -78,6 +78,7 @@ export const mealPlan = pgTable("meal_plan", {
   contentHash: varchar("content_hash", { length: 64 }),
   acknowledgedWarnings: jsonb("acknowledged_warnings").$type<string[]>().default([]),
   needsRecheck: boolean("needs_recheck").default(false),
+  createdByApiKeyId: uuid("created_by_api_key_id").references(() => apiKey.id),
 });
 
 export const mealPlanEntry = pgTable("meal_plan_entry", {
