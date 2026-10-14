@@ -31,7 +31,9 @@ import {
   parsePersonNotes,
   writePersonNotes,
 } from "@/lib/person-appearance";
-import { FoodPicker } from "./FoodPicker";
+import { InlineFoodAdd } from "./InlineFoodAdd";
+import { InlineRuleExtras } from "./InlineRuleExtras";
+import { PersonSwitcher } from "./PersonSwitcher";
 import { Avatar, Chip, ConfirmSheet, Segmented, Sheet, Toast } from "./ui";
 
 const FACILITY_OPTIONS: Array<{ value: SharedFacilityPrompt; label: string }> = [
@@ -40,29 +42,36 @@ const FACILITY_OPTIONS: Array<{ value: SharedFacilityPrompt; label: string }> = 
   { value: "no", label: "No" },
 ];
 
-type AddTarget = RuleUiBucket | "loves";
+type PendingAdd = {
+  bucket: RuleUiBucket;
+  entry: CatalogEntry;
+  facility: SharedFacilityPrompt;
+  coconut: boolean;
+};
 
 const EMPTY_LOVES: Preference[] = [];
+const EMPTY_PEOPLE: Person[] = [];
 
 export function PersonPage({
   person,
+  people = EMPTY_PEOPLE,
   rules: initialRules,
   loves: initialLoves = EMPTY_LOVES,
 }: {
   person: Person;
+  people?: Person[];
   rules: PersonRule[];
   loves?: Preference[];
 }) {
   const router = useRouter();
   const [rules, setRules] = useState(initialRules);
   const [loves, setLoves] = useState(initialLoves);
-  const [adding, setAdding] = useState<AddTarget | null>(null);
+  const [pending, setPending] = useState<PendingAdd | null>(null);
   const [editing, setEditing] = useState<PersonRule | null>(null);
   const [editPerson, setEditPerson] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const closeAdding = useCallback(() => setAdding(null), []);
   const closeEditing = useCallback(() => setEditing(null), []);
   const closeEditPerson = useCallback(() => setEditPerson(false), []);
   const closeDelete = useCallback(() => setConfirmDelete(false), []);
@@ -133,7 +142,7 @@ export function PersonPage({
     try {
       const created = await persistRule(entry, bucket, extras);
       setRules((current) => [created, ...current.filter((rule) => rule.id !== created.id)]);
-      setAdding(null);
+      setPending(null);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save rule");
@@ -151,7 +160,6 @@ export function PersonPage({
         }),
       });
       setLoves((current) => [created, ...current.filter((item) => item.id !== created.id)]);
-      setAdding(null);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save love");
@@ -271,8 +279,18 @@ export function PersonPage({
     }
   }
 
-  const addTitle =
-    adding === "loves" ? "Loves" : adding === "doesnt_like" ? "Doesn't like" : "Can't eat";
+  function pickRule(bucket: RuleUiBucket, entry: CatalogEntry) {
+    if (showsSharedFacilityPrompt(entry.code) || showsCoconutToggle(entry.code)) {
+      setPending({
+        bucket,
+        entry,
+        facility: defaultSharedFacilityPrompt(entry.code),
+        coconut: false,
+      });
+      return;
+    }
+    void addRule(entry, bucket, { facility: "no", coconut: true });
+  }
 
   return (
     <div className="olp kitchen-people kitchen-person">
@@ -280,6 +298,7 @@ export function PersonPage({
         <Link href="/people" className="olp-back">
           ← People
         </Link>
+        <PersonSwitcher people={people} currentId={person.id} />
         <header className="olp-person-head">
           <Avatar name={person.displayName} appearance={appearance} size={48} />
           <h1>{person.displayName}</h1>
@@ -294,13 +313,6 @@ export function PersonPage({
             >
               <div className="olp-lane-head">
                 <h2>{item.label}</h2>
-                <button
-                  type="button"
-                  className="olp-text-btn"
-                  onClick={() => setAdding(item.bucket)}
-                >
-                  Add
-                </button>
               </div>
               {grouped[item.bucket].length === 0 ? (
                 <p className="olp-empty-inline">None</p>
@@ -322,15 +334,37 @@ export function PersonPage({
                   </AnimatePresence>
                 </div>
               )}
+              {pending?.bucket === item.bucket ? (
+                <InlineRuleExtras
+                  entry={pending.entry}
+                  facility={pending.facility}
+                  coconut={pending.coconut}
+                  already={rules.some((rule) => rule.target === pending.entry.code)}
+                  onFacility={(facility) => setPending({ ...pending, facility })}
+                  onCoconut={(coconut) => setPending({ ...pending, coconut })}
+                  onCancel={() => setPending(null)}
+                  onDone={() => {
+                    void addRule(pending.entry, pending.bucket, {
+                      facility: pending.facility,
+                      coconut: pending.coconut,
+                    });
+                  }}
+                />
+              ) : (
+                <InlineFoodAdd
+                  mode={item.bucket}
+                  selectedTargets={rules
+                    .filter((rule) => uiBucketForRule(rule) === item.bucket)
+                    .map((rule) => rule.target)}
+                  onSelect={(entry) => pickRule(item.bucket, entry)}
+                />
+              )}
             </section>
           ))}
 
           <section className="olp-lane olp-lane-loves" data-testid="bucket-loves">
             <div className="olp-lane-head">
               <h2>Loves</h2>
-              <button type="button" className="olp-text-btn" onClick={() => setAdding("loves")}>
-                Add
-              </button>
             </div>
             {loves.length === 0 ? (
               <p className="olp-empty-inline">None</p>
@@ -351,6 +385,13 @@ export function PersonPage({
                 </AnimatePresence>
               </div>
             )}
+            <InlineFoodAdd
+              mode="loves"
+              selectedTargets={loves.map((item) => item.value)}
+              onSelect={(entry) => {
+                void addLove(entry);
+              }}
+            />
           </section>
         </div>
 
@@ -369,29 +410,6 @@ export function PersonPage({
           </button>
         </div>
       </div>
-
-      <Sheet open={Boolean(adding)} title={addTitle} onClose={closeAdding}>
-        {adding ? (
-          <AddListForm
-            key={adding}
-            mode={adding}
-            selectedTargets={
-              adding === "loves"
-                ? loves.map((item) => item.value)
-                : rules
-                    .filter((rule) => uiBucketForRule(rule) === adding)
-                    .map((rule) => rule.target)
-            }
-            onPickRule={(entry, extras) => {
-              if (adding === "loves") return;
-              void addRule(entry, adding, extras);
-            }}
-            onPickLove={(entry) => {
-              void addLove(entry);
-            }}
-          />
-        ) : null}
-      </Sheet>
 
       <Sheet
         open={Boolean(editing)}
@@ -442,87 +460,6 @@ function personRemovalCopy(personName: string, itemCount: number) {
         ? `${personName} will be removed from this household.`
         : `${personName} and their ${itemCount} ${itemCount === 1 ? "item" : "items"} will be removed. Meal checks will no longer include ${personName}.`,
   };
-}
-
-function AddListForm({
-  mode,
-  selectedTargets,
-  onPickRule,
-  onPickLove,
-}: {
-  mode: AddTarget;
-  selectedTargets: string[];
-  onPickRule: (
-    entry: CatalogEntry,
-    extras: { facility: SharedFacilityPrompt; coconut: boolean }
-  ) => void;
-  onPickLove: (entry: CatalogEntry) => void;
-}) {
-  const [item, setItem] = useState<CatalogEntry | null>(null);
-  const [facility, setFacility] = useState<SharedFacilityPrompt>("ask");
-  const [coconut, setCoconut] = useState(false);
-  const already = item ? selectedTargets.includes(item.code) : false;
-
-  function selectItem(next: CatalogEntry) {
-    if (mode === "loves") {
-      onPickLove(next);
-      return;
-    }
-    if (showsSharedFacilityPrompt(next.code) || showsCoconutToggle(next.code)) {
-      setItem(next);
-      setFacility(defaultSharedFacilityPrompt(next.code));
-      setCoconut(false);
-      return;
-    }
-    onPickRule(next, { facility: "no", coconut: true });
-  }
-
-  if (mode === "loves") {
-    return <FoodPicker mode="loves" onSelect={selectItem} />;
-  }
-
-  return (
-    <div className="olp-stack-sm">
-      {item ? (
-        <>
-          <button type="button" className="olp-choice is-on" onClick={() => setItem(null)}>
-            <b>{item.name}</b>
-          </button>
-          {showsSharedFacilityPrompt(item.code) ? (
-            <fieldset className="olp-fieldset">
-              <legend>Avoid foods made where nuts are processed?</legend>
-              <Segmented
-                label="Shared facility"
-                value={facility}
-                onChange={setFacility}
-                options={FACILITY_OPTIONS}
-              />
-            </fieldset>
-          ) : null}
-          {showsCoconutToggle(item.code) ? (
-            <label className="olp-check">
-              <input
-                type="checkbox"
-                checked={coconut}
-                onChange={(event) => setCoconut(event.target.checked)}
-              />
-              Treat coconut as a tree nut
-            </label>
-          ) : null}
-          <button
-            type="button"
-            className="olp-btn olp-btn-primary"
-            disabled={already}
-            onClick={() => onPickRule(item, { facility, coconut })}
-          >
-            Done
-          </button>
-        </>
-      ) : (
-        <FoodPicker mode={mode} onSelect={selectItem} />
-      )}
-    </div>
-  );
 }
 
 function RuleEditor({

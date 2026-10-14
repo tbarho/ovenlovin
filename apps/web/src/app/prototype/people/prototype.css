@@ -604,12 +604,15 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-height: 44px;
   padding: 8px 10px 8px 9px;
   font-size: 13.5px;
 }
 
 .olp-chip-x {
-  padding: 8px 10px 8px 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 10px;
   color: var(--olp-faint);
 }
 

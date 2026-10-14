@@ -1,0 +1,110 @@
+"use client";
+
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import type { CatalogEntry } from "@ovenlovin/allergens";
+import { FoodIcon } from "@/components/prototype/people/icons";
+import {
+  customCatalogOffer,
+  iconIdForTarget,
+  searchPeopleCatalog,
+  type PeoplePickerMode,
+} from "@/lib/people-catalog";
+
+const MODE_LABEL: Record<PeoplePickerMode, string> = {
+  cant_eat: "Can't eat",
+  doesnt_like: "Doesn't like",
+  loves: "Loves",
+};
+
+export function InlineFoodAdd({
+  mode,
+  selectedTargets,
+  onSelect,
+}: {
+  mode: PeoplePickerMode;
+  selectedTargets: string[];
+  onSelect: (item: CatalogEntry) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputKey = `inline-add-${mode}`;
+  const tiles = useMemo(() => searchPeopleCatalog(query, { mode, limit: 24 }), [mode, query]);
+  const custom = useMemo(() => customCatalogOffer(query), [query]);
+  const available = tiles.filter((item) => !selectedTargets.includes(item.code));
+
+  function add(entry: CatalogEntry) {
+    if (selectedTargets.includes(entry.code)) return;
+    onSelect(entry);
+    setQuery("");
+    setOpen(true);
+    inputRef.current?.focus();
+  }
+
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (custom) {
+      add(custom);
+      return;
+    }
+    const first = available[0];
+    if (first) add(first);
+  }
+
+  return (
+    <div className="olp-inline-add">
+      <label className="olp-inline-add-field">
+        <span className="olp-sr">Add to {MODE_LABEL[mode]}</span>
+        <input
+          key={inputKey}
+          ref={inputRef}
+          value={query}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="Add…"
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+        />
+      </label>
+      {open && (custom || available.length > 0) ? (
+        <ul className="olp-typeahead" role="listbox" aria-label={`${MODE_LABEL[mode]} suggestions`}>
+          {custom ? (
+            <li>
+              <button
+                type="button"
+                className="olp-typeahead-item"
+                data-testid="use-custom"
+                onClick={() => add(custom)}
+              >
+                Use ‘{custom.name}’
+              </button>
+            </li>
+          ) : null}
+          {available.map((item) => (
+            <li key={`${item.group}-${item.code}`}>
+              <button
+                type="button"
+                className="olp-typeahead-item"
+                data-testid={`tile-${item.code}`}
+                onClick={() => add(item)}
+              >
+                <FoodIcon id={iconIdForTarget(item.code)} size={18} />
+                <span>{item.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
