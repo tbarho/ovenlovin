@@ -56,8 +56,8 @@ function DragHandle({
   name: string;
   personId?: string;
   disabled?: boolean;
-  listeners?: Record<string, unknown>;
-  attributes?: Record<string, unknown>;
+  listeners?: object;
+  attributes?: object;
   onMeasure?: (el: HTMLElement) => void;
 }) {
   return (
@@ -73,13 +73,15 @@ function DragHandle({
       {...listeners}
       onPointerDown={(event) => {
         onMeasure?.(event.currentTarget);
-        const listener = listeners?.onPointerDown;
-        if (typeof listener === "function") listener(event);
+        const listener = (listeners as { onPointerDown?: (e: typeof event) => void } | undefined)
+          ?.onPointerDown;
+        listener?.(event);
       }}
       onFocus={(event) => {
         onMeasure?.(event.currentTarget);
-        const listener = listeners?.onFocus;
-        if (typeof listener === "function") listener(event);
+        const listener = (listeners as { onFocus?: (e: typeof event) => void } | undefined)
+          ?.onFocus;
+        listener?.(event);
       }}
     >
       <GripIcon />
@@ -117,7 +119,7 @@ function SortablePerson({
   onMeasure?: (el: HTMLElement) => void;
 }) {
   const reduce = useReducedMotion();
-  const ownHeight = useRef<number>();
+  const ownHeight = useRef<number | undefined>(undefined);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: person.id,
     disabled,
