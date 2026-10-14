@@ -111,7 +111,18 @@ export interface RecipeDraft {
   overallConfidence: ConfidenceScore;
   needsReview: boolean;
   reviewReasons: string[];
+  /** Named fields a reviewer should check after a low-confidence extract. */
+  uncertainFields?: string[];
+  /** Allergen catalog hits for extracted ingredient lines (not per-person rules). */
+  allergenClassifications?: DraftAllergenHit[];
 }
+
+export type DraftAllergenHit = {
+  ingredientText: string;
+  allergenCode: string;
+  allergenName: string;
+  relation: string;
+};
 
 /**
  * Common interface for all importers

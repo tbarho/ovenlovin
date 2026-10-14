@@ -12,16 +12,29 @@ import type {
   ImporterConfig,
 } from "../types/importer";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
+import { classifyDraftIngredients } from "../utils/classify-allergens";
+import { resolveVisionModelId } from "../utils/models";
+import { listUncertainFields, type FieldConfidence } from "../utils/uncertain-fields";
 
 const IMPORTER_VERSION = "0.1.0";
 
+const ocrConfidence = z.enum(["high", "medium", "low", "illegible"]).describe("Reading confidence");
+
 const recipeSchema = z.object({
   title: z.string().describe("Recipe title"),
+  titleConfidence: ocrConfidence.optional().describe("Confidence for the title"),
   description: z.string().optional().describe("Brief description"),
   servings: z.number().int().positive().optional().describe("Number of servings"),
+  servingsConfidence: ocrConfidence.optional().describe("Confidence for servings"),
   prepTimeMinutes: z.number().int().nonnegative().optional().describe("Prep time in minutes"),
   cookTimeMinutes: z.number().int().nonnegative().optional().describe("Cook time in minutes"),
   totalTimeMinutes: z.number().int().nonnegative().optional().describe("Total time in minutes"),
+  timesConfidence: ocrConfidence.optional().describe("Confidence for prep/cook/total times"),
+  notes: z.string().optional().describe("Cook notes, tips, or handwritten margin notes if visible"),
+  visibleSource: z
+    .string()
+    .optional()
+    .describe("Cookbook title, author, URL, or card attribution if visible"),
   cuisine: z.string().optional().describe("Cuisine type"),
   course: z.string().optional().describe("Course type"),
   ingredients: z
@@ -32,7 +45,7 @@ const recipeSchema = z.object({
         unit: z.string().optional().describe("Unit of measurement if legible"),
         ingredient: z.string().optional().describe("Ingredient name if legible"),
         preparation: z.string().optional().describe("Preparation notes if present"),
-        confidence: z.enum(["high", "medium", "low", "illegible"]).describe("Reading confidence"),
+        confidence: ocrConfidence,
       })
     )
     .describe("List of ingredients"),
@@ -40,7 +53,7 @@ const recipeSchema = z.object({
     .array(
       z.object({
         text: z.string().describe("Step instruction text exactly as written"),
-        confidence: z.enum(["high", "medium", "low", "illegible"]).describe("Reading confidence"),
+        confidence: ocrConfidence,
       })
     )
     .describe("Cooking steps in order"),
@@ -52,7 +65,7 @@ const recipeSchema = z.object({
 });
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
-  const visionModelId = config.visionModelId || process.env.RK_MODEL_VISION || "spacexai/grok-4.7";
+  const visionModelId = resolveVisionModelId(config.visionModelId);
 
   return {
     name: "photo-importer",
@@ -83,7 +96,18 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
             content: [
               {
                 type: "text",
-                text: `Extract recipe data from this image. Read text EXACTLY as written. Mark confidence for each ingredient and step.${handwritingContext}\n\nFor ingredients, extract:\n- Full text line as written\n- Quantity, unit, ingredient name only if clearly legible\n- Mark confidence: high (printed/clear), medium (somewhat unclear), low (difficult to read), illegible (cannot read)\n\nFor steps, extract text and mark confidence.\n\nRate overall ocrQuality: excellent (printed, perfect), good (printed, minor issues), fair (handwritten but mostly legible), poor (handwritten, significant legibility issues)`,
+                text: `Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
+
+Extract:
+- title, servings, prep/cook/total times
+- ingredients with item name, quantity, and unit when legible
+- steps in order
+- notes (tips, substitutions, handwritten margin notes)
+- visibleSource (cookbook name, author, URL, or card attribution) only if visible
+
+Mark confidence for the title, servings, times, each ingredient, and each step: high (printed/clear), medium (somewhat unclear), low (difficult to read), illegible (cannot read).
+
+Rate overall ocrQuality: excellent (printed, perfect), good (printed, minor issues), fair (handwritten but mostly legible), poor (blurry, cropped, or significant legibility issues).`,
               },
               ...imageMessages,
             ],
@@ -121,10 +145,19 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         typeof recipe.totalTimeMinutes === "number" ? recipe.totalTimeMinutes : undefined;
       const cuisine = typeof recipe.cuisine === "string" ? recipe.cuisine : undefined;
       const course = typeof recipe.course === "string" ? recipe.course : undefined;
+      const notes =
+        typeof recipe.notes === "string" && recipe.notes.trim() ? recipe.notes.trim() : undefined;
+      const visibleSource =
+        typeof recipe.visibleSource === "string" && recipe.visibleSource.trim()
+          ? recipe.visibleSource.trim()
+          : undefined;
 
       const ocrQuality = typeof recipe.ocrQuality === "string" ? recipe.ocrQuality : "unknown";
       const handwrittenNotes =
         typeof recipe.handwrittenNotes === "string" ? recipe.handwrittenNotes : undefined;
+      const titleConfidence = asFieldConfidence(recipe.titleConfidence);
+      const servingsConfidence = asFieldConfidence(recipe.servingsConfidence);
+      const timesConfidence = asFieldConfidence(recipe.timesConfidence);
 
       const ingredients = parseIngredientsWithOCR(recipe.ingredients, isHandwritten, ocrQuality);
       const steps = parseStepsWithOCR(recipe.steps, isHandwritten, ocrQuality);
@@ -154,11 +187,14 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         totalTimeMinutes: totalTime,
         cuisine,
         course,
+        notes,
         methodTags,
         ingredients,
         steps,
         source: {
           type: "photo" as const,
+          url: visibleSource?.startsWith("http") ? visibleSource : undefined,
+          attribution: visibleSource,
           blobRefs: (raw.sourceBlobs || []) as string[],
           importerName: "photo-importer",
           importerVersion: IMPORTER_VERSION,
@@ -171,15 +207,34 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
       };
 
       const confidenceResult = calculateOverallConfidence(draftWithoutConfidence);
+      const uncertainFields = listUncertainFields(draftWithoutConfidence, {
+        titleConfidence,
+        servingsConfidence,
+        timesConfidence,
+      });
+      const allergenClassifications = classifyDraftIngredients(ingredients);
+
+      if (uncertainFields.length > 0) {
+        reviewReasons.push(`Uncertain fields: ${uncertainFields.join(", ")}`);
+      }
 
       return {
         ...draftWithoutConfidence,
         overallConfidence: confidenceResult.overallConfidence,
         needsReview: true,
         reviewReasons: [...new Set([...reviewReasons, ...confidenceResult.reviewReasons])],
+        uncertainFields,
+        allergenClassifications,
       };
     },
   };
+}
+
+function asFieldConfidence(value: unknown): FieldConfidence | undefined {
+  if (value === "high" || value === "medium" || value === "low" || value === "illegible") {
+    return value;
+  }
+  return undefined;
 }
 
 function parseIngredientsWithOCR(

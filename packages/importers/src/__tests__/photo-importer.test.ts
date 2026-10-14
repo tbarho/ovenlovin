@@ -1,18 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createPhotoImporter } from "../importers/photo";
+import { runPhotoImport } from "../photo-pipeline";
 import { readFileSync } from "fs";
 import { join } from "path";
 
+const fixtureDir = join(__dirname, "fixtures/photo");
 const handwrittenFixture = JSON.parse(
-  readFileSync(join(__dirname, "fixtures/photo/handwritten-ginger-snaps.json"), "utf-8")
+  readFileSync(join(fixtureDir, "handwritten-ginger-snaps.json"), "utf-8")
 );
+const printedFixture = JSON.parse(
+  readFileSync(join(fixtureDir, "printed-tomato-pasta.json"), "utf-8")
+);
+const blurryFixture = JSON.parse(readFileSync(join(fixtureDir, "blurry-card.json"), "utf-8"));
+
+function imageDataUrl(name: string): string {
+  const bytes = readFileSync(join(fixtureDir, name));
+  return `data:image/png;base64,${bytes.toString("base64")}`;
+}
 
 vi.mock("ai", () => ({
   generateObject: vi.fn(),
 }));
 
-vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: () => () => "mock-model",
+vi.mock("@ai-sdk/gateway", () => ({
+  gateway: (id: string) => id,
 }));
 
 describe("Photo Importer", () => {
@@ -45,7 +56,7 @@ describe("Photo Importer", () => {
       });
 
       const result = await importer.extract({
-        images: [{ blob: "data:image/jpeg;base64,fake" }],
+        images: [{ blob: imageDataUrl("handwritten-ginger-snaps.png") }],
         isHandwritten: true,
       });
 
@@ -80,8 +91,8 @@ describe("Photo Importer", () => {
 
       const result = await importer.extract({
         images: [
-          { blob: "data:image/jpeg;base64,page1" },
-          { blob: "data:image/jpeg;base64,page2" },
+          { blob: imageDataUrl("printed-tomato-pasta.png") },
+          { blob: imageDataUrl("blurry-card.png") },
         ],
       });
 
@@ -140,6 +151,54 @@ describe("Photo Importer", () => {
       expect(draft.source.type).toBe("photo");
       expect(draft.source.importerName).toBe("photo-importer");
       expect(draft.source.licenseNote).toContain("Personal/family recipe");
+      expect(draft.notes).toBe("Chill the dough before rolling.");
+      expect(draft.source.attribution).toBe("Grandma's card box");
+      expect(draft.uncertainFields).toEqual(
+        expect.arrayContaining(["ingredient: baking soda", "step 7"])
+      );
+      expect(draft.allergenClassifications?.some((hit) => hit.allergenCode === "egg")).toBe(true);
+    });
+
+    it("extracts notes, visible source, and allergen hits from a printed card", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "photo",
+        sourceBlobs: [imageDataUrl("printed-tomato-pasta.png")],
+        rawData: printedFixture,
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+        modelUsed: "spacexai/grok-4.7",
+      });
+
+      expect(draft.title).toBe("Weeknight Tomato Pasta");
+      expect(draft.notes).toBe("Salt the pasta water well.");
+      expect(draft.source.attribution).toBe("Weeknight Dinners, p. 42");
+      expect(draft.uncertainFields).toEqual([]);
+      expect(draft.allergenClassifications?.some((hit) => hit.allergenCode === "milk")).toBe(true);
+    });
+
+    it("warns with named uncertain fields for a bad photo", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "photo",
+        sourceBlobs: [imageDataUrl("blurry-card.png")],
+        rawData: blurryFixture,
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+        modelUsed: "spacexai/grok-4.7",
+      });
+
+      expect(draft.needsReview).toBe(true);
+      expect(draft.uncertainFields).toEqual(
+        expect.arrayContaining([
+          "title",
+          "servings",
+          "times",
+          "ingredient: [unclear line]",
+          "step 1",
+        ])
+      );
+      expect(draft.reviewReasons.some((reason) => reason.startsWith("Uncertain fields:"))).toBe(
+        true
+      );
     });
 
     it("should apply fair quality penalties", async () => {
@@ -278,6 +337,25 @@ describe("Photo Importer", () => {
       const draft = await importer.toDraft(rawExtraction);
 
       expect(draft.reviewReasons).toContain("Legibility notes: Temperature partially smudged");
+    });
+  });
+
+  describe("runPhotoImport", () => {
+    it("reads fixture images, mocks the model, and classifies allergens", async () => {
+      const { generateObject } = await import("ai");
+      (generateObject as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        object: printedFixture,
+      });
+
+      const result = await runPhotoImport(
+        { images: [{ blob: imageDataUrl("printed-tomato-pasta.png") }] },
+        { visionModelId: "spacexai/grok-4.7" }
+      );
+
+      expect(generateObject).toHaveBeenCalled();
+      expect(result.draft.title).toBe("Weeknight Tomato Pasta");
+      expect(result.uncertainFields).toEqual([]);
+      expect(result.allergenClassifications.some((hit) => hit.allergenCode === "milk")).toBe(true);
     });
   });
 });
