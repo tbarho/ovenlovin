@@ -3,6 +3,7 @@ import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
 import type { ConfigStatus, DeployInfo } from "@ovenlovin/core/onboarding";
 import { formatDeployedAt } from "@ovenlovin/core/onboarding";
+import { OVENLOVIN_PITCH } from "@/lib/llms-txt";
 import { ConnectAgentSection } from "./ConnectAgentSection";
 import { SiteHeader } from "./SiteHeader";
 import { StatusStrip } from "./StatusStrip";
@@ -25,6 +26,7 @@ export function LandingPage({
 }) {
   const deployed = deploy.deployedAt ? formatDeployedAt(deploy.deployedAt) : null;
   const pillLabel = deploy.live ? "Live" : deploy.environmentLabel;
+  const kitchenHref = signedIn ? "/recipes" : clerkEnabled ? "/sign-in" : "#status";
 
   return (
     <div className="shell">
@@ -42,36 +44,46 @@ export function LandingPage({
                 priority
                 unoptimized
               />
-              <div className={`live-pill ${deploy.live ? "is-live" : "is-local"}`}>
-                <i className="live-dot" aria-hidden="true" />
-                <span className="live-label">{pillLabel}</span>
-                <a className="live-url" href={deploy.instanceUrl}>
-                  {deploy.instanceHost}
-                </a>
-              </div>
-              {deployed ? (
-                <p className="hero-deployed" title={deployed.iso}>
-                  Deployed {deployed.absolute}
-                  {deployed.relative ? ` · ${deployed.relative}` : ""}
-                </p>
+              {signedIn ? (
+                <>
+                  <div className={`live-pill ${deploy.live ? "is-live" : "is-local"}`}>
+                    <i className="live-dot" aria-hidden="true" />
+                    <span className="live-label">{pillLabel}</span>
+                    <a className="live-url" href={deploy.instanceUrl}>
+                      {deploy.instanceHost}
+                    </a>
+                  </div>
+                  {deployed ? (
+                    <p className="hero-deployed" title={deployed.iso}>
+                      Deployed {deployed.absolute}
+                      {deployed.relative ? ` · ${deployed.relative}` : ""}
+                    </p>
+                  ) : null}
+                </>
               ) : null}
             </div>
-            <h1>{deploy.headline}</h1>
-            <p className="lead">This is yours — {instanceName}. Your household. Your data.</p>
-            <ul className="yours-row">
-              <li>
-                <span>Instance</span>
-                <b>{instanceName}</b>
-              </li>
-              <li>
-                <span>Household</span>
-                <b>Yours</b>
-              </li>
-              <li>
-                <span>Data</span>
-                <b>On this deploy</b>
-              </li>
-            </ul>
+            <h1>{signedIn ? deploy.headline : OVENLOVIN_PITCH}</h1>
+            <p className="lead">
+              {signedIn
+                ? `This is yours — ${instanceName}. Your household. Your data.`
+                : "Open-source recipe box for families and their agents. Per-person allergen checks. Not medical advice — always read the label."}
+            </p>
+            {signedIn ? (
+              <ul className="yours-row">
+                <li>
+                  <span>Instance</span>
+                  <b>{instanceName}</b>
+                </li>
+                <li>
+                  <span>Household</span>
+                  <b>Yours</b>
+                </li>
+                <li>
+                  <span>Data</span>
+                  <b>On this deploy</b>
+                </li>
+              </ul>
+            ) : null}
             <div className="hero-ctas" id="start">
               {signedIn ? (
                 <Link className="btn primary" href="/recipes">
@@ -101,20 +113,19 @@ export function LandingPage({
                 Migrate from ReciMe
               </a>
             </div>
-            <VercelBand deploy={deploy} />
+            {signedIn ? <VercelBand deploy={deploy} /> : null}
           </div>
         </section>
 
         <div className="wrap">
           <div className="paths">
-            <Link
-              className="path-card"
-              href={signedIn ? "/recipes" : clerkEnabled ? "/sign-in" : "#status"}
-            >
+            <Link className="path-card" href={kitchenHref}>
               <span className="kicker">01</span>
-              <h2>Sign in and cook</h2>
+              <h2>{signedIn ? "Open the kitchen" : "Sign in and cook"}</h2>
               <p>
-                Create your household on first sign-in, then import recipes and set people rules.
+                {signedIn
+                  ? "Recipes, this week’s plan, the shopping list, and people rules — on this household."
+                  : "Create your household on first sign-in, then import recipes and set people rules."}
               </p>
             </Link>
             <a
@@ -143,21 +154,36 @@ export function LandingPage({
           </div>
         </div>
 
-        <section className="section" id="status">
-          <div className="wrap">
-            <h2>This instance</h2>
-            <p className="intro">
-              A quick look at whether the database, Clerk, and AI Gateway landed with the deploy.
-            </p>
-            <StatusStrip status={status} />
-          </div>
-        </section>
+        {signedIn ? (
+          <section className="section" id="status" data-testid="owner-status">
+            <div className="wrap">
+              <h2>This instance</h2>
+              <p className="intro">
+                A quick look at whether the database, Clerk, and AI Gateway landed with the deploy.
+              </p>
+              <StatusStrip status={status} />
+            </div>
+          </section>
+        ) : clerkEnabled ? null : (
+          <section className="section" id="status">
+            <div className="wrap">
+              <h2>Finish setup</h2>
+              <p className="intro">
+                Clerk is not configured on this deploy yet. Status below is for the person setting
+                the instance up.
+              </p>
+              <StatusStrip status={status} />
+            </div>
+          </section>
+        )}
 
         <ConnectAgentSection origin={origin} signedIn={signedIn} />
       </main>
       <footer className="footer wrap">
         <span>
-          {instanceName} · OvenLovin · {deploy.instanceHost}
+          {signedIn ? `${instanceName} · ` : ""}
+          OvenLovin
+          {signedIn ? ` · ${deploy.instanceHost}` : ""}
         </span>
         {deploy.github.repoUrl ? (
           <a href={deploy.github.repoUrl} target="_blank" rel="noreferrer">

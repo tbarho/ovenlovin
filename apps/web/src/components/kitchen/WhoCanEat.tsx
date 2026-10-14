@@ -35,6 +35,7 @@ export function WhoCanEat({
   return (
     <div className="who-can-eat">
       <h2 className="who-can-eat-title">Who can eat this</h2>
+      <p className="olp-hint">Not medical advice. Always read ingredient labels before serving.</p>
       {result.status === "incomplete" ? (
         <p className="olp-lead" data-testid="who-incomplete">
           This check is incomplete

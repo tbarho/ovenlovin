@@ -1,6 +1,7 @@
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { isClerkProtectExempt } from "@/lib/clerk-protect";
+import { isDevPreviewAllowed, isDevPreviewPath } from "@/lib/dev-routes";
 import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
 
 const clerkConfigured = Boolean(
@@ -13,6 +14,9 @@ const clerk = clerkMiddleware(async (auth, req) => {
 });
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  if (isDevPreviewPath(req.nextUrl.pathname) && !isDevPreviewAllowed()) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
   if (isE2eAuthBypassEnabled()) {
     return NextResponse.next();
   }

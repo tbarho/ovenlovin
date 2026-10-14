@@ -33,6 +33,7 @@ describe("WhoCanEat", () => {
       />
     );
 
+    expect(screen.getByText(/not medical advice/i)).toBeInTheDocument();
     expect(screen.getByTestId(`mark-${child.id}`)).toHaveAttribute("data-mark", "block");
     expect(screen.getByTestId(`mark-${parent.id}`)).toHaveAttribute("data-mark", "ok");
 

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { gotoDevPreview } from "./dev-routes";
 
 async function expectSolidSheet(page: Page, title: string | RegExp) {
   const dialog = page.getByRole("dialog", { name: title });
@@ -12,7 +13,7 @@ async function expectSolidSheet(page: Page, title: string | RegExp) {
 }
 
 test("people rules prototype is public and clickable", async ({ page }, testInfo) => {
-  await page.goto("/prototype/people");
+  test.skip(!(await gotoDevPreview(page, "/prototype/people")), "prototype is gated on production");
   await page.waitForLoadState("networkidle");
 
   await expect(page.getByRole("heading", { name: "Your kitchen" })).toBeVisible();

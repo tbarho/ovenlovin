@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { ClerkReadyProvider } from "@/components/ClerkReadyProvider";
+import { OVENLOVIN_PITCH } from "@/lib/llms-txt";
+import { publicOrigin } from "@/lib/public-origin";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,8 +31,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(publicOrigin()),
   title: "OvenLovin",
-  description: "LLM-optimized recipe and family meal-planning platform",
+  description: OVENLOVIN_PITCH,
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: [
       { url: brandPublicPath.favicon, type: "image/svg+xml" },
@@ -40,11 +44,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "OvenLovin",
-    description: "LLM-optimized recipe and family meal-planning platform",
-    images: [{ url: brandPublicPath.og, width: 1200, height: 630, alt: "OvenLovin" }],
+    description: OVENLOVIN_PITCH,
+    images: [{ url: brandPublicPath.og, width: 1200, height: 630, alt: OVENLOVIN_PITCH }],
   },
   twitter: {
     card: "summary_large_image",
+    description: OVENLOVIN_PITCH,
     images: [brandPublicPath.og],
   },
 };
