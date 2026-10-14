@@ -1,7 +1,9 @@
+import { notFound } from "next/navigation";
 import { AppChrome } from "@/components/kitchen/AppChrome";
 import { WhoCanEat } from "@/components/kitchen/WhoCanEat";
 import { PeopleHome } from "@/components/people/PeopleHome";
 import { PersonPage } from "@/components/people/PersonPage";
+import { isDevPreviewAllowed } from "@/lib/dev-routes";
 import { writePersonNotes } from "@/lib/person-appearance";
 import { testPerson, testPersonRule, testPreference } from "@/test/fixtures";
 import "@/app/prototype/people/prototype.css";
@@ -58,6 +60,7 @@ export default async function PeoplePreviewPage({
 }: {
   searchParams: Promise<{ view?: string }>;
 }) {
+  if (!isDevPreviewAllowed()) notFound();
   const { view } = await searchParams;
   return (
     <AppChrome>

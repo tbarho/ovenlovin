@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { gotoDevPreview } from "./dev-routes";
 
 test("prototype sheet inputs keep focus for a full word", async ({ page }) => {
-  await page.goto("/prototype/people");
+  test.skip(!(await gotoDevPreview(page, "/prototype/people")), "prototype is gated on production");
   await page.waitForLoadState("networkidle");
   await page.getByTestId("person-chip-jake").click();
   await expect(page.getByRole("heading", { name: "Jake" })).toBeVisible();

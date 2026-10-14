@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { gotoDevPreview } from "./dev-routes";
 
 test("unsigned people preview shows the production people cards", async ({ page }, testInfo) => {
-  await page.goto("/dev/people-preview");
+  test.skip(
+    !(await gotoDevPreview(page, "/dev/people-preview")),
+    "people-preview is gated on production"
+  );
   await page.waitForLoadState("networkidle");
 
   await expect(page.getByRole("heading", { name: "Household 1" })).toBeVisible();

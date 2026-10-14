@@ -19,9 +19,11 @@ export function SiteHeader({
           OvenLovin
         </Link>
         <ul className="nav-links">
-          <li>
-            <a href="#live">You&apos;re live</a>
-          </li>
+          {signedIn ? (
+            <li>
+              <a href="#live">You&apos;re live</a>
+            </li>
+          ) : null}
           <li>
             <a href="#connect">Connect an agent</a>
           </li>

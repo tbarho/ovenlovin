@@ -57,7 +57,7 @@ export function buildRecimeMigratePrompt(input: {
     `- MCP: manage_cookbook  action=create, name, description`,
     `Keep a map of ReciMe folder → cookbook id.`,
     ``,
-    `Cookbooks, Blob image upload, and recipe times/images landed on main with the recipes agent (PR #90): GET/POST ${apiUrl}/cookbooks, POST ${apiUrl}/cookbooks/:id/recipes, POST ${apiUrl}/uploads/images, MCP list_cookbooks / get_cookbook / manage_cookbook, and import_recipe cookbookId. If any of those 404, this deploy may still be rolling — retry once, then import recipes anyway and list "cookbook membership skipped" in the summary. Do not invent endpoints.`,
+    `This kitchen supports cookbooks, image upload, and recipe times: GET/POST ${apiUrl}/cookbooks, POST ${apiUrl}/cookbooks/:id/recipes, POST ${apiUrl}/uploads/images, MCP list_cookbooks / get_cookbook / manage_cookbook, and import_recipe cookbookId. If any of those 404, retry once, then import recipes anyway and list "cookbook membership skipped" in the summary. Do not invent endpoints.`,
     ``,
     `## Import each recipe`,
     `De-duplicate by source URL before creating. List existing recipes (GET ${apiUrl}/recipes?limit=50 and page cursors; MCP search_recipes) and skip when source.url or source.canonicalUrl already matches the ReciMe permalink or the original source URL.`,
