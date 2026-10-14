@@ -88,13 +88,22 @@ const UNIT_TO_BASE: Record<string, { dimension: UnitDimension; toBase: number }>
   lb: { dimension: "weight", toBase: 453.59237 },
 };
 
+/**
+ * REST `replaceMealPlanEntries` always persists `scaleFactor: 1`. Scale from
+ * the plan entry's servings versus the recipe card. Imported recipes often
+ * have a null yield — treat those as a 4-serving card so REST servings still
+ * change the list.
+ */
+export const DEFAULT_RECIPE_SERVINGS = 4;
+
 export function servingsScale(
   entryServings?: number | null,
   recipeServings?: number | null,
   scaleFactor?: number | null
 ): number {
-  if (entryServings && recipeServings && recipeServings > 0) {
-    return entryServings / recipeServings;
+  if (entryServings && entryServings > 0) {
+    const base = recipeServings && recipeServings > 0 ? recipeServings : DEFAULT_RECIPE_SERVINGS;
+    return entryServings / base;
   }
   if (scaleFactor && scaleFactor > 0) return scaleFactor;
   return 1;

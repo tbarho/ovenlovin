@@ -38,14 +38,20 @@ function build(
 }
 
 describe("servingsScale", () => {
-  it("scales plan entry servings relative to recipe servings", () => {
+  it("scales plan entry servings relative to recipe servings even when scaleFactor is 1", () => {
     expect(servingsScale(6, 4, 1)).toBe(1.5);
+    expect(servingsScale(8, 4, 1)).toBe(2);
     expect(servingsScale(6, 6, 1)).toBe(1);
   });
 
-  it("falls back to scaleFactor when recipe servings are missing", () => {
-    expect(servingsScale(6, null, 2)).toBe(2);
-    expect(servingsScale(null, 4, 1)).toBe(1);
+  it("uses a 4-serving default when the recipe card has no yield", () => {
+    expect(servingsScale(6, null, 1)).toBe(1.5);
+    expect(servingsScale(4, null, 1)).toBe(1);
+  });
+
+  it("falls back to scaleFactor only when the entry has no servings", () => {
+    expect(servingsScale(null, 4, 2)).toBe(2);
+    expect(servingsScale(undefined, null, 1)).toBe(1);
   });
 });
 
@@ -130,6 +136,36 @@ describe("ShoppingListService", () => {
     ]);
 
     expect(list.ingredients[0]).toMatchObject({ name: "ziti", quantity: 1.5, unit: "lb" });
+  });
+
+  it("scales REST plan entries that persist scaleFactor 1 and only set servings", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "salmon", servings: 8, scaleFactor: 1 }),
+        recipeTitle: "Sheet-pan salmon",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 lb broccoli florets" }],
+      },
+    ]);
+
+    expect(list.ingredients[0]).toMatchObject({
+      name: "broccoli florets",
+      quantity: 2,
+      unit: "lb",
+    });
+  });
+
+  it("scales REST servings when the recipe card has no servings", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "imported", servings: 8, scaleFactor: 1 }),
+        recipeTitle: "Imported taco pasta",
+        recipeServings: null,
+        ingredients: [{ rawText: "12 oz pasta" }],
+      },
+    ]);
+
+    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 24, unit: "oz" });
   });
 
   it("merges convertible units (tsp + tbsp)", () => {
