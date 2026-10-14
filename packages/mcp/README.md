@@ -29,7 +29,7 @@ Scopes:
 
 ### `search_recipes`
 
-Search for recipes with filters. Can exclude recipes with blocking rules for specific attendees.
+Search for recipes with filters. Can exclude recipes with blocking rules for specific attendees. When `forAttendees` is set, the result includes `hiddenCount` and `hidden` (recipe id/title plus who/ingredient/why for each block).
 
 ```json
 {

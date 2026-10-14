@@ -4,7 +4,7 @@ Remote MCP server: `https://your-app.vercel.app/mcp`
 
 ## Recipes
 
-- `search_recipes` — search by text, method tags, and attendee warnings. Tree-nut rules do not treat coconut as a nut unless `treatCoconutAsTreeNut` is true (default false).
+- `search_recipes` — search by text, method tags, and attendee warnings. `forAttendees` hides block hits and returns `hiddenCount` / `hidden` (recipe, person, ingredient, why)
 - `get_recipe` — full recipe including servings, prep/cook times, images, cookbooks, and source URL (`includeSource` defaults to true)
 - `import_recipe` — URL or paste import. Pulls schema.org times and the main image, then copies that image into Vercel Blob. Optional `cookbookId`
 

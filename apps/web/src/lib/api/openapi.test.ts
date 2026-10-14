@@ -33,6 +33,8 @@ describe("generateOpenApiDocument", () => {
     );
     expect(spec.paths?.["/recipes"]?.get).toBeTruthy();
     expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("forAttendees");
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hiddenCount");
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hidden");
     expect(spec.paths?.["/recipes"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/{id}"]?.delete).toBeTruthy();
     const recipe = spec.components?.schemas?.Recipe as { properties?: Record<string, unknown> };

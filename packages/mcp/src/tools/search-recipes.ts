@@ -13,12 +13,15 @@ import {
   LOVE_PREFERENCE_TYPE,
   attendeeWarningsFromCheck,
   checkIngredientsAgainstRules,
+  hiddenRecipeFromCheck,
   isBlockedForAttendees,
   loveScore,
   lovesForRecipe,
+  type HiddenRecipe,
   type PersonLove,
   type RuleCheckContext,
   type IngredientCheckInput,
+  type RuleCheckResult,
 } from "@ovenlovin/allergens";
 
 export const searchRecipesSchema = z.object({
@@ -52,6 +55,8 @@ export interface SearchRecipesOutput {
     loveTags?: string[];
   }>;
   nextCursor?: string;
+  hiddenCount?: number;
+  hidden?: HiddenRecipe[];
 }
 
 async function handler(
@@ -109,6 +114,7 @@ async function handler(
   }
 
   // Process recipes and check rules if needed
+  const hidden: HiddenRecipe[] = [];
   const recipesWithWarnings = await Promise.all(
     result.items.map(async (recipe) => {
       let warnings: Array<{
@@ -126,6 +132,8 @@ async function handler(
           personNames
         );
         if (attendeeCheck.blocked) {
+          const hiddenRecipe = hiddenRecipeFromCheck(recipe, attendeeCheck.result);
+          if (hiddenRecipe) hidden.push(hiddenRecipe);
           return null;
         }
         warnings = attendeeCheck.warnings;
@@ -171,6 +179,9 @@ async function handler(
   return {
     recipes,
     nextCursor: result.nextCursor ?? undefined,
+    ...(input.forAttendees && input.forAttendees.length > 0
+      ? { hiddenCount: hidden.length, hidden }
+      : {}),
   };
 }
 
@@ -190,6 +201,7 @@ async function checkRecipeForAttendees(
     severity: "block" | "warn" | "prefer_avoid";
     message: string;
   }>;
+  result: RuleCheckResult;
 }> {
   // Load recipe ingredients
   const ingredientRows = await db
@@ -197,8 +209,13 @@ async function checkRecipeForAttendees(
     .from(recipeIngredient)
     .where(and(eq(recipeIngredient.recipeId, recipe.id), isNull(recipeIngredient.deletedAt)));
 
+  const emptyResult: RuleCheckResult = {
+    status: "complete",
+    findings: { block: [], warn: [], prefer_avoid: [] },
+  };
+
   if (ingredientRows.length === 0) {
-    return { blocked: false, warnings: [] };
+    return { blocked: false, warnings: [], result: emptyResult };
   }
 
   // Convert to check input format
@@ -225,20 +242,21 @@ async function checkRecipeForAttendees(
   }
 
   if (contexts.length === 0) {
-    return { blocked: false, warnings: [] };
+    return { blocked: false, warnings: [], result: emptyResult };
   }
 
   const checkResult = checkIngredientsAgainstRules(ingredients, contexts);
   return {
     blocked: isBlockedForAttendees(checkResult),
     warnings: attendeeWarningsFromCheck(checkResult),
+    result: checkResult,
   };
 }
 
 export const searchRecipesTool = {
   name: "search_recipes",
   description:
-    "Search for recipes with optional filters. Can exclude recipes with blocking rules for specific attendees, annotate warnings, and boost dishes someone loves. Loves never hide a recipe. Not medical advice — always check ingredient labels before serving.",
+    "Search for recipes with optional filters. forAttendees hides recipes with a block finding and returns hiddenCount/hidden (id, title, who, ingredient, why). Warn/prefer_avoid stay as warnings. Loves never hide a recipe. Not medical advice — always check ingredient labels before serving.",
   inputSchema: searchRecipesSchema,
   handler,
 } as const;

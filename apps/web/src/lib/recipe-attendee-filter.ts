@@ -1,6 +1,8 @@
 import {
   checkIngredientsAgainstRules,
+  hiddenRecipeFromCheck,
   isBlockedForAttendees,
+  type HiddenRecipe,
   type IngredientCheckInput,
   type RuleCheckContext,
 } from "@ovenlovin/allergens";
@@ -19,8 +21,10 @@ export async function excludeRecipesBlockedForAttendees(
   recipes: Recipe[],
   attendeeIds: string[],
   householdId: string
-): Promise<Recipe[]> {
-  if (attendeeIds.length === 0 || recipes.length === 0) return recipes;
+): Promise<{ items: Recipe[]; hidden: HiddenRecipe[] }> {
+  if (attendeeIds.length === 0 || recipes.length === 0) {
+    return { items: recipes, hidden: [] };
+  }
 
   const db = getDatabase();
   const peopleService = new PeopleService(db);
@@ -41,7 +45,7 @@ export async function excludeRecipesBlockedForAttendees(
     }
   }
 
-  if (contexts.length === 0) return recipes;
+  if (contexts.length === 0) return { items: recipes, hidden: [] };
 
   const recipeIds = recipes.map((item) => item.id);
   const ingredientRows = await db
@@ -60,9 +64,21 @@ export async function excludeRecipesBlockedForAttendees(
     ingredientsByRecipe.set(row.recipeId, list);
   }
 
-  return recipes.filter((recipe) => {
+  const items: Recipe[] = [];
+  const hidden: HiddenRecipe[] = [];
+  for (const recipe of recipes) {
     const ingredients = ingredientsByRecipe.get(recipe.id) ?? [];
-    if (ingredients.length === 0) return true;
-    return !isBlockedForAttendees(checkIngredientsAgainstRules(ingredients, contexts));
-  });
+    if (ingredients.length === 0) {
+      items.push(recipe);
+      continue;
+    }
+    const check = checkIngredientsAgainstRules(ingredients, contexts);
+    if (isBlockedForAttendees(check)) {
+      const hiddenRecipe = hiddenRecipeFromCheck(recipe, check);
+      if (hiddenRecipe) hidden.push(hiddenRecipe);
+      continue;
+    }
+    items.push(recipe);
+  }
+  return { items, hidden };
 }

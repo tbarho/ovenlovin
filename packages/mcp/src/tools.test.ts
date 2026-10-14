@@ -51,6 +51,11 @@ describe("MCP Tool Schemas", () => {
         expect(result.data.maxResults).toBe(20);
       }
     });
+
+    it("documents hiddenCount/hidden when forAttendees hides a recipe", () => {
+      expect(searchRecipesTool.description).toMatch(/hiddenCount/);
+      expect(searchRecipesTool.description).toMatch(/hidden/);
+    });
   });
 
   describe("get_recipe", () => {

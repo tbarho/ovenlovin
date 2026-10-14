@@ -29,7 +29,10 @@ export { freeClaimHintsForAllergen, lineNegatesAllergen, lineNegatesPhrase } fro
 export {
   isBlockedForAttendees,
   attendeeWarningsFromCheck,
+  hiddenRecipeFromCheck,
   type AttendeeWarning,
+  type HiddenRecipe,
+  type HiddenRecipeReason,
 } from "./attendee-filter";
 
 export {
