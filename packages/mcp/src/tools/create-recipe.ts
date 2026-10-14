@@ -6,6 +6,7 @@ import { createDbClient } from "@ovenlovin/db";
 export const createRecipeSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().optional(),
+  notes: z.string().optional(),
   servings: z.number().int().positive().optional(),
   prepTimeMinutes: z.number().int().nonnegative().optional(),
   cookTimeMinutes: z.number().int().nonnegative().optional(),
@@ -35,6 +36,7 @@ async function handler(input: z.infer<typeof createRecipeSchema>, context: AuthC
     {
       title: input.title,
       description: input.description,
+      notes: input.notes,
       servings: input.servings,
       prepTimeMinutes: input.prepTimeMinutes,
       cookTimeMinutes: input.cookTimeMinutes,

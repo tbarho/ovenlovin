@@ -120,12 +120,14 @@ describe("URL Importer", () => {
           ...chocolateChipCookiesJson,
           name: "Spanish Cauliflower Rice Recipe",
           recipeYield: ["6 servings"],
+          notes: "Rinse the cauliflower well.",
         },
         extractedAt: new Date(),
         extractorVersion: "0.1.0",
       });
       expect(draft.title).toBe("Spanish Cauliflower Rice");
       expect(draft.servings).toBe(6);
+      expect(draft.notes).toBe("Rinse the cauliflower well.");
     });
 
     it("should extract timers from steps", async () => {
