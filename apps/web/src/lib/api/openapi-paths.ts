@@ -60,7 +60,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           .string()
           .optional()
           .describe(
-            "Comma-separated person IDs. Recipes that hit a block rule for any attendee are omitted."
+            "Comma-separated person IDs. Recipes that hit a block rule for any attendee are omitted from items and listed in hidden with hiddenCount."
           ),
         cookbookId: z.string().uuid().optional(),
         uncategorized: z.enum(["true", "false"]).optional(),
@@ -68,8 +68,31 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     },
     responses: {
       200: {
-        description: "Recipe page",
-        content: { "application/json": { schema: z.object({ items: z.array(recipeSchema) }) } },
+        description: "Recipe page. When forAttendees is set, also returns hiddenCount and hidden.",
+        content: {
+          "application/json": {
+            schema: z.object({
+              items: z.array(recipeSchema),
+              hiddenCount: z.number().int().nonnegative().optional(),
+              hidden: z
+                .array(
+                  z.object({
+                    id: z.string(),
+                    title: z.string(),
+                    reasons: z.array(
+                      z.object({
+                        personId: z.string(),
+                        personName: z.string(),
+                        ingredientName: z.string(),
+                        message: z.string(),
+                      })
+                    ),
+                  })
+                )
+                .optional(),
+            }),
+          },
+        },
       },
     },
   });

@@ -163,6 +163,7 @@ GET /api/v1/recipes
 - `prepTimeMinutes_lte` (integer, optional) - Max prep time
 - `cookTimeMinutes_lte` (integer, optional) - Max cook time
 - `search` (string, optional) - Search in title, ingredients, description
+- `forAttendees` (string, optional) - Person IDs (repeat or comma-separated). Recipes that hit a `block` rule for any attendee are omitted from `items` and listed in `hidden`.
 
 **Response**:
 ```json
@@ -182,9 +183,26 @@ GET /api/v1/recipes
     }
   ],
   "hasMore": false,
-  "nextCursor": null
+  "nextCursor": null,
+  "hiddenCount": 1,
+  "hidden": [
+    {
+      "id": "recipe-pesto",
+      "title": "Pesto pasta",
+      "reasons": [
+        {
+          "personId": "person-1",
+          "personName": "Child A",
+          "ingredientName": "pine nuts",
+          "message": "Child A cannot eat pine nuts (block rule: Tree Nut)"
+        }
+      ]
+    }
+  ]
 }
 ```
+
+`hiddenCount` / `hidden` are present when `forAttendees` is set. Warn / prefer-avoid findings stay on visible recipes; only blocks hide a recipe.
 
 #### Get Recipe
 

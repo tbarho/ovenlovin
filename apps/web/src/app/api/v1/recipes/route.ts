@@ -35,12 +35,17 @@ export async function GET(request: NextRequest) {
 
     const forAttendees = parseForAttendeesParam(url.searchParams.getAll("forAttendees"));
     if (forAttendees.length > 0) {
-      const visible = await excludeRecipesBlockedForAttendees(
+      const { items, hidden } = await excludeRecipesBlockedForAttendees(
         result.items,
         forAttendees,
         householdId
       );
-      return paginatedResponse({ ...result, items: visible });
+      return jsonResponse({
+        ...result,
+        items,
+        hiddenCount: hidden.length,
+        hidden,
+      });
     }
 
     return paginatedResponse(result);

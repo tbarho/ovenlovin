@@ -30,3 +30,34 @@ export function attendeeWarningsFromCheck(result: RuleCheckResult): AttendeeWarn
   }
   return warnings;
 }
+
+/** Why search hid a recipe when `forAttendees` is set. */
+export type HiddenRecipeReason = {
+  personId: string;
+  personName: string;
+  ingredientName: string;
+  message: string;
+};
+
+export type HiddenRecipe = {
+  id: string;
+  title: string;
+  reasons: HiddenRecipeReason[];
+};
+
+export function hiddenRecipeFromCheck(
+  recipe: { id: string; title: string },
+  result: RuleCheckResult
+): HiddenRecipe | null {
+  if (result.findings.block.length === 0) return null;
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    reasons: result.findings.block.map((finding) => ({
+      personId: finding.personId,
+      personName: finding.personName,
+      ingredientName: finding.ingredientName,
+      message: finding.message,
+    })),
+  };
+}

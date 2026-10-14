@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { attendeeWarningsFromCheck, isBlockedForAttendees } from "./attendee-filter";
+import {
+  attendeeWarningsFromCheck,
+  hiddenRecipeFromCheck,
+  isBlockedForAttendees,
+} from "./attendee-filter";
 import type { RuleCheckResult } from "./rule-checker";
 
 function emptyResult(overrides: Partial<RuleCheckResult> = {}): RuleCheckResult {
@@ -64,5 +68,52 @@ describe("isBlockedForAttendees", () => {
     expect(attendeeWarningsFromCheck(result)).toEqual([
       { personId: "p2", severity: "warn", message: "Parent A warn milk" },
     ]);
+  });
+});
+
+describe("hiddenRecipeFromCheck", () => {
+  it("names the recipe, person, ingredient, and why it was hidden", () => {
+    const hidden = hiddenRecipeFromCheck(
+      { id: "recipe-pesto", title: "Pesto pasta" },
+      emptyResult({
+        findings: {
+          block: [
+            {
+              personId: "p1",
+              personName: "Child A",
+              ruleId: "r1",
+              severity: "block",
+              ingredientName: "pine nuts",
+              allergenCode: "pine_nut",
+              allergenName: "Pine Nut",
+              relation: "contains",
+              message: "Child A cannot eat pine nuts (block rule: Tree Nut)",
+              confidence: 0.95,
+            },
+          ],
+          warn: [],
+          prefer_avoid: [],
+        },
+      })
+    );
+
+    expect(hidden).toEqual({
+      id: "recipe-pesto",
+      title: "Pesto pasta",
+      reasons: [
+        {
+          personId: "p1",
+          personName: "Child A",
+          ingredientName: "pine nuts",
+          message: "Child A cannot eat pine nuts (block rule: Tree Nut)",
+        },
+      ],
+    });
+  });
+
+  it("returns null when nothing is blocked", () => {
+    expect(
+      hiddenRecipeFromCheck({ id: "recipe-rice", title: "Rice" }, emptyResult())
+    ).toBeNull();
   });
 });
