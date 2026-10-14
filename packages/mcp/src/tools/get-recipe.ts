@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { CookbookService, RecipeService, backfillParsedIngredient } from "@ovenlovin/core";
 import {
   createDbClient,
   recipeIngredient,
@@ -28,6 +28,7 @@ export interface GetRecipeOutput {
   id: string;
   title: string;
   description?: string;
+  notes?: string;
   yieldQuantity?: number;
   yieldUnit?: string;
   servings?: number;
@@ -46,6 +47,7 @@ export interface GetRecipeOutput {
     groupName?: string;
     order: number;
     rawText: string;
+    name: string;
     quantity?: { min: number; max?: number };
     unit?: string;
     ingredientName?: string;
@@ -99,23 +101,33 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     .where(and(eq(recipeIngredient.recipeId, input.id), isNull(recipeIngredient.deletedAt)))
     .orderBy(asc(recipeIngredient.order));
 
-  const ingredients = ingredientRows.map((ing) => ({
-    id: ing.id,
-    groupName: ing.groupId ?? undefined,
-    order: ing.order,
-    rawText: ing.rawText,
-    quantity: ing.quantityMin
-      ? {
-          min: Number(ing.quantityMin),
-          max: ing.quantityMax ? Number(ing.quantityMax) : undefined,
-        }
-      : undefined,
-    unit: ing.unit ?? undefined,
-    ingredientName: ing.ingredientId ?? undefined,
-    preparation: ing.preparation ?? undefined,
-    isOptional: ing.isOptional ?? false,
-    substitutionNotes: ing.substitutionNotes ?? undefined,
-  }));
+  const ingredients = ingredientRows.map((ing) => {
+    const parsed = backfillParsedIngredient({
+      rawText: ing.rawText,
+      quantityMin: ing.quantityMin ? Number(ing.quantityMin) : null,
+      quantityMax: ing.quantityMax ? Number(ing.quantityMax) : null,
+      unit: ing.unit ?? null,
+    });
+    return {
+      id: ing.id,
+      groupName: ing.groupId ?? undefined,
+      order: ing.order,
+      rawText: ing.rawText,
+      name: parsed.name,
+      quantity:
+        parsed.quantityMin != null
+          ? {
+              min: parsed.quantityMin,
+              max: parsed.quantityMax ?? undefined,
+            }
+          : undefined,
+      unit: parsed.unit ?? undefined,
+      ingredientName: parsed.name,
+      preparation: ing.preparation ?? undefined,
+      isOptional: ing.isOptional ?? false,
+      substitutionNotes: ing.substitutionNotes ?? undefined,
+    };
+  });
 
   // Fetch steps
   const stepRows = await db
@@ -176,6 +188,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     id: recipe.id,
     title: recipe.title,
     description: recipe.description ?? undefined,
+    notes: recipe.notes ?? undefined,
     yieldQuantity: recipe.yieldQuantity ?? undefined,
     yieldUnit: recipe.yieldUnit ?? undefined,
     servings: recipe.servings ?? undefined,
@@ -200,7 +213,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
 export const getRecipeTool = {
   name: "get_recipe",
   description:
-    "Get full recipe details including ingredients, steps, prep/cook times, images, cookbooks, and source URL.",
+    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL.",
   inputSchema: getRecipeSchema,
   handler,
 } as const;
