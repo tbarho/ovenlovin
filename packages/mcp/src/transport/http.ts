@@ -1,144 +1,131 @@
-/**
- * Streamable HTTP transport for MCP server
- *
- * Implements Server-Sent Events (SSE) transport as specified in the MCP spec
- * for remote MCP servers over HTTP.
- */
-
-import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import type { AuthContext } from "../auth/index";
+import {
+  JsonRpcErrorCode,
+  type JsonRpcRequest,
+  isJsonRpcNotification,
+  jsonRpcError,
+  requestId,
+} from "../json-rpc";
+import { dispatchMcpRequest, type ProtocolServerInfo } from "../protocol";
 
 export interface HttpTransportOptions {
   /**
-   * Authentication header to validate (e.g., "Bearer <token>")
+   * Authentication header to validate (e.g., "Bearer <token>" or "ApiKey <key>")
    */
   authHeader?: string;
   /**
-   * Callback to extract auth context from request
+   * Resolve household/user from the Authorization header.
+   * Required for every POST in production.
    */
-  onAuth?: (authHeader: string) => Promise<AuthInfo> | AuthInfo;
+  onAuth?: (authHeader: string) => Promise<AuthContext> | AuthContext;
+  /**
+   * When true (default if onAuth is set), missing/invalid auth returns HTTP 401
+   * with a JSON-RPC error envelope.
+   */
+  requireAuth?: boolean;
+  serverInfo?: ProtocolServerInfo;
 }
 
-export interface AuthInfo {
-  householdId: string;
-  userId: string;
-  scopes: string[];
+export type AuthInfo = AuthContext;
+
+function jsonHeaders(): Record<string, string> {
+  return { "Content-Type": "application/json" };
 }
 
-/**
- * Create a readable stream for SSE responses
- */
-class SSETransport implements Transport {
-  private messageQueue: JSONRPCMessage[] = [];
-  private readyResolve?: () => void;
-  private readyPromise: Promise<void>;
-
-  constructor() {
-    this.readyPromise = new Promise((resolve) => {
-      this.readyResolve = resolve;
-    });
-  }
-
-  async start(): Promise<void> {
-    this.readyResolve?.();
-  }
-
-  async send(message: JSONRPCMessage): Promise<void> {
-    this.messageQueue.push(message);
-  }
-
-  async close(): Promise<void> {
-    // Cleanup
-  }
-
-  onclose?: () => void;
-  onerror?: (error: Error) => void;
-  onmessage?: (message: JSONRPCMessage) => void;
-
-  getMessages(): JSONRPCMessage[] {
-    const messages = [...this.messageQueue];
-    this.messageQueue = [];
-    return messages;
-  }
-
-  receiveMessage(message: JSONRPCMessage): void {
-    this.onmessage?.(message);
-  }
+function envelope(
+  status: number,
+  body: unknown
+): {
+  status: number;
+  headers: Record<string, string>;
+  body: string;
+} {
+  return {
+    status,
+    headers: jsonHeaders(),
+    body: JSON.stringify(body),
+  };
 }
 
 /**
- * Handle MCP over HTTP with SSE
+ * Stateless Streamable HTTP handler. One JSON-RPC request per POST.
+ * Does not call MCP SDK `server.connect()`, so a second request cannot
+ * throw "Already connected to a transport".
  */
 export async function handleHttpRequest(
-  server: Server,
+  _server: unknown,
   request: {
     method: string;
-    body: JSONRPCMessage;
+    body: JsonRpcRequest | JsonRpcRequest[];
     headers: Record<string, string>;
   },
   options: HttpTransportOptions = {}
 ): Promise<{
   status: number;
   headers: Record<string, string>;
-  body: AsyncIterable<string> | string;
+  body: string;
 }> {
-  // Validate method
+  const requireAuth = options.requireAuth ?? Boolean(options.onAuth);
+  const first = Array.isArray(request.body) ? request.body[0] : request.body;
+  const id = requestId(first);
+
   if (request.method !== "POST") {
+    return envelope(405, jsonRpcError(id, JsonRpcErrorCode.invalidRequest, "Method not allowed"));
+  }
+
+  let authContext: AuthContext | undefined;
+  if (requireAuth) {
+    const authHeader = request.headers.authorization || request.headers.Authorization;
+    if (!authHeader) {
+      return envelope(401, jsonRpcError(id, JsonRpcErrorCode.unauthorized, "Unauthorized"));
+    }
+    try {
+      authContext = options.onAuth ? await options.onAuth(authHeader) : undefined;
+      if (!authContext?.householdId) {
+        return envelope(401, jsonRpcError(id, JsonRpcErrorCode.unauthorized, "Unauthorized"));
+      }
+    } catch (error) {
+      return envelope(
+        401,
+        jsonRpcError(
+          id,
+          JsonRpcErrorCode.unauthorized,
+          error instanceof Error ? error.message : "Invalid credentials"
+        )
+      );
+    }
+  } else if (options.onAuth) {
+    const authHeader = request.headers.authorization || request.headers.Authorization;
+    if (authHeader) {
+      try {
+        authContext = await options.onAuth(authHeader);
+      } catch {
+        authContext = undefined;
+      }
+    }
+  }
+
+  const serverInfo = options.serverInfo ?? { name: "ovenlovin-mcp", version: "0.1.0" };
+
+  if (Array.isArray(request.body)) {
+    const responses = [];
+    for (const message of request.body) {
+      const response = await dispatchMcpRequest(message, authContext, serverInfo);
+      if (response) responses.push(response);
+    }
+    return envelope(200, responses);
+  }
+
+  const response = await dispatchMcpRequest(request.body, authContext, serverInfo);
+  if (!response) {
     return {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Method not allowed" }),
+      status: isJsonRpcNotification(request.body) ? 202 : 200,
+      headers: jsonHeaders(),
+      body: "",
     };
   }
 
-  // Validate auth if required
-  if (options.onAuth) {
-    const authHeader = request.headers.authorization || request.headers.Authorization;
-    if (!authHeader) {
-      return {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
-    }
-
-    try {
-      await options.onAuth(authHeader);
-    } catch (error) {
-      return {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          error: "Unauthorized",
-          message: error instanceof Error ? error.message : "Invalid credentials",
-        }),
-      };
-    }
-  }
-
-  // Create transport
-  const transport = new SSETransport();
-
-  // Connect server to transport
-  await server.connect(transport);
-
-  // Process request
-  transport.receiveMessage(request.body);
-
-  // Wait a bit for response (simple implementation)
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  // Get response messages
-  const messages = transport.getMessages();
-
-  // Close transport
-  await transport.close();
-
-  // Return response
-  return {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(messages.length === 1 ? messages[0] : messages),
-  };
+  const httpStatus =
+    "error" in response && response.error.code === JsonRpcErrorCode.unauthorized ? 401 : 200;
+  return envelope(httpStatus, response);
 }

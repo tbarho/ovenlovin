@@ -3,6 +3,7 @@ import { getDatabase } from "@ovenlovin/db";
 import { ApiKeyService } from "@ovenlovin/core";
 import { eq } from "drizzle-orm";
 import { household } from "@ovenlovin/db/schema";
+import { parseAuthorizationHeader } from "./authorization";
 
 /**
  * Authentication and authorization for MCP server
@@ -33,29 +34,22 @@ export interface AuthError {
  * @throws AuthError if authentication fails
  */
 export async function authenticateRequest(headers: Record<string, string>): Promise<AuthContext> {
-  const authHeader = headers["authorization"] || headers["Authorization"];
-
-  if (!authHeader) {
+  try {
+    const scheme = parseAuthorizationHeader(headers["authorization"] || headers["Authorization"]);
+    if (scheme.kind === "apiKey") {
+      return parseApiKey(scheme.token);
+    }
+    return parseClerkToken(scheme.token);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error) {
+      const message = error instanceof Error ? error.message : "Unauthorized";
+      throw { code: "unauthorized", message } as AuthError;
+    }
     throw {
       code: "unauthorized",
-      message: "Missing Authorization header",
+      message: "Invalid authorization scheme. Use Bearer or ApiKey.",
     } as AuthError;
   }
-
-  const apiKey = extractApiKeyFromAuthHeader(authHeader);
-  if (apiKey) {
-    return parseApiKey(apiKey);
-  }
-
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7).trim();
-    return parseClerkToken(token);
-  }
-
-  throw {
-    code: "unauthorized",
-    message: "Invalid authorization scheme. Use Bearer or ApiKey.",
-  } as AuthError;
 }
 
 async function parseClerkToken(token: string): Promise<AuthContext> {
@@ -149,23 +143,6 @@ async function parseApiKey(apiKey: string): Promise<AuthContext> {
     scopes: result.key.scopes,
     apiKeyId: result.key.id,
   };
-}
-
-/**
- * Accept `Authorization: ApiKey rkapi_…` or `Bearer rkapi_…`.
- * Other Bearer tokens are treated as Clerk JWTs by the caller.
- */
-export function extractApiKeyFromAuthHeader(authHeader: string): string | null {
-  const value = authHeader.trim();
-  if (value.toLowerCase().startsWith("apikey ")) {
-    const key = value.slice(7).trim();
-    return key || null;
-  }
-  if (value.startsWith("Bearer ")) {
-    const token = value.slice(7).trim();
-    if (token.startsWith("rkapi_")) return token;
-  }
-  return null;
 }
 
 /**

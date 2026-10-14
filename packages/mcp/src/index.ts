@@ -1,7 +1,9 @@
-export { createServer, resolveAuthContext, runStdioServer, type ServerConfig } from "./server";
+export { createServer, runStdioServer, type ServerConfig } from "./server";
 export type { AuthContext, AuthError } from "./auth/index";
-export { authenticateRequest, extractApiKeyFromAuthHeader } from "./auth/index";
+export { authenticateRequest, requireScope, requireAdminRole } from "./auth/index";
+export { parseAuthorizationHeader } from "./auth/authorization";
 export { handleHttpRequest, type HttpTransportOptions, type AuthInfo } from "./transport/http";
+export { dispatchMcpRequest, listedTools } from "./protocol";
 
 // Export all tools
 export * from "./tools/search-recipes";
