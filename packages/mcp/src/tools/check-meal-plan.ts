@@ -242,8 +242,7 @@ async function handler(
         meal: entry.meal,
         recipeTitle: recipe.title,
         findings,
-        loveTags:
-          loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
+        loveTags: loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
       };
     })
   );

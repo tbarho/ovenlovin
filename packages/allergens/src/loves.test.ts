@@ -27,8 +27,16 @@ const mexican = {
 describe("loves ranking", () => {
   it("never treats a miss as a filter — unmatched recipes stay in the list", () => {
     const recipes = [
-      { title: "Tomato soup", cuisine: "American", ingredients: [{ rawText: "2 cans crushed tomatoes" }] },
-      { title: "Sheet-pan salmon", cuisine: "American", ingredients: [{ rawText: "4 salmon fillets" }] },
+      {
+        title: "Tomato soup",
+        cuisine: "American",
+        ingredients: [{ rawText: "2 cans crushed tomatoes" }],
+      },
+      {
+        title: "Sheet-pan salmon",
+        cuisine: "American",
+        ingredients: [{ rawText: "4 salmon fillets" }],
+      },
     ];
     const ranked = rankRecipesByLoves(recipes, [ty]);
     expect(ranked.map((recipe) => recipe.title)).toEqual(["Sheet-pan salmon", "Tomato soup"]);
@@ -37,9 +45,9 @@ describe("loves ranking", () => {
 
   it("matches cuisine, style, and ingredient lines", () => {
     expect(recipeMatchesLove({ title: "Veggie tacos", cuisine: "Mexican" }, "mexican")).toBe(true);
-    expect(recipeMatchesLove({ title: "Kung pao chicken", description: "spicy stir-fry" }, "spicy")).toBe(
-      true
-    );
+    expect(
+      recipeMatchesLove({ title: "Kung pao chicken", description: "spicy stir-fry" }, "spicy")
+    ).toBe(true);
     expect(
       recipeMatchesLove(
         { title: "Sheet-pan salmon", ingredients: [{ rawText: "4 salmon fillets" }] },
