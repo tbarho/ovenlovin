@@ -1,7 +1,11 @@
 import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
-import type { IngredientCategory } from "../schemas/ingredients";
 import type { MealPlanEntry } from "../schemas/plans";
-import { assignAisle, categorySectionName, isPantryStaple } from "./shopping-aisles";
+import {
+  assignAisle,
+  categorySectionName,
+  isPantryStaple,
+  type ShoppingListCategory,
+} from "./shopping-aisles";
 
 export type ShoppingListGroupBy = "aisle" | "recipe" | "category";
 
@@ -17,7 +21,7 @@ export interface ShoppingListIngredient {
   quantity?: number;
   unit?: string;
   aisle: string;
-  category: IngredientCategory;
+  category: ShoppingListCategory;
   isPantryItem: boolean;
   recipes: ShoppingListRecipeRef[];
 }
@@ -250,10 +254,11 @@ export class ShoppingListService {
         });
         if (!parsed.name) continue;
 
+        const placement = assignAisle(parsed.name);
+        const itemName = placement.canonicalName;
         const scaledQuantity = parsed.quantityMin != null ? parsed.quantityMin * scale : undefined;
         const unit = parsed.unit ?? undefined;
-        const key = mergeKey(parsed.name, unit, recipeKey);
-        const placement = assignAisle(parsed.name);
+        const key = mergeKey(itemName, unit, recipeKey);
         const pantry = isPantryStaple(parsed.name);
 
         const recipeRef: ShoppingListRecipeRef = {
@@ -266,7 +271,7 @@ export class ShoppingListService {
         const existing = ingredientMap.get(key);
         if (!existing) {
           ingredientMap.set(key, {
-            name: parsed.name,
+            name: itemName,
             quantity: scaledQuantity,
             unit,
             aisle: placement.aisle,

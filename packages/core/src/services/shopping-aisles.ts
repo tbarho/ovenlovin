@@ -1,104 +1,455 @@
-import type { IngredientCategory } from "../schemas/ingredients";
+import { normalizeIngredientName } from "../parsing/ingredient-line";
+
+/** Food taxonomy for `groupBy=category` — not grocery-store aisles. */
+export const SHOPPING_LIST_CATEGORIES = [
+  "produce",
+  "protein",
+  "dairy",
+  "grains",
+  "spices",
+  "pantry",
+  "frozen",
+  "other",
+] as const;
+
+export type ShoppingListCategory = (typeof SHOPPING_LIST_CATEGORIES)[number];
 
 export type AisleAssignment = {
   aisle: string;
-  category: IngredientCategory;
+  category: ShoppingListCategory;
+  canonicalName: string;
 };
 
-const PANTRY_STAPLE_PATTERN =
-  /\b(kosher salt|sea salt|table salt|black pepper|white pepper|olive oil|vegetable oil|canola oil|sesame oil|avocado oil|coconut oil|cooking oil|cooking spray|\bsalt\b|\bpepper\b|\boil\b|\bwater\b)\b/i;
+type AisleRule = {
+  aliases: string[];
+  aisle: string;
+  category: ShoppingListCategory;
+  canonical?: string;
+};
 
-/** First matching rule wins; keep specific phrases ahead of broad ones. */
-const AISLE_RULES: Array<{ aisle: string; category: IngredientCategory; pattern: RegExp }> = [
+const PANTRY_STAPLE_ALIASES = new Set(
+  [
+    "salt",
+    "kosher salt",
+    "sea salt",
+    "table salt",
+    "iodized salt",
+    "coarse salt",
+    "fine salt",
+    "black pepper",
+    "white pepper",
+    "ground pepper",
+    "pepper",
+    "olive oil",
+    "extra virgin olive oil",
+    "extra-virgin olive oil",
+    "vegetable oil",
+    "canola oil",
+    "sesame oil",
+    "avocado oil",
+    "coconut oil",
+    "cooking oil",
+    "cooking spray",
+    "oil",
+    "water",
+  ].map((alias) => normalizeIngredientName(alias))
+);
+
+/**
+ * Longer aliases are matched first so "kosher salt" / "bell pepper" /
+ * "rice vinegar" win over "salt" / "pepper" / "rice".
+ */
+const AISLE_RULES: AisleRule[] = [
   {
+    aliases: [
+      "frozen peas and carrots",
+      "peas and carrots",
+      "frozen peas",
+      "frozen corn",
+      "frozen spinach",
+      "frozen berries",
+      "frozen broccoli",
+      "ice cream",
+    ],
+    aisle: "Frozen",
+    category: "frozen",
+  },
+  {
+    aliases: [
+      "extra virgin olive oil",
+      "extra-virgin olive oil",
+      "olive oil",
+      "vegetable oil",
+      "canola oil",
+      "sesame oil",
+      "avocado oil",
+      "coconut oil",
+      "cooking oil",
+      "rice vinegar",
+      "apple cider vinegar",
+      "balsamic vinegar",
+      "white vinegar",
+      "vinegar",
+      "oil",
+    ],
     aisle: "Oils & vinegar",
     category: "pantry",
-    pattern:
-      /\b(olive oil|vegetable oil|canola oil|sesame oil|avocado oil|coconut oil|cooking oil|\boil\b|vinegar|rice vinegar)\b/i,
   },
   {
+    aliases: [
+      "kosher salt",
+      "sea salt",
+      "table salt",
+      "iodized salt",
+      "coarse salt",
+      "fine salt",
+      "salt",
+    ],
     aisle: "Spices",
     category: "spices",
-    pattern:
-      /\b(kosher salt|sea salt|table salt|\bsalt\b|black pepper|white pepper|oregano|chili powder|paprika|cumin|cinnamon|garlic powder|onion powder|dried chiles?|chile flakes)\b/i,
+    canonical: "salt",
   },
   {
+    aliases: [
+      "black pepper",
+      "white pepper",
+      "ground pepper",
+      "chili powder",
+      "garlic powder",
+      "onion powder",
+      "chile flakes",
+      "red pepper flakes",
+      "dried oregano",
+      "dried thyme",
+      "paprika",
+      "cumin",
+      "cinnamon",
+      "oregano",
+      "turmeric",
+      "nutmeg",
+      "cayenne",
+      "pepper",
+    ],
+    aisle: "Spices",
+    category: "spices",
+  },
+  {
+    aliases: [
+      "all-purpose flour",
+      "all purpose flour",
+      "brown sugar",
+      "powdered sugar",
+      "baking soda",
+      "baking powder",
+      "chocolate chips",
+      "vanilla extract",
+      "vanilla",
+      "flour",
+      "sugar",
+      "cocoa",
+    ],
     aisle: "Baking",
-    category: "baking",
-    pattern:
-      /\b(all-?purpose flour|\bflour\b|brown sugar|\bsugar\b|baking soda|baking powder|chocolate chips|rolled oats|\boats\b|vanilla)\b/i,
+    category: "pantry",
   },
   {
+    aliases: [
+      "crushed tomatoes",
+      "diced tomatoes",
+      "tomato sauce",
+      "tomato paste",
+      "black beans",
+      "kidney beans",
+      "chickpeas",
+      "garbanzo beans",
+      "canned beans",
+      "beans",
+    ],
     aisle: "Canned goods",
-    category: "canned",
-    pattern:
-      /\b(crushed tomatoes|diced tomatoes|black beans|kidney beans|\bbeans\b|canned|tomato sauce)\b/i,
+    category: "pantry",
   },
-  { aisle: "Frozen", category: "frozen", pattern: /\b(frozen|peas and carrots)\b/i },
   {
+    aliases: [
+      "bell pepper",
+      "bell peppers",
+      "sweet potato",
+      "sweet potatoes",
+      "green onion",
+      "green onions",
+      "brussels sprout",
+      "brussels sprouts",
+      "cherry tomato",
+      "cherry tomatoes",
+      "acorn squash",
+      "butternut squash",
+      "baby carrot",
+      "baby carrots",
+      "carrot",
+      "carrots",
+      "onion",
+      "onions",
+      "garlic",
+      "shallot",
+      "leek",
+      "scallion",
+      "celery",
+      "lettuce",
+      "spinach",
+      "kale",
+      "arugula",
+      "chard",
+      "collard",
+      "cabbage",
+      "broccoli",
+      "cauliflower",
+      "zucchini",
+      "squash",
+      "cucumber",
+      "tomato",
+      "tomatoes",
+      "potato",
+      "potatoes",
+      "yam",
+      "pepper",
+      "peppers",
+      "jalapeno",
+      "jalapeño",
+      "avocado",
+      "lemon",
+      "lime",
+      "apple",
+      "apples",
+      "banana",
+      "bananas",
+      "strawberry",
+      "blueberry",
+      "grape",
+      "orange",
+      "mango",
+      "pineapple",
+      "watermelon",
+      "peach",
+      "pear",
+      "plum",
+      "cherry",
+      "cilantro",
+      "parsley",
+      "basil",
+      "mint",
+      "dill",
+      "rosemary",
+      "thyme",
+      "ginger",
+      "radish",
+      "beet",
+      "turnip",
+      "parsnip",
+      "asparagus",
+      "green bean",
+      "pea",
+      "peas",
+      "corn",
+      "mushroom",
+      "eggplant",
+      "okra",
+      "artichoke",
+      "fennel",
+      "pumpkin",
+      "olive",
+      "olives",
+    ],
     aisle: "Produce",
     category: "produce",
-    pattern:
-      /\b(onion|garlic|tomato|tomatoes|lemon|lime|carrot|potato|potatoes|cabbage|broccoli|squash|cucumber|apple|banana|olive|olives|lettuce|bell pepper|peppers|\bpepper\b|cilantro|basil|avocado|spinach)\b/i,
   },
   {
+    aliases: [
+      "sour cream",
+      "cottage cheese",
+      "cream cheese",
+      "half and half",
+      "heavy cream",
+      "mozzarella",
+      "parmesan",
+      "cheddar",
+      "feta",
+      "ricotta",
+      "buttermilk",
+      "yogurt",
+      "butter",
+      "ghee",
+      "milk",
+      "cream",
+      "cheese",
+    ],
     aisle: "Dairy",
     category: "dairy",
-    pattern:
-      /\b(milk|butter|cream|buttermilk|sour cream|mozzarella|parmesan|cheddar|feta|cheese|yogurt|egg|eggs)\b/i,
   },
   {
+    aliases: ["egg", "eggs"],
+    aisle: "Dairy",
+    category: "protein",
+  },
+  {
+    aliases: [
+      "chicken breast",
+      "chicken breasts",
+      "chicken thigh",
+      "chicken thighs",
+      "ground beef",
+      "ground turkey",
+      "chicken",
+      "beef",
+      "pork",
+      "turkey",
+      "lamb",
+      "bacon",
+      "sausage",
+      "ham",
+      "steak",
+      "ribs",
+    ],
     aisle: "Meat",
-    category: "meat",
-    pattern: /\b(chicken|beef|pork|bacon|sausage|turkey|thighs|breasts)\b/i,
+    category: "protein",
   },
-  { aisle: "Seafood", category: "seafood", pattern: /\b(salmon|shrimp|fish|crab|cod|tuna)\b/i },
   {
+    aliases: ["salmon", "shrimp", "tuna", "cod", "tilapia", "scallop", "crab", "fish"],
+    aisle: "Seafood",
+    category: "protein",
+  },
+  {
+    aliases: ["tofu", "tempeh", "seitan"],
+    aisle: "Produce",
+    category: "protein",
+  },
+  {
+    aliases: [
+      "rolled oats",
+      "corn tortilla",
+      "corn tortillas",
+      "flour tortilla",
+      "pita",
+      "pasta",
+      "ziti",
+      "spaghetti",
+      "rice",
+      "bread",
+      "tortilla",
+      "tortillas",
+      "noodle",
+      "noodles",
+      "oats",
+      "quinoa",
+      "couscous",
+    ],
     aisle: "Grains",
     category: "grains",
-    pattern: /\b(pasta|ziti|rice|bread|tortilla|tortillas|pita|oats|noodle|noodles)\b/i,
   },
   {
+    aliases: [
+      "soy sauce",
+      "hot sauce",
+      "fish sauce",
+      "worcestershire",
+      "mustard",
+      "ketchup",
+      "mayonnaise",
+      "mayo",
+      "pesto",
+      "hummus",
+      "peanut butter",
+      "tahini",
+    ],
     aisle: "Condiments",
-    category: "condiments",
-    pattern: /\b(soy sauce|pesto|hot sauce|mustard|ketchup|mayo|mayonnaise|hummus)\b/i,
+    category: "pantry",
   },
   {
+    aliases: [
+      "vegetable broth",
+      "chicken broth",
+      "beef broth",
+      "coconut milk",
+      "maple syrup",
+      "peanut",
+      "peanuts",
+      "broth",
+      "stock",
+      "honey",
+      "lentils",
+    ],
     aisle: "Pantry",
     category: "pantry",
-    pattern: /\b(peanut|peanuts|broth|stock|tofu|chocolate)\b/i,
   },
 ];
 
-const CATEGORY_LABELS: Record<IngredientCategory, string> = {
+const CATEGORY_LABELS: Record<ShoppingListCategory, string> = {
   produce: "Produce",
+  protein: "Protein",
   dairy: "Dairy",
-  meat: "Meat",
-  seafood: "Seafood",
   grains: "Grains",
-  pantry: "Pantry",
   spices: "Spices",
-  baking: "Baking",
+  pantry: "Pantry",
   frozen: "Frozen",
-  canned: "Canned goods",
-  condiments: "Condiments",
-  beverages: "Beverages",
   other: "Other",
 };
 
+type CompiledAlias = {
+  alias: string;
+  pattern: RegExp;
+  aisle: string;
+  category: ShoppingListCategory;
+  canonical?: string;
+};
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const COMPILED_ALIASES: CompiledAlias[] = AISLE_RULES.flatMap((rule) =>
+  rule.aliases.map((alias) => {
+    const normalized = normalizeIngredientName(alias);
+    return {
+      alias: normalized,
+      pattern: new RegExp(`(?:^| )${escapeRegExp(normalized)}s?(?: |$)`),
+      aisle: rule.aisle,
+      category: rule.category,
+      canonical: rule.canonical,
+    };
+  })
+).sort((a, b) => b.alias.length - a.alias.length);
+
+function findRule(name: string): CompiledAlias | undefined {
+  const normalized = normalizeIngredientName(name);
+  if (!normalized) return undefined;
+  return COMPILED_ALIASES.find(
+    (rule) =>
+      normalized === rule.alias || normalized === `${rule.alias}s` || rule.pattern.test(normalized)
+  );
+}
+
 export function isPantryStaple(name: string): boolean {
-  return PANTRY_STAPLE_PATTERN.test(name);
+  const normalized = normalizeIngredientName(name);
+  if (PANTRY_STAPLE_ALIASES.has(normalized)) return true;
+  return [...PANTRY_STAPLE_ALIASES].some((alias) => {
+    const pattern = new RegExp(`(?:^| )${escapeRegExp(alias)}s?(?: |$)`);
+    return pattern.test(normalized);
+  });
 }
 
 export function assignAisle(name: string): AisleAssignment {
-  for (const rule of AISLE_RULES) {
-    if (rule.pattern.test(name)) {
-      return { aisle: rule.aisle, category: rule.category };
-    }
+  const match = findRule(name);
+  if (!match) {
+    return { aisle: "Other", category: "other", canonicalName: name };
   }
-  return { aisle: "Other", category: "other" };
+  return {
+    aisle: match.aisle,
+    category: match.category,
+    canonicalName: match.canonical ?? name,
+  };
 }
 
-export function categorySectionName(category: IngredientCategory): string {
+export function canonicalIngredientName(name: string): string {
+  return assignAisle(name).canonicalName;
+}
+
+export function categorySectionName(category: ShoppingListCategory): string {
   return CATEGORY_LABELS[category];
 }

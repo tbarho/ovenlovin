@@ -194,7 +194,7 @@ describe("ShoppingListService", () => {
     });
   });
 
-  it("S2: groupBy aisle and category produce real sections from the aisle map", () => {
+  it("S2: groupBy aisle uses store sections; category uses a food taxonomy", () => {
     const entries = [
       {
         entry: entry({ recipeId: "a", servings: 4 }),
@@ -202,28 +202,65 @@ describe("ShoppingListService", () => {
         recipeServings: 4,
         ingredients: [
           { rawText: "1 yellow onion" },
-          { rawText: "2 cups shredded mozzarella" },
-          { rawText: "1 lb ziti" },
+          { rawText: "4 carrots" },
+          { rawText: "1 lb chicken thighs" },
+          { rawText: "4 salmon fillets" },
+          { rawText: "2 cups all-purpose flour" },
         ],
       },
     ];
 
     const byAisle = build(entries, { groupBy: "aisle" });
     expect(byAisle.sections.map((section) => section.name).sort()).toEqual([
-      "Dairy",
-      "Grains",
+      "Baking",
+      "Meat",
       "Produce",
+      "Seafood",
     ]);
-    expect(byAisle.sections.find((section) => section.name === "Produce")?.items[0]?.name).toBe(
-      "yellow onion"
-    );
+    expect(
+      byAisle.sections.find((section) => section.name === "Produce")?.items.map((item) => item.name)
+    ).toEqual(["carrots", "yellow onion"]);
 
     const byCategory = build(entries, { groupBy: "category" });
     expect(byCategory.sections.map((section) => section.name).sort()).toEqual([
-      "Dairy",
-      "Grains",
+      "Pantry",
       "Produce",
+      "Protein",
     ]);
+    expect(
+      byCategory.sections
+        .find((section) => section.name === "Protein")
+        ?.items.map((item) => item.name)
+    ).toEqual(["chicken thighs", "salmon fillets"]);
+  });
+
+  it("merges kosher salt, sea salt, and salt under salt", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "a", servings: 4 }),
+          recipeTitle: "A",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tsp salt" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "b", servings: 4 }),
+          recipeTitle: "B",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tbsp kosher salt" }],
+        },
+        {
+          entry: entry({ id: "entry-3", recipeId: "c", servings: 4 }),
+          recipeTitle: "C",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tsp sea salt" }],
+        },
+      ],
+      { includePantryItems: true }
+    );
+
+    expect(list.ingredients).toHaveLength(1);
+    expect(list.ingredients[0]).toMatchObject({ name: "salt", quantity: 1.6667, unit: "tbsp" });
   });
 
   it("S2: groupBy recipe keeps per-recipe sections", () => {
