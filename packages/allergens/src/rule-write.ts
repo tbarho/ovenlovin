@@ -64,7 +64,7 @@ export function buildRuleWrite(draft: RuleDraft): RuleWritePayload {
     includeMayContain: sharedOn,
     includeCrossContact: sharedOn,
     includeDescendants: true,
-    treatCoconutAsTreeNut: draft.treatCoconutAsTreeNut ?? true,
+    treatCoconutAsTreeNut: draft.treatCoconutAsTreeNut ?? false,
     label: draft.label?.trim() ? draft.label.trim() : null,
     note: draft.note?.trim() ? draft.note.trim() : null,
   };
@@ -84,7 +84,7 @@ export function draftFromRule(rule: {
     target: rule.target,
     severity: rule.severity,
     sharedFacility: rule.sharedFacility ?? "ignore",
-    treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut ?? true,
+    treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut ?? false,
     label: rule.label ?? null,
     note: rule.note ?? null,
   };

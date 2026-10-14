@@ -105,7 +105,8 @@ export const allergenTaxonomy: AllergenTaxonomyNode[] = [
   {
     code: "coconut",
     name: "Coconut",
-    description: "Cocos nucifera. FDA historically classified as tree nut; configurable per person",
+    description:
+      "Cocos nucifera. Not a tree nut by default; configurable per person via treatCoconutAsTreeNut (default false)",
   },
   {
     code: "milk",

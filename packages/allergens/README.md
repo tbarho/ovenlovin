@@ -20,7 +20,7 @@ This package provides:
 ### Taxonomy
 
 - **Peanut** and **tree nuts** thoroughly covered (almond, cashew, pecan, walnut, pistachio, hazelnut, macadamia, brazil nut, pine nut, etc.)
-- **Coconut** is separate and configurable per person via `treatCoconutAsTreeNut` rule option
+- **Coconut** is a separate allergen. Tree-nut rules do **not** include coconut unless `treatCoconutAsTreeNut` is explicitly set to `true` (default: `false`)
 - Hierarchical structure: checking `tree_nut` with `includeDescendants=true` covers all tree nut species
 
 ### Per-person Rules
@@ -33,7 +33,7 @@ Rules are configured by the family admin with:
 - `includeCrossContact`: bool
 - `includeUnmappedIngredients`: bool (how to handle ingredients with no mapping)
 - `includeDescendants`: bool (check all children in taxonomy)
-- `treatCoconutAsTreeNut`: bool (for tree nut rules)
+- `treatCoconutAsTreeNut`: bool, **default `false`** (for tree-nut rules; opt in if a person treats coconut as a tree nut)
 
 ### Safety Principles
 

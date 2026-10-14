@@ -57,7 +57,7 @@ export const personRule = pgTable("person_rule", {
   sharedFacility: sharedFacilityEnum("shared_facility").default("ignore"),
   includeUnmappedIngredients: boolean("include_unmapped_ingredients").default(false),
   includeDescendants: boolean("include_descendants").default(true),
-  treatCoconutAsTreeNut: boolean("treat_coconut_as_tree_nut").default(true),
+  treatCoconutAsTreeNut: boolean("treat_coconut_as_tree_nut").default(false),
   label: varchar("label", { length: 255 }),
   note: text("note"),
   activeFrom: date("active_from"),

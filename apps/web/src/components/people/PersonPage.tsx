@@ -115,7 +115,7 @@ export function PersonPage({
       sharedFacility: showsSharedFacilityPrompt(entry.code)
         ? sharedFacilityFromPrompt(extras.facility)
         : "ignore",
-      treatCoconutAsTreeNut: showsCoconutToggle(entry.code) ? extras.coconut : true,
+      treatCoconutAsTreeNut: showsCoconutToggle(entry.code) ? extras.coconut : false,
       label: entry.name,
     });
     if (extras.existing) {
@@ -289,7 +289,7 @@ export function PersonPage({
       });
       return;
     }
-    void addRule(entry, bucket, { facility: "no", coconut: true });
+    void addRule(entry, bucket, { facility: "no", coconut: false });
   }
 
   return (

@@ -39,7 +39,7 @@ describe("people schemas", () => {
       expect(rule.kind).toBe("allergen");
       expect(rule.severity).toBe("block");
       expect(rule.includeDescendants).toBe(true);
-      expect(rule.treatCoconutAsTreeNut).toBe(true);
+      expect(rule.treatCoconutAsTreeNut).toBe(false);
     });
 
     it("applies defaults", () => {
@@ -59,7 +59,7 @@ describe("people schemas", () => {
       expect(rule.sharedFacility).toBe("ignore");
       expect(rule.includeUnmappedIngredients).toBe(false);
       expect(rule.includeDescendants).toBe(true);
-      expect(rule.treatCoconutAsTreeNut).toBe(true);
+      expect(rule.treatCoconutAsTreeNut).toBe(false);
     });
   });
 });

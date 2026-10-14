@@ -38,7 +38,7 @@ export const personRuleSchema = baseEntitySchema.merge(createdBySchema).extend({
   sharedFacility: sharedFacilitySchema.default("ignore"),
   includeUnmappedIngredients: z.boolean().default(false),
   includeDescendants: z.boolean().default(true),
-  treatCoconutAsTreeNut: z.boolean().default(true),
+  treatCoconutAsTreeNut: z.boolean().default(false),
   label: z.string().max(255).nullable().optional(),
   note: z.string().nullable().optional(),
   activeFrom: z.string().date().nullable().optional(),

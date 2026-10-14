@@ -4,7 +4,7 @@ Remote MCP server: `https://your-app.vercel.app/mcp`
 
 ## Recipes
 
-- `search_recipes` — search by text, method tags, and attendee warnings
+- `search_recipes` — search by text, method tags, and attendee warnings. Tree-nut rules do not treat coconut as a nut unless `treatCoconutAsTreeNut` is true (default false).
 - `get_recipe` — full recipe including servings, prep/cook times, images, cookbooks, and source URL (`includeSource` defaults to true)
 - `import_recipe` — URL or paste import. Pulls schema.org times and the main image, then copies that image into Vercel Blob. Optional `cookbookId`
 
@@ -20,6 +20,7 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 
 - `get_household_context` — people in household `sortOrder`, plus per-person Loves (never used to hide recipes)
 - `get_person_rules` — Can't eat / Doesn't like rules plus Loves
+- `manage_person_rules` — list / add / remove rules. Tree-nut rules accept `treatCoconutAsTreeNut` (default `false`; coconut is not a tree nut unless set)
 - `reorder_people` — persist household people order (`personIds` must list everyone once)
 - `manage_person_loves` — `list`, `add`, `remove` a food, cuisine, or style someone loves
 - `search_recipes` — attendee warnings plus love boosts and “Name loves this” tags

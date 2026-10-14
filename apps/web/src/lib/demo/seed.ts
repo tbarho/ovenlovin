@@ -87,7 +87,7 @@ export async function seedDemoKitchen(
         includeUnmappedIngredients: false,
         includeDescendants: true,
         treatCoconutAsTreeNut:
-          "treatCoconutAsTreeNut" in rule ? Boolean(rule.treatCoconutAsTreeNut) : true,
+          "treatCoconutAsTreeNut" in rule ? Boolean(rule.treatCoconutAsTreeNut) : false,
         label: "label" in rule ? rule.label : null,
         note: "note" in rule ? rule.note : null,
         setBy: user.id,

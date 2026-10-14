@@ -18,6 +18,10 @@ export const managePersonRulesSchema = z.object({
   includeCrossContact: z.boolean().optional(),
   sharedFacility: z.enum(["block", "warn", "ignore"]).optional(),
   includeDescendants: z.boolean().optional(),
+  treatCoconutAsTreeNut: z
+    .boolean()
+    .optional()
+    .describe("For tree_nut rules. Defaults to false — coconut is not a tree nut unless set."),
 });
 
 async function handler(input: z.infer<typeof managePersonRulesSchema>, context: AuthContext) {
@@ -64,7 +68,7 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
       sharedFacility: input.sharedFacility ?? (input.severity === "block" ? "block" : "ignore"),
       includeUnmappedIngredients: false,
       includeDescendants: input.includeDescendants ?? true,
-      treatCoconutAsTreeNut: true,
+      treatCoconutAsTreeNut: input.treatCoconutAsTreeNut ?? false,
       label: input.label ?? null,
       note: input.note ?? null,
       setBy: actor.setBy,

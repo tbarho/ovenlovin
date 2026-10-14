@@ -20,7 +20,7 @@ function createRule(overrides: Partial<PersonRule> = {}): PersonRule {
     sharedFacility: overrides.sharedFacility || "ignore",
     includeUnmappedIngredients: overrides.includeUnmappedIngredients ?? false,
     includeDescendants: overrides.includeDescendants ?? true,
-    treatCoconutAsTreeNut: overrides.treatCoconutAsTreeNut ?? true,
+    treatCoconutAsTreeNut: overrides.treatCoconutAsTreeNut ?? false,
     label: overrides.label ?? null,
     note: overrides.note ?? null,
     activeFrom: overrides.activeFrom ?? null,
@@ -155,6 +155,19 @@ describe("checkIngredientAgainstRule", () => {
 
       const findings = checkIngredientAgainstRule(ingredient, context);
 
+      expect(findings).toHaveLength(0);
+    });
+
+    it("does not flag coconut on a tree_nut rule when the coconut flag is omitted", () => {
+      const rule = createRule({
+        target: "tree_nut",
+        severity: "block",
+      });
+      expect(rule.treatCoconutAsTreeNut).toBe(false);
+      const findings = checkIngredientAgainstRule(
+        { name: "1 cup coconut milk" },
+        createContext("Child A", rule)
+      );
       expect(findings).toHaveLength(0);
     });
   });
