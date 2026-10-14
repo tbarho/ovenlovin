@@ -5,21 +5,23 @@ title: OvenLovin Documentation
 
 # OvenLovin
 
-> **LLM-optimized recipe and family meal-planning platform**
+> **The family recipe box your AI can actually use, and it knows who can't eat what.**
 
-An open-source Next.js template for Vercel that provides a bot-first backend for recipe management, meal planning, and grocery lists. Built for AI agents (Grok Bot, ChatGPT, Claude) to help families manage weekly meal planning with per-person dietary rules and allergy checking.
+Open-source recipe box and meal planner for families and their AI agents. Per-person allergen checks. Not medical advice — always read ingredient labels before serving.
 
-## Features
+## Shipped
 
-- 📖 **Recipe management** with exhaustive import support (URL, photo/OCR, voice, paste, app exports)
-- 👨‍👩‍👧‍👦 **Households & people** with per-person dietary rules (allergies, restrictions) and severities (block/warn/prefer-avoid)
-- 📅 **Meal planning** with rule checking and schedule constraints
-- 🛒 **Shopping lists** with aggregated ingredients and rule warnings
-- 🤖 **Bot interfaces**: REST + OpenAPI, remote MCP server, CLI
-- 🏥 **USDA FoodData Central** integration for nutrition data
-- 🔐 **Clerk auth** with organizations (households)
-- 🗄️ **Neon Postgres + Drizzle ORM**
-- ☁️ **Vercel AI Gateway + eve** for all AI operations
+- Recipes and cookbooks (URL / paste import)
+- People with Can't eat / Doesn't like / Loves
+- Who-can-eat checks with named per-person findings
+- REST + OpenAPI, MCP, `/llms.txt`
+- Clerk households, Neon Postgres, Vercel Blob, Vercel AI Gateway
+
+## Roadmap
+
+- Meal plan week view and shopping list UI
+- CLI, published SDK, voice import, app export
+- Optional USDA FoodData Central nutrition (`USDA_FDC_API_KEY` is not required to deploy)
 
 ## Quick Start
 
@@ -27,13 +29,13 @@ An open-source Next.js template for Vercel that provides a bot-first backend for
 
 The fastest way to get started is to deploy OvenLovin to Vercel with one click:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=USDA%20key%20and%20optional%20instance%20name.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=NEXT_PUBLIC_INSTANCE_NAME&envDescription=Optional%20instance%20name.%20USDA%20is%20optional%20and%20not%20required%20to%20deploy.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
 
 The one-click deploy will:
 - Clone the repository to your GitHub account
 - Create a new Vercel project
 - Provision Neon Postgres, Vercel Blob, and Clerk
-- Prompt for USDA and an optional instance name (AI Gateway uses OIDC on Vercel)
+- Prompt for an optional instance name (USDA is optional; AI Gateway uses OIDC on Vercel)
 - Run database migrations during the Vercel build
 - Deploy the Next.js app with all environment variables
 
@@ -44,7 +46,7 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 - **DATABASE_URL** - Neon Postgres (auto-configured by the Neon store)
 - **NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY** / **CLERK_SECRET_KEY** - Clerk (auto-configured by the Clerk store, or [get keys](https://clerk.com))
 - **BLOB_READ_WRITE_TOKEN** - Vercel Blob (auto-configured by the Blob store)
-- **USDA_FDC_API_KEY** - USDA FoodData Central API key ([get one](https://fdc.nal.usda.gov/api-key-signup.html))
+- **USDA_FDC_API_KEY** - optional USDA FoodData Central key ([get one](https://fdc.nal.usda.gov/api-key-signup.html)). Not required to deploy.
 - **NEXT_PUBLIC_INSTANCE_NAME** - optional landing-page name (defaults to "Your OvenLovin")
 - **AI_GATEWAY_API_KEY** - optional; on Vercel, AI Gateway authenticates with OIDC
 - **OVENLOVIN_VERCEL_TEAM_SLUG** - optional Vercel team/account slug for dashboard links (not the GitHub owner)
