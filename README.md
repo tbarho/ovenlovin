@@ -83,6 +83,8 @@ Optional, so the landing page can link the Vercel project (not the GitHub owner)
 
 Do not treat `VERCEL_GIT_REPO_OWNER` as the Vercel scope. If the slug cannot be determined, links fall back to [vercel.com/dashboard](https://vercel.com/dashboard).
 
+The public no-signup demo is a **separate Vercel project**. See [docs/demo.md](docs/demo.md). Never set `OVENLOVIN_DEMO_MODE` on the product production project.
+
 See the [self-hosting documentation](https://tbarho.github.io/ovenlovin/docs/self-hosting) for detailed configuration instructions.
 
 ## Quick Start (Local Development)

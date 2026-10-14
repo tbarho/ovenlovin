@@ -95,6 +95,12 @@ After deployment:
 - Check Neon database allows connections from Vercel
 - Ensure migrations have been run
 
+## Public demo project
+
+The public no-signup demo is a **second Vercel project** of this repo. Do not set demo flags on the product production project.
+
+See [docs/demo.md](docs/demo.md) for runtime behavior. Corbin/Ty: exact `vercel` commands and env vars are in the pull request that lands this.
+
 ## Local Development
 
 ```bash

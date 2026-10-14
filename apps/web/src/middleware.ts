@@ -1,6 +1,7 @@
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { isClerkProtectExempt } from "@/lib/clerk-protect";
+import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
 
 const clerkConfigured = Boolean(
@@ -13,7 +14,7 @@ const clerk = clerkMiddleware(async (auth, req) => {
 });
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
-  if (isE2eAuthBypassEnabled()) {
+  if (isE2eAuthBypassEnabled() || isDemoModeEnabled()) {
     return NextResponse.next();
   }
   if (clerkConfigured) {

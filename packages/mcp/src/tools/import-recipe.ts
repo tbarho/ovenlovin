@@ -7,6 +7,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { copyRemoteImages, keepMainRecipeImages, RecipeService } from "@ovenlovin/core";
+import { isDemoModeEnv } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
 import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
@@ -60,6 +61,12 @@ async function handler(
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
 
+  if (isDemoModeEnv(process.env) && input.source === "paste") {
+    throw new Error(
+      "AI paste import is turned off in the public demo. Import from a public URL, or use the kitchen paste field."
+    );
+  }
+
   let draft;
   if (input.source === "url") {
     const importer = createUrlImporter();
@@ -75,7 +82,9 @@ async function handler(
     draft.needsReview = false;
   }
 
-  draft.images = await persistImages(keepMainRecipeImages(draft.images), context.householdId);
+  draft.images = isDemoModeEnv(process.env)
+    ? keepMainRecipeImages(draft.images)
+    : await persistImages(keepMainRecipeImages(draft.images), context.householdId);
 
   const recipe = await recipeService.createRecipeFromDraft(draft, {
     householdId: context.householdId,

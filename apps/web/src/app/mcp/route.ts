@@ -10,6 +10,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest, handleHttpRequest } from "@ovenlovin/mcp";
+import { ForbiddenError } from "@/lib/api/errors";
+import { enforceDemoMcpGuards } from "@/lib/demo/mcp-guard";
+import { isDemoModeEnabled } from "@/lib/demo/mode";
 
 const SERVER_INFO = {
   name: "ovenlovin-mcp",
@@ -24,14 +27,14 @@ function collectHeaders(request: NextRequest): Record<string, string> {
   return headers;
 }
 
-function jsonRpcUnauthorized(id: unknown, message: string) {
+function jsonRpcError(id: unknown, status: number, code: number, message: string) {
   return NextResponse.json(
     {
       jsonrpc: "2.0",
       id: id ?? null,
-      error: { code: -32001, message },
+      error: { code, message },
     },
-    { status: 401, headers: { "Content-Type": "application/json" } }
+    { status, headers: { "Content-Type": "application/json" } }
   );
 }
 
@@ -40,14 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      {
-        jsonrpc: "2.0",
-        id: null,
-        error: { code: -32700, message: "Parse error" },
-      },
-      { status: 400 }
-    );
+    return jsonRpcError(null, 400, -32700, "Parse error");
   }
 
   const headers = collectHeaders(request);
@@ -57,6 +53,11 @@ export async function POST(request: NextRequest) {
       : null;
 
   try {
+    const auth = await authenticateRequest(headers);
+    if (isDemoModeEnabled()) {
+      await enforceDemoMcpGuards(request, auth.householdId, body);
+    }
+
     const result = await handleHttpRequest(
       null,
       {
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       {
         requireAuth: true,
         serverInfo: SERVER_INFO,
-        onAuth: async () => authenticateRequest(headers),
+        onAuth: async () => auth,
       }
     );
 
@@ -81,26 +82,19 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unauthorized";
+    if (error instanceof ForbiddenError) {
+      return jsonRpcError(id, 403, -32003, error.detail ?? message);
+    }
     if (
       error &&
       typeof error === "object" &&
       "code" in error &&
       (error as { code?: string }).code === "unauthorized"
     ) {
-      return jsonRpcUnauthorized(id, message);
+      return jsonRpcError(id, 401, -32001, message);
     }
     console.error("MCP request error:", error);
-    return NextResponse.json(
-      {
-        jsonrpc: "2.0",
-        id: id ?? null,
-        error: {
-          code: -32603,
-          message: error instanceof Error ? error.message : "Internal error",
-        },
-      },
-      { status: 500 }
-    );
+    return jsonRpcError(id, 500, -32603, error instanceof Error ? error.message : "Internal error");
   }
 }
 
@@ -109,6 +103,8 @@ export async function GET() {
     service: "ovenlovin-mcp",
     version: SERVER_INFO.version,
     status: "ok",
+    transport: "stateless-http",
+    auth: "ApiKey or Bearer rkapi_",
     timestamp: new Date().toISOString(),
   });
 }

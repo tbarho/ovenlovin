@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { put } from "@vercel/blob";
 import { copyRemoteImages } from "@ovenlovin/core";
-import { BadRequestError, handleApiError } from "@/lib/api/errors";
+import { BadRequestError, ForbiddenError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
+import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { createVercelImagePut } from "@/lib/blob-store";
 
@@ -10,6 +11,9 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/g
 
 export async function POST(request: NextRequest) {
   try {
+    if (isDemoModeEnabled()) {
+      throw new ForbiddenError("Image uploads are turned off in the public demo.");
+    }
     const context = await getRequestContext(request);
     const householdId = requireHouseholdId(context);
     const contentType = request.headers.get("content-type") ?? "";

@@ -75,6 +75,7 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ### For Users
 
+- **[Public demo](demo.md)** - No-signup sandbox, how it works, and how to run it
 - **[Bot Setup Guide](bot-setup.md)** - Connect Grok Bot, ChatGPT, or Claude to OvenLovin
 - **[Allergy & Dietary Rules](rules.md)** - Configure per-person dietary restrictions and allergen checking
 - **[API Reference](api-reference.md)** - REST API endpoints and OpenAPI specification

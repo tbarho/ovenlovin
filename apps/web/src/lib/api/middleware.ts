@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDatabase } from "@ovenlovin/db";
 import { ApiKeyService } from "@ovenlovin/core";
+import { enforceDemoRequestGuards } from "@/lib/demo/enforce";
 import { getSessionContext } from "@/lib/session";
 import { UnauthorizedError } from "./errors";
 
@@ -16,18 +17,18 @@ export type RequestContext = {
 export async function getRequestContext(request: NextRequest): Promise<RequestContext> {
   const authHeader = request.headers.get("Authorization");
 
+  let context: RequestContext;
   if (authHeader?.startsWith("ApiKey ")) {
-    return parseApiKey(authHeader.slice(7).trim());
-  }
-
-  if (authHeader?.startsWith("Bearer ")) {
+    context = await parseApiKey(authHeader.slice(7).trim());
+  } else if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7).trim();
-    if (token.startsWith("rkapi_")) {
-      return parseApiKey(token);
-    }
+    context = token.startsWith("rkapi_") ? await parseApiKey(token) : await parseClerkAuth();
+  } else {
+    context = await parseClerkAuth();
   }
 
-  return parseClerkAuth();
+  await enforceDemoRequestGuards(request, context);
+  return context;
 }
 
 async function parseClerkAuth(): Promise<RequestContext> {
