@@ -112,8 +112,6 @@ describe("hiddenRecipeFromCheck", () => {
   });
 
   it("returns null when nothing is blocked", () => {
-    expect(
-      hiddenRecipeFromCheck({ id: "recipe-rice", title: "Rice" }, emptyResult())
-    ).toBeNull();
+    expect(hiddenRecipeFromCheck({ id: "recipe-rice", title: "Rice" }, emptyResult())).toBeNull();
   });
 });
