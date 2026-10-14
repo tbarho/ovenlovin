@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
@@ -50,6 +50,9 @@ describe("PeopleHome", () => {
     expect(screen.getByTestId(`person-card-doesnt_like-${person.id}`)).toHaveTextContent("None");
     expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent("None");
     expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent("0");
+    expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveClass("is-empty");
+    expect(screen.getByTestId(`person-card-doesnt_like-${person.id}`)).toHaveClass("is-empty");
+    expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveClass("is-empty");
   });
 
   it("clamps dense lanes to a two-line budget and leads Can't eat with allergens", () => {
@@ -154,9 +157,12 @@ describe("PeopleHome", () => {
     mockedApi.mockResolvedValue(testPerson({ displayName: "Child B" }));
     render(<PeopleHome householdName="Household 1" people={[]} rules={[]} />);
 
-    await typeFullWordAndKeepFocus(user, screen.getByPlaceholderText("Name"), "Child B");
-    await user.click(screen.getByRole("button", { name: "Use ⚽️" }));
+    expect(screen.queryByRole("dialog", { name: "Add person" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Add person" }));
+    const dialog = screen.getByRole("dialog", { name: "Add person" });
+    await typeFullWordAndKeepFocus(user, within(dialog).getByPlaceholderText("Name"), "Child B");
+    await user.click(within(dialog).getByRole("button", { name: "Use ⚽️" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     expect(mockedApi).toHaveBeenCalledWith("/api/v1/people", {
       method: "POST",

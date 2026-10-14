@@ -81,7 +81,7 @@ export function PersonCard({
             return (
               <span
                 key={lane.bucket}
-                className={`olp-person-card-lane olp-person-card-lane-${lane.bucket}`}
+                className={`olp-person-card-lane olp-person-card-lane-${lane.bucket}${items.length === 0 ? " is-empty" : ""}`}
                 data-testid={`person-card-${lane.bucket}-${person.id}`}
               >
                 <span className="olp-person-card-lane-label">

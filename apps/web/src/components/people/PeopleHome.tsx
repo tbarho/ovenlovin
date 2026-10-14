@@ -13,11 +13,11 @@ import {
 } from "@/lib/person-appearance";
 import { PeopleReorder } from "./PeopleReorder";
 import { PersonCard } from "./PersonCard";
-import { Avatar, EmptyState } from "./ui";
+import { Avatar, EmptyState, Sheet } from "./ui";
 
 const EMPTY_LOVES: Preference[] = [];
 
-function AddPersonForm() {
+function AddPersonForm({ onAdded }: { onAdded: () => void }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState<(typeof AVATAR_EMOJIS)[number]>("🧑‍🍳");
@@ -41,6 +41,7 @@ function AddPersonForm() {
       });
       setName("");
       router.refresh();
+      onAdded();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add person");
     } finally {
@@ -96,9 +97,29 @@ function AddPersonForm() {
       </div>
       {error ? <p className="olp-muted">{error}</p> : null}
       <button type="submit" className="olp-btn olp-btn-primary" disabled={!name.trim() || pending}>
-        {pending ? "Adding…" : "Add person"}
+        {pending ? "Adding…" : "Save"}
       </button>
     </form>
+  );
+}
+
+function AddPersonLauncher() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="olp-add-person-launch"
+        data-testid="add-person-launch"
+        onClick={() => setOpen(true)}
+      >
+        Add person
+      </button>
+      <Sheet open={open} title="Add person" onClose={() => setOpen(false)}>
+        <AddPersonForm onAdded={() => setOpen(false)} />
+      </Sheet>
+    </>
   );
 }
 
@@ -173,7 +194,7 @@ export function PeopleHome({
           />
         )}
 
-        <AddPersonForm />
+        <AddPersonLauncher />
       </div>
     </div>
   );
