@@ -171,6 +171,19 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await shot(page, width, "sheet-edit-rule");
   await closeSheet(page);
 
+  await page.goto("/plans");
+  await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
+  await expect(page.getByRole("note")).toBeVisible();
+  await expect(page.getByTestId("meal-plan-week")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
+  await shot(page, width, "plans-week");
+
+  await page.goto("/list");
+  await expect(page.getByRole("heading", { name: "Shopping list" })).toBeVisible();
+  await expect(page.getByRole("note")).toBeVisible();
+  await expect(page.getByTestId("shopping-list")).toBeVisible();
+  await shot(page, width, "shopping-list");
+
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
   await expect(page.getByText(/grok kitchen key/i)).toBeVisible();

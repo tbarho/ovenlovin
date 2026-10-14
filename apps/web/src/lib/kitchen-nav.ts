@@ -1,7 +1,8 @@
 export const kitchenNavLinks = [
   { href: "/recipes", label: "Recipes", match: "/recipes" },
+  { href: "/plans", label: "Plan", match: "/plans" },
+  { href: "/list", label: "List", match: "/list" },
   { href: "/people", label: "People", match: "/people" },
-  { href: "/#connect", label: "Agents", match: null },
   { href: "/settings", label: "Settings", match: "/settings" },
 ] as const;
 
