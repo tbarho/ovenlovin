@@ -82,6 +82,7 @@ export {
   occurrenceIsCompoundFood,
   occurrenceIsFalseFriend,
   occurrenceIsNegated,
+  registerNegationCompounds,
   findPhraseStarts,
   phraseMatchesLine,
   phraseMatchesAny,

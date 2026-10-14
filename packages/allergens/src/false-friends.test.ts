@@ -105,18 +105,62 @@ describe("negated allergen wording", () => {
   it("still matches the allergen when the line is not a free-of claim", () => {
     const milk = createRule({ target: "milk" });
     const egg = createRule({ id: "egg", target: "egg" });
+    const treeNut = createRule({ id: "tn", target: "tree_nut", includeDescendants: true });
     expect(
       checkIngredientAgainstRule({ name: "1 cup whole milk" }, contextFor(milk)).length
     ).toBeGreaterThan(0);
     expect(
       checkIngredientAgainstRule({ name: "2 tbsp mayonnaise" }, contextFor(egg)).length
     ).toBeGreaterThan(0);
+    expect(
+      checkIngredientAgainstRule({ name: "1 tsp almond extract" }, contextFor(treeNut)).length
+    ).toBeGreaterThan(0);
   });
 
-  it("does not let gluten-free hide a soy match", () => {
+  it("does not block multi-word allergen phrases followed by -free, free of, or without", () => {
+    const treeNut = createRule({ target: "tree_nut", includeDescendants: true });
+    const almond = createRule({ id: "almond", target: "almond" });
+    const fish = createRule({ id: "fish", target: "fish" });
+    const pine = createRule({ id: "pine", target: "pine_nut" });
+
+    expect(matchIngredient("1 tsp almond extract-free flavoring")).toEqual([]);
+    expect(phraseMatchesLine("almond", "almond extract-free")).toBe(false);
+    expect(phraseMatchesLine("almond extract", "almond extract-free")).toBe(false);
+    expect(
+      checkIngredientAgainstRule({ name: "1 tsp almond extract-free" }, contextFor(treeNut))
+    ).toEqual([]);
+    expect(
+      checkIngredientAgainstRule({ name: "almond extract-free vanilla" }, contextFor(almond))
+    ).toEqual([]);
+    expect(
+      checkIngredientAgainstRule({ name: "free of almond extract" }, contextFor(treeNut))
+    ).toEqual([]);
+    expect(
+      checkIngredientAgainstRule({ name: "without almond extract" }, contextFor(treeNut))
+    ).toEqual([]);
+    expect(checkIngredientAgainstRule({ name: "pine nut-free pesto" }, contextFor(pine))).toEqual(
+      []
+    );
+    expect(
+      checkIngredientAgainstRule({ name: "fish sauce-free marinade" }, contextFor(fish))
+    ).toEqual([]);
+
+    const extractFree = checkIngredientsAgainstRules(
+      [{ name: "1 tsp almond extract-free flavoring" }],
+      [contextFor(treeNut)]
+    );
+    expect(extractFree.status).toBe("complete");
+    expect(extractFree.findings.block).toHaveLength(0);
+  });
+
+  it("does not let gluten-free hide a soy or peanut match", () => {
     const soy = createRule({ target: "soy" });
+    const peanut = createRule({ id: "peanut", target: "peanut" });
     expect(
       checkIngredientAgainstRule({ name: "1 tbsp gluten-free soy sauce" }, contextFor(soy)).length
+    ).toBeGreaterThan(0);
+    expect(
+      checkIngredientAgainstRule({ name: "gluten-free peanut sauce" }, contextFor(peanut)).length
     ).toBeGreaterThan(0);
   });
 

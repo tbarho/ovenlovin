@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import "./ingredient-mapping";
 import { phraseMatchesAny, phraseMatchesLine, stemWord } from "./phrase-match";
 
 describe("phraseMatchesLine", () => {
@@ -20,6 +21,10 @@ describe("phraseMatchesLine", () => {
     expect(phraseMatchesLine("dairy", "dairy-free milk")).toBe(false);
     expect(phraseMatchesLine("peanut", "without peanuts")).toBe(false);
     expect(phraseMatchesLine("peanut", "no peanuts")).toBe(false);
+    expect(phraseMatchesLine("almond", "almond extract-free")).toBe(false);
+    expect(phraseMatchesLine("almond extract", "free of almond extract")).toBe(false);
+    expect(phraseMatchesLine("almond extract", "without almond extract")).toBe(false);
+    expect(phraseMatchesLine("almond", "1 tsp almond extract")).toBe(true);
   });
 
   it("does not treat olive oil as olives", () => {
