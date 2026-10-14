@@ -12,7 +12,7 @@ import {
   keepMainRecipeImages,
   RecipeService,
 } from "@ovenlovin/core";
-import { isAiGatewayConfigured, isDemoModeEnv } from "@ovenlovin/core/onboarding";
+import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
 import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
@@ -83,9 +83,7 @@ async function handler(
     draft.needsReview = false;
   }
 
-  draft.images = isDemoModeEnv(process.env)
-    ? keepMainRecipeImages(draft.images)
-    : await persistImages(keepMainRecipeImages(draft.images), context.householdId);
+  draft.images = await persistImages(keepMainRecipeImages(draft.images), context.householdId);
 
   const recipe = await recipeService.createRecipeFromDraft(draft, {
     householdId: context.householdId,
