@@ -20,18 +20,19 @@ describe("KitchenNav", () => {
     pathname.mockReturnValue("/recipes");
   });
 
-  it("renders desktop links and a bottom tab bar with the same destinations", () => {
+  it("renders desktop links, a sidebar, and a bottom tab bar with the same destinations", () => {
     render(
       <>
         <KitchenNav />
+        <KitchenNav variant="sidebar" />
         <KitchenNav variant="tabs" />
       </>
     );
 
-    expect(screen.getAllByRole("link", { name: "Recipes" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "People" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Settings" })).toHaveLength(2);
-    expect(screen.getByRole("navigation", { name: "Kitchen" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Recipes" })).toHaveLength(3);
+    expect(screen.getAllByRole("link", { name: "People" })).toHaveLength(3);
+    expect(screen.getAllByRole("link", { name: "Settings" })).toHaveLength(3);
+    expect(screen.getAllByRole("navigation", { name: "Kitchen" })).toHaveLength(2);
   });
 
   it("marks the active kitchen route on both navs", () => {
@@ -39,11 +40,13 @@ describe("KitchenNav", () => {
     render(
       <>
         <KitchenNav />
+        <KitchenNav variant="sidebar" />
         <KitchenNav variant="tabs" />
       </>
     );
 
     const people = screen.getAllByRole("link", { name: "People" });
+    expect(people).toHaveLength(3);
     expect(people.every((link) => link.getAttribute("aria-current") === "page")).toBe(true);
     expect(
       screen

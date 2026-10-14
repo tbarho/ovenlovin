@@ -1,11 +1,32 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it } from "vitest";
-import { testCookbook, testRecipeDetails } from "@/test/fixtures";
+import { describe, expect, it } from "vitest";
+import { testCookbook, testPerson, testPersonRule, testRecipeDetails } from "@/test/fixtures";
 import { typeFullWordAndKeepFocus } from "@/test/sheet-focus";
 import { CookbookRecipes } from "./CookbookRecipes";
 import { RecipeDetail } from "./RecipeDetail";
 import { RecipesKitchen } from "./RecipesKitchen";
+
+describe("kitchen recipe layout", () => {
+  it("places who-can-eat next to ingredients instead of a full-viewport block", () => {
+    const { container } = render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Weeknight pesto pasta" })}
+        cookbooks={[testCookbook()]}
+        people={[testPerson({ displayName: "Jake" })]}
+        rules={[testPersonRule({ target: "peanut", severity: "block" })]}
+      />
+    );
+
+    expect(container.querySelector(".recipe-layout")).toBeTruthy();
+    expect(container.querySelector(".recipe-layout-media")).toBeTruthy();
+    expect(container.querySelector(".recipe-layout-body")).toBeTruthy();
+    expect(container.querySelector(".who-can-eat")).toBeTruthy();
+    expect(container.querySelector(".who-can-eat.olp")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Who can eat this" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Ingredients" })).toBeVisible();
+  });
+});
 
 describe("kitchen sheet-hosted forms", () => {
   it("keeps focus while typing a recipe title", async () => {

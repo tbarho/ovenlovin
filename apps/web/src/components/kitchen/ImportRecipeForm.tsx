@@ -31,9 +31,9 @@ export function ImportRecipeForm() {
   }
 
   return (
-    <form className="form-card" onSubmit={onSubmit}>
+    <form className="form-card import-card" onSubmit={onSubmit}>
       <h2>Import a recipe</h2>
-      <div className="tabs" role="tablist">
+      <div className="tabs import-tabs" role="tablist">
         <button
           type="button"
           role="tab"
@@ -53,25 +53,27 @@ export function ImportRecipeForm() {
           Paste
         </button>
       </div>
-      {source === "url" ? (
-        <input
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          placeholder="https://example.com/chocolate-chip-cookies"
-          required
-        />
-      ) : (
-        <textarea
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          placeholder={
-            "Weeknight tomato pasta\n\nIngredients\n- 12 oz pasta\n- 1 jar tomatoes\n\nSteps\nBoil pasta. Warm sauce. Combine."
-          }
-          required
-        />
-      )}
-      {error ? <p className="muted">{error}</p> : null}
-      <button className="btn primary" type="submit" disabled={pending}>
+      <div className="import-field">
+        {source === "url" ? (
+          <input
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            placeholder="https://example.com/chocolate-chip-cookies"
+            required
+          />
+        ) : (
+          <textarea
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            placeholder={
+              "Weeknight tomato pasta\n\nIngredients\n- 12 oz pasta\n- 1 jar tomatoes\n\nSteps\nBoil pasta. Warm sauce. Combine."
+            }
+            required
+          />
+        )}
+      </div>
+      {error ? <p className="muted import-error">{error}</p> : null}
+      <button className="btn primary import-submit" type="submit" disabled={pending}>
         {pending ? "Importing…" : "Import"}
       </button>
     </form>
