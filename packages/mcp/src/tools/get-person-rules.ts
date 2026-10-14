@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { PeopleService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
+import { LOVE_PREFERENCE_TYPE, loveLabel } from "@ovenlovin/allergens";
 
 export const getPersonRulesSchema = z.object({
   personIds: z.array(z.string()).min(1).describe("Person IDs to get rules for"),
@@ -34,6 +35,12 @@ export interface GetPersonRulesOutput {
         includeDescendants: boolean;
         treatCoconutAsTreeNut?: boolean;
       };
+    }>;
+    loves: Array<{
+      id: string;
+      value: string;
+      label: string;
+      weight: number;
     }>;
     labelNotes?: Array<{
       note: string;
@@ -63,6 +70,7 @@ async function handler(
       }
 
       const allRules = await peopleService.getRulesForPerson(personId);
+      const loves = await peopleService.getPreferencesForPerson(personId, LOVE_PREFERENCE_TYPE);
 
       // Filter inactive rules if not requested
       const rules = input.includeInactive
@@ -97,6 +105,12 @@ async function handler(
             treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut ?? undefined,
           },
         })),
+        loves: loves.map((item) => ({
+          id: item.id,
+          value: item.value,
+          label: loveLabel(item.value),
+          weight: item.weight,
+        })),
       };
     })
   );
@@ -107,7 +121,7 @@ async function handler(
 export const getPersonRulesTool = {
   name: "get_person_rules",
   description:
-    "Get detailed per-person rules including allergies, dietary restrictions, and preferences with severities and options. Use this for detailed rule inspection.",
+    "Get detailed per-person rules (Can't eat / Doesn't like) and Loves. Loves never filter recipes; they boost ranking. Use this for detailed rule inspection.",
   inputSchema: getPersonRulesSchema,
   handler,
 } as const;

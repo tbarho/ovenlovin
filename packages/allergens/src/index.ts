@@ -36,10 +36,13 @@ export {
 export {
   dietCatalog,
   dislikeCatalog,
+  loveCatalog,
   allergenCatalog,
   dietCatalogEntries,
   catalogForIntent,
+  allCatalogEntries,
   findCatalogEntry,
+  matchPhrasesForTarget,
   searchCatalog,
   humanizeTarget,
   displayNameForTarget,
@@ -49,6 +52,30 @@ export {
   type CatalogEntry,
   type DietCatalogEntry,
 } from "./catalog";
+
+export {
+  normalizePhrase,
+  stemWord,
+  phraseTokens,
+  phraseMatchesLine,
+  phraseMatchesAny,
+} from "./phrase-match";
+
+export {
+  LOVE_PREFERENCE_TYPE,
+  isLovePreference,
+  loveLabel,
+  loveTag,
+  recipeHaystack,
+  recipeMatchesLove,
+  lovesForRecipe,
+  loveScore,
+  rankRecipesByLoves,
+  type LovePreference,
+  type RecipeLoveFields,
+  type PersonLove,
+  type LoveHit,
+} from "./loves";
 
 export {
   describeRuleChip,
@@ -78,6 +105,7 @@ export {
 export {
   RULE_UI_BUCKETS,
   SHARED_FACILITY_PROMPTS,
+  normalizeUiBucket,
   defaultBucketForCatalogGroup,
   defaultSharedFacilityPrompt,
   intentAndSeverityForBucket,
@@ -87,5 +115,6 @@ export {
   showsSharedFacilityPrompt,
   uiBucketForRule,
   type RuleUiBucket,
+  type LegacyRuleUiBucket,
   type SharedFacilityPrompt,
 } from "./rule-ui";

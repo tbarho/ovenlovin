@@ -3,6 +3,7 @@ import {
   searchCatalog,
   type CatalogEntry,
   type CatalogGroup,
+  type RuleIntent,
 } from "@ovenlovin/allergens";
 
 const ICON_ALIASES: Record<string, string> = {
@@ -11,7 +12,18 @@ const ICON_ALIASES: Record<string, string> = {
   olives: "olive",
   gluten: "wheat",
   dairy_free: "milk",
+  mexican: "spicy",
+  italian: "vegetarian",
+  chinese: "spicy",
+  american: "egg",
+  salmon: "fish",
+  chicken: "egg",
+  pasta: "wheat",
+  chocolate: "egg",
+  sheet_pan: "vegetarian",
 };
+
+export type PeoplePickerMode = "cant_eat" | "doesnt_like" | "loves";
 
 export function iconIdForTarget(target: string): string {
   return ICON_ALIASES[target] ?? target;
@@ -23,20 +35,33 @@ export function catalogGroupForKind(kind: string): CatalogGroup {
   return "ingredient";
 }
 
-export function searchPeopleCatalog(query: string, limit = 24): CatalogEntry[] {
-  const q = query.trim();
-  if (!q) {
-    return [
-      ...searchCatalog("", { intent: "allergy", limit: 12 }),
-      ...searchCatalog("", { intent: "diet", limit: 8 }),
-    ].slice(0, limit);
-  }
-
-  const merged = [
-    ...searchCatalog(q, { intent: "allergy", limit: 12 }),
-    ...searchCatalog(q, { intent: "diet", limit: 8 }),
-    ...searchCatalog(q, { intent: "dislike", limit: 8 }),
+function featuredForMode(mode: PeoplePickerMode): CatalogEntry[] {
+  if (mode === "doesnt_like") return searchCatalog("", { intent: "dislike", limit: 12 });
+  if (mode === "loves") return searchCatalog("", { intent: "love", limit: 16 });
+  return [
+    ...searchCatalog("", { intent: "allergy", limit: 12 }),
+    ...searchCatalog("", { intent: "diet", limit: 8 }),
   ];
+}
+
+function searchIntentsForMode(mode: PeoplePickerMode): RuleIntent[] {
+  if (mode === "doesnt_like") return ["dislike", "allergy", "diet"];
+  if (mode === "loves") return ["love", "dislike", "diet"];
+  return ["allergy", "diet", "dislike"];
+}
+
+export function searchPeopleCatalog(
+  query: string,
+  options: { mode?: PeoplePickerMode; limit?: number } = {}
+): CatalogEntry[] {
+  const mode = options.mode ?? "cant_eat";
+  const limit = options.limit ?? 24;
+  const q = query.trim();
+  if (!q) return featuredForMode(mode).slice(0, limit);
+
+  const merged = searchIntentsForMode(mode).flatMap((intent) =>
+    searchCatalog(q, { intent, limit: 12 })
+  );
   const seen = new Set<string>();
   const unique: CatalogEntry[] = [];
   for (const entry of merged) {
@@ -45,14 +70,21 @@ export function searchPeopleCatalog(query: string, limit = 24): CatalogEntry[] {
     seen.add(key);
     unique.push(entry);
   }
-
-  const exact = unique.some(
-    (entry) => entry.code === slugTarget(q) || entry.name.toLowerCase() === q.toLowerCase()
-  );
-  if (!exact) {
-    unique.push(customIngredientEntry(q));
-  }
   return unique.slice(0, limit);
+}
+
+export function customCatalogOffer(query: string): CatalogEntry | null {
+  const q = query.trim();
+  if (!q) return null;
+  const matches = searchPeopleCatalog(q, { limit: 40 });
+  const exact = matches.some(
+    (entry) =>
+      entry.code === slugTarget(q) ||
+      entry.name.toLowerCase() === q.toLowerCase() ||
+      entry.phraseName.toLowerCase() === q.toLowerCase()
+  );
+  if (exact) return null;
+  return customIngredientEntry(q);
 }
 
 export function entryForRule(target: string, kind: string): CatalogEntry | undefined {
@@ -65,7 +97,7 @@ export function entryForRule(target: string, kind: string): CatalogEntry | undef
 export function customIngredientEntry(raw: string): CatalogEntry {
   const name = raw.trim();
   return {
-    code: slugTarget(name),
+    code: slugTarget(name) === "custom" ? name.toLowerCase() : slugTarget(name),
     name,
     phraseName: name.toLowerCase(),
     group: "ingredient",

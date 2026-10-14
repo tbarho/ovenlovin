@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
+  LOVE_PREFERENCE_TYPE,
   RULE_UI_BUCKETS,
   buildRuleWrite,
-  defaultBucketForCatalogGroup,
   defaultSharedFacilityPrompt,
   displayNameForTarget,
   intentAndSeverityForBucket,
-  personRemovalCopy,
+  loveLabel,
   promptFromSharedFacility,
   sharedFacilityFromPrompt,
   showsCoconutToggle,
@@ -21,7 +21,7 @@ import {
   type RuleUiBucket,
   type SharedFacilityPrompt,
 } from "@ovenlovin/allergens";
-import type { Person, PersonRule } from "@ovenlovin/core";
+import type { Person, PersonRule, Preference } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
 import { entryForRule } from "@/lib/people-catalog";
 import {
@@ -34,33 +34,35 @@ import {
 import { FoodPicker } from "./FoodPicker";
 import { Avatar, Chip, ConfirmSheet, Segmented, Sheet, Toast } from "./ui";
 
-const SEVERITY_OPTIONS = RULE_UI_BUCKETS.map((item) => ({
-  value: item.bucket,
-  label: item.label,
-}));
-
 const FACILITY_OPTIONS: Array<{ value: SharedFacilityPrompt; label: string }> = [
   { value: "yes", label: "Yes" },
   { value: "ask", label: "Ask me" },
   { value: "no", label: "No" },
 ];
 
+type AddTarget = RuleUiBucket | "loves";
+
+const EMPTY_LOVES: Preference[] = [];
+
 export function PersonPage({
   person,
   rules: initialRules,
+  loves: initialLoves = EMPTY_LOVES,
 }: {
   person: Person;
   rules: PersonRule[];
+  loves?: Preference[];
 }) {
   const router = useRouter();
   const [rules, setRules] = useState(initialRules);
-  const [adding, setAdding] = useState(false);
+  const [loves, setLoves] = useState(initialLoves);
+  const [adding, setAdding] = useState<AddTarget | null>(null);
   const [editing, setEditing] = useState<PersonRule | null>(null);
   const [editPerson, setEditPerson] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const closeAdding = useCallback(() => setAdding(false), []);
+  const closeAdding = useCallback(() => setAdding(null), []);
   const closeEditing = useCallback(() => setEditing(null), []);
   const closeEditPerson = useCallback(() => setEditPerson(false), []);
   const closeDelete = useCallback(() => setConfirmDelete(false), []);
@@ -69,11 +71,14 @@ export function PersonPage({
     setRules(initialRules);
   }, [initialRules]);
 
+  useEffect(() => {
+    setLoves(initialLoves);
+  }, [initialLoves]);
+
   const grouped = useMemo(() => {
     const map: Record<RuleUiBucket, PersonRule[]> = {
-      cant_have: [],
-      doesnt_eat: [],
-      rather_not: [],
+      cant_eat: [],
+      doesnt_like: [],
     };
     for (const rule of rules) {
       map[uiBucketForRule(rule)].push(rule);
@@ -82,7 +87,7 @@ export function PersonPage({
   }, [rules]);
 
   const appearance = appearanceForPerson(person);
-  const removal = personRemovalCopy(person.displayName, rules.length);
+  const removal = personRemovalCopy(person.displayName, rules.length + loves.length);
 
   async function persistRule(
     entry: CatalogEntry,
@@ -102,6 +107,7 @@ export function PersonPage({
         ? sharedFacilityFromPrompt(extras.facility)
         : "ignore",
       treatCoconutAsTreeNut: showsCoconutToggle(entry.code) ? extras.coconut : true,
+      label: entry.name,
     });
     if (extras.existing) {
       return api<PersonRule>(`/api/v1/people/${person.id}/rules/${extras.existing.id}`, {
@@ -127,10 +133,28 @@ export function PersonPage({
     try {
       const created = await persistRule(entry, bucket, extras);
       setRules((current) => [created, ...current.filter((rule) => rule.id !== created.id)]);
-      setAdding(false);
+      setAdding(null);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save rule");
+    }
+  }
+
+  async function addLove(entry: CatalogEntry) {
+    setError(null);
+    try {
+      const created = await api<Preference>(`/api/v1/people/${person.id}/preferences`, {
+        method: "POST",
+        body: JSON.stringify({
+          type: LOVE_PREFERENCE_TYPE,
+          value: entry.code,
+        }),
+      });
+      setLoves((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+      setAdding(null);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save love");
     }
   }
 
@@ -174,6 +198,25 @@ export function PersonPage({
     }
   }
 
+  async function removeLove(item: Preference) {
+    setError(null);
+    const label = loveLabel(item.value);
+    setLoves((current) => current.filter((row) => row.id !== item.id));
+    try {
+      await api(`/api/v1/people/${person.id}/preferences/${item.id}`, { method: "DELETE" });
+      router.refresh();
+      setToast({
+        message: `Removed ${label}`,
+        undo: () => {
+          void undoRemoveLove(item);
+        },
+      });
+    } catch (err) {
+      setLoves((current) => [item, ...current]);
+      setError(err instanceof Error ? err.message : "Could not remove love");
+    }
+  }
+
   async function undoRemove(rule: PersonRule) {
     setToast(null);
     try {
@@ -199,6 +242,24 @@ export function PersonPage({
     }
   }
 
+  async function undoRemoveLove(item: Preference) {
+    setToast(null);
+    try {
+      const restored = await api<Preference>(`/api/v1/people/${person.id}/preferences`, {
+        method: "POST",
+        body: JSON.stringify({
+          type: item.type,
+          value: item.value,
+          weight: item.weight,
+        }),
+      });
+      setLoves((current) => [restored, ...current.filter((row) => row.id !== restored.id)]);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not undo");
+    }
+  }
+
   async function deletePerson() {
     setError(null);
     try {
@@ -209,6 +270,9 @@ export function PersonPage({
       setError(err instanceof Error ? err.message : "Could not remove person");
     }
   }
+
+  const addTitle =
+    adding === "loves" ? "Loves" : adding === "doesnt_like" ? "Doesn't like" : "Can't eat";
 
   return (
     <div className="olp kitchen-people kitchen-person">
@@ -228,7 +292,16 @@ export function PersonPage({
               className={`olp-lane olp-lane-${item.bucket}`}
               data-testid={`bucket-${item.bucket}`}
             >
-              <h2>{item.label}</h2>
+              <div className="olp-lane-head">
+                <h2>{item.label}</h2>
+                <button
+                  type="button"
+                  className="olp-text-btn"
+                  onClick={() => setAdding(item.bucket)}
+                >
+                  Add
+                </button>
+              </div>
               {grouped[item.bucket].length === 0 ? (
                 <p className="olp-empty-inline">None</p>
               ) : (
@@ -251,14 +324,39 @@ export function PersonPage({
               )}
             </section>
           ))}
+
+          <section className="olp-lane olp-lane-loves" data-testid="bucket-loves">
+            <div className="olp-lane-head">
+              <h2>Loves</h2>
+              <button type="button" className="olp-text-btn" onClick={() => setAdding("loves")}>
+                Add
+              </button>
+            </div>
+            {loves.length === 0 ? (
+              <p className="olp-empty-inline">None</p>
+            ) : (
+              <div className="olp-chip-row">
+                <AnimatePresence initial={false}>
+                  {loves.map((item) => (
+                    <Chip
+                      key={item.id}
+                      label={loveLabel(item.value)}
+                      target={item.value}
+                      bucket="loves"
+                      onRemove={() => {
+                        void removeLove(item);
+                      }}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </section>
         </div>
 
         {error ? <p className="form-error">{error}</p> : null}
 
         <div className="olp-row">
-          <button type="button" className="olp-btn olp-btn-primary" onClick={() => setAdding(true)}>
-            Add
-          </button>
           <button type="button" className="olp-btn" onClick={() => setEditPerson(true)}>
             Edit {person.displayName}
           </button>
@@ -272,14 +370,27 @@ export function PersonPage({
         </div>
       </div>
 
-      <Sheet open={adding} title="Add a rule" onClose={closeAdding}>
-        <AddRuleForm
-          key="add-rule-form"
-          selectedTargets={rules.map((rule) => rule.target)}
-          onDone={(entry, bucket, extras) => {
-            void addRule(entry, bucket, extras);
-          }}
-        />
+      <Sheet open={Boolean(adding)} title={addTitle} onClose={closeAdding}>
+        {adding ? (
+          <AddListForm
+            key={adding}
+            mode={adding}
+            selectedTargets={
+              adding === "loves"
+                ? loves.map((item) => item.value)
+                : rules
+                    .filter((rule) => uiBucketForRule(rule) === adding)
+                    .map((rule) => rule.target)
+            }
+            onPickRule={(entry, extras) => {
+              if (adding === "loves") return;
+              void addRule(entry, adding, extras);
+            }}
+            onPickLove={(entry) => {
+              void addLove(entry);
+            }}
+          />
+        ) : null}
       </Sheet>
 
       <Sheet
@@ -323,28 +434,51 @@ export function PersonPage({
   );
 }
 
-function AddRuleForm({
+function personRemovalCopy(personName: string, itemCount: number) {
+  return {
+    title: `Remove ${personName}?`,
+    body:
+      itemCount === 0
+        ? `${personName} will be removed from this household.`
+        : `${personName} and their ${itemCount} ${itemCount === 1 ? "item" : "items"} will be removed. Meal checks will no longer include ${personName}.`,
+  };
+}
+
+function AddListForm({
+  mode,
   selectedTargets,
-  onDone,
+  onPickRule,
+  onPickLove,
 }: {
+  mode: AddTarget;
   selectedTargets: string[];
-  onDone: (
+  onPickRule: (
     entry: CatalogEntry,
-    bucket: RuleUiBucket,
     extras: { facility: SharedFacilityPrompt; coconut: boolean }
   ) => void;
+  onPickLove: (entry: CatalogEntry) => void;
 }) {
   const [item, setItem] = useState<CatalogEntry | null>(null);
-  const [bucket, setBucket] = useState<RuleUiBucket>("cant_have");
   const [facility, setFacility] = useState<SharedFacilityPrompt>("ask");
   const [coconut, setCoconut] = useState(false);
   const already = item ? selectedTargets.includes(item.code) : false;
 
   function selectItem(next: CatalogEntry) {
-    setItem(next);
-    setBucket(defaultBucketForCatalogGroup(next.group));
-    setFacility(defaultSharedFacilityPrompt(next.code));
-    setCoconut(false);
+    if (mode === "loves") {
+      onPickLove(next);
+      return;
+    }
+    if (showsSharedFacilityPrompt(next.code) || showsCoconutToggle(next.code)) {
+      setItem(next);
+      setFacility(defaultSharedFacilityPrompt(next.code));
+      setCoconut(false);
+      return;
+    }
+    onPickRule(next, { facility: "no", coconut: true });
+  }
+
+  if (mode === "loves") {
+    return <FoodPicker mode="loves" onSelect={selectItem} />;
   }
 
   return (
@@ -354,12 +488,6 @@ function AddRuleForm({
           <button type="button" className="olp-choice is-on" onClick={() => setItem(null)}>
             <b>{item.name}</b>
           </button>
-          <Segmented
-            label="Severity"
-            value={bucket}
-            onChange={setBucket}
-            options={SEVERITY_OPTIONS}
-          />
           {showsSharedFacilityPrompt(item.code) ? (
             <fieldset className="olp-fieldset">
               <legend>Avoid foods made where nuts are processed?</legend>
@@ -385,13 +513,13 @@ function AddRuleForm({
             type="button"
             className="olp-btn olp-btn-primary"
             disabled={already}
-            onClick={() => onDone(item, bucket, { facility, coconut })}
+            onClick={() => onPickRule(item, { facility, coconut })}
           >
             Done
           </button>
         </>
       ) : (
-        <FoodPicker onSelect={selectItem} />
+        <FoodPicker mode={mode} onSelect={selectItem} />
       )}
     </div>
   );
@@ -420,13 +548,13 @@ function RuleEditor({
   return (
     <div className="olp-stack-sm">
       <Segmented
-        label="Severity"
+        label="List"
         value={bucket}
         onChange={(next) => {
           setBucket(next);
           onChange(next, { facility, coconut });
         }}
-        options={SEVERITY_OPTIONS}
+        options={RULE_UI_BUCKETS.map((item) => ({ value: item.bucket, label: item.label }))}
       />
       {showFacility ? (
         <fieldset className="olp-fieldset">

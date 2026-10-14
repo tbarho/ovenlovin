@@ -10,7 +10,10 @@ import { RecipeService, PeopleService } from "@ovenlovin/core";
 import { createDbClient, recipeIngredient } from "@ovenlovin/db";
 import { eq, and, isNull } from "drizzle-orm";
 import {
+  LOVE_PREFERENCE_TYPE,
   checkIngredientsAgainstRules,
+  lovesForRecipe,
+  type PersonLove,
   type RuleCheckContext,
   type IngredientCheckInput,
 } from "@ovenlovin/allergens";
@@ -60,6 +63,7 @@ export interface CheckMealPlanOutput {
       type: "time_budget" | "method_mismatch" | "attendance";
       message: string;
     }>;
+    loveTags?: string[];
   }>;
   nutritionSummary?: {
     coverage: string;
@@ -75,6 +79,30 @@ async function handler(
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
   const peopleService = new PeopleService(db);
+
+  const attendeeIds = [...new Set(input.plan.entries.flatMap((entry) => entry.attendees))];
+  const attendeePeople = await Promise.all(
+    attendeeIds.map(async (personId) => {
+      const person = await peopleService.getPerson(personId);
+      if (!person || person.householdId !== context.householdId) return null;
+      return person;
+    })
+  );
+  const knownPeople = attendeePeople.filter((person): person is NonNullable<typeof person> =>
+    Boolean(person)
+  );
+  const attendeeLoves = await peopleService.getPreferencesForPeople(
+    knownPeople.map((person) => person.id),
+    LOVE_PREFERENCE_TYPE
+  );
+  const lovePeople: PersonLove[] = attendeeLoves.map((pref) => {
+    const person = knownPeople.find((item) => item.id === pref.personId);
+    return {
+      personId: pref.personId,
+      personName: person?.displayName ?? "Someone",
+      preference: pref,
+    };
+  });
 
   const entriesResults = await Promise.all(
     input.plan.entries.map(async (entry) => {
@@ -197,11 +225,25 @@ async function handler(
         });
       }
 
+      const loveHits = lovesForRecipe(
+        {
+          title: recipe.title,
+          description: recipe.description,
+          cuisine: recipe.cuisine,
+          course: recipe.course,
+          methodTags: recipe.methodTags,
+          ingredients: ingredientRows.map((row) => ({ rawText: row.rawText })),
+        },
+        lovePeople
+      );
+
       return {
         date: entry.date,
         meal: entry.meal,
         recipeTitle: recipe.title,
         findings,
+        loveTags:
+          loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
       };
     })
   );
@@ -233,7 +275,7 @@ async function handler(
 export const checkMealPlanTool = {
   name: "check_meal_plan",
   description:
-    "Check a meal plan against per-person rules and schedule constraints. Returns per-entry, per-person findings by severity. MUST be called before saving a plan.",
+    "Check a meal plan against per-person rules and schedule constraints. Returns per-entry, per-person findings by severity, plus informational loveTags (never a filter). MUST be called before saving a plan.",
   inputSchema: checkMealPlanSchema,
   handler,
 } as const;

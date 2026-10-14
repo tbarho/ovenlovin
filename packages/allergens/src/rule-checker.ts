@@ -6,7 +6,9 @@
  */
 
 import type { PersonRule, Severity, AllergenRelation } from "@ovenlovin/core";
+import { matchPhrasesForTarget } from "./catalog";
 import { matchIngredient, type IngredientAllergenMapping } from "./ingredient-mapping";
+import { phraseMatchesLine } from "./phrase-match";
 import { getDescendants } from "./taxonomy";
 
 export interface RuleCheckContext {
@@ -76,6 +78,10 @@ export function checkIngredientAgainstRule(
   const findings: RuleCheckFinding[] = [];
   const { rule, personId, personName } = context;
 
+  if (rule.kind !== "allergen") {
+    return checkPhraseRule(ingredient, context);
+  }
+
   // Match ingredient to allergen mappings
   const mappings = matchIngredient(ingredient.name);
 
@@ -121,6 +127,48 @@ export function checkIngredientAgainstRule(
   }
 
   return findings;
+}
+
+function checkPhraseRule(
+  ingredient: IngredientCheckInput,
+  context: RuleCheckContext
+): RuleCheckFinding[] {
+  const { rule, personId, personName } = context;
+  const phrases = matchPhrasesForTarget(rule.target, rule.kind);
+  if (rule.label) phrases.push(rule.label);
+
+  const matched = phrases.find((phrase) => phraseMatchesLine(phrase, ingredient.name));
+  if (!matched) return [];
+
+  return [
+    {
+      personId,
+      personName,
+      ruleId: rule.id,
+      severity: rule.severity,
+      ingredientName: ingredient.name,
+      allergenCode: rule.target,
+      allergenName: rule.label?.trim() || rule.target,
+      relation: "contains",
+      message: formatPhraseFindingMessage(personName, rule, ingredient.name),
+      confidence: ingredient.confidence ?? 0.85,
+      note: rule.note ?? undefined,
+    },
+  ];
+}
+
+function formatPhraseFindingMessage(
+  personName: string,
+  rule: PersonRule,
+  ingredientName: string
+): string {
+  const severityIcon = {
+    block: "⛔",
+    warn: "⚠️",
+    prefer_avoid: "ℹ️",
+  }[rule.severity];
+  const label = rule.label?.trim() || rule.target;
+  return `${severityIcon} ${personName} (${rule.severity}: ${label}). "${ingredientName}" matches ${label}.`;
 }
 
 /**

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { CookbookService, PeopleService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { RecipeDetail } from "@/components/kitchen/RecipeDetail";
+import { householdLovePeople } from "@/lib/household-loves";
 import { getSessionContext } from "@/lib/session";
 
 export default async function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,8 +18,18 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
   const peopleService = new PeopleService(db);
   const people = await peopleService.listPeopleByHousehold(context.householdId, { limit: 40 });
   const rules = await peopleService.getRulesForPeople(people.items.map((person) => person.id));
+  const preferences = await peopleService.getPreferencesForPeople(
+    people.items.map((person) => person.id),
+    "love"
+  );
 
   return (
-    <RecipeDetail recipe={recipe} cookbooks={cookbooks.items} people={people.items} rules={rules} />
+    <RecipeDetail
+      recipe={recipe}
+      cookbooks={cookbooks.items}
+      people={people.items}
+      rules={rules}
+      lovePeople={householdLovePeople(people.items, preferences)}
+    />
   );
 }

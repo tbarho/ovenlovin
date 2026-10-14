@@ -13,6 +13,7 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
   const person = await service.getPerson(id);
   if (!person) notFound();
   const rules = await service.getRulesForPerson(id);
+  const loves = await service.getPreferencesForPerson(id, "love");
 
-  return <PersonPage person={person} rules={rules} />;
+  return <PersonPage person={person} rules={rules} loves={loves} />;
 }

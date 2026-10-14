@@ -1088,6 +1088,24 @@ select {
   font-size: 13px;
 }
 
+.love-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.love-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef7ee;
+  color: #2f6b38;
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .source-link {
   display: inline-flex;
   align-items: center;

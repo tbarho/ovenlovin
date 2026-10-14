@@ -3,11 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import type { PersonLove } from "@ovenlovin/allergens";
 import type { CookbookCard, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
+import { loveHitsForRecipe } from "@/lib/household-loves";
 import { ImportRecipeForm } from "./ImportRecipeForm";
 import { BottomSheet } from "./BottomSheet";
+import { LoveTags } from "./LoveTags";
+
+const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 
 function RecipeThumb({ recipe }: { recipe: Recipe }) {
   const image = recipeMainImage(recipe.images);
@@ -83,10 +88,12 @@ export function RecipesKitchen({
   cookbooks,
   uncategorized,
   recipes,
+  lovePeople = EMPTY_LOVE_PEOPLE,
 }: {
   cookbooks: CookbookCard[];
   uncategorized: Recipe[];
   recipes: Recipe[];
+  lovePeople?: PersonLove[];
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -150,6 +157,7 @@ export function RecipesKitchen({
                 <RecipeThumb recipe={recipe} />
                 <div className="card-copy">
                   <h2>{recipe.title}</h2>
+                  <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
                   <p className="muted">
                     {[
                       recipe.servings ? `${recipe.servings} servings` : null,

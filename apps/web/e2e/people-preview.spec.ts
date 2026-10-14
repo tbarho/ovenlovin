@@ -15,11 +15,12 @@ test("unsigned people preview shows the production people cards", async ({ page 
   await page.goto("/dev/people-preview?view=person");
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("heading", { name: "Child B" })).toBeVisible();
-  await expect(page.getByTestId("bucket-cant_have")).toContainText(/peanut/i);
-  await expect(page.getByTestId("bucket-cant_have")).toContainText(/tree nut/i);
+  await expect(page.getByTestId("bucket-cant_eat")).toContainText(/peanut/i);
+  await expect(page.getByTestId("bucket-cant_eat")).toContainText(/tree nut/i);
+  await expect(page.getByTestId("bucket-loves")).toBeVisible();
 
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Add a rule" });
+  await page.getByTestId("bucket-cant_eat").getByRole("button", { name: "Add" }).click();
+  const dialog = page.getByRole("dialog", { name: /can't eat/i });
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveCSS("opacity", "1");
   const background = await dialog.evaluate((el) => getComputedStyle(el).backgroundColor);

@@ -522,6 +522,22 @@ POST /api/v1/households/{householdId}/people/{personId}/rules
 
 **Response**: `201 Created` with created rule object
 
+#### Person Loves (preferences)
+
+Loves never hide recipes. They boost ranking (meal planner / `search_recipes`) and show a small “{Name} loves this” tag.
+
+```
+GET    /api/v1/people/{personId}/preferences?type=love
+POST   /api/v1/people/{personId}/preferences
+DELETE /api/v1/people/{personId}/preferences/{prefId}
+```
+
+```json
+{ "type": "love", "value": "salmon", "weight": 1 }
+```
+
+`value` can be a catalog code (`salmon`, `mexican`, `spicy`) or a custom term. Custom terms match ingredient lines case-insensitively, plural-tolerant.
+
 ### Meal Plans
 
 #### Create Meal Plan

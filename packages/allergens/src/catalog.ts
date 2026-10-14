@@ -8,9 +8,9 @@
 
 import { allergenTaxonomy, type AllergenTaxonomyNode } from "./taxonomy";
 
-export type RuleIntent = "allergy" | "diet" | "dislike";
+export type RuleIntent = "allergy" | "diet" | "dislike" | "love";
 
-export type CatalogGroup = "allergen" | "diet" | "ingredient";
+export type CatalogGroup = "allergen" | "diet" | "ingredient" | "cuisine" | "style";
 
 export interface CatalogEntry {
   code: string;
@@ -31,6 +31,8 @@ export interface DietCatalogEntry {
   phraseName: string;
   description: string;
   aliases: string[];
+  /** Ingredient phrases this diet rule matches. Not a hidden policy — only used when the person has this diet rule. */
+  matchPhrases?: string[];
 }
 
 export const dietCatalog: DietCatalogEntry[] = [
@@ -40,6 +42,23 @@ export const dietCatalog: DietCatalogEntry[] = [
     phraseName: "vegetarian diet",
     description: "No meat, poultry, or fish",
     aliases: ["veg", "veggie", "no meat"],
+    matchPhrases: [
+      "beef",
+      "chicken",
+      "pork",
+      "turkey",
+      "lamb",
+      "steak",
+      "bacon",
+      "ham",
+      "sausage",
+      "meat",
+      "fish",
+      "salmon",
+      "tuna",
+      "shrimp",
+      "gelatin",
+    ],
   },
   {
     code: "vegan",
@@ -47,6 +66,32 @@ export const dietCatalog: DietCatalogEntry[] = [
     phraseName: "vegan diet",
     description: "No animal products",
     aliases: ["plant based", "plant-based"],
+    matchPhrases: [
+      "beef",
+      "chicken",
+      "pork",
+      "turkey",
+      "lamb",
+      "steak",
+      "bacon",
+      "ham",
+      "sausage",
+      "meat",
+      "fish",
+      "salmon",
+      "tuna",
+      "shrimp",
+      "gelatin",
+      "milk",
+      "cheese",
+      "butter",
+      "cream",
+      "egg",
+      "eggs",
+      "honey",
+      "yogurt",
+      "whey",
+    ],
   },
   {
     code: "pescatarian",
@@ -54,6 +99,18 @@ export const dietCatalog: DietCatalogEntry[] = [
     phraseName: "pescatarian diet",
     description: "Fish allowed; no meat or poultry",
     aliases: ["pesce", "fish"],
+    matchPhrases: [
+      "beef",
+      "chicken",
+      "pork",
+      "turkey",
+      "lamb",
+      "steak",
+      "bacon",
+      "ham",
+      "sausage",
+      "meat",
+    ],
   },
   {
     code: "gluten_free",
@@ -61,6 +118,7 @@ export const dietCatalog: DietCatalogEntry[] = [
     phraseName: "gluten-free diet",
     description: "Avoid wheat, barley, rye, and other gluten grains",
     aliases: ["gluten free", "celiac", "coeliac", "gf"],
+    matchPhrases: ["wheat", "barley", "rye", "gluten"],
   },
   {
     code: "dairy_free",
@@ -68,6 +126,7 @@ export const dietCatalog: DietCatalogEntry[] = [
     phraseName: "dairy-free diet",
     description: "Avoid milk and dairy products",
     aliases: ["dairy free", "no dairy", "lactose"],
+    matchPhrases: ["milk", "cheese", "butter", "cream", "yogurt", "whey"],
   },
   {
     code: "kosher",
@@ -257,10 +316,99 @@ export const dislikeCatalog: CatalogEntry[] = [
   },
 ];
 
+export const loveCatalog: CatalogEntry[] = [
+  {
+    code: "salmon",
+    name: "Salmon",
+    phraseName: "salmon",
+    group: "ingredient",
+    aliases: [],
+    featured: true,
+  },
+  {
+    code: "spicy",
+    name: "Spicy",
+    phraseName: "spicy",
+    description: "Heat, chiles, hot sauce",
+    group: "style",
+    aliases: ["spice", "hot", "chile", "chili"],
+    featured: true,
+  },
+  {
+    code: "mexican",
+    name: "Mexican",
+    phraseName: "Mexican",
+    group: "cuisine",
+    aliases: ["taco", "tacos", "mexico"],
+    featured: true,
+  },
+  {
+    code: "italian",
+    name: "Italian",
+    phraseName: "Italian",
+    group: "cuisine",
+    aliases: ["pasta", "italy"],
+    featured: true,
+  },
+  {
+    code: "chinese",
+    name: "Chinese",
+    phraseName: "Chinese",
+    group: "cuisine",
+    aliases: ["china"],
+    featured: true,
+  },
+  {
+    code: "american",
+    name: "American",
+    phraseName: "American",
+    group: "cuisine",
+    aliases: [],
+    featured: true,
+  },
+  {
+    code: "chicken",
+    name: "Chicken",
+    phraseName: "chicken",
+    group: "ingredient",
+    aliases: [],
+    featured: true,
+  },
+  {
+    code: "pasta",
+    name: "Pasta",
+    phraseName: "pasta",
+    group: "ingredient",
+    aliases: ["noodle", "noodles"],
+    featured: true,
+  },
+  {
+    code: "chocolate",
+    name: "Chocolate",
+    phraseName: "chocolate",
+    group: "ingredient",
+    aliases: [],
+    featured: true,
+  },
+  {
+    code: "sheet_pan",
+    name: "Sheet pan",
+    phraseName: "sheet pan",
+    group: "style",
+    aliases: ["sheetpan", "one pan"],
+    featured: true,
+  },
+];
+
 export function catalogForIntent(intent: RuleIntent): CatalogEntry[] {
   if (intent === "allergy") return allergenCatalog();
   if (intent === "diet") return dietCatalogEntries();
+  if (intent === "love") return loveCatalog;
   return dislikeCatalog;
+}
+
+export function allCatalogEntries(): CatalogEntry[] {
+  return [...allergenCatalog(), ...dietCatalogEntries(), ...dislikeCatalog, ...loveCatalog];
 }
 
 export function findCatalogEntry(code: string, group?: CatalogGroup): CatalogEntry | undefined {
@@ -270,9 +418,32 @@ export function findCatalogEntry(code: string, group?: CatalogGroup): CatalogEnt
       : group === "allergen"
         ? allergenCatalog()
         : group === "ingredient"
-          ? dislikeCatalog
-          : [...allergenCatalog(), ...dietCatalogEntries(), ...dislikeCatalog];
+          ? [...dislikeCatalog, ...loveCatalog.filter((entry) => entry.group === "ingredient")]
+          : group === "cuisine" || group === "style"
+            ? loveCatalog.filter((entry) => entry.group === group)
+            : allCatalogEntries();
   return pools.find((entry) => entry.code === code);
+}
+
+export function matchPhrasesForTarget(target: string, kind?: string): string[] {
+  const phrases = new Set<string>([target]);
+  const diet = dietCatalog.find((entry) => entry.code === target);
+  if (diet) {
+    for (const phrase of diet.aliases) phrases.add(phrase);
+    for (const phrase of diet.matchPhrases ?? []) phrases.add(phrase);
+  }
+  const entry =
+    kind === "diet"
+      ? findCatalogEntry(target, "diet")
+      : kind === "allergen"
+        ? findCatalogEntry(target, "allergen")
+        : findCatalogEntry(target);
+  if (entry) {
+    phrases.add(entry.name);
+    phrases.add(entry.phraseName);
+    for (const alias of entry.aliases) phrases.add(alias);
+  }
+  return [...phrases];
 }
 
 export function normalizeSearch(value: string): string {
@@ -325,17 +496,13 @@ export function searchCatalog(
 }
 
 export function humanizeTarget(target: string): string {
-  const allergen = findCatalogEntry(target, "allergen");
-  if (allergen) return allergen.phraseName;
-  const diet = findCatalogEntry(target, "diet");
-  if (diet) return diet.phraseName;
+  const entry = findCatalogEntry(target);
+  if (entry) return entry.phraseName;
   return phraseNameFor(target, humanizeCode(target));
 }
 
 export function displayNameForTarget(target: string): string {
-  const allergen = findCatalogEntry(target, "allergen");
-  if (allergen) return allergen.name;
-  const diet = findCatalogEntry(target, "diet");
-  if (diet) return diet.name;
+  const entry = findCatalogEntry(target);
+  if (entry) return entry.name;
   return humanizeCode(target);
 }

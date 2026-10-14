@@ -1,4 +1,11 @@
-import type { Cookbook, Person, PersonRule, Recipe, RecipeDetails } from "@ovenlovin/core";
+import type {
+  Cookbook,
+  Person,
+  PersonRule,
+  Preference,
+  Recipe,
+  RecipeDetails,
+} from "@ovenlovin/core";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 const HOUSEHOLD_ID = "00000000-0000-4000-8000-000000000001";
@@ -32,6 +39,20 @@ export function testPersonRule(overrides: Partial<PersonRule> = {}): PersonRule 
     label: null,
     note: null,
     setBy: USER_ID,
+    createdAt: NOW,
+    updatedAt: NOW,
+    createdBy: USER_ID,
+    ...overrides,
+  };
+}
+
+export function testPreference(overrides: Partial<Preference> = {}): Preference {
+  return {
+    id: "00000000-0000-4000-8000-000000000015",
+    personId: "00000000-0000-4000-8000-000000000010",
+    type: "love",
+    value: "salmon",
+    weight: 1,
     createdAt: NOW,
     updatedAt: NOW,
     createdBy: USER_ID,

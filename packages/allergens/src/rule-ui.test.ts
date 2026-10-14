@@ -6,6 +6,7 @@ import {
   defaultBucketForCatalogGroup,
   defaultSharedFacilityPrompt,
   intentAndSeverityForBucket,
+  normalizeUiBucket,
   promptFromSharedFacility,
   sharedFacilityFromPrompt,
   showsCoconutToggle,
@@ -17,7 +18,7 @@ function ruleFromUi(opts: {
   personId?: string;
   target: string;
   group: "allergen" | "diet" | "ingredient";
-  bucket: "cant_have" | "doesnt_eat" | "rather_not";
+  bucket: "cant_eat" | "doesnt_like" | "cant_have" | "doesnt_eat" | "rather_not";
   facility?: "yes" | "ask" | "no";
   coconut?: boolean;
 }): PersonRule {
@@ -50,25 +51,33 @@ function contextFor(rule: PersonRule, name = "Child B"): RuleCheckContext {
 }
 
 describe("rule UI mapping", () => {
-  it("defaults catalog groups to the simplified buckets", () => {
-    expect(defaultBucketForCatalogGroup("allergen")).toBe("cant_have");
-    expect(defaultBucketForCatalogGroup("diet")).toBe("doesnt_eat");
-    expect(defaultBucketForCatalogGroup("ingredient")).toBe("rather_not");
+  it("defaults catalog groups to Can't eat / Doesn't like", () => {
+    expect(defaultBucketForCatalogGroup("allergen")).toBe("cant_eat");
+    expect(defaultBucketForCatalogGroup("diet")).toBe("cant_eat");
+    expect(defaultBucketForCatalogGroup("ingredient")).toBe("doesnt_like");
   });
 
-  it("maps Can't have / Doesn't eat / Would rather not onto stored severity and kind", () => {
-    const allergy = intentAndSeverityForBucket("cant_have", "allergen");
+  it("maps Can't eat / Doesn't like onto stored severity and kind", () => {
+    const allergy = intentAndSeverityForBucket("cant_eat", "allergen");
     expect(allergy).toEqual({ intent: "allergy", severity: "block" });
 
-    const diet = intentAndSeverityForBucket("doesnt_eat", "diet");
+    const diet = intentAndSeverityForBucket("cant_eat", "diet");
     expect(diet).toEqual({ intent: "diet", severity: "block" });
 
-    const prefer = intentAndSeverityForBucket("rather_not", "ingredient");
+    const prefer = intentAndSeverityForBucket("doesnt_like", "ingredient");
     expect(prefer).toEqual({ intent: "dislike", severity: "prefer_avoid" });
   });
 
+  it("migrates the retired Doesn't eat bucket onto Can't eat (block, kind diet)", () => {
+    expect(normalizeUiBucket("doesnt_eat")).toBe("cant_eat");
+    expect(normalizeUiBucket("cant_have")).toBe("cant_eat");
+    expect(normalizeUiBucket("rather_not")).toBe("doesnt_like");
+    const diet = intentAndSeverityForBucket("doesnt_eat", "diet");
+    expect(diet).toEqual({ intent: "diet", severity: "block" });
+  });
+
   it("never stores a nut allergen as kind diet (checker only matches allergen rules)", () => {
-    const fields = intentAndSeverityForBucket("doesnt_eat", "allergen");
+    const fields = intentAndSeverityForBucket("cant_eat", "allergen");
     expect(fields.intent).toBe("allergy");
     expect(fields.severity).toBe("block");
     expect(buildRuleWrite({ ...fields, target: "tree_nut", sharedFacility: "warn" }).kind).toBe(
@@ -95,20 +104,20 @@ describe("rule UI mapping", () => {
     expect(defaultSharedFacilityPrompt("milk")).toBe("no");
   });
 
-  it("groups stored rules back into the three UI buckets", () => {
-    expect(uiBucketForRule({ kind: "allergen", severity: "block" })).toBe("cant_have");
-    expect(uiBucketForRule({ kind: "diet", severity: "block" })).toBe("doesnt_eat");
-    expect(uiBucketForRule({ kind: "ingredient", severity: "prefer_avoid" })).toBe("rather_not");
-    expect(uiBucketForRule({ kind: "allergen", severity: "prefer_avoid" })).toBe("rather_not");
+  it("groups stored rules into the two UI buckets, including legacy diet blocks", () => {
+    expect(uiBucketForRule({ kind: "allergen", severity: "block" })).toBe("cant_eat");
+    expect(uiBucketForRule({ kind: "diet", severity: "block" })).toBe("cant_eat");
+    expect(uiBucketForRule({ kind: "ingredient", severity: "prefer_avoid" })).toBe("doesnt_like");
+    expect(uiBucketForRule({ kind: "allergen", severity: "prefer_avoid" })).toBe("doesnt_like");
   });
 });
 
 describe("UI write → checker (severe nut allergy)", () => {
-  it("blocks pesto pine nuts for a Can't have tree-nut rule", () => {
+  it("blocks pesto pine nuts for a Can't eat tree-nut rule", () => {
     const rule = ruleFromUi({
       target: "tree_nut",
       group: "allergen",
-      bucket: "cant_have",
+      bucket: "cant_eat",
       facility: "ask",
       coconut: false,
     });
@@ -129,11 +138,11 @@ describe("UI write → checker (severe nut allergy)", () => {
     expect(result.findings.warn).toHaveLength(0);
   });
 
-  it("blocks peanuts for Can't have peanut + Yes (shared facility block)", () => {
+  it("blocks peanuts for Can't eat peanut + Yes (shared facility block)", () => {
     const rule = ruleFromUi({
       target: "peanut",
       group: "allergen",
-      bucket: "cant_have",
+      bucket: "cant_eat",
       facility: "yes",
     });
     expect(rule.sharedFacility).toBe("block");
@@ -149,13 +158,13 @@ describe("UI write → checker (severe nut allergy)", () => {
     const ask = ruleFromUi({
       target: "tree_nut",
       group: "allergen",
-      bucket: "cant_have",
+      bucket: "cant_eat",
       facility: "ask",
     });
     const ignore = ruleFromUi({
       target: "tree_nut",
       group: "allergen",
-      bucket: "cant_have",
+      bucket: "cant_eat",
       facility: "no",
     });
     expect(ask.sharedFacility).toBe("warn");
@@ -170,7 +179,7 @@ describe("UI write → checker (severe nut allergy)", () => {
     );
 
     // Ask me persists sharedFacility=warn and turns cross-contact on. Finding
-    // severity still comes from the rule (Can't have → block), not the prompt.
+    // severity still comes from the rule (Can't eat → block), not the prompt.
     const askedHits = [...asked.findings.block, ...asked.findings.warn];
     expect(askedHits).toHaveLength(1);
     expect(askedHits[0]?.personName).toBe("Child B");
@@ -185,13 +194,13 @@ describe("UI write → checker (severe nut allergy)", () => {
     const on = ruleFromUi({
       target: "tree_nut",
       group: "allergen",
-      bucket: "cant_have",
+      bucket: "cant_eat",
       coconut: true,
     });
     const off = ruleFromUi({
       target: "tree_nut",
       group: "allergen",
-      bucket: "cant_have",
+      bucket: "cant_eat",
       coconut: false,
     });
 
@@ -204,14 +213,30 @@ describe("UI write → checker (severe nut allergy)", () => {
     expect(without.findings.block).toHaveLength(0);
   });
 
-  it("keeps Would rather not as prefer_avoid, never a silent block", () => {
+  it("keeps Doesn't like as prefer_avoid, never a silent block", () => {
     const rule = ruleFromUi({
       target: "mushroom",
       group: "ingredient",
-      bucket: "rather_not",
+      bucket: "doesnt_like",
     });
     expect(rule.kind).toBe("ingredient");
     expect(rule.severity).toBe("prefer_avoid");
-    expect(uiBucketForRule(rule)).toBe("rather_not");
+    expect(uiBucketForRule(rule)).toBe("doesnt_like");
+  });
+
+  it("matches a custom Can't eat term against an ingredient line", () => {
+    const rule = ruleFromUi({
+      target: "durian",
+      group: "ingredient",
+      bucket: "cant_eat",
+    });
+    expect(rule.kind).toBe("ingredient");
+    expect(rule.severity).toBe("block");
+    const result = checkIngredientsAgainstRules(
+      [{ name: "1 cup durian puree" }],
+      [contextFor(rule)]
+    );
+    expect(result.findings.block[0]?.personName).toBe("Child B");
+    expect(result.findings.block[0]?.ingredientName).toBe("1 cup durian puree");
   });
 });

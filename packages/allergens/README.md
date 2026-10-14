@@ -9,6 +9,8 @@ This package provides:
 - **Allergen taxonomy**: Tree structure covering US Big 9, EU 14, and custom allergens
 - **Ingredient mapping**: Deterministic matching of ingredients to allergens (with aliases, misspellings, OCR variants)
 - **Rule checker**: Per-person checking with configurable severities (block/warn/prefer-avoid)
+- **Phrase matching**: custom / ingredient / diet rules match ingredient lines (case-insensitive, plural-tolerant)
+- **Loves ranking**: positive preferences boost sort order and never hide a recipe
 - **Meal plan checker**: `check_meal_plan` function for full plan validation
 - **Adversarial test suite**: Hidden nuts, misspellings, OCR errors, plurals, aliases, may-contain labels
 - **Property tests**: fast-check invariants for rule matching

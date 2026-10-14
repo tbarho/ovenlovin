@@ -3,17 +3,25 @@
 import { useMemo, useState } from "react";
 import type { CatalogEntry } from "@ovenlovin/allergens";
 import { FoodIcon } from "@/components/prototype/people/icons";
-import { iconIdForTarget, searchPeopleCatalog } from "@/lib/people-catalog";
+import {
+  customCatalogOffer,
+  iconIdForTarget,
+  searchPeopleCatalog,
+  type PeoplePickerMode,
+} from "@/lib/people-catalog";
 
 export function FoodPicker({
+  mode = "cant_eat",
   selectedId,
   onSelect,
 }: {
+  mode?: PeoplePickerMode;
   selectedId?: string;
   onSelect: (item: CatalogEntry) => void;
 }) {
   const [query, setQuery] = useState("");
-  const tiles = useMemo(() => searchPeopleCatalog(query), [query]);
+  const tiles = useMemo(() => searchPeopleCatalog(query, { mode }), [mode, query]);
+  const custom = useMemo(() => customCatalogOffer(query), [query]);
   const showingSearch = query.trim().length > 0;
 
   return (
@@ -31,7 +39,17 @@ export function FoodPicker({
         />
       </label>
       <p className="olp-kicker">{showingSearch ? "Results" : "Common"}</p>
-      {tiles.length === 0 ? (
+      {custom ? (
+        <button
+          type="button"
+          className="olp-use-custom"
+          data-testid="use-custom"
+          onClick={() => onSelect(custom)}
+        >
+          Use ‘{custom.name}’
+        </button>
+      ) : null}
+      {tiles.length === 0 && !custom ? (
         <p className="olp-muted">No matches.</p>
       ) : (
         <div className="olp-tile-grid">

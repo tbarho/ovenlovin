@@ -298,14 +298,13 @@ OvenLovin implements these safety invariants:
 
 ### Via Web UI
 
-1. Go to Settings → Household
-2. Select a household member
-3. Click "Add Rule"
-4. Choose rule type (allergen, ingredient, dietary, nutrition)
-5. Select target (e.g., "peanuts")
-6. Set severity (block, warn, prefer-avoid)
-7. Add notes (optional)
-8. Save
+The person page has three lists. Each is tap-to-add — pick a catalog suggestion or type a custom term and tap **Use ‘…’**.
+
+1. **Can't eat** — stored as `severity: block`. Allergens stay `kind: allergen` (shared-facility Yes / Ask me / No is unchanged). Diets stay `kind: diet`. Custom terms stay `kind: ingredient`.
+2. **Doesn't like** — stored as `severity: prefer_avoid`.
+3. **Loves** — positive preferences. They never filter recipes; they boost ranking and show “{Name} loves this”.
+
+The retired “Doesn't eat” diet bucket now maps to **Can't eat**. Existing diet+block rows are unchanged in the database.
 
 ### Via API
 

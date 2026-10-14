@@ -238,6 +238,69 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: { 200: { description: "Membership saved" } },
   });
 
+  const preferenceSchema = z
+    .object({
+      id: z.string().uuid(),
+      personId: z.string().uuid(),
+      type: z.string(),
+      value: z.string(),
+      weight: z.number().int(),
+    })
+    .openapi("Preference");
+
+  registry.registerPath({
+    method: "get",
+    path: "/people/{id}/preferences",
+    tags: ["people"],
+    summary: "List a person's preferences, including Loves",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      query: z.object({ type: z.string().optional() }),
+    },
+    responses: {
+      200: {
+        description: "Preferences",
+        content: { "application/json": { schema: z.array(preferenceSchema) } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/people/{id}/preferences",
+    tags: ["people"],
+    summary: "Add a preference such as a Love (never filters recipes)",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              type: z.string().optional(),
+              value: z.string(),
+              weight: z.number().int().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Created preference",
+        content: { "application/json": { schema: preferenceSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/people/{id}/preferences/{prefId}",
+    tags: ["people"],
+    summary: "Remove a preference",
+    request: { params: z.object({ id: z.string().uuid(), prefId: z.string().uuid() }) },
+    responses: { 204: { description: "Deleted" } },
+  });
+
   registry.registerPath({
     method: "post",
     path: "/uploads/images",

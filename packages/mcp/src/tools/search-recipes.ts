@@ -10,7 +10,11 @@ import { RecipeService, PeopleService, type Recipe, type PersonRule } from "@ove
 import { createDbClient, recipeIngredient } from "@ovenlovin/db";
 import { eq, and, isNull } from "drizzle-orm";
 import {
+  LOVE_PREFERENCE_TYPE,
   checkIngredientsAgainstRules,
+  loveScore,
+  lovesForRecipe,
+  type PersonLove,
   type RuleCheckContext,
   type IngredientCheckInput,
 } from "@ovenlovin/allergens";
@@ -43,6 +47,7 @@ export interface SearchRecipesOutput {
       severity: "block" | "warn" | "prefer_avoid";
       message: string;
     }>;
+    loveTags?: string[];
   }>;
   nextCursor?: string;
 }
@@ -62,6 +67,22 @@ async function handler(
       limit: input.maxResults,
       cursor: input.cursor,
     },
+  });
+
+  const householdPeople = await peopleService.listPeopleByHousehold(context.householdId, {
+    limit: 40,
+  });
+  const householdLoves = await peopleService.getPreferencesForPeople(
+    householdPeople.items.map((person) => person.id),
+    LOVE_PREFERENCE_TYPE
+  );
+  const lovePeople: PersonLove[] = householdLoves.map((pref) => {
+    const person = householdPeople.items.find((item) => item.id === pref.personId);
+    return {
+      personId: pref.personId,
+      personName: person?.displayName ?? "Someone",
+      preference: pref,
+    };
   });
 
   // If forAttendees provided, check rules and annotate warnings
@@ -113,6 +134,7 @@ async function handler(
         }
       }
 
+      const loveHits = lovesForRecipe(recipe, lovePeople);
       return {
         id: recipe.id,
         title: recipe.title,
@@ -123,12 +145,22 @@ async function handler(
         methodTags: recipe.methodTags || [],
         images: recipe.images || [],
         warnings: warnings.length > 0 ? warnings : undefined,
+        loveTags: loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
+        _loveScore: loveScore(recipe, lovePeople),
       };
     })
   );
 
-  // Filter out null results (recipes that didn't match method tags)
-  const recipes = recipesWithWarnings.filter((r): r is NonNullable<typeof r> => r !== null);
+  // Filter out null results (recipes that didn't match method tags).
+  // Rank from the original recipe fields (cuisine/title), not the stripped DTO.
+  const recipes = recipesWithWarnings
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .sort((a, b) => {
+      const delta = b._loveScore - a._loveScore;
+      if (delta !== 0) return delta;
+      return a.title.localeCompare(b.title);
+    })
+    .map(({ _loveScore: _ignored, ...recipe }) => recipe);
 
   return {
     recipes,
@@ -229,7 +261,7 @@ async function checkRecipeForAttendees(
 export const searchRecipesTool = {
   name: "search_recipes",
   description:
-    "Search for recipes with optional filters. Can exclude recipes with blocking rules for specific attendees and annotate warnings.",
+    "Search for recipes with optional filters. Can exclude recipes with blocking rules for specific attendees, annotate warnings, and boost dishes someone loves. Loves never hide a recipe.",
   inputSchema: searchRecipesSchema,
   handler,
 } as const;
