@@ -257,6 +257,63 @@
           }
         },
         "required": ["id", "householdId", "weekStart", "status", "needsRecheck"]
+      },
+      "MealPlanDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MealPlan"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "entries": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MealPlanEntry"
+                }
+              }
+            },
+            "required": ["entries"]
+          }
+        ]
+      },
+      "MealPlanEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string"
+          },
+          "mealSlot": {
+            "type": "string"
+          },
+          "recipeId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "servings": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "prepAheadNotes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["id", "date", "mealSlot", "attendees"]
       }
     },
     "parameters": {}
@@ -1329,14 +1386,55 @@
                 "type": "object",
                 "properties": {
                   "weekStart": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date"
                   },
                   "status": {
                     "type": "string",
                     "enum": ["draft", "approved"]
+                  },
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "meal": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 50
+                        },
+                        "recipeId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "servings": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        },
+                        "attendees": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "default": []
+                        },
+                        "prepAheadNotes": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["date", "meal"],
+                      "additionalProperties": false
+                    }
                   }
                 },
-                "required": ["weekStart"]
+                "required": ["weekStart"],
+                "additionalProperties": false
               }
             }
           }
@@ -1347,7 +1445,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MealPlan"
+                  "$ref": "#/components/schemas/MealPlanDetail"
                 }
               }
             }
@@ -1376,7 +1474,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MealPlan"
+                  "$ref": "#/components/schemas/MealPlanDetail"
                 }
               }
             }
@@ -1412,8 +1510,48 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "meal": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 50
+                        },
+                        "recipeId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "servings": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        },
+                        "attendees": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "default": []
+                        },
+                        "prepAheadNotes": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["date", "meal"],
+                      "additionalProperties": false
+                    }
                   }
-                }
+                },
+                "additionalProperties": false
               }
             }
           }
@@ -1424,7 +1562,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MealPlan"
+                  "$ref": "#/components/schemas/MealPlanDetail"
                 }
               }
             }

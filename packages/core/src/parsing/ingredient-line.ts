@@ -233,8 +233,9 @@ export function normalizeIngredientName(name: string): string {
 export function backfillParsedIngredient(input: BackfillableIngredient): BackfilledIngredient {
   const parsed = parseIngredientLine(input.rawText);
   const storedName = input.name?.trim();
+  const name = storedName && storedName !== input.rawText.trim() ? storedName : parsed.name;
   return {
-    name: storedName || parsed.name,
+    name,
     quantityMin: input.quantityMin ?? parsed.quantityMin,
     quantityMax: input.quantityMax ?? parsed.quantityMax,
     unit: input.unit ?? parsed.unit,

@@ -7,13 +7,13 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 
 ## Input Schema
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `planId` | string (UUID) | Yes | - | Meal plan ID to generate shopping list for |
-| `format` | enum | No | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"` |
-| `groupBy` | enum | No | `"aisle"` | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"` |
-| `includePantryItems` | boolean | No | `false` | Include pantry staples (salt, pepper, oil, etc.) |
-| `includeRuleWarnings` | boolean | No | `true` | Include per-person rule warnings for shoppers |
+| Parameter             | Type          | Required | Default      | Description                                                 |
+| --------------------- | ------------- | -------- | ------------ | ----------------------------------------------------------- |
+| `planId`              | string (UUID) | Yes      | -            | Meal plan ID to generate shopping list for                  |
+| `format`              | enum          | No       | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"` |
+| `groupBy`             | enum          | No       | `"aisle"`    | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"`   |
+| `includePantryItems`  | boolean       | No       | `false`      | Include pantry staples (salt, pepper, oil, etc.)            |
+| `includeRuleWarnings` | boolean       | No       | `true`       | Include per-person rule warnings for shoppers               |
 
 ## Output Schema
 
@@ -37,13 +37,22 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 ```markdown
 # Shopping List
 
-## Ingredients
+## Produce
 
-- 2 lbs chicken breast (Grilled Chicken Salad)
-- 1 lb pasta (Vegetarian Pasta Primavera)
-- 2 cups cherry tomatoes (Grilled Chicken Salad)
+- 2 cup cherry tomatoes (Grilled Chicken Salad)
 - 1 head romaine lettuce (Grilled Chicken Salad)
-- 1/2 cup parmesan cheese (Vegetarian Pasta Primavera)
+
+## Meat
+
+- 2 lb chicken breast (Grilled Chicken Salad)
+
+## Grains
+
+- 1 lb pasta (Vegetarian Pasta Primavera)
+
+## Dairy
+
+- 0.5 cup parmesan cheese (Vegetarian Pasta Primavera)
 
 ## ⚠️ Warnings
 
@@ -54,18 +63,28 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 
 ```json
 {
+  "mealPlanId": "plan-abc-123",
+  "weekStart": "2026-10-12",
+  "groupBy": "aisle",
+  "includePantryItems": false,
+  "itemCount": 2,
   "ingredients": [
     {
-      "text": "2 lbs chicken breast",
+      "name": "chicken breast",
       "quantity": 2,
-      "unit": "lbs",
-      "recipeTitle": "Grilled Chicken Salad"
-    },
-    {
-      "text": "1 lb pasta",
-      "quantity": 1,
       "unit": "lb",
-      "recipeTitle": "Vegetarian Pasta Primavera"
+      "aisle": "Meat",
+      "category": "meat",
+      "isPantryItem": false,
+      "recipes": [
+        { "recipeId": "r1", "recipeTitle": "Grilled Chicken Salad", "quantity": 2, "unit": "lb" }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "name": "Meat",
+      "items": [{ "name": "chicken breast", "quantity": 2, "unit": "lb" }]
     }
   ],
   "warnings": [
@@ -81,10 +100,10 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 ### CSV
 
 ```csv
-Ingredient,Quantity,Unit,Recipe
-"chicken breast",2,"lbs","Grilled Chicken Salad"
-"pasta",1,"lb","Vegetarian Pasta Primavera"
-"cherry tomatoes",2,"cups","Grilled Chicken Salad"
+Name,Quantity,Unit,Aisle,Category,Recipes
+"chicken breast","2","lb","Meat","meat","Grilled Chicken Salad"
+"pasta","1","lb","Grains","grains","Vegetarian Pasta Primavera"
+"cherry tomatoes","2","cup","Produce","produce","Grilled Chicken Salad"
 ```
 
 ### Text
@@ -130,19 +149,22 @@ WARNINGS:
 ## Grouping Strategies
 
 ### aisle
+
 - Groups by grocery store aisle (produce, dairy, meat, etc.)
 - Best for efficient shopping
-- Not yet fully implemented (falls back to simple list)
+- Pantry staples land in a **Pantry staples** section when `includePantryItems` is true
 
 ### recipe
+
 - Groups by recipe
 - Helps with recipe-by-recipe shopping
 - Good for meal kit-style shopping
 
 ### category
-- Groups by ingredient category (vegetables, proteins, grains, etc.)
+
+- Groups by ingredient category (produce, dairy, grains, etc.)
 - Balanced between organization and flexibility
-- Not yet fully implemented (falls back to simple list)
+- Uses the same aisle map as `groupBy=aisle`
 
 ## Usage Notes
 

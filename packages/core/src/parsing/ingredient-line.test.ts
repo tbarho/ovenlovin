@@ -91,4 +91,12 @@ describe("backfillParsedIngredient", () => {
     });
     expect(backfilled.name).toBe("extra-virgin olive oil");
   });
+
+  it("re-parses when the stored name is the whole line", () => {
+    const backfilled = backfillParsedIngredient({
+      rawText: "2 tbsp olive oil",
+      name: "2 tbsp olive oil",
+    });
+    expect(backfilled.name).toBe("olive oil");
+  });
 });

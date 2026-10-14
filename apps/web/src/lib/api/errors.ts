@@ -10,6 +10,27 @@ export type ProblemDetail = {
   [key: string]: unknown;
 };
 
+export const PROBLEM_TYPE_PLACEHOLDER_ORIGIN = "https://your-app.vercel.app";
+
+export function originFromInstance(instance?: string): string {
+  if (instance) {
+    try {
+      return new URL(instance).origin;
+    } catch {
+      // fall through
+    }
+  }
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  return configured || "http://localhost:3000";
+}
+
+export function problemTypeForInstance(type: string, instance?: string): string {
+  if (!type.startsWith(`${PROBLEM_TYPE_PLACEHOLDER_ORIGIN}/`)) {
+    return type;
+  }
+  return `${originFromInstance(instance)}${type.slice(PROBLEM_TYPE_PLACEHOLDER_ORIGIN.length)}`;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -24,7 +45,7 @@ export class ApiError extends Error {
 
   toProblemDetail(instance?: string): ProblemDetail {
     return {
-      type: this.type,
+      type: problemTypeForInstance(this.type, instance),
       title: this.title,
       status: this.status,
       detail: this.detail,
