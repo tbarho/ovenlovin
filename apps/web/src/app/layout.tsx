@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
-import { brandPublicPath } from "@ovenlovin/brand";
+import { appShareUrl, brandPublicPath } from "@ovenlovin/brand";
 import { ClerkReadyProvider } from "@/components/ClerkReadyProvider";
 import { OVENLOVIN_PITCH } from "@/lib/llms-txt";
 import { publicOrigin } from "@/lib/public-origin";
@@ -45,12 +45,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "OvenLovin",
     description: OVENLOVIN_PITCH,
-    images: [{ url: brandPublicPath.og, width: 1200, height: 630, alt: OVENLOVIN_PITCH }],
+    images: [
+      { url: appShareUrl(brandPublicPath.og), width: 1200, height: 630, alt: OVENLOVIN_PITCH },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     description: OVENLOVIN_PITCH,
-    images: [brandPublicPath.og],
+    images: [appShareUrl(brandPublicPath.og)],
   },
 };
 

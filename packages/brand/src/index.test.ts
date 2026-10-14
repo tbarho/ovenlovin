@@ -9,6 +9,7 @@ import {
   brandPublicPath,
   VERCEL_DEPLOY_URL,
 } from "./index";
+import { docsShareUrl } from "./share";
 
 const assetsDir = join(dirname(fileURLToPath(import.meta.url)), "../assets");
 const PNG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -45,6 +46,23 @@ describe("@ovenlovin/brand", () => {
     const svg = readFileSync(join(assetsDir, brandAssets.favicon), "utf8");
     expect(svg).toMatch(/^<svg\s|^<\?xml/);
     expect(svg).toContain("OvenLovin");
+  });
+
+  it("ships a 1200×630 (or 2×) OG card", () => {
+    const bytes = readFileSync(join(assetsDir, brandAssets.og));
+    expect(bytes.subarray(0, 8).equals(PNG)).toBe(true);
+    const width = bytes.readUInt32BE(16);
+    const height = bytes.readUInt32BE(20);
+    expect([1200, 2400]).toContain(width);
+    expect(height / width).toBeCloseTo(630 / 1200, 5);
+    expect(bytes.length).toBeGreaterThan(200_000);
+  });
+
+  it("resolves the docs share image to an absolute GitHub Pages URL", () => {
+    expect(docsShareUrl(brandPublicPath.og)).toBe(
+      "https://tbarho.github.io/ovenlovin/brand/og.png"
+    );
+    expect(docsShareUrl(brandPublicPath.og)).not.toContain("localhost");
   });
 
   it("ships PNG mark, wordmark, lockup, and OG images", () => {

@@ -11,6 +11,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "render": "node scripts/render-wordmarks.mjs",
+    "render:og": "node scripts/render-wordmarks.mjs --og-only",
     "clean": "rm -rf node_modules .turbo"
   },
   "devDependencies": {

@@ -7,8 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- SECURITY, CONTRIBUTING, Code of Conduct, issue/PR templates
-- Clerk-exempt `/robots.txt` and `/sitemap.xml` so they are not HTML 404'd
+- Share images: Fascinate wordmark + pitch + kitchen product shot; docs OG URL is absolute GitHub Pages, never localhost
 
 ## [0.1.0] - 2026-10-14
 
