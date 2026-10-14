@@ -8,7 +8,7 @@ import { getDatabase } from "@ovenlovin/db";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id } = await params;
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const plan = await service.getMealPlan(id);
 
-    if (!plan) {
+    if (!plan || plan.householdId !== householdId) {
       throw new NotFoundError("MealPlan", id);
     }
 
@@ -30,13 +30,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id } = await params;
     const body = await request.json();
 
     const db = getDatabase();
     const service = new PlanService(db);
+    const existing = await service.getMealPlan(id);
+    if (!existing || existing.householdId !== householdId) {
+      throw new NotFoundError("MealPlan", id);
+    }
 
     const plan = await service.updateMealPlan(id, body);
 
@@ -56,12 +60,16 @@ export async function DELETE(
 ) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id } = await params;
 
     const db = getDatabase();
     const service = new PlanService(db);
+    const existing = await service.getMealPlan(id);
+    if (!existing || existing.householdId !== householdId) {
+      throw new NotFoundError("MealPlan", id);
+    }
 
     const deleted = await service.deleteMealPlan(id);
 
