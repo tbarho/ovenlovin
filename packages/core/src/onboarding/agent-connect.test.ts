@@ -28,7 +28,8 @@ describe("buildAgentGuides", () => {
     expect(prompt).toContain("source.url");
     expect(prompt).toContain("POST https://ovenlovin.vercel.app/api/v1/cookbooks");
     expect(prompt).toContain("manage_cookbook");
-    expect(prompt).toContain("PR #90");
+    expect(prompt).not.toContain("PR #");
+    expect(prompt).toContain("Do not invent endpoints");
     expect(prompt).toContain("cookbookId=");
     expect(prompt).toContain("/uploads/images");
     expect(prompt).toContain("De-duplicate by source URL");
