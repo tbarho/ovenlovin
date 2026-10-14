@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
 import { writePersonNotes } from "@/lib/person-appearance";
-import { testPerson, testPersonRule } from "@/test/fixtures";
+import { testPerson, testPersonRule, testPreference } from "@/test/fixtures";
 import { typeFullWordAndKeepFocus } from "@/test/sheet-focus";
 import { PeopleHome } from "./PeopleHome";
 
@@ -14,18 +14,40 @@ describe("PeopleHome", () => {
     mockedApi.mockReset();
   });
 
-  it("shows scannable cards with severity chips", () => {
+  it("shows scannable cards with Can't eat, Doesn't like, and Loves chips", () => {
+    const person = testPerson({ displayName: "Child B" });
     render(
       <PeopleHome
         householdName="Household 1"
-        people={[testPerson({ displayName: "Child B" })]}
-        rules={[testPersonRule({ target: "tree_nut" })]}
+        people={[person]}
+        rules={[
+          testPersonRule({ target: "tree_nut" }),
+          testPersonRule({
+            id: "00000000-0000-4000-8000-000000000016",
+            target: "cilantro",
+            kind: "ingredient",
+            severity: "prefer_avoid",
+          }),
+        ]}
+        loves={[testPreference({ value: "salmon" })]}
       />
     );
     expect(screen.getByRole("heading", { name: "Household 1" })).toBeInTheDocument();
     expect(screen.getByText("Child B")).toBeInTheDocument();
-    expect(screen.getByText(/tree nuts/i)).toBeInTheDocument();
+    expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent(/tree nut/i);
+    expect(screen.getByTestId(`person-card-doesnt_like-${person.id}`)).toHaveTextContent(
+      /cilantro/i
+    );
+    expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent(/salmon/i);
     expect(screen.getByTestId("severe-badge")).toHaveTextContent(/1 severe allergy/);
+  });
+
+  it("keeps empty list-card lanes labeled None", () => {
+    const person = testPerson({ displayName: "Parent A" });
+    render(<PeopleHome householdName="Household 1" people={[person]} rules={[]} loves={[]} />);
+    expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent("None");
+    expect(screen.getByTestId(`person-card-doesnt_like-${person.id}`)).toHaveTextContent("None");
+    expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent("None");
   });
 
   it("adds a person with a chosen emoji", async () => {

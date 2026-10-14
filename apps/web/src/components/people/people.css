@@ -66,6 +66,48 @@
   background: #ffffff;
 }
 
+.kitchen-people .olp-person-card-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kitchen-people .olp-person-card-lanes {
+  display: grid;
+  gap: 6px;
+}
+
+.kitchen-people .olp-person-card-lane {
+  display: grid;
+  grid-template-columns: 5.75rem minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.kitchen-people .olp-person-card-lane-label {
+  padding-top: 5px;
+  color: #6b6b6b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.kitchen-people .olp-person-card-lane .olp-passport {
+  gap: 4px;
+}
+
+.kitchen-people .olp-person-card-lane small {
+  padding-top: 4px;
+  color: #9a9a9a;
+}
+
+.kitchen-people .olp-person-chip .olp-chip-main {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
 .kitchen-people .olp-add-person {
   max-width: 520px;
   border-radius: 12px;
