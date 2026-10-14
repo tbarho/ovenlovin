@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/gateway": "^2.0.167",
+    "@ovenlovin/allergens": "workspace:*",
     "@ovenlovin/core": "workspace:*",
     "@ovenlovin/db": "workspace:*",
     "ai": "^5.0.276",

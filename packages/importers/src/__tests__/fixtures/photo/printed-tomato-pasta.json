@@ -1,0 +1,57 @@
+{
+  "title": "Weeknight Tomato Pasta",
+  "titleConfidence": "high",
+  "description": "A fast pantry pasta.",
+  "servings": 4,
+  "servingsConfidence": "high",
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 20,
+  "timesConfidence": "high",
+  "notes": "Salt the pasta water well.",
+  "visibleSource": "Weeknight Dinners, p. 42",
+  "ingredients": [
+    {
+      "text": "12 oz pasta",
+      "quantity": "12",
+      "unit": "oz",
+      "ingredient": "pasta",
+      "confidence": "high"
+    },
+    {
+      "text": "1 jar crushed tomatoes",
+      "quantity": "1",
+      "unit": "jar",
+      "ingredient": "crushed tomatoes",
+      "confidence": "high"
+    },
+    {
+      "text": "2 tbsp olive oil",
+      "quantity": "2",
+      "unit": "tbsp",
+      "ingredient": "olive oil",
+      "confidence": "high"
+    },
+    {
+      "text": "1/2 cup grated parmesan",
+      "quantity": "1/2",
+      "unit": "cup",
+      "ingredient": "parmesan",
+      "confidence": "high"
+    }
+  ],
+  "steps": [
+    {
+      "text": "Boil pasta in salted water until al dente.",
+      "confidence": "high"
+    },
+    {
+      "text": "Warm tomatoes with olive oil.",
+      "confidence": "high"
+    },
+    {
+      "text": "Toss pasta with sauce and parmesan.",
+      "confidence": "high"
+    }
+  ],
+  "ocrQuality": "excellent"
+}

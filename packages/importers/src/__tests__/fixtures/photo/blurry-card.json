@@ -1,0 +1,27 @@
+{
+  "title": "Something soup?",
+  "titleConfidence": "low",
+  "servingsConfidence": "illegible",
+  "timesConfidence": "low",
+  "ingredients": [
+    {
+      "text": "[unclear line]",
+      "confidence": "illegible"
+    },
+    {
+      "text": "maybe 2 cups flour",
+      "quantity": "2",
+      "unit": "cups",
+      "ingredient": "flour",
+      "confidence": "low"
+    }
+  ],
+  "steps": [
+    {
+      "text": "[smudged]",
+      "confidence": "illegible"
+    }
+  ],
+  "ocrQuality": "poor",
+  "handwrittenNotes": "Card is blurred and half out of frame"
+}
