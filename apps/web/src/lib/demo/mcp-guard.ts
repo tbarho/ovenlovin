@@ -4,6 +4,7 @@ import { enforceDemoRequestGuards } from "./enforce";
 
 const WRITE_TOOLS = new Set([
   "import_recipe",
+  "import_recipe_from_image",
   "create_recipe",
   "delete_recipe",
   "save_meal_plan",
@@ -27,7 +28,10 @@ export async function enforceDemoMcpGuards(
   if (!WRITE_TOOLS.has(name)) return;
 
   const url = new URL(request.url);
-  url.pathname = name === "import_recipe" ? "/api/v1/recipes/import" : `/mcp/${name}`;
+  url.pathname =
+    name === "import_recipe" || name === "import_recipe_from_image"
+      ? "/api/v1/recipes/import"
+      : `/mcp/${name}`;
   const synthetic = new NextRequest(url, { method: "POST", headers: request.headers });
   const context: RequestContext = { householdId, isBot: true };
   await enforceDemoRequestGuards(synthetic, context);
@@ -39,7 +43,13 @@ export function isSuccessfulImportRecipeCall(
 ): boolean {
   if (!body || typeof body !== "object" || Array.isArray(body)) return false;
   const message = body as { method?: string; params?: { name?: string } };
-  if (message.method !== "tools/call" || message.params?.name !== "import_recipe") return false;
+  if (
+    message.method !== "tools/call" ||
+    (message.params?.name !== "import_recipe" &&
+      message.params?.name !== "import_recipe_from_image")
+  ) {
+    return false;
+  }
   if (!resultBody) return false;
   try {
     const parsed = JSON.parse(resultBody) as { error?: unknown };

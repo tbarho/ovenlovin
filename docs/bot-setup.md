@@ -423,7 +423,8 @@ The MCP server provides these tools:
 #### Recipe Management
 - `search_recipes` - Search recipes by text, filters (cuisine, tags, prep time, etc.)
 - `get_recipe` - Get full recipe details by ID
-- `import_recipe` - Import recipe from URL, text, or photo
+- `import_recipe` - Import recipe from URL or pasted text
+- `import_recipe_from_image` - Import a recipe from a photo URL or base64 (AI Gateway vision)
 
 #### Household Context
 - `get_household_context` - Get household members, dietary rules, and constraints

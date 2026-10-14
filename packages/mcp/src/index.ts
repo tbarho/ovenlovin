@@ -9,6 +9,7 @@ export { dispatchMcpRequest, listedTools } from "./protocol";
 export * from "./tools/search-recipes";
 export * from "./tools/get-recipe";
 export * from "./tools/import-recipe";
+export * from "./tools/import-recipe-from-image";
 export * from "./tools/get-household-context";
 export * from "./tools/get-person-rules";
 export * from "./tools/check-meal-plan";

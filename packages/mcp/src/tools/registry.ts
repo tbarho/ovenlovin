@@ -1,6 +1,7 @@
 import { searchRecipesTool } from "./search-recipes";
 import { getRecipeTool } from "./get-recipe";
 import { importRecipeTool } from "./import-recipe";
+import { importRecipeFromImageTool } from "./import-recipe-from-image";
 import { getHouseholdContextTool } from "./get-household-context";
 import { getPersonRulesTool } from "./get-person-rules";
 import { checkMealPlanTool } from "./check-meal-plan";
@@ -26,6 +27,7 @@ export const MCP_TOOLS = [
   getRecipeTool,
   createRecipeTool,
   importRecipeTool,
+  importRecipeFromImageTool,
   deleteRecipeTool,
   getHouseholdContextTool,
   manageHouseholdScheduleTool,

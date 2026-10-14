@@ -815,7 +815,8 @@ In addition to the REST API, OvenLovin provides a Model Context Protocol (MCP) s
 **Tools**:
 - `search_recipes` - Search recipes by text and filters
 - `get_recipe` - Get full recipe details
-- `import_recipe` - Import from URL, text, or photo
+- `import_recipe` - Import from URL or pasted text
+- `import_recipe_from_image` - Import from a photo URL or base64
 - `get_household_context` - Get household members and dietary rules
 - `save_meal_plan` - Create or update a meal plan
 - `check_meal_plan` - Run allergen and dietary rule checks
