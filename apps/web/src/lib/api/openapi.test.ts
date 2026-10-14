@@ -33,5 +33,7 @@ describe("generateOpenApiDocument", () => {
     expect(spec.paths?.["/recipes"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/{id}"]?.delete).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}"]?.delete).toBeTruthy();
+    expect(spec.paths?.["/meal-plans/{id}/check"]?.get).toBeTruthy();
+    expect(spec.paths?.["/meal-plans/{id}/check"]?.post).toBeTruthy();
   });
 });
