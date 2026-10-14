@@ -21,7 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Person } from "@ovenlovin/core";
 import { useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { MOTION_SECONDS } from "@/lib/motion";
 import {
   PEOPLE_REORDER_HINT_ID,
@@ -51,12 +51,14 @@ function DragHandle({
   disabled,
   listeners,
   attributes,
+  onMeasure,
 }: {
   name: string;
   personId?: string;
   disabled?: boolean;
-  listeners?: object;
-  attributes?: object;
+  listeners?: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
+  onMeasure?: (el: HTMLElement) => void;
 }) {
   return (
     <button
@@ -69,6 +71,16 @@ function DragHandle({
       style={{ minWidth: 44, minHeight: 44, cursor: "grab" }}
       {...attributes}
       {...listeners}
+      onPointerDown={(event) => {
+        onMeasure?.(event.currentTarget);
+        const listener = listeners?.onPointerDown;
+        if (typeof listener === "function") listener(event);
+      }}
+      onFocus={(event) => {
+        onMeasure?.(event.currentTarget);
+        const listener = listeners?.onFocus;
+        if (typeof listener === "function") listener(event);
+      }}
     >
       <GripIcon />
     </button>
@@ -95,22 +107,28 @@ function SortablePerson({
   person,
   disabled,
   renderPerson,
+  lockHeight,
 }: {
   person: Person;
   disabled?: boolean;
   renderPerson: (person: Person, handle: ReactNode) => ReactNode;
+  lockHeight?: number;
 }) {
   const reduce = useReducedMotion();
+  const ownHeight = useRef<number>();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: person.id,
     disabled,
   });
+  const dropHeight = lockHeight ?? (isDragging ? ownHeight.current : undefined);
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition: reduce
       ? undefined
       : (transition ?? `transform ${MOTION_SECONDS.base}s ${MOTION_EASE_CSS}`),
+    minHeight: dropHeight,
+    height: isDragging && dropHeight ? dropHeight : undefined,
   };
 
   return (
@@ -119,19 +137,33 @@ function SortablePerson({
       style={style}
       className={`olp-person-slot${isDragging ? " is-dragging" : ""}`}
     >
-      <PersonCardShell
-        person={person}
-        renderPerson={renderPerson}
-        handle={
-          <DragHandle
-            name={person.displayName}
-            personId={person.id}
-            disabled={disabled}
-            listeners={listeners}
-            attributes={attributes}
-          />
-        }
-      />
+      {isDragging ? (
+        <div
+          className="olp-person-placeholder"
+          data-testid={`people-drop-placeholder-${person.id}`}
+          aria-hidden="true"
+          style={{ height: dropHeight }}
+        />
+      ) : (
+        <PersonCardShell
+          person={person}
+          renderPerson={renderPerson}
+          handle={
+            <DragHandle
+              name={person.displayName}
+              personId={person.id}
+              disabled={disabled}
+              listeners={listeners}
+              attributes={attributes}
+              onMeasure={(el) => {
+                const slot = el.closest(".olp-person-slot");
+                const height = slot?.getBoundingClientRect().height;
+                if (height) ownHeight.current = height;
+              }}
+            />
+          }
+        />
+      )}
     </div>
   );
 }
@@ -232,6 +264,7 @@ export function PeopleReorder({
               person={person}
               disabled={disabled}
               renderPerson={renderPerson}
+              lockHeight={activeId ? overlaySize.height : undefined}
             />
           ))}
         </div>
