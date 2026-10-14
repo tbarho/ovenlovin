@@ -50,8 +50,16 @@ describe("MCP JSON schemas", () => {
 
     const shopping = listedTools().find((tool) => tool.name === "export_shopping_list");
     expect(shopping?.inputSchema.required ?? []).toEqual(["planId"]);
+    expect(shopping?.inputSchema.properties).toHaveProperty("includeStaples");
+    expect(shopping?.inputSchema.properties).toHaveProperty("includePantryItems");
     expect(shopping?.inputSchema.required ?? []).not.toEqual(
-      expect.arrayContaining(["format", "groupBy", "includePantryItems", "includeRuleWarnings"])
+      expect.arrayContaining([
+        "format",
+        "groupBy",
+        "includeStaples",
+        "includePantryItems",
+        "includeRuleWarnings",
+      ])
     );
 
     const save = listedTools().find((tool) => tool.name === "save_meal_plan");

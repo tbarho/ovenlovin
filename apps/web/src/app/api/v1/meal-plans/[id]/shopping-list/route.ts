@@ -6,6 +6,7 @@ import {
   RecipeService,
   ShoppingListService,
   collectShoppingListEntries,
+  resolveIncludeStaples,
   type ShoppingListGroupBy,
 } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
@@ -22,7 +23,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const url = new URL(request.url);
     const format = url.searchParams.get("format") || "json";
     const groupBy = (url.searchParams.get("groupBy") || "aisle") as ShoppingListGroupBy;
-    const includePantryItems = url.searchParams.get("includePantryItems") === "true";
+    const includeStaples = resolveIncludeStaples({
+      includeStaples: url.searchParams.has("includeStaples")
+        ? url.searchParams.get("includeStaples") === "true"
+        : undefined,
+      includePantryItems: url.searchParams.has("includePantryItems")
+        ? url.searchParams.get("includePantryItems") === "true"
+        : undefined,
+    });
 
     if (!FORMATS.includes(format as (typeof FORMATS)[number])) {
       throw new BadRequestError("Invalid format. Must be one of: json, csv, markdown, text");
@@ -61,7 +69,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       weekStart: plan.weekStart,
       entries: sources,
       groupBy,
-      includePantryItems,
+      includeStaples,
     });
 
     const output = shoppingListService.format(

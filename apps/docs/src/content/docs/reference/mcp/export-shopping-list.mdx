@@ -7,13 +7,14 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 
 ## Input Schema
 
-| Parameter             | Type          | Required | Default      | Description                                                 |
-| --------------------- | ------------- | -------- | ------------ | ----------------------------------------------------------- |
-| `planId`              | string (UUID) | Yes      | -            | Meal plan ID to generate shopping list for                  |
-| `format`              | enum          | No       | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"` |
-| `groupBy`             | enum          | No       | `"aisle"`    | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"`   |
-| `includePantryItems`  | boolean       | No       | `false`      | Include pantry staples (salt, pepper, oil, etc.)            |
-| `includeRuleWarnings` | boolean       | No       | `true`       | Include per-person rule warnings for shoppers               |
+| Parameter             | Type          | Required | Default      | Description                                                                     |
+| --------------------- | ------------- | -------- | ------------ | ------------------------------------------------------------------------------- |
+| `planId`              | string (UUID) | Yes      | -            | Meal plan ID to generate shopping list for                                      |
+| `format`              | enum          | No       | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"`                     |
+| `groupBy`             | enum          | No       | `"aisle"`    | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"`                       |
+| `includeStaples`      | boolean       | No       | `false`      | Include kitchen staples (salt, pepper, oil). Distinct from the pantry category. |
+| `includePantryItems`  | boolean       | No       | —            | Deprecated alias for `includeStaples`                                           |
+| `includeRuleWarnings` | boolean       | No       | `true`       | Include per-person rule warnings for shoppers                                   |
 
 ## Output Schema
 
@@ -66,6 +67,7 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
   "mealPlanId": "plan-abc-123",
   "weekStart": "2026-10-12",
   "groupBy": "aisle",
+  "includeStaples": false,
   "includePantryItems": false,
   "itemCount": 2,
   "ingredients": [
@@ -124,7 +126,7 @@ WARNINGS:
   "planId": "plan-abc-123",
   "format": "markdown",
   "groupBy": "recipe",
-  "includePantryItems": false,
+  "includeStaples": false,
   "includeRuleWarnings": true
 }
 ```
@@ -152,7 +154,7 @@ WARNINGS:
 
 - Groups by grocery store aisle (produce, dairy, meat, etc.)
 - Best for efficient shopping
-- Pantry staples land in a **Pantry staples** section when `includePantryItems` is true
+- Kitchen staples land in a **Kitchen staples** section when `includeStaples` is true. That is not the pantry food-taxonomy category (flour, canned goods).
 
 ### recipe
 
@@ -171,7 +173,7 @@ WARNINGS:
 1. **Automatic aggregation**: Duplicate ingredients across recipes are combined when possible
 2. **Unit conversion**: Common unit conversions are applied (e.g., 3 tsp = 1 tbsp)
 3. **Safety warnings**: Inline warnings alert shoppers to dietary restrictions and allergens
-4. **Pantry items**: Enable `includePantryItems: true` to include staples like salt and oil
+4. **Kitchen staples**: Enable `includeStaples: true` to include salt and oil. `includePantryItems` is still accepted as an alias.
 5. **Parse confidence**: Low-confidence parsed ingredients may show in `rawText` form
 
 ## Related Tools
