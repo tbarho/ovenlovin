@@ -211,7 +211,7 @@ export function PersonPage({
   }
 
   return (
-    <div className="olp kitchen-people">
+    <div className="olp kitchen-people kitchen-person">
       <div className="olp-stack">
         <Link href="/people" className="olp-back">
           ← People
@@ -221,35 +221,37 @@ export function PersonPage({
           <h1>{person.displayName}</h1>
         </header>
 
-        {RULE_UI_BUCKETS.map((item) => (
-          <section
-            key={item.bucket}
-            className={`olp-lane olp-lane-${item.bucket}`}
-            data-testid={`bucket-${item.bucket}`}
-          >
-            <h2>{item.label}</h2>
-            {grouped[item.bucket].length === 0 ? (
-              <p className="olp-empty-inline">None</p>
-            ) : (
-              <div className="olp-chip-row">
-                <AnimatePresence initial={false}>
-                  {grouped[item.bucket].map((rule) => (
-                    <Chip
-                      key={rule.id}
-                      label={displayNameForTarget(rule.target)}
-                      target={rule.target}
-                      bucket={item.bucket}
-                      onClick={() => setEditing(rule)}
-                      onRemove={() => {
-                        void removeRule(rule);
-                      }}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
-          </section>
-        ))}
+        <div className="person-lanes">
+          {RULE_UI_BUCKETS.map((item) => (
+            <section
+              key={item.bucket}
+              className={`olp-lane olp-lane-${item.bucket}`}
+              data-testid={`bucket-${item.bucket}`}
+            >
+              <h2>{item.label}</h2>
+              {grouped[item.bucket].length === 0 ? (
+                <p className="olp-empty-inline">None</p>
+              ) : (
+                <div className="olp-chip-row">
+                  <AnimatePresence initial={false}>
+                    {grouped[item.bucket].map((rule) => (
+                      <Chip
+                        key={rule.id}
+                        label={displayNameForTarget(rule.target)}
+                        target={rule.target}
+                        bucket={item.bucket}
+                        onClick={() => setEditing(rule)}
+                        onRemove={() => {
+                          void removeRule(rule);
+                        }}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
 
         {error ? <p className="form-error">{error}</p> : null}
 

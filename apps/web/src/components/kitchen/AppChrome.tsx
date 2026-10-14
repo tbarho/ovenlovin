@@ -4,19 +4,36 @@ import { UserButton } from "@clerk/nextjs";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { KitchenNav } from "./KitchenNav";
 
+function Brand({ compact = false }: { compact?: boolean }) {
+  return (
+    <Link href="/" className="brand" aria-label="OvenLovin">
+      <Image src={brandPublicPath.mark} alt="" width={34} height={34} unoptimized />
+      {compact ? null : <span className="brand-wordmark">OvenLovin</span>}
+    </Link>
+  );
+}
+
+function Account() {
+  return (
+    <div className="nav-user">
+      {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? <UserButton /> : null}
+    </div>
+  );
+}
+
 export function AppChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell kitchen-shell">
+      <aside className="kitchen-sidebar">
+        <Brand />
+        <KitchenNav variant="sidebar" />
+        <Account />
+      </aside>
       <header className="nav kitchen-topbar">
         <div className="wrap nav-inner">
-          <Link href="/" className="brand" aria-label="OvenLovin">
-            <Image src={brandPublicPath.mark} alt="" width={34} height={34} unoptimized />
-            <span className="brand-wordmark">OvenLovin</span>
-          </Link>
+          <Brand />
           <KitchenNav />
-          <div className="nav-user">
-            {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? <UserButton /> : null}
-          </div>
+          <Account />
         </div>
       </header>
       <div className="wrap kitchen">{children}</div>

@@ -33,8 +33,8 @@ export function WhoCanEat({
   if (people.length === 0) return null;
 
   return (
-    <div className="olp who-can-eat">
-      <h2>Who can eat this</h2>
+    <div className="who-can-eat">
+      <h2 className="who-can-eat-title">Who can eat this</h2>
       {result.status === "incomplete" ? (
         <p className="olp-lead" data-testid="who-incomplete">
           This check is incomplete

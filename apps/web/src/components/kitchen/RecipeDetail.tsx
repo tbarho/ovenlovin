@@ -59,123 +59,130 @@ export function RecipeDetail({
 
   return (
     <>
-      <div className="kitchen-head">
-        <div>
-          <Link href="/recipes" className="back-link">
-            ← Recipes
-          </Link>
-          <h1>{recipe.title}</h1>
-          <div className="recipe-meta">
-            {formatDurationMinutes(recipe.prepTimeMinutes) ? (
-              <span className="chip">Prep {formatDurationMinutes(recipe.prepTimeMinutes)}</span>
-            ) : null}
-            {formatDurationMinutes(recipe.cookTimeMinutes) ? (
-              <span className="chip">Cook {formatDurationMinutes(recipe.cookTimeMinutes)}</span>
-            ) : null}
-            {recipe.cuisine ? <span className="chip">{recipe.cuisine}</span> : null}
-            {recipe.cookbooks.map((book) => (
-              <Link className="chip" key={book.id} href={`/recipes?cookbook=${book.id}`}>
-                {book.name}
+      <div className="recipe-layout">
+        <div className="recipe-layout-media">
+          <div className="kitchen-head">
+            <div>
+              <Link href="/recipes" className="back-link">
+                ← Recipes
               </Link>
-            ))}
+              <h1>{recipe.title}</h1>
+              <div className="recipe-meta">
+                {formatDurationMinutes(recipe.prepTimeMinutes) ? (
+                  <span className="chip">Prep {formatDurationMinutes(recipe.prepTimeMinutes)}</span>
+                ) : null}
+                {formatDurationMinutes(recipe.cookTimeMinutes) ? (
+                  <span className="chip">Cook {formatDurationMinutes(recipe.cookTimeMinutes)}</span>
+                ) : null}
+                {recipe.cuisine ? <span className="chip">{recipe.cuisine}</span> : null}
+                {recipe.cookbooks.map((book) => (
+                  <Link className="chip" key={book.id} href={`/recipes?cookbook=${book.id}`}>
+                    {book.name}
+                  </Link>
+                ))}
+              </div>
+              {sourceUrl ? (
+                <a className="source-link" href={sourceUrl} target="_blank" rel="noreferrer">
+                  View original on {sourceHost(sourceUrl)}
+                </a>
+              ) : null}
+            </div>
           </div>
-          {sourceUrl ? (
-            <a className="source-link" href={sourceUrl} target="_blank" rel="noreferrer">
-              View original on {sourceHost(sourceUrl)}
-            </a>
+
+          <div className="recipe-hero">
+            {mainImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={mainImage} alt={recipe.title} />
+            ) : (
+              <div className="recipe-hero-fallback">Add a photo of this dish</div>
+            )}
+          </div>
+          {extraImages.length > 0 ? (
+            <div className="recipe-thumbs">
+              {extraImages.map((src) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={src} src={src} alt="" />
+              ))}
+            </div>
           ) : null}
+
+          <div className="recipe-actions">
+            <button className="btn" type="button" onClick={() => setSheet("details")}>
+              Edit details
+            </button>
+            <button className="btn" type="button" onClick={() => setSheet("image")}>
+              Edit image
+            </button>
+            <button className="btn" type="button" onClick={() => setSheet("ingredients")}>
+              Edit ingredients
+            </button>
+            <button className="btn" type="button" onClick={() => setSheet("steps")}>
+              Edit steps
+            </button>
+            <button className="btn" type="button" onClick={() => setSheet("cookbook")}>
+              Cookbooks
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="recipe-hero">
-        {mainImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={mainImage} alt={recipe.title} />
-        ) : (
-          <div className="recipe-hero-fallback">Add a photo of this dish</div>
-        )}
-      </div>
-      {extraImages.length > 0 ? (
-        <div className="recipe-thumbs">
-          {extraImages.map((src) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={src} src={src} alt="" />
-          ))}
+        <div className="recipe-layout-body">
+          <WhoCanEat
+            people={people}
+            rules={rules}
+            ingredients={recipe.ingredients.map((ingredient) => ({
+              id: ingredient.id,
+              name: ingredient.rawText,
+              substitutionNotes: ingredient.substitutionNotes,
+            }))}
+          />
+
+          <div className="servings-card">
+            <header>
+              <strong>Servings</strong>
+              <span>{servings}</span>
+            </header>
+            <input
+              type="range"
+              min={1}
+              max={24}
+              value={servings}
+              onChange={(event) => setServings(clampServings(Number(event.target.value)))}
+            />
+            <p className="muted">
+              Scales from {recipe.servings ?? storedServings} stored servings. Units stay as
+              written.
+            </p>
+          </div>
+
+          {recipe.description ? <p className="recipe-lede">{recipe.description}</p> : null}
+
+          <div className="recipe-view">
+            <section>
+              <h2>Ingredients</h2>
+              {scaledIngredients.length === 0 ? (
+                <p className="muted">No ingredients stored for this recipe.</p>
+              ) : (
+                <ul>
+                  {scaledIngredients.map((ingredient) => (
+                    <li key={ingredient.id}>{ingredient.text}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            <section>
+              <h2>Steps</h2>
+              {recipe.steps.length === 0 ? (
+                <p className="muted">No steps stored for this recipe.</p>
+              ) : (
+                <ol>
+                  {recipe.steps.map((step) => (
+                    <li key={step.id}>{step.text}</li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          </div>
         </div>
-      ) : null}
-
-      <div className="recipe-actions">
-        <button className="btn" type="button" onClick={() => setSheet("details")}>
-          Edit details
-        </button>
-        <button className="btn" type="button" onClick={() => setSheet("image")}>
-          Edit image
-        </button>
-        <button className="btn" type="button" onClick={() => setSheet("ingredients")}>
-          Edit ingredients
-        </button>
-        <button className="btn" type="button" onClick={() => setSheet("steps")}>
-          Edit steps
-        </button>
-        <button className="btn" type="button" onClick={() => setSheet("cookbook")}>
-          Cookbooks
-        </button>
-      </div>
-
-      <div className="servings-card">
-        <header>
-          <strong>Servings</strong>
-          <span>{servings}</span>
-        </header>
-        <input
-          type="range"
-          min={1}
-          max={24}
-          value={servings}
-          onChange={(event) => setServings(clampServings(Number(event.target.value)))}
-        />
-        <p className="muted">
-          Scales from {recipe.servings ?? storedServings} stored servings. Units stay as written.
-        </p>
-      </div>
-
-      {recipe.description ? <p>{recipe.description}</p> : null}
-
-      <WhoCanEat
-        people={people}
-        rules={rules}
-        ingredients={recipe.ingredients.map((ingredient) => ({
-          id: ingredient.id,
-          name: ingredient.rawText,
-          substitutionNotes: ingredient.substitutionNotes,
-        }))}
-      />
-
-      <div className="recipe-view">
-        <section>
-          <h2>Ingredients</h2>
-          {scaledIngredients.length === 0 ? (
-            <p className="muted">No ingredients stored for this recipe.</p>
-          ) : (
-            <ul>
-              {scaledIngredients.map((ingredient) => (
-                <li key={ingredient.id}>{ingredient.text}</li>
-              ))}
-            </ul>
-          )}
-        </section>
-        <section>
-          <h2>Steps</h2>
-          {recipe.steps.length === 0 ? (
-            <p className="muted">No steps stored for this recipe.</p>
-          ) : (
-            <ol>
-              {recipe.steps.map((step) => (
-                <li key={step.id}>{step.text}</li>
-              ))}
-            </ol>
-          )}
-        </section>
       </div>
 
       <DetailsSheet

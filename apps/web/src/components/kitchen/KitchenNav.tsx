@@ -12,12 +12,33 @@ const tabIcons = {
   Settings: SettingsIcon,
 } as const;
 
-export function KitchenNav({ variant = "links" }: { variant?: "links" | "tabs" }) {
+export function KitchenNav({ variant = "links" }: { variant?: "links" | "tabs" | "sidebar" }) {
   const pathname = usePathname();
 
   if (variant === "tabs") {
     return (
       <nav className="kitchen-tabbar" aria-label="Kitchen">
+        <ul>
+          {kitchenNavLinks.map((link) => {
+            const current = isKitchenNavActive(pathname, link.match);
+            const Icon = tabIcons[link.label];
+            return (
+              <li key={link.href}>
+                <Link href={link.href} aria-current={current ? "page" : undefined}>
+                  <Icon />
+                  <span>{link.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    );
+  }
+
+  if (variant === "sidebar") {
+    return (
+      <nav className="kitchen-sidebar-nav" aria-label="Kitchen">
         <ul>
           {kitchenNavLinks.map((link) => {
             const current = isKitchenNavActive(pathname, link.match);

@@ -89,6 +89,14 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await page.goto(urls.pestoHref);
   await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
   await expect(page.getByTestId("who-can-eat")).toBeVisible();
+  const who = page.getByTestId("who-can-eat");
+  const ingredients = page.getByRole("heading", { name: "Ingredients" });
+  const whoBox = await who.boundingBox();
+  const ingredientsBox = await ingredients.boundingBox();
+  expect(whoBox && ingredientsBox).toBeTruthy();
+  if (whoBox && ingredientsBox) {
+    expect(ingredientsBox.y - (whoBox.y + whoBox.height)).toBeLessThan(400);
+  }
   await shot(page, width, "recipe-detail");
   for (const [button, name] of [
     [/edit details/i, "sheet-recipe-details"],
