@@ -26,6 +26,13 @@ export const E2E_PEOPLE = [
 
 const RECIPE_IMAGE = (slug: string) => `/e2e-kitchen/${slug}.svg`;
 
+/** Extra images exist so recipe detail can prove it only renders the main one. */
+const PESTO_GALLERY = [
+  RECIPE_IMAGE("pesto-pasta"),
+  RECIPE_IMAGE("kung-pao-chicken"),
+  RECIPE_IMAGE("veggie-tacos"),
+];
+
 type KitchenRecipe = RecipeImportDraft & { slug: string; cookbook?: "weeknight" | "weekend" };
 
 function draft(partial: Omit<RecipeImportDraft, "source"> & { slug: string }): KitchenRecipe {
@@ -68,6 +75,7 @@ export const E2E_RECIPES: KitchenRecipe[] = [
         { text: "Toss pasta with pesto and tomatoes. Finish with parmesan." },
       ],
     }),
+    images: PESTO_GALLERY,
     cookbook: "weeknight",
   },
   {
@@ -328,6 +336,10 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
   }
 
   const existingRecipes = await recipes.listRecipes(household.id, { pagination: { limit: 40 } });
+  const pesto = existingRecipes.items.find((recipe) => /pesto pasta/i.test(recipe.title));
+  if (pesto && pesto.images.length < 3) {
+    await recipes.updateRecipe(pesto.id, { images: PESTO_GALLERY });
+  }
   if (existingRecipes.items.length === 0) {
     const weeknight = await cookbooks.createCookbook({
       householdId: household.id,

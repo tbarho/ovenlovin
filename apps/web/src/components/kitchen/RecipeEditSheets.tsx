@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
+import { keepMainRecipeImages } from "@ovenlovin/core/media";
 import { clampServings } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
@@ -144,7 +145,7 @@ export function PhotosSheet({
         method: "POST",
         body: JSON.stringify({ url: imageUrl }),
       });
-      const next = recipe.images[0] ? [stored.url, ...recipe.images] : [stored.url];
+      const next = keepMainRecipeImages([stored.url]);
       const saved = await patch({ images: next });
       if (saved) setImageUrl("");
     } catch (err) {
@@ -172,7 +173,7 @@ export function PhotosSheet({
         throw new Error(problem.detail || problem.title || "Upload failed");
       }
       const stored = (await response.json()) as { url: string };
-      const next = recipe.images[0] ? [stored.url, ...recipe.images] : [stored.url];
+      const next = keepMainRecipeImages([stored.url]);
       await patch({ images: next });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not upload image");
@@ -181,9 +182,9 @@ export function PhotosSheet({
   }
 
   return (
-    <BottomSheet open={open} title="Recipe photos" onClose={onClose}>
+    <BottomSheet open={open} title="Recipe photo" onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={addImageFromUrl}>
-        <p className="muted">The first photo is the main image on cards and this page.</p>
+        <p className="muted">This replaces the main photo on cards and this page.</p>
         <input
           value={imageUrl}
           onChange={(event) => setImageUrl(event.target.value)}

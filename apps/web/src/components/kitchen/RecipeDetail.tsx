@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import type { Cookbook, Person, PersonRule, RecipeDetails } from "@ovenlovin/core";
-import { recipeGalleryImages, recipeMainImage } from "@ovenlovin/core/media";
+import { recipeMainImage } from "@ovenlovin/core/media";
 import {
   clampServings,
   formatDurationMinutes,
@@ -45,7 +45,6 @@ export function RecipeDetail({
   const closeSheet = useCallback(() => setSheet(null), []);
 
   const mainImage = recipeMainImage(recipe.images);
-  const extraImages = recipeGalleryImages(recipe.images).slice(1);
   const sourceUrl = recipe.source?.canonicalUrl || recipe.source?.url || null;
 
   const scaledIngredients = useMemo(
@@ -92,19 +91,11 @@ export function RecipeDetail({
           <div className="recipe-hero">
             {mainImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={mainImage} alt={recipe.title} />
+              <img src={mainImage} alt={recipe.title} data-testid="recipe-main-image" />
             ) : (
               <div className="recipe-hero-fallback">Add a photo of this dish</div>
             )}
           </div>
-          {extraImages.length > 0 ? (
-            <div className="recipe-thumbs">
-              {extraImages.map((src) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={src} src={src} alt="" />
-              ))}
-            </div>
-          ) : null}
 
           <div className="recipe-actions">
             <button className="btn" type="button" onClick={() => setSheet("details")}>
