@@ -171,6 +171,7 @@ Set all of these on **Production** (and Preview if you want preview deploys to d
 | `CRON_SECRET` | Production | `openssl rand -hex 32` | **yes** on production or nightly cleanup returns 401 |
 | `NEXT_PUBLIC_APP_URL` | Production | `https://<demo-production-host>` (no trailing slash) | recommended so Settings / JSON enter emit a stable MCP URL |
 | `NEXT_PUBLIC_INSTANCE_NAME` | Production | `OvenLovin demo` (optional) | no |
+| `BLOB_READ_WRITE_TOKEN` | Production, Preview | Injected when a Blob store is connected to this project | **yes** for imported photos. Without it, URL import keeps the source-site image URL. Seeded `/demo-kitchen/*.svg` assets stay local. |
 
 CLI (non-interactive; run from the linked checkout):
 
@@ -189,7 +190,14 @@ printf '%s' "$CRON_SECRET" | vercel env add CRON_SECRET production --yes
 
 # After the first production deploy, put the real host here:
 printf '%s' 'https://ovenlovin-demo.vercel.app' | vercel env add NEXT_PUBLIC_APP_URL production --yes
+
+# Preferred: Vercel dashboard → ovenlovin-demo → Storage → Create / Connect Blob
+# (Production + Preview). That injects BLOB_READ_WRITE_TOKEN. Or paste a token:
+printf '%s' "$BLOB_READ_WRITE_TOKEN" | vercel env add BLOB_READ_WRITE_TOKEN production --yes
+printf '%s' "$BLOB_READ_WRITE_TOKEN" | vercel env add BLOB_READ_WRITE_TOKEN preview --yes
 ```
+
+After adding the Blob token, **redeploy** ovenlovin-demo (Production). Existing imported recipes keep their hot-linked URLs; only new imports copy the main image.
 
 If `vercel env add --yes` is not accepted by the installed CLI, omit `--yes` and confirm the prompts (Production / Preview, no git branch).
 
@@ -199,7 +207,6 @@ If `vercel env add --yes` is not accepted by the installed CLI, omit `--yes` and
 | --- | --- |
 | `E2E_AUTH_BYPASS` | Product production build fails if this is requested; not the demo path |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | Clerk is skipped in demo mode. Leaving them unset is fine. |
-| `BLOB_READ_WRITE_TOKEN` | Seeded images are `/demo-kitchen/*.svg`. Demo import skips blob copy. |
 | `AI_GATEWAY_API_KEY` | Demo forces AI off. Setting a key does nothing useful and is extra attack surface. |
 | Product `DATABASE_URL` | Isolates visitor kitchens from real households |
 
