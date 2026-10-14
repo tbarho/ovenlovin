@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { describeDeploy, getInstanceName } from "@ovenlovin/core/onboarding";
+import { describeDeployResolved, getInstanceName } from "@ovenlovin/core/onboarding";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { resolveOrigin } from "@/lib/origin";
 import { getConfigStatus } from "@/lib/status";
@@ -21,13 +21,13 @@ export default async function Home() {
   const status = await getConfigStatus();
   const signedIn = await isSignedIn();
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-  const deploy = describeDeploy(
+  const deploy = await describeDeployResolved(
     {
       ...process.env,
       // Next only inlines next.config `env` on a static property access, not via process.env spread.
       NEXT_PUBLIC_BUILD_TIME: process.env.NEXT_PUBLIC_BUILD_TIME,
     },
-    { origin }
+    { origin, fetch }
   );
 
   return (
