@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { getDatabase } from "@ovenlovin/db";
 import { ApiKeyService } from "@ovenlovin/core";
 import { getSessionContext } from "@/lib/session";
-import { UnauthorizedError } from "./errors";
+import { ForbiddenError, UnauthorizedError } from "./errors";
+import { restAuthFromHeader } from "./request-auth";
 
 export type RequestContext = {
   userId?: string;
@@ -14,19 +15,10 @@ export type RequestContext = {
 };
 
 export async function getRequestContext(request: NextRequest): Promise<RequestContext> {
-  const authHeader = request.headers.get("Authorization");
-
-  if (authHeader?.startsWith("ApiKey ")) {
-    return parseApiKey(authHeader.slice(7).trim());
+  const auth = restAuthFromHeader(request.headers.get("Authorization"));
+  if (auth.kind === "apiKey") {
+    return parseApiKey(auth.token);
   }
-
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7).trim();
-    if (token.startsWith("rkapi_")) {
-      return parseApiKey(token);
-    }
-  }
-
   return parseClerkAuth();
 }
 
@@ -75,6 +67,6 @@ export function requireUserId(context: RequestContext): string {
 export function requireAdminRole(context: RequestContext): void {
   if (context.isBot) return;
   if (!context.membershipRole || !["owner", "admin"].includes(context.membershipRole)) {
-    throw new UnauthorizedError("Admin or owner role required");
+    throw new ForbiddenError("Admin or owner role required");
   }
 }
