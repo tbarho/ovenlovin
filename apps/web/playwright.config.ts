@@ -4,6 +4,7 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || "https://ovenlovin.vercel.app
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: ["kitchen/**"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,

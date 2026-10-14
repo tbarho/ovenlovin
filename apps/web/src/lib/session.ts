@@ -3,8 +3,14 @@ import { HouseholdService, PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { UnauthorizedError } from "@/lib/api/errors";
 import type { RequestContext } from "@/lib/api/middleware";
+import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
+import { getE2eSessionContext } from "@/lib/e2e-kitchen";
 
 export async function getSessionContext(): Promise<RequestContext> {
+  if (isE2eAuthBypassEnabled()) {
+    return getE2eSessionContext();
+  }
+
   const { userId, orgId } = await auth();
 
   if (!userId) {

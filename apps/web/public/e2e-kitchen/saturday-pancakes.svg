@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Saturday pancakes">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1de"/>
+      <stop offset="1" stop-color="#e07a3d"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <ellipse cx="400" cy="340" rx="170" ry="40" fill="#c46a1b"/>
+  <ellipse cx="400" cy="310" rx="170" ry="40" fill="#e0a35a"/>
+  <ellipse cx="400" cy="280" rx="170" ry="40" fill="#f0c56a"/>
+  <circle cx="430" cy="250" r="18" fill="#c4473a"/>
+  <text x="400" y="520" text-anchor="middle" fill="#161310" font-family="Georgia, serif" font-size="34">Pancakes</text>
+</svg>
