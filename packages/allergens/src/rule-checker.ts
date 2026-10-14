@@ -6,6 +6,7 @@
  */
 
 import type { PersonRule, Severity, AllergenRelation } from "@ovenlovin/core";
+import { hintPhrasesForTarget } from "./allergen-hints";
 import { matchPhrasesForTarget } from "./catalog";
 import { matchIngredient, type IngredientAllergenMapping } from "./ingredient-mapping";
 import { phraseMatchesLine } from "./phrase-match";
@@ -253,6 +254,10 @@ export function checkIngredientsAgainstRules(
         for (const finding of ingredientFindings) {
           findings[finding.severity].push(finding);
         }
+        if (ingredientFindings.length === 0 && matchIngredient(ingredient.name).length === 0) {
+          const reason = ambiguousMatchReason(ingredient, context);
+          if (reason) incompleteReasons.push(reason);
+        }
       } catch (error) {
         incompleteReasons.push(
           `Error checking "${ingredient.name}" against rule ${context.rule.id}: ${error instanceof Error ? error.message : String(error)}`
@@ -266,6 +271,26 @@ export function checkIngredientsAgainstRules(
     findings,
     incompleteReasons: incompleteReasons.length > 0 ? incompleteReasons : undefined,
   };
+}
+
+/**
+ * When a line looks like it might match an allergen rule but we could not
+ * classify it, the check is incomplete — never "complete with no issues".
+ */
+function ambiguousMatchReason(
+  ingredient: IngredientCheckInput,
+  context: RuleCheckContext
+): string | undefined {
+  const { rule, personName } = context;
+  if (rule.kind !== "allergen") return undefined;
+
+  const hints = hintPhrasesForTarget(rule.target, {
+    treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut,
+  });
+  const hinted = hints.find((hint) => phraseMatchesLine(hint, ingredient.name));
+  if (!hinted) return undefined;
+
+  return `Could not classify "${ingredient.name}" against ${personName}'s ${rule.target} rule`;
 }
 
 /**

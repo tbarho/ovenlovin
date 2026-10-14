@@ -55,6 +55,12 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         limit: z.coerce.number().int().positive().max(100).optional(),
         cursor: z.string().optional(),
         search: z.string().optional(),
+        forAttendees: z
+          .string()
+          .optional()
+          .describe(
+            "Comma-separated person IDs. Recipes that hit a block rule for any attendee are omitted."
+          ),
         cookbookId: z.string().uuid().optional(),
         uncategorized: z.enum(["true", "false"]).optional(),
       }),

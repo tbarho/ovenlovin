@@ -11,7 +11,9 @@ import { createDbClient, recipeIngredient } from "@ovenlovin/db";
 import { eq, and, isNull } from "drizzle-orm";
 import {
   LOVE_PREFERENCE_TYPE,
+  attendeeWarningsFromCheck,
   checkIngredientsAgainstRules,
+  isBlockedForAttendees,
   loveScore,
   lovesForRecipe,
   type PersonLove,
@@ -116,13 +118,17 @@ async function handler(
       }> = [];
 
       if (input.forAttendees && input.forAttendees.length > 0) {
-        warnings = await checkRecipeForAttendees(
+        const attendeeCheck = await checkRecipeForAttendees(
           db,
           recipe,
           input.forAttendees,
           attendeeRules,
           personNames
         );
+        if (attendeeCheck.blocked) {
+          return null;
+        }
+        warnings = attendeeCheck.warnings;
       }
 
       // Filter by method tags if provided
@@ -151,7 +157,7 @@ async function handler(
     })
   );
 
-  // Filter out null results (recipes that didn't match method tags).
+  // Filter out null results (blocked for attendees or method-tag misses).
   // Rank from the original recipe fields (cuisine/title), not the stripped DTO.
   const recipes = recipesWithWarnings
     .filter((r): r is NonNullable<typeof r> => r !== null)
@@ -177,13 +183,14 @@ async function checkRecipeForAttendees(
   attendeeIds: string[],
   attendeeRules: Map<string, PersonRule[]>,
   personNames: Map<string, string>
-): Promise<
-  Array<{
+): Promise<{
+  blocked: boolean;
+  warnings: Array<{
     personId: string;
     severity: "block" | "warn" | "prefer_avoid";
     message: string;
-  }>
-> {
+  }>;
+}> {
   // Load recipe ingredients
   const ingredientRows = await db
     .select()
@@ -191,7 +198,7 @@ async function checkRecipeForAttendees(
     .where(and(eq(recipeIngredient.recipeId, recipe.id), isNull(recipeIngredient.deletedAt)));
 
   if (ingredientRows.length === 0) {
-    return [];
+    return { blocked: false, warnings: [] };
   }
 
   // Convert to check input format
@@ -218,44 +225,14 @@ async function checkRecipeForAttendees(
   }
 
   if (contexts.length === 0) {
-    return [];
+    return { blocked: false, warnings: [] };
   }
 
-  // Run rule checker
   const checkResult = checkIngredientsAgainstRules(ingredients, contexts);
-
-  // Convert findings to warnings
-  const warnings: Array<{
-    personId: string;
-    severity: "block" | "warn" | "prefer_avoid";
-    message: string;
-  }> = [];
-
-  for (const finding of checkResult.findings.block) {
-    warnings.push({
-      personId: finding.personId,
-      severity: "block",
-      message: finding.message,
-    });
-  }
-
-  for (const finding of checkResult.findings.warn) {
-    warnings.push({
-      personId: finding.personId,
-      severity: "warn",
-      message: finding.message,
-    });
-  }
-
-  for (const finding of checkResult.findings.prefer_avoid) {
-    warnings.push({
-      personId: finding.personId,
-      severity: "prefer_avoid",
-      message: finding.message,
-    });
-  }
-
-  return warnings;
+  return {
+    blocked: isBlockedForAttendees(checkResult),
+    warnings: attendeeWarningsFromCheck(checkResult),
+  };
 }
 
 export const searchRecipesTool = {
