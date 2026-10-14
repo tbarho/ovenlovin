@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
 import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
 import { BottomSheet } from "./BottomSheet";
+import { CookbookRecipePicker } from "./CookbookRecipePicker";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { LoveTags } from "./LoveTags";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
+const EMPTY_RECIPES: Recipe[] = [];
 
 function RenameCookbookSheet({
   cookbook,
@@ -69,20 +71,25 @@ function RenameCookbookSheet({
 export function CookbookRecipes({
   cookbook,
   recipes,
+  catalog = EMPTY_RECIPES,
   lovePeople = EMPTY_LOVE_PEOPLE,
 }: {
   cookbook: Cookbook;
   recipes: Recipe[];
+  catalog?: Recipe[];
   lovePeople?: PersonLove[];
 }) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const closeRename = useCallback(() => setRenameOpen(false), []);
+  const closeAdd = useCallback(() => setAddOpen(false), []);
+  const memberIds = useMemo(() => new Set(recipes.map((recipe) => recipe.id)), [recipes]);
 
-  async function remove() {
+  async function removeCookbook() {
     setPending(true);
     try {
       await api(`/api/v1/cookbooks/${cookbook.id}`, { method: "DELETE" });
@@ -90,6 +97,40 @@ export function CookbookRecipes({
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not delete cookbook");
+      setPending(false);
+    }
+  }
+
+  async function addRecipes(recipeIds: string[]) {
+    setPending(true);
+    setError(null);
+    try {
+      for (const recipeId of recipeIds) {
+        await api(`/api/v1/cookbooks/${cookbook.id}/recipes`, {
+          method: "POST",
+          body: JSON.stringify({ recipeId }),
+        });
+      }
+      setAddOpen(false);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add recipes");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function removeRecipe(recipeId: string) {
+    setPending(true);
+    setError(null);
+    try {
+      await api(`/api/v1/cookbooks/${cookbook.id}/recipes?recipeId=${recipeId}`, {
+        method: "DELETE",
+      });
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not remove recipe");
+    } finally {
       setPending(false);
     }
   }
@@ -107,6 +148,9 @@ export function CookbookRecipes({
           </p>
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
+          <button className="btn primary" type="button" onClick={() => setAddOpen(true)}>
+            Add recipes
+          </button>
           <button className="btn" type="button" onClick={() => setRenameOpen(true)}>
             Rename
           </button>
@@ -124,33 +168,57 @@ export function CookbookRecipes({
       {error ? <p className="muted">{error}</p> : null}
 
       {recipes.length === 0 ? (
-        <p className="empty-note">This cookbook is empty. Open a recipe and add it from Edit.</p>
+        <div className="empty-card">
+          <p>This cookbook is empty.</p>
+          <button className="btn primary" type="button" onClick={() => setAddOpen(true)}>
+            Add recipes
+          </button>
+        </div>
       ) : (
         <div className="recipe-grid">
           {recipes.map((recipe) => {
             const image = recipeMainImage(recipe.images);
             return (
-              <Link className="recipe-card" key={recipe.id} href={`/recipes/${recipe.id}`}>
-                {image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={image} alt="" />
-                ) : (
-                  <div className="thumb-fallback">{recipe.title.slice(0, 1)}</div>
-                )}
-                <div className="card-copy">
-                  <h2>{recipe.title}</h2>
-                  <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
-                  <p className="muted">
-                    {recipe.servings ? `${recipe.servings} servings` : recipe.status}
-                  </p>
-                </div>
-              </Link>
+              <article className="recipe-card cookbook-member-card" key={recipe.id}>
+                <Link href={`/recipes/${recipe.id}`}>
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt="" />
+                  ) : (
+                    <div className="thumb-fallback">{recipe.title.slice(0, 1)}</div>
+                  )}
+                  <div className="card-copy">
+                    <h2>{recipe.title}</h2>
+                    <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
+                    <p className="muted">
+                      {recipe.servings ? `${recipe.servings} servings` : recipe.status}
+                    </p>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  className="recipe-card-remove"
+                  disabled={pending}
+                  onClick={() => void removeRecipe(recipe.id)}
+                >
+                  Remove
+                </button>
+              </article>
             );
           })}
         </div>
       )}
 
       <RenameCookbookSheet cookbook={cookbook} open={renameOpen} onClose={closeRename} />
+      <CookbookRecipePicker
+        open={addOpen}
+        recipes={catalog}
+        memberIds={memberIds}
+        pending={pending}
+        error={error}
+        onClose={closeAdd}
+        onAdd={addRecipes}
+      />
       <ConfirmDialog
         open={deleteOpen}
         title="Delete cookbook"
@@ -159,7 +227,7 @@ export function CookbookRecipes({
         danger
         pending={pending}
         onCancel={() => setDeleteOpen(false)}
-        onConfirm={remove}
+        onConfirm={removeCookbook}
       />
     </>
   );
