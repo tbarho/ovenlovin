@@ -4,6 +4,7 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
+  MeasuringStrategy,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -52,6 +53,7 @@ function DragHandle({
   listeners,
   attributes,
   onMeasure,
+  onRelease,
 }: {
   name: string;
   personId?: string;
@@ -59,6 +61,7 @@ function DragHandle({
   listeners?: object;
   attributes?: object;
   onMeasure?: (el: HTMLElement) => void;
+  onRelease?: () => void;
 }) {
   return (
     <button
@@ -83,6 +86,7 @@ function DragHandle({
           ?.onFocus;
         listener?.(event);
       }}
+      onBlur={() => onRelease?.()}
     >
       <GripIcon />
     </button>
@@ -111,42 +115,43 @@ function SortablePerson({
   renderPerson,
   lockHeight,
   onMeasure,
+  onRelease,
 }: {
   person: Person;
   disabled?: boolean;
   renderPerson: (person: Person, handle: ReactNode) => ReactNode;
   lockHeight?: number;
   onMeasure?: (el: HTMLElement) => void;
+  onRelease?: () => void;
 }) {
   const reduce = useReducedMotion();
-  const ownHeight = useRef<number | undefined>(undefined);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: person.id,
     disabled,
+    animateLayoutChanges: () => false,
   });
-  const dropHeight = (isDragging ? ownHeight.current : undefined) ?? lockHeight;
 
   const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
+    transform: transform ? CSS.Translate.toString(transform) : undefined,
     transition: reduce
       ? undefined
       : (transition ?? `transform ${MOTION_SECONDS.base}s ${MOTION_EASE_CSS}`),
-    minHeight: dropHeight,
-    height: isDragging && dropHeight ? dropHeight : undefined,
+    minHeight: lockHeight,
+    height: lockHeight,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`olp-person-slot${isDragging ? " is-dragging" : ""}`}
+      className={`olp-person-slot${isDragging ? " is-dragging" : ""}${lockHeight ? " is-locked" : ""}`}
     >
       {isDragging ? (
         <div
           className="olp-person-placeholder"
           data-testid={`people-drop-placeholder-${person.id}`}
           aria-hidden="true"
-          style={{ height: dropHeight }}
+          style={{ height: lockHeight }}
         />
       ) : (
         <PersonCardShell
@@ -159,12 +164,8 @@ function SortablePerson({
               disabled={disabled}
               listeners={listeners}
               attributes={attributes}
-              onMeasure={(el) => {
-                const slot = el.closest(".olp-person-slot");
-                const height = slot?.getBoundingClientRect().height;
-                if (height) ownHeight.current = height;
-                onMeasure?.(el);
-              }}
+              onMeasure={onMeasure}
+              onRelease={onRelease}
             />
           }
         />
@@ -188,7 +189,8 @@ export function PeopleReorder({
   const [order, setOrder] = useState(people.map((person) => person.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overlaySize, setOverlaySize] = useState<{ width?: number; height?: number }>({});
-  const dragHeightRef = useRef<number | undefined>(undefined);
+  const [slotHeights, setSlotHeights] = useState<number[]>();
+  const draggingRef = useRef(false);
   const [liveMessage, setLiveMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -226,15 +228,25 @@ export function PeopleReorder({
 
   function onDragStart(event: DragStartEvent) {
     const id = String(event.active.id);
+    draggingRef.current = true;
     setActiveId(id);
     const rect = event.active.rect.current.initial;
     setOverlaySize({ width: rect?.width, height: rect?.height });
+    if (rect?.height) {
+      setSlotHeights((current) => current ?? orderedPeople.map(() => rect.height));
+    }
     setLiveMessage(`Picked up ${nameOf(id)}.`);
+  }
+
+  function releaseLock() {
+    if (!draggingRef.current) setSlotHeights(undefined);
   }
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    draggingRef.current = false;
     setActiveId(null);
+    setSlotHeights(undefined);
     if (!over) return;
     const from = order.indexOf(String(active.id));
     const to = order.indexOf(String(over.id));
@@ -247,13 +259,16 @@ export function PeopleReorder({
 
   function onDragCancel() {
     if (activeId) setLiveMessage(`Cancelled reordering ${nameOf(activeId)}.`);
+    draggingRef.current = false;
     setActiveId(null);
+    setSlotHeights(undefined);
   }
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       accessibility={{
         announcements: peopleReorderAnnouncements(nameOf),
         screenReaderInstructions: peopleReorderInstructions,
@@ -264,18 +279,41 @@ export function PeopleReorder({
     >
       <SortableContext items={order} strategy={rectSortingStrategy}>
         <div className="olp-person-row" data-testid="people-reorder">
-          {orderedPeople.map((person) => (
+          {orderedPeople.map((person, index) => (
             <SortablePerson
               key={person.id}
               person={person}
               disabled={disabled}
               renderPerson={renderPerson}
-              lockHeight={activeId ? dragHeightRef.current : undefined}
+              lockHeight={slotHeights?.[index]}
               onMeasure={(el) => {
-                const slot = el.closest(".olp-person-slot");
-                const height = slot?.getBoundingClientRect().height;
-                if (height) dragHeightRef.current = height;
+                const row = el.closest("[data-testid='people-reorder']");
+                if (!row) return;
+                const slots = [...row.querySelectorAll<HTMLElement>(".olp-person-slot")];
+                const rects = slots.map((slot) => slot.getBoundingClientRect());
+                const groups: number[][] = [];
+                rects.forEach((rect, slotIndex) => {
+                  const group = groups.find(
+                    (members) => Math.abs((rects[members[0]]?.top ?? 0) - rect.top) < 8
+                  );
+                  if (group) group.push(slotIndex);
+                  else groups.push([slotIndex]);
+                });
+                const heights = rects.map((rect) => rect.height);
+                for (const members of groups) {
+                  const max = Math.max(...members.map((slotIndex) => heights[slotIndex] ?? 0));
+                  for (const slotIndex of members) heights[slotIndex] = max;
+                }
+                if (heights.some((height) => height > 0)) setSlotHeights(heights);
+                const unlock = () => {
+                  window.removeEventListener("pointerup", unlock);
+                  window.removeEventListener("pointercancel", unlock);
+                  requestAnimationFrame(releaseLock);
+                };
+                window.addEventListener("pointerup", unlock);
+                window.addEventListener("pointercancel", unlock);
               }}
+              onRelease={releaseLock}
             />
           ))}
         </div>

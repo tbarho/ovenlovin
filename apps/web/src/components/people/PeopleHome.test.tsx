@@ -36,6 +36,7 @@ describe("PeopleHome", () => {
     expect(screen.getByText("Child B")).toBeInTheDocument();
     expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent(/tree nut/i);
     expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent("1");
+    expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).not.toHaveClass("is-empty");
     expect(screen.getByTestId(`person-card-doesnt_like-${person.id}`)).toHaveTextContent(
       /cilantro/i
     );
