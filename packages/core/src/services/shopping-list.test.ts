@@ -151,7 +151,11 @@ describe("ShoppingListService", () => {
       { includePantryItems: true }
     );
 
-    expect(list.ingredients[0]).toMatchObject({ name: "olive oil", quantity: 1.6667, unit: "tbsp" });
+    expect(list.ingredients[0]).toMatchObject({
+      name: "olive oil",
+      quantity: 1.6667,
+      unit: "tbsp",
+    });
   });
 
   it("S2: groupBy aisle and category produce real sections from the aisle map", () => {
