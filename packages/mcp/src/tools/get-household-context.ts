@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { HouseholdService, PeopleService } from "@ovenlovin/core";
+import { HouseholdService, PeopleService, ScheduleService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import { LOVE_PREFERENCE_TYPE, loveLabel } from "@ovenlovin/allergens";
 
@@ -30,6 +30,7 @@ export interface GetHouseholdContextOutput {
       meal: string;
       busyLevel: "low" | "medium" | "high";
       timeBudgetMinutes?: number;
+      cooking: boolean;
       attendees: string[];
       constraints: string[];
     }>;
@@ -72,6 +73,7 @@ async function handler(
   const db = createDbClient(process.env.DATABASE_URL!);
   const householdService = new HouseholdService(db);
   const peopleService = new PeopleService(db);
+  const scheduleService = new ScheduleService(db);
 
   // Fetch household details
   const household = await householdService.getHousehold(context.householdId);
@@ -146,7 +148,25 @@ async function handler(
     }
   }
 
-  // TODO: Implement schedule and recent meals when those schemas are added
+  if (input.includeSchedule) {
+    const schedule = await scheduleService.getSchedule(context.householdId);
+    result.schedule = {
+      weeklyTemplate: schedule.weeklyTemplate.map((night) => ({
+        day: night.day,
+        meal: night.meal,
+        busyLevel: night.busyLevel,
+        timeBudgetMinutes: night.timeBudgetMinutes,
+        cooking: night.cooking,
+        attendees: night.attendees,
+        constraints: night.constraints,
+      })),
+      overrides: schedule.overrides,
+    };
+  }
+
+  if (input.includeRecentMeals) {
+    result.recentMeals = await scheduleService.listRecentMeals(context.householdId);
+  }
 
   return result;
 }
