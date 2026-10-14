@@ -2,6 +2,38 @@ import type { EnvLike } from "./ai-gateway";
 
 export type DeployEnvironment = "production" | "preview" | "development" | "local";
 
+/** Slug-agnostic Vercel home. Used when the team/project slugs are unknown. */
+export const VERCEL_DASHBOARD_URL = "https://vercel.com/dashboard";
+
+export type VercelDashboardScope = {
+  teamSlug: string;
+  projectSlug: string;
+};
+
+export type VercelScopeCache = Map<string, Promise<VercelDashboardScope | null>>;
+
+/* eslint-disable no-unused-vars -- call-signature parameter names */
+export type FetchLike = (
+  url: string,
+  init?: { headers?: Record<string, string> }
+) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
+/* eslint-enable no-unused-vars */
+
+export type ResolveVercelScopeOptions = {
+  fetch?: FetchLike;
+  cache?: VercelScopeCache;
+};
+
+export type DescribeDeployOptions = {
+  origin?: string;
+  /**
+   * Pre-resolved Vercel dashboard scope. Pass `null` after a failed lookup so
+   * we fall back to the dashboard instead of re-reading env overrides.
+   * Omit to read `OVENLOVIN_VERCEL_*` overrides synchronously.
+   */
+  vercelScope?: VercelDashboardScope | null;
+};
+
 export type DeployInfo = {
   live: boolean;
   environment: DeployEnvironment;
@@ -73,21 +105,173 @@ function resolveInstanceUrl(env: EnvLike, origin?: string): string {
   );
 }
 
-function vercelProjectUrl(env: EnvLike): string | null {
-  if (env.VERCEL_ORG_ID && env.VERCEL_PROJECT_ID) {
-    return `https://vercel.com/${env.VERCEL_ORG_ID}/${env.VERCEL_PROJECT_ID}`;
-  }
-  if (env.VERCEL_GIT_REPO_OWNER && env.VERCEL_GIT_REPO_SLUG) {
-    return `https://vercel.com/${env.VERCEL_GIT_REPO_OWNER}/${env.VERCEL_GIT_REPO_SLUG}`;
-  }
-  return null;
+const VERCEL_SLUG = /^[a-zA-Z0-9._-]+$/;
+const defaultVercelScopeCache: VercelScopeCache = new Map();
+
+function vercelSlug(value?: string | null): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed || !VERCEL_SLUG.test(trimmed)) return null;
+  return trimmed;
 }
 
-function vercelDeploymentUrl(env: EnvLike, projectUrl: string | null): string | null {
-  if (projectUrl && env.VERCEL_DEPLOYMENT_ID) {
-    return `${projectUrl}/${env.VERCEL_DEPLOYMENT_ID}`;
+function isVercelRuntime(env: EnvLike): boolean {
+  return (
+    env.VERCEL === "1" ||
+    env.VERCEL_ENV === "production" ||
+    env.VERCEL_ENV === "preview" ||
+    env.VERCEL_ENV === "development"
+  );
+}
+
+function vercelApiToken(env: EnvLike): string | null {
+  return env.OVENLOVIN_VERCEL_TOKEN?.trim() || env.VERCEL_TOKEN?.trim() || null;
+}
+
+export function vercelScopeFromOverrides(env: EnvLike): VercelDashboardScope | null {
+  const teamSlug = vercelSlug(env.OVENLOVIN_VERCEL_TEAM_SLUG);
+  const projectSlug =
+    vercelSlug(env.OVENLOVIN_VERCEL_PROJECT_SLUG) ?? vercelSlug(env.VERCEL_GIT_REPO_SLUG);
+  if (!teamSlug || !projectSlug) return null;
+  return { teamSlug, projectSlug };
+}
+
+export function vercelProjectDashboardUrl(scope: VercelDashboardScope | null): string | null {
+  if (!scope) return null;
+  return `https://vercel.com/${scope.teamSlug}/${scope.projectSlug}`;
+}
+
+export function vercelDeploymentDashboardUrl(
+  scope: VercelDashboardScope | null,
+  deploymentId?: string | null
+): string | null {
+  const projectUrl = vercelProjectDashboardUrl(scope);
+  const id = deploymentId?.trim();
+  if (!projectUrl || !id) return null;
+  return `${projectUrl}/${id}`;
+}
+
+function vercelDashboardLinks(
+  env: EnvLike,
+  scope: VercelDashboardScope | null
+): DeployInfo["vercel"] {
+  const projectUrl = vercelProjectDashboardUrl(scope);
+  if (projectUrl) {
+    return {
+      projectUrl,
+      deploymentUrl: vercelDeploymentDashboardUrl(scope, env.VERCEL_DEPLOYMENT_ID),
+    };
   }
-  return httpsUrl(env.VERCEL_URL);
+  if (isVercelRuntime(env)) {
+    return { projectUrl: VERCEL_DASHBOARD_URL, deploymentUrl: null };
+  }
+  return { projectUrl: null, deploymentUrl: null };
+}
+
+function vercelScopeCacheKey(env: EnvLike): string {
+  return [
+    env.OVENLOVIN_VERCEL_TEAM_SLUG?.trim() ?? "",
+    env.OVENLOVIN_VERCEL_PROJECT_SLUG?.trim() ?? "",
+    env.VERCEL_PROJECT_ID?.trim() ?? "",
+    env.VERCEL_ORG_ID?.trim() ?? "",
+    env.VERCEL_GIT_REPO_SLUG?.trim() ?? "",
+    vercelApiToken(env) ?? "",
+  ].join("|");
+}
+
+async function fetchVercelJson(
+  fetchImpl: FetchLike,
+  url: string,
+  token: string
+): Promise<Record<string, unknown> | null> {
+  const response = await fetchImpl(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const body: unknown = await response.json();
+  return body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+}
+
+function stringField(body: Record<string, unknown> | null, key: string): string | null {
+  const value = body?.[key];
+  return typeof value === "string" ? value : null;
+}
+
+async function resolveVercelScopeFromApi(
+  env: EnvLike,
+  token: string,
+  fetchImpl: FetchLike
+): Promise<VercelDashboardScope | null> {
+  const projectId = env.VERCEL_PROJECT_ID?.trim();
+  if (!projectId) return null;
+
+  const teamId = env.VERCEL_ORG_ID?.trim();
+  const teamQuery = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  const projectApiUrl = `https://api.vercel.com/v9/projects/${encodeURIComponent(projectId)}${teamQuery}`;
+
+  const project = await fetchVercelJson(fetchImpl, projectApiUrl, token);
+  const projectSlug =
+    vercelSlug(env.OVENLOVIN_VERCEL_PROJECT_SLUG) ??
+    vercelSlug(stringField(project, "name")) ??
+    vercelSlug(env.VERCEL_GIT_REPO_SLUG);
+  const accountId = stringField(project, "accountId") ?? teamId;
+
+  let teamSlug = vercelSlug(env.OVENLOVIN_VERCEL_TEAM_SLUG);
+  if (!teamSlug && accountId) {
+    const team = await fetchVercelJson(
+      fetchImpl,
+      `https://api.vercel.com/v2/teams/${encodeURIComponent(accountId)}`,
+      token
+    );
+    teamSlug = vercelSlug(stringField(team, "slug"));
+  }
+  if (!teamSlug) {
+    const user = await fetchVercelJson(fetchImpl, "https://api.vercel.com/v2/user", token);
+    const userBody = user?.user;
+    const username =
+      userBody && typeof userBody === "object"
+        ? stringField(userBody as Record<string, unknown>, "username")
+        : stringField(user, "username");
+    teamSlug = vercelSlug(username);
+  }
+
+  if (!teamSlug || !projectSlug) return null;
+  return { teamSlug, projectSlug };
+}
+
+/**
+ * Resolve the Vercel dashboard team/project slugs.
+ *
+ * Never uses `VERCEL_GIT_REPO_OWNER` — that is the GitHub owner, which 404s
+ * when the Vercel team slug differs. Order:
+ * 1. `OVENLOVIN_VERCEL_TEAM_SLUG` + project slug override or git repo slug
+ * 2. Vercel REST API via `VERCEL_PROJECT_ID` when a token is available (cached)
+ * 3. `null` so callers can link to {@link VERCEL_DASHBOARD_URL}
+ */
+export async function resolveVercelDashboardScope(
+  env: EnvLike,
+  options?: ResolveVercelScopeOptions
+): Promise<VercelDashboardScope | null> {
+  const fromOverrides = vercelScopeFromOverrides(env);
+  if (fromOverrides) return fromOverrides;
+
+  const token = vercelApiToken(env);
+  const fetchImpl = options?.fetch;
+  if (!token || !fetchImpl || !env.VERCEL_PROJECT_ID?.trim()) return null;
+
+  const cache = options?.cache ?? defaultVercelScopeCache;
+  const key = vercelScopeCacheKey(env);
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const pending = resolveVercelScopeFromApi(env, token, fetchImpl).catch(() => null);
+  cache.set(key, pending);
+  return pending;
+}
+
+export function clearVercelDashboardScopeCache(
+  cache: VercelScopeCache = defaultVercelScopeCache
+): void {
+  cache.clear();
 }
 
 function githubLinks(env: EnvLike): DeployInfo["github"] {
@@ -139,11 +323,14 @@ export function formatRelativeTime(then: Date, now = new Date()): string {
   return rtf.format(-Math.round(diffSec / (3600 * 24 * 30)), "month");
 }
 
-export function describeDeploy(env: EnvLike, options?: { origin?: string }): DeployInfo {
+export function describeDeploy(env: EnvLike, options?: DescribeDeployOptions): DeployInfo {
   const environment = resolveEnvironment(env);
   const instanceUrl = resolveInstanceUrl(env, options?.origin);
-  const vercelProject = vercelProjectUrl(env);
   const live = environment === "production" || environment === "preview";
+  const scope =
+    options && "vercelScope" in options
+      ? (options.vercelScope ?? null)
+      : vercelScopeFromOverrides(env);
 
   return {
     live,
@@ -153,10 +340,15 @@ export function describeDeploy(env: EnvLike, options?: { origin?: string }): Dep
     instanceUrl,
     instanceHost: hostFromOrigin(instanceUrl),
     deployedAt: env.NEXT_PUBLIC_BUILD_TIME?.trim() || null,
-    vercel: {
-      projectUrl: vercelProject,
-      deploymentUrl: vercelDeploymentUrl(env, vercelProject),
-    },
+    vercel: vercelDashboardLinks(env, scope),
     github: githubLinks(env),
   };
+}
+
+export async function describeDeployResolved(
+  env: EnvLike,
+  options?: { origin?: string; fetch?: FetchLike; cache?: VercelScopeCache }
+): Promise<DeployInfo> {
+  const vercelScope = await resolveVercelDashboardScope(env, options);
+  return describeDeploy(env, { origin: options?.origin, vercelScope });
 }

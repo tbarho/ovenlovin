@@ -16,6 +16,9 @@ OvenLovin requires the following environment variables to function. Set these in
 | `AI_GATEWAY_API_KEY` | No | Optional API key for local or non-Vercel hosts. On Vercel, AI Gateway authenticates with OIDC (`VERCEL_OIDC_TOKEN`) | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc) |
 | `USDA_FDC_API_KEY` | Yes | USDA FoodData Central API key for nutrition data | [FoodData Central](https://fdc.nal.usda.gov/api-key-signup.html) |
 | `NEXT_PUBLIC_INSTANCE_NAME` | No | Name shown on the landing page (defaults to `Your OvenLovin`) | Set this so the deployed site feels like yours |
+| `OVENLOVIN_VERCEL_TEAM_SLUG` | No | Vercel team/account slug for landing-page dashboard links. This is not the GitHub owner (`tbarho` vs `ty-barho`) | Vercel dashboard URL: `vercel.com/<team-slug>/...` |
+| `OVENLOVIN_VERCEL_PROJECT_SLUG` | No | Vercel project slug if it differs from the git repo name | Vercel project settings |
+| `VERCEL_TOKEN` / `OVENLOVIN_VERCEL_TOKEN` | No | Optional token to resolve team/project slugs from `VERCEL_PROJECT_ID` when the overrides are unset. Without slugs or a token, links fall back to https://vercel.com/dashboard | [Vercel account tokens](https://vercel.com/account/tokens) |
 | `RK_MODEL_DEFAULT` | No | Default LLM model (default: `spacexai/grok-4.7`) | N/A - set custom model |
 | `RK_MODEL_VISION` | No | Vision model for OCR (default: `spacexai/grok-4.7`) | N/A - set custom model |
 | `RK_MODEL_STT` | No | Speech-to-text model (default: `openai/whisper-1`) | N/A - set custom model |

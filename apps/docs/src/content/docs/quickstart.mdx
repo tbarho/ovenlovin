@@ -33,6 +33,9 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 | `AI_GATEWAY_API_KEY` | Optional; on Vercel, AI Gateway uses OIDC | [OIDC docs](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc) |
 | `USDA_FDC_API_KEY` | USDA FoodData Central API key | [fdc.nal.usda.gov](https://fdc.nal.usda.gov) |
 | `NEXT_PUBLIC_INSTANCE_NAME` | Optional landing-page name | Defaults to `Your OvenLovin` |
+| `OVENLOVIN_VERCEL_TEAM_SLUG` | Optional Vercel team slug for dashboard links (not the GitHub owner) | From the Vercel dashboard URL |
+| `OVENLOVIN_VERCEL_PROJECT_SLUG` | Optional Vercel project slug if it differs from the git repo name | Vercel project settings |
+| `VERCEL_TOKEN` | Optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset | [Account tokens](https://vercel.com/account/tokens) |
 
 ## Local Development
 
