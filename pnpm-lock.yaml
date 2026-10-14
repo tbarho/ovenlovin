@@ -118,8 +118,8 @@ importers:
       '@ovenlovin/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
-      '@sparticuz/chromium':
-        specifier: ^133.0.0
+      '@sparticuz/chromium-min':
+        specifier: 133.0.0
         version: 133.0.0
       '@vercel/blob':
         specifier: ^2.8.1
@@ -2468,8 +2468,8 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
-  '@sparticuz/chromium@133.0.0':
-    resolution: {integrity: sha512-wioNxMtSxRI+Y6ymc/UFPX9lY7A1SDgBezjFITH6arwe5CONfWosNDGpgflUGYajxxGktb1k3kjJ83jWzbccBw==}
+  '@sparticuz/chromium-min@133.0.0':
+    resolution: {integrity: sha512-7obk2CRitrlyxT4AKsCjSfE0QiHjDbi5GeOJirkerAZFV7o4VAsKzqoTQ/6rm3segZwfNFZzy8EdDelfV08aag==}
     engines: {node: '>= 16'}
 
   '@stablelib/base64@1.0.1':
@@ -7720,7 +7720,7 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@sparticuz/chromium@133.0.0':
+  '@sparticuz/chromium-min@133.0.0':
     dependencies:
       follow-redirects: 1.16.1
       tar-fs: 3.1.3

@@ -1,12 +1,17 @@
 import { existsSync } from "node:fs";
 import { CHROME_USER_AGENT, installRecipePageRenderer } from "@ovenlovin/importers";
 
+/** Public Chromium pack for `@sparticuz/chromium-min` (no paid CDN). Override with RECIPE_IMPORT_CHROMIUM_PACK_URL. */
+export const DEFAULT_CHROMIUM_PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar";
+
 async function resolveChrome(): Promise<{ executablePath: string; args: string[] } | null> {
   if (process.env.VERCEL) {
-    const { default: chromium } = await import("@sparticuz/chromium");
+    const { default: chromium } = await import("@sparticuz/chromium-min");
     chromium.setGraphicsMode = false;
+    const packUrl = process.env.RECIPE_IMPORT_CHROMIUM_PACK_URL || DEFAULT_CHROMIUM_PACK_URL;
     return {
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(packUrl),
       args: chromium.args,
     };
   }

@@ -54,7 +54,8 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 - **VERCEL_TOKEN** / **OVENLOVIN_VERCEL_TOKEN** - optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset. Otherwise links fall back to https://vercel.com/dashboard
 - **RECIPE_IMPORT_HEADLESS** - optional; set to `0` to skip headless Chromium on URL import (default: on). Used after Cloudflare-style blocks.
 - **RECIPE_IMPORT_CACHE_FALLBACK** - optional; set to `0` to skip public copies (Wayback Machine, then Jina Reader HTML). Default: on. No API key.
-- **RECIPE_IMPORT_CHROME_PATH** / **CHROME_PATH** - optional local Chrome/Chromium binary for non-Vercel hosts. On Vercel, `@sparticuz/chromium` is used.
+- **RECIPE_IMPORT_CHROME_PATH** / **CHROME_PATH** - optional local Chrome/Chromium binary for non-Vercel hosts. On Vercel, `@sparticuz/chromium-min` downloads a public Chromium pack at runtime.
+- **RECIPE_IMPORT_CHROMIUM_PACK_URL** - optional; override the public `@sparticuz/chromium-min` pack URL (GitHub release tar by default). No paid CDN.
 
 ### Local Development
 

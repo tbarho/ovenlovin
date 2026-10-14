@@ -28,7 +28,7 @@
     "@ovenlovin/db": "workspace:^",
     "@ovenlovin/importers": "workspace:*",
     "@ovenlovin/mcp": "workspace:*",
-    "@sparticuz/chromium": "^133.0.0",
+    "@sparticuz/chromium-min": "133.0.0",
     "@vercel/blob": "^2.8.1",
     "drizzle-orm": "^0.38.3",
     "framer-motion": "^14.2.0",
