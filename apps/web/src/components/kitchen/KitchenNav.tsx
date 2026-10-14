@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isKitchenNavActive, kitchenNavLinks } from "@/lib/kitchen-nav";
-import { AgentsIcon, PeopleIcon, RecipesIcon, SettingsIcon } from "./KitchenNavIcons";
+import { ListIcon, PeopleIcon, PlanIcon, RecipesIcon, SettingsIcon } from "./KitchenNavIcons";
 
 const tabIcons = {
   Recipes: RecipesIcon,
+  Plan: PlanIcon,
+  List: ListIcon,
   People: PeopleIcon,
-  Agents: AgentsIcon,
   Settings: SettingsIcon,
 } as const;
 

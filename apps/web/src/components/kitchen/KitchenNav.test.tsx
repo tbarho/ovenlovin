@@ -30,6 +30,8 @@ describe("KitchenNav", () => {
     );
 
     expect(screen.getAllByRole("link", { name: "Recipes" })).toHaveLength(3);
+    expect(screen.getAllByRole("link", { name: "Plan" })).toHaveLength(3);
+    expect(screen.getAllByRole("link", { name: "List" })).toHaveLength(3);
     expect(screen.getAllByRole("link", { name: "People" })).toHaveLength(3);
     expect(screen.getAllByRole("link", { name: "Settings" })).toHaveLength(3);
     expect(screen.getAllByRole("navigation", { name: "Kitchen" })).toHaveLength(2);
