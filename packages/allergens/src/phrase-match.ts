@@ -6,7 +6,7 @@
  * olive oil) apply unless callers opt out.
  */
 
-import { compoundsExcludingPhrase } from "./compound-foods";
+import { compoundsExcludingPhrase, falseFriendCompounds } from "./compound-foods";
 
 export function normalizePhrase(value: string): string {
   return value
@@ -61,6 +61,16 @@ function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: numbe
   return aStart < bEnd && bStart < aEnd;
 }
 
+export type PhraseMatchOptions = {
+  ignoreCompoundFoods?: boolean;
+  ignoreFalseFriends?: boolean;
+  ignoreNegation?: boolean;
+};
+
+function phraseTokenKey(phrase: string): string {
+  return phraseTokens(phrase).join(" ");
+}
+
 /** True when this occurrence of `phrase` is only part of a different compound food. */
 export function occurrenceIsCompoundFood(phrase: string, line: string, start: number): boolean {
   const needle = phraseTokens(phrase);
@@ -87,19 +97,71 @@ export function occurrenceIsCompoundFood(phrase: string, line: string, start: nu
   return false;
 }
 
+/** True when this occurrence sits inside a false-friend compound (butternut squash, water chestnut). */
+export function occurrenceIsFalseFriend(phrase: string, line: string, start: number): boolean {
+  const needle = phraseTokens(phrase);
+  const haystack = phraseTokens(line);
+  if (needle.length === 0) return false;
+  const phraseKey = phraseTokenKey(phrase);
+
+  for (const entry of falseFriendCompounds) {
+    const compoundTokens = phraseTokens(entry.compound);
+    if (compoundTokens.length === 0) continue;
+    for (const compoundStart of tokenSequenceStarts(haystack, compoundTokens)) {
+      if (
+        !rangesOverlap(
+          start,
+          start + needle.length,
+          compoundStart,
+          compoundStart + compoundTokens.length
+        )
+      ) {
+        continue;
+      }
+      if (!entry.suppress || entry.suppress.length === 0) return true;
+      if (entry.suppress.some((item) => phraseTokenKey(item) === phraseKey)) return true;
+    }
+  }
+  return false;
+}
+
+/** True when this occurrence is "X-free", "no X", or "without X". */
+export function occurrenceIsNegated(phrase: string, line: string, start: number): boolean {
+  const needle = phraseTokens(phrase);
+  const haystack = phraseTokens(line);
+  if (needle.length === 0) return false;
+  const after = haystack[start + needle.length];
+  if (after === "free") return true;
+  const before = haystack[start - 1];
+  return before === "no" || before === "without";
+}
+
+function shouldKeepOccurrence(
+  phrase: string,
+  line: string,
+  start: number,
+  options: PhraseMatchOptions
+): boolean {
+  if (!options.ignoreCompoundFoods && occurrenceIsCompoundFood(phrase, line, start)) return false;
+  if (!options.ignoreFalseFriends && occurrenceIsFalseFriend(phrase, line, start)) return false;
+  if (!options.ignoreNegation && occurrenceIsNegated(phrase, line, start)) return false;
+  return true;
+}
+
 /**
  * Token starts where `phrase` appears as a contiguous word/phrase in `line`,
- * after compound-food exclusions (olive vs olive oil).
+ * after compound-food exclusions (olive vs olive oil), false friends, and
+ * "X-free" / "no X" negation.
  */
 export function findPhraseStarts(
   phrase: string,
   line: string,
-  options: { ignoreCompoundFoods?: boolean } = {}
+  options: PhraseMatchOptions = {}
 ): number[] {
   const needle = phraseTokens(phrase);
   const haystack = phraseTokens(line);
-  return tokenSequenceStarts(haystack, needle).filter(
-    (start) => options.ignoreCompoundFoods || !occurrenceIsCompoundFood(phrase, line, start)
+  return tokenSequenceStarts(haystack, needle).filter((start) =>
+    shouldKeepOccurrence(phrase, line, start, options)
   );
 }
 
@@ -111,7 +173,7 @@ export function findPhraseStarts(
 export function phraseMatchesLine(
   phrase: string,
   line: string,
-  options: { ignoreCompoundFoods?: boolean } = {}
+  options: PhraseMatchOptions = {}
 ): boolean {
   return findPhraseStarts(phrase, line, options).length > 0;
 }

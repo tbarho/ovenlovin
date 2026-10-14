@@ -9,6 +9,7 @@ import type { PersonRule, Severity, AllergenRelation } from "@ovenlovin/core";
 import { hintPhrasesForTarget } from "./allergen-hints";
 import { matchPhrasesForTarget } from "./catalog";
 import { matchIngredient, type IngredientAllergenMapping } from "./ingredient-mapping";
+import { lineNegatesAllergen, lineNegatesPhrase } from "./negation";
 import { phraseMatchesLine } from "./phrase-match";
 import { getDescendants } from "./taxonomy";
 
@@ -138,7 +139,10 @@ function checkPhraseRule(
   const phrases = matchPhrasesForTarget(rule.target, rule.kind);
   if (rule.label) phrases.push(rule.label);
 
-  const matched = phrases.find((phrase) => phraseMatchesLine(phrase, ingredient.name));
+  const matched = phrases.find(
+    (phrase) =>
+      phraseMatchesLine(phrase, ingredient.name) && !lineNegatesPhrase(ingredient.name, phrase)
+  );
   if (!matched) return [];
 
   return [
@@ -283,6 +287,7 @@ function ambiguousMatchReason(
 ): string | undefined {
   const { rule, personName } = context;
   if (rule.kind !== "allergen") return undefined;
+  if (lineNegatesAllergen(ingredient.name, rule.target)) return undefined;
 
   const hints = hintPhrasesForTarget(rule.target, {
     treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut,

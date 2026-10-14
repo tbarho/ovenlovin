@@ -1,5 +1,5 @@
 /**
- * Compound-food exclusions for phrase matching.
+ * Compound-food exclusions and false-friend denylist for phrase matching.
  *
  * A short food phrase must not match when it only appears as part of a
  * different, longer food. Families configure rules per person; this list is
@@ -11,6 +11,17 @@ export interface CompoundFoodExclusion {
   phrase: string;
   /** Longer foods that contain the phrase but are a different food */
   compounds: string[];
+}
+
+/**
+ * Compounds that look allergenic but are a different food.
+ * When `suppress` is omitted, any overlapping phrase is ignored.
+ * When set, only those phrases are ignored (so coconut aminos still
+ * matches an explicit coconut rule, but not a bare "nut" token).
+ */
+export interface FalseFriendCompound {
+  compound: string;
+  suppress?: string[];
 }
 
 export const defaultCompoundFoodExclusions: CompoundFoodExclusion[] = [
@@ -61,6 +72,9 @@ export const defaultCompoundFoodExclusions: CompoundFoodExclusion[] = [
     ],
   },
   { phrase: "butternut", compounds: ["butternut squash"] },
+  { phrase: "butternuts", compounds: ["butternut squash"] },
+  { phrase: "chestnut", compounds: ["water chestnut", "water chestnuts"] },
+  { phrase: "chestnuts", compounds: ["water chestnut", "water chestnuts"] },
   { phrase: "nut", compounds: ["nutmeg", "coconut"] },
   { phrase: "nuts", compounds: ["coconut"] },
   { phrase: "flour", compounds: ["rice flour", "chickpea flour", "oat flour", "corn flour"] },
@@ -71,14 +85,35 @@ export const defaultCompoundFoodExclusions: CompoundFoodExclusion[] = [
   },
 ];
 
-function normalizeExclusionKey(value: string): string {
-  return value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+export const falseFriendCompounds: FalseFriendCompound[] = [
+  { compound: "butternut squash" },
+  { compound: "nutmeg" },
+  { compound: "mace" },
+  { compound: "water chestnut" },
+  { compound: "water chestnuts" },
+  { compound: "coconut aminos", suppress: ["nut", "nuts"] },
+];
+
+function exclusionKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      if (word.length > 3 && word.endsWith("ies")) return `${word.slice(0, -3)}y`;
+      if (word.length > 3 && word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
+      return word;
+    })
+    .join(" ");
 }
 
 const exclusionIndex: Map<string, string[]> = (() => {
   const map = new Map<string, string[]>();
   for (const entry of defaultCompoundFoodExclusions) {
-    const key = normalizeExclusionKey(entry.phrase);
+    const key = exclusionKey(entry.phrase);
     const existing = map.get(key) ?? [];
     for (const compound of entry.compounds) {
       if (!existing.includes(compound)) existing.push(compound);
@@ -88,7 +123,7 @@ const exclusionIndex: Map<string, string[]> = (() => {
   return map;
 })();
 
-/** Compounds that should suppress a match for `phrase`. */
+/** Compounds that should suppress a match for `phrase` (plurals share a key). */
 export function compoundsExcludingPhrase(phrase: string): string[] {
-  return exclusionIndex.get(normalizeExclusionKey(phrase)) ?? [];
+  return exclusionIndex.get(exclusionKey(phrase)) ?? [];
 }
