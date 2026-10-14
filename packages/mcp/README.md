@@ -79,12 +79,24 @@ Get household schedule, people, rules, preferences, and recent meals.
 
 ### `get_person_rules`
 
-Get detailed per-person rules with severities and options.
+Get detailed per-person rules (Can't eat / Doesn't like) and Loves.
 
 ```json
 {
   "personIds": ["person-id-1"],
   "includeInactive": false
+}
+```
+
+### `manage_person_loves`
+
+List, add, or remove a Love. Loves never filter recipes; they boost ranking and show “Name loves this”.
+
+```json
+{
+  "action": "add",
+  "personId": "person-id-1",
+  "value": "salmon"
 }
 ```
 

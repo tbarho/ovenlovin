@@ -335,6 +335,42 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
     }
   }
 
+  const householdPeople = await people.listPeopleByHousehold(household.id, { limit: 40 });
+  const ty = householdPeople.items.find((person) => person.displayName === "Ty");
+  if (ty) {
+    const tyRules = await people.getRulesForPerson(ty.id);
+    if (!tyRules.some((rule) => rule.target === "cilantro")) {
+      await people.createRule({
+        personId: ty.id,
+        kind: "ingredient",
+        target: "cilantro",
+        severity: "prefer_avoid",
+        includeMayContain: false,
+        includeCrossContact: false,
+        sharedFacility: "ignore",
+        includeUnmappedIngredients: false,
+        includeDescendants: true,
+        treatCoconutAsTreeNut: true,
+        label: "Cilantro",
+        note: null,
+        setBy: user.id,
+        createdBy: user.id,
+      });
+    }
+    const tyLoves = await people.getPreferencesForPerson(ty.id, "love");
+    for (const value of ["salmon", "mexican", "spicy"] as const) {
+      if (!tyLoves.some((item) => item.value === value)) {
+        await people.createPreference({
+          personId: ty.id,
+          type: "love",
+          value,
+          weight: 1,
+          createdBy: user.id,
+        });
+      }
+    }
+  }
+
   const existingRecipes = await recipes.listRecipes(household.id, { pagination: { limit: 40 } });
   const pesto = existingRecipes.items.find((recipe) => /pesto pasta/i.test(recipe.title));
   if (pesto && pesto.images.length < 3) {

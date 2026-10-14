@@ -16,6 +16,7 @@ import {
   listCookbooksTool,
   getCookbookTool,
   manageCookbookTool,
+  managePersonLovesTool,
 } from "./index.js";
 
 describe("MCP Tool Schemas", () => {
@@ -223,6 +224,22 @@ describe("MCP Tool Schemas", () => {
           id: "550e8400-e29b-41d4-a716-446655440000",
         }).success
       ).toBe(true);
+    });
+
+    it("validates manage_person_loves actions", () => {
+      expect(
+        managePersonLovesTool.inputSchema.safeParse({
+          action: "add",
+          personId: "550e8400-e29b-41d4-a716-446655440000",
+          value: "salmon",
+        }).success
+      ).toBe(true);
+      expect(
+        managePersonLovesTool.inputSchema.safeParse({
+          action: "list",
+          personId: "not-a-uuid",
+        }).success
+      ).toBe(false);
     });
 
     it("validates manage_cookbook actions", () => {

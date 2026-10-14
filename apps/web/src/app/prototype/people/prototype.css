@@ -497,7 +497,8 @@
   box-shadow: 0 0 0 4px rgba(224, 122, 61, 0.08);
 }
 
-.olp-lane-cant_have {
+.olp-lane-cant_have,
+.olp-lane-cant_eat {
   background: linear-gradient(180deg, #fff8f6, var(--olp-paper) 48%);
 }
 
@@ -505,8 +506,24 @@
   background: linear-gradient(180deg, #fffaf2, var(--olp-paper) 48%);
 }
 
-.olp-lane-rather_not {
+.olp-lane-rather_not,
+.olp-lane-doesnt_like {
   background: linear-gradient(180deg, #f7f9fb, var(--olp-paper) 48%);
+}
+
+.olp-lane-loves {
+  background: linear-gradient(180deg, #f4faf4, var(--olp-paper) 48%);
+}
+
+.olp-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.olp-lane-head h2 {
+  margin: 0;
 }
 
 .olp-chip-row {
@@ -528,7 +545,8 @@
   overflow: hidden;
 }
 
-.olp-chip-cant_have .olp-chip-drag {
+.olp-chip-cant_have .olp-chip-drag,
+.olp-chip-cant_eat .olp-chip-drag {
   border-color: #efc4be;
   background: var(--olp-cant-soft);
   border-radius: 10px;
@@ -542,11 +560,35 @@
   font-weight: 650;
 }
 
-.olp-chip-rather_not .olp-chip-drag {
+.olp-chip-rather_not .olp-chip-drag,
+.olp-chip-doesnt_like .olp-chip-drag {
   border-color: #d5dee6;
   background: var(--olp-prefer-soft);
   border-radius: 999px;
   font-weight: 500;
+}
+
+.olp-chip-loves .olp-chip-drag {
+  border-color: #b7d8b8;
+  background: #eef7ee;
+  border-radius: 999px;
+  font-weight: 650;
+}
+
+.olp-use-custom {
+  appearance: none;
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px dashed #d7c4b2;
+  border-radius: 12px;
+  background: #fffaf4;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
 }
 
 .olp-chip-main,

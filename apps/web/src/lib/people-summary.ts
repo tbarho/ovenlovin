@@ -28,7 +28,7 @@ export function summarizePeople(people: Person[], rules: PersonRule[]): PeopleSu
   const ranked: Array<{ label: string; rank: number }> = [];
   const seen = new Set<string>();
   for (const rule of rules) {
-    if (uiBucketForRule(rule) === "rather_not") continue;
+    if (uiBucketForRule(rule) === "doesnt_like") continue;
     const entry = findCatalogEntry(rule.target);
     const label = (entry?.phraseName ?? displayNameForTarget(rule.target)).toLowerCase();
     if (seen.has(label)) continue;
@@ -51,7 +51,7 @@ export function summarizePeople(people: Person[], rules: PersonRule[]): PeopleSu
   ).length;
 
   if (avoids.length === 0) {
-    const prefers = rules.some((rule) => uiBucketForRule(rule) === "rather_not");
+    const prefers = rules.some((rule) => uiBucketForRule(rule) === "doesnt_like");
     return {
       line: prefers
         ? "Mostly easygoing, with a few preferences."

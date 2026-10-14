@@ -11,6 +11,7 @@ type KitchenUrls = {
   cookbookHref: string;
   pestoHref: string;
   jakeHref: string;
+  tyHref: string;
 };
 
 async function settle(page: Page) {
@@ -61,8 +62,15 @@ async function discoverKitchen(page: Page): Promise<KitchenUrls> {
   await expect(page.getByText("Jake")).toBeVisible();
   const jakeHref = await page.locator("a").filter({ hasText: "Jake" }).first().getAttribute("href");
   expect(jakeHref).toBeTruthy();
+  const tyHref = await page.locator("a").filter({ hasText: "Ty" }).first().getAttribute("href");
+  expect(tyHref).toBeTruthy();
 
-  return { cookbookHref: cookbookHref!, pestoHref: pestoHref!, jakeHref: jakeHref! };
+  return {
+    cookbookHref: cookbookHref!,
+    pestoHref: pestoHref!,
+    jakeHref: jakeHref!,
+    tyHref: tyHref!,
+  };
 }
 
 async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
@@ -121,12 +129,21 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByText("Jake")).toBeVisible();
   await shot(page, width, "people-list");
 
+  await page.goto(urls.tyHref);
+  await expect(page.getByRole("heading", { name: "Ty" })).toBeVisible();
+  await expect(page.getByTestId("bucket-cant_eat")).toBeVisible();
+  await expect(page.getByTestId("bucket-doesnt_like")).toContainText(/cilantro/i);
+  await expect(page.getByTestId("bucket-loves")).toContainText(/salmon/i);
+  await shot(page, width, "person");
+
   await page.goto(urls.jakeHref);
   await expect(page.getByRole("heading", { name: "Jake" })).toBeVisible();
-  await expect(page.getByTestId("bucket-cant_have")).toContainText(/peanut/i);
-  await shot(page, width, "person");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: /add a rule/i })).toBeVisible();
+  await expect(page.getByTestId("bucket-cant_eat")).toContainText(/peanut/i);
+  await expect(page.getByTestId("bucket-doesnt_like")).toBeVisible();
+  await expect(page.getByTestId("bucket-loves")).toBeVisible();
+  await shot(page, width, "person-jake");
+  await page.getByTestId("bucket-cant_eat").getByRole("button", { name: "Add" }).click();
+  await expect(page.getByRole("dialog", { name: /can't eat/i })).toBeVisible();
   await shot(page, width, "sheet-add-rule");
   await closeSheet(page);
   await page.getByRole("button", { name: /edit jake/i }).click();
@@ -138,7 +155,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await shot(page, width, "sheet-delete-person");
   await closeSheet(page);
   await page
-    .getByTestId("bucket-cant_have")
+    .getByTestId("bucket-cant_eat")
     .getByRole("button")
     .filter({ hasText: /peanut/i })
     .first()

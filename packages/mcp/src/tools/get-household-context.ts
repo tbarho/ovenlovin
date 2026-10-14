@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { HouseholdService, PeopleService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
+import { LOVE_PREFERENCE_TYPE, loveLabel } from "@ovenlovin/allergens";
 
 export const getHouseholdContextSchema = z.object({
   includeSchedule: z.boolean().default(true),
@@ -48,11 +49,13 @@ export interface GetHouseholdContextOutput {
       warnCount: number;
       preferAvoidCount: number;
     };
+    loves: Array<{ value: string; label: string }>;
     labelNotes?: string[];
   }>;
   preferences?: {
     cuisines: string[];
     avoidances: string[];
+    loves: Array<{ personId: string; personName: string; value: string; label: string }>;
   };
   recentMeals?: Array<{
     date: string;
@@ -89,6 +92,7 @@ async function handler(
     const peopleWithRules = await Promise.all(
       peopleResult.items.map(async (person) => {
         const rules = await peopleService.getRulesForPerson(person.id);
+        const loves = await peopleService.getPreferencesForPerson(person.id, LOVE_PREFERENCE_TYPE);
 
         // Count rules by severity
         const rulesSummary = {
@@ -109,16 +113,38 @@ async function handler(
           age,
           activityProfile: person.activityProfile ?? undefined,
           rulesSummary,
+          loves: loves.map((item) => ({
+            value: item.value,
+            label: loveLabel(item.value),
+          })),
           labelNotes: labelNotes.length > 0 ? labelNotes : undefined,
         };
       })
     );
 
     result.people = peopleWithRules;
+
+    if (input.includePreferences) {
+      result.preferences = {
+        cuisines: peopleWithRules.flatMap((person) =>
+          person.loves
+            .filter((love) => /mexican|italian|chinese|american/i.test(love.value))
+            .map((love) => love.label)
+        ),
+        avoidances: [],
+        loves: peopleWithRules.flatMap((person) =>
+          person.loves.map((love) => ({
+            personId: person.id,
+            personName: person.displayName,
+            value: love.value,
+            label: love.label,
+          }))
+        ),
+      };
+    }
   }
 
-  // TODO: Implement schedule, preferences, and recent meals when those schemas are added
-  // For now, returning household and people data
+  // TODO: Implement schedule and recent meals when those schemas are added
 
   return result;
 }

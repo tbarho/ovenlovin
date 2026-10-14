@@ -1,6 +1,6 @@
 import { eq, and, isNull, desc, inArray } from "drizzle-orm";
-import { person, personRule } from "@ovenlovin/db";
-import type { Person, PersonRule } from "../schemas/people";
+import { person, personRule, preference } from "@ovenlovin/db";
+import type { Person, PersonRule, Preference } from "../schemas/people";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
 
@@ -78,6 +78,11 @@ export class PeopleService extends BaseService {
         .update(personRule)
         .set({ deletedAt: now, updatedAt: now })
         .where(and(eq(personRule.personId, id), isNull(personRule.deletedAt)));
+
+      await tx
+        .update(preference)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(preference.personId, id), isNull(preference.deletedAt)));
 
       const [deleted] = await tx
         .update(person)
@@ -176,6 +181,77 @@ export class PeopleService extends BaseService {
     return !!deleted;
   }
 
+  async getPreferencesForPerson(personId: string, type?: string): Promise<Preference[]> {
+    const conditions = [eq(preference.personId, personId), isNull(preference.deletedAt)];
+    if (type) conditions.push(eq(preference.type, type));
+
+    const results = await this._db
+      .select()
+      .from(preference)
+      .where(and(...conditions))
+      .orderBy(desc(preference.createdAt));
+
+    return results.map((row) => this.mapPreference(row));
+  }
+
+  async getPreferencesForPeople(personIds: string[], type?: string): Promise<Preference[]> {
+    if (personIds.length === 0) return [];
+
+    const conditions = [inArray(preference.personId, personIds), isNull(preference.deletedAt)];
+    if (type) conditions.push(eq(preference.type, type));
+
+    const results = await this._db
+      .select()
+      .from(preference)
+      .where(and(...conditions))
+      .orderBy(desc(preference.createdAt));
+
+    return results.map((row) => this.mapPreference(row));
+  }
+
+  async getPreference(id: string): Promise<Preference | null> {
+    const [result] = await this._db
+      .select()
+      .from(preference)
+      .where(and(eq(preference.id, id), isNull(preference.deletedAt)))
+      .limit(1);
+
+    return result ? this.mapPreference(result) : null;
+  }
+
+  async createPreference(
+    data: Omit<Preference, "id" | "createdAt" | "updatedAt" | "deletedAt">
+  ): Promise<Preference> {
+    const value = data.value.trim();
+    if (!value) {
+      throw new Error("A preference needs a value. Type a food, cuisine, or style.");
+    }
+
+    const [created] = await this._db
+      .insert(preference)
+      .values({
+        personId: data.personId,
+        type: data.type,
+        value,
+        weight: data.weight ?? 1,
+        createdBy: data.createdBy,
+      })
+      .returning();
+
+    if (!created) throw new Error("Failed to create preference");
+    return this.mapPreference(created);
+  }
+
+  async deletePreference(id: string): Promise<boolean> {
+    const [deleted] = await this._db
+      .update(preference)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(preference.id, id), isNull(preference.deletedAt)))
+      .returning();
+
+    return !!deleted;
+  }
+
   private mapPerson(row: typeof person.$inferSelect): Person {
     return {
       id: row.id,
@@ -216,6 +292,20 @@ export class PeopleService extends BaseService {
       activeFrom: row.activeFrom ?? null,
       activeUntil: row.activeUntil ?? null,
       setBy: row.setBy,
+    };
+  }
+
+  private mapPreference(row: typeof preference.$inferSelect): Preference {
+    return {
+      id: row.id,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      deletedAt: row.deletedAt?.toISOString() ?? null,
+      createdBy: row.createdBy,
+      personId: row.personId,
+      type: row.type,
+      value: row.value,
+      weight: row.weight ?? 1,
     };
   }
 }

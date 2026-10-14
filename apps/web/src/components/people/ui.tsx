@@ -9,6 +9,7 @@ import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
 import { iconIdForTarget } from "@/lib/people-catalog";
 import type { PersonAppearance } from "@/lib/person-appearance";
 
+export type ChipBucket = RuleUiBucket | "loves";
 export type EatMark = "ok" | "warn" | "block";
 
 export function Avatar({
@@ -65,7 +66,7 @@ export function Chip({
 }: {
   label: string;
   target?: string;
-  bucket: RuleUiBucket;
+  bucket: ChipBucket;
   onClick?: () => void;
   onRemove?: () => void;
 }) {

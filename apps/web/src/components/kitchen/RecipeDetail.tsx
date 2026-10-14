@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import type { PersonLove } from "@ovenlovin/allergens";
 import type { Cookbook, Person, PersonRule, RecipeDetails } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import {
@@ -9,6 +10,8 @@ import {
   formatDurationMinutes,
   scaleIngredientDisplay,
 } from "@ovenlovin/core/scaling";
+import { loveHitsForRecipe } from "@/lib/household-loves";
+import { LoveTags } from "./LoveTags";
 import {
   CookbooksSheet,
   DetailsSheet,
@@ -17,6 +20,8 @@ import {
   StepsSheet,
 } from "./RecipeEditSheets";
 import { WhoCanEat } from "./WhoCanEat";
+
+const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 
 function sourceHost(url: string): string {
   try {
@@ -31,11 +36,13 @@ export function RecipeDetail({
   cookbooks,
   people = [],
   rules = [],
+  lovePeople = EMPTY_LOVE_PEOPLE,
 }: {
   recipe: RecipeDetails;
   cookbooks: Cookbook[];
   people?: Person[];
   rules?: PersonRule[];
+  lovePeople?: PersonLove[];
 }) {
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
   const [servings, setServings] = useState(storedServings);
@@ -66,6 +73,19 @@ export function RecipeDetail({
                 ← Recipes
               </Link>
               <h1>{recipe.title}</h1>
+              <LoveTags
+                hits={loveHitsForRecipe(
+                  {
+                    title: recipe.title,
+                    description: recipe.description,
+                    cuisine: recipe.cuisine,
+                    course: recipe.course,
+                    methodTags: recipe.methodTags,
+                    ingredients: recipe.ingredients,
+                  },
+                  lovePeople
+                )}
+              />
               <div className="recipe-meta">
                 {formatDurationMinutes(recipe.prepTimeMinutes) ? (
                   <span className="chip">Prep {formatDurationMinutes(recipe.prepTimeMinutes)}</span>

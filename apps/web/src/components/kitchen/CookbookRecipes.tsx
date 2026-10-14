@@ -3,11 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import type { PersonLove } from "@ovenlovin/allergens";
 import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
+import { loveHitsForRecipe } from "@/lib/household-loves";
 import { BottomSheet } from "./BottomSheet";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { LoveTags } from "./LoveTags";
+
+const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 
 function RenameCookbookSheet({
   cookbook,
@@ -61,7 +66,15 @@ function RenameCookbookSheet({
   );
 }
 
-export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; recipes: Recipe[] }) {
+export function CookbookRecipes({
+  cookbook,
+  recipes,
+  lovePeople = EMPTY_LOVE_PEOPLE,
+}: {
+  cookbook: Cookbook;
+  recipes: Recipe[];
+  lovePeople?: PersonLove[];
+}) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -126,6 +139,7 @@ export function CookbookRecipes({ cookbook, recipes }: { cookbook: Cookbook; rec
                 )}
                 <div className="card-copy">
                   <h2>{recipe.title}</h2>
+                  <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
                   <p className="muted">
                     {recipe.servings ? `${recipe.servings} servings` : recipe.status}
                   </p>

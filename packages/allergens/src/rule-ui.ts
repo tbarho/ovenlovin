@@ -5,9 +5,11 @@
  * `buildRuleWrite`, and checking still uses `checkIngredientsAgainstRules`.
  *
  * Buckets:
- * - Can't have → severity block (allergens stay kind allergen)
- * - Doesn't eat → kind diet, severity block
- * - Would rather not → severity prefer_avoid
+ * - Can't eat → severity block (allergens stay kind allergen; diets stay kind diet)
+ * - Doesn't like → severity prefer_avoid
+ *
+ * The former "Doesn't eat" diet bucket is folded into Can't eat. Existing
+ * diet+block rows keep their stored kind/severity and now render under Can't eat.
  *
  * Shared facility prompt:
  * - Yes → sharedFacility block (and may-contain / cross-contact flags on)
@@ -18,17 +20,19 @@
 import type { CatalogGroup, RuleIntent } from "./catalog";
 import type { RuleKind, Severity, SharedFacility } from "@ovenlovin/core";
 
-export type RuleUiBucket = "cant_have" | "doesnt_eat" | "rather_not";
+export type RuleUiBucket = "cant_eat" | "doesnt_like";
 export type SharedFacilityPrompt = "yes" | "ask" | "no";
+
+/** @deprecated Use RuleUiBucket. Kept so older UI mappings can be migrated. */
+export type LegacyRuleUiBucket = "cant_have" | "doesnt_eat" | "rather_not";
 
 export const RULE_UI_BUCKETS: Array<{
   bucket: RuleUiBucket;
   label: string;
   severity: Severity;
 }> = [
-  { bucket: "cant_have", label: "Can't have", severity: "block" },
-  { bucket: "doesnt_eat", label: "Doesn't eat", severity: "block" },
-  { bucket: "rather_not", label: "Would rather not", severity: "prefer_avoid" },
+  { bucket: "cant_eat", label: "Can't eat", severity: "block" },
+  { bucket: "doesnt_like", label: "Doesn't like", severity: "prefer_avoid" },
 ];
 
 export const SHARED_FACILITY_PROMPTS: Array<{
@@ -41,32 +45,37 @@ export const SHARED_FACILITY_PROMPTS: Array<{
   { prompt: "no", label: "No", sharedFacility: "ignore" },
 ];
 
+export function normalizeUiBucket(bucket: RuleUiBucket | LegacyRuleUiBucket): RuleUiBucket {
+  if (bucket === "rather_not") return "doesnt_like";
+  if (bucket === "cant_have" || bucket === "doesnt_eat" || bucket === "cant_eat") {
+    return "cant_eat";
+  }
+  return "doesnt_like";
+}
+
 export function defaultBucketForCatalogGroup(group: CatalogGroup): RuleUiBucket {
-  if (group === "allergen") return "cant_have";
-  if (group === "diet") return "doesnt_eat";
-  return "rather_not";
+  if (group === "allergen" || group === "diet") return "cant_eat";
+  return "doesnt_like";
 }
 
 export function uiBucketForRule(rule: { kind: RuleKind; severity: Severity }): RuleUiBucket {
-  if (rule.severity === "prefer_avoid") return "rather_not";
-  if (rule.kind === "diet") return "doesnt_eat";
-  if (rule.kind === "allergen" && rule.severity === "block") return "cant_have";
-  if (rule.severity === "warn") return "rather_not";
-  return "doesnt_eat";
+  if (rule.severity === "prefer_avoid" || rule.severity === "warn") return "doesnt_like";
+  return "cant_eat";
 }
 
 export function intentAndSeverityForBucket(
-  bucket: RuleUiBucket,
+  bucket: RuleUiBucket | LegacyRuleUiBucket,
   group: CatalogGroup
 ): { intent: RuleIntent; severity: Severity } {
-  if (bucket === "rather_not") {
-    return { intent: "dislike", severity: "prefer_avoid" };
-  }
-  if (bucket === "doesnt_eat") {
-    return { intent: group === "allergen" ? "allergy" : "diet", severity: "block" };
+  const normalized = normalizeUiBucket(bucket);
+  if (normalized === "doesnt_like") {
+    return {
+      intent: group === "allergen" ? "allergy" : group === "diet" ? "diet" : "dislike",
+      severity: "prefer_avoid",
+    };
   }
   return {
-    intent: group === "diet" ? "diet" : "allergy",
+    intent: group === "diet" ? "diet" : group === "allergen" ? "allergy" : "dislike",
     severity: "block",
   };
 }

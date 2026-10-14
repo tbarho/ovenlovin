@@ -29,6 +29,7 @@ import { getMealPlanTool } from "./tools/get-meal-plan";
 import { listCookbooksTool } from "./tools/list-cookbooks";
 import { getCookbookTool } from "./tools/get-cookbook";
 import { manageCookbookTool } from "./tools/manage-cookbook";
+import { managePersonLovesTool } from "./tools/manage-person-loves";
 
 // Resource implementations (will be implemented)
 import { listResources, readResource } from "./resources/index";
@@ -52,6 +53,7 @@ const TOOLS = [
   listCookbooksTool,
   getCookbookTool,
   manageCookbookTool,
+  managePersonLovesTool,
 ] as const;
 
 /**
