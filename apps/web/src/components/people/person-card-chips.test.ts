@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { budgetChips, sortCantEatChips } from "./person-card-chips";
+import {
+  budgetChips,
+  sortCantEatChips,
+  sortDoesntLikeChips,
+  sortLoveChips,
+} from "./person-card-chips";
 
 describe("person card chips", () => {
   it("keeps allergens ahead of diets and ingredients", () => {
@@ -15,6 +20,24 @@ describe("person card chips", () => {
       "vegetarian",
       "eggplant",
     ]);
+  });
+
+  it("keeps catalog-first loves and dislikes on the visible budget", () => {
+    expect(
+      sortLoveChips([
+        { key: "1", target: "chocolate", label: "Chocolate" },
+        { key: "2", target: "pasta", label: "Pasta" },
+        { key: "3", target: "salmon", label: "Salmon" },
+        { key: "4", target: "mexican", label: "Mexican" },
+      ]).map((item) => item.target)
+    ).toEqual(["salmon", "mexican", "pasta", "chocolate"]);
+    expect(
+      sortDoesntLikeChips([
+        { key: "1", target: "spicy", label: "Spicy food" },
+        { key: "2", target: "cilantro", label: "Cilantro" },
+        { key: "3", target: "olives", label: "Olives" },
+      ]).map((item) => item.target)
+    ).toEqual(["cilantro", "olives", "spicy"]);
   });
 
   it("shows +N more after the two-line budget", () => {

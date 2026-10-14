@@ -1,3 +1,5 @@
+import { dislikeCatalog, loveCatalog, type CatalogEntry } from "@ovenlovin/allergens";
+
 export const PERSON_CARD_CHIP_BUDGET = 4;
 
 export type PersonCardChip = {
@@ -6,6 +8,22 @@ export type PersonCardChip = {
   label: string;
   kind?: string;
 };
+
+function catalogRank(target: string, catalog: CatalogEntry[]): number {
+  const index = catalog.findIndex((entry) => entry.code === target);
+  return index === -1 ? catalog.length : index;
+}
+
+function sortByCatalogThenLabel(
+  items: PersonCardChip[],
+  catalog: CatalogEntry[]
+): PersonCardChip[] {
+  return [...items].sort((a, b) => {
+    const byCatalog = catalogRank(a.target, catalog) - catalogRank(b.target, catalog);
+    if (byCatalog !== 0) return byCatalog;
+    return a.label.localeCompare(b.label);
+  });
+}
 
 export function sortCantEatChips(items: PersonCardChip[]): PersonCardChip[] {
   return [...items].sort((a, b) => {
@@ -18,6 +36,15 @@ export function sortCantEatChips(items: PersonCardChip[]): PersonCardChip[] {
     if (byKind !== 0) return byKind;
     return a.label.localeCompare(b.label);
   });
+}
+
+/** Catalog order keeps signature likes (salmon, cilantro) on the two-line budget. */
+export function sortDoesntLikeChips(items: PersonCardChip[]): PersonCardChip[] {
+  return sortByCatalogThenLabel(items, dislikeCatalog);
+}
+
+export function sortLoveChips(items: PersonCardChip[]): PersonCardChip[] {
+  return sortByCatalogThenLabel(items, loveCatalog);
 }
 
 export function budgetChips<T>(items: T[], budget = PERSON_CARD_CHIP_BUDGET) {

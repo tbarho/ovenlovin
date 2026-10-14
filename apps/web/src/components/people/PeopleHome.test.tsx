@@ -95,7 +95,7 @@ describe("PeopleHome", () => {
           severity: "prefer_avoid",
         })
     );
-    const loves = ["salmon", "mexican", "spicy", "italian", "chicken", "pasta"].map(
+    const loves = ["pasta", "chicken", "italian", "spicy", "mexican", "salmon"].map(
       (value, index) =>
         testPreference({
           id: `00000000-0000-4000-8000-00000000004${index}`,
@@ -123,6 +123,7 @@ describe("PeopleHome", () => {
     expect(screen.getByTestId(`person-card-more-doesnt_like-${person.id}`)).toHaveTextContent(
       "+3 more"
     );
+    expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent(/salmon/i);
     expect(screen.getByTestId(`person-card-more-loves-${person.id}`)).toHaveTextContent("+3 more");
     expect(cant).not.toHaveTextContent(/raisins/i);
   });

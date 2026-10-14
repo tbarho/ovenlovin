@@ -133,6 +133,9 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(
     page.locator('[data-testid^="person-card-loves-"]').filter({ hasText: /salmon/i })
   ).toHaveCount(1);
+  await expect(page.locator('[data-testid^="person-card-more-cant_eat-"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid^="person-card-more-doesnt_like-"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid^="person-card-more-loves-"]')).toHaveCount(1);
   await shot(page, width, "people-list");
 
   await page.goto(urls.tyHref);

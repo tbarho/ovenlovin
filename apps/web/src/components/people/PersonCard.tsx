@@ -10,7 +10,13 @@ import {
 } from "@ovenlovin/allergens";
 import type { Person, PersonRule, Preference } from "@ovenlovin/core";
 import { appearanceForPerson } from "@/lib/person-appearance";
-import { budgetChips, sortCantEatChips, type PersonCardChip } from "./person-card-chips";
+import {
+  budgetChips,
+  sortCantEatChips,
+  sortDoesntLikeChips,
+  sortLoveChips,
+  type PersonCardChip,
+} from "./person-card-chips";
 import { Avatar, Chip, type ChipBucket } from "./ui";
 
 const CARD_LANES: Array<{ bucket: ChipBucket; label: string }> = [
@@ -47,6 +53,8 @@ export function PersonCard({
       });
     }
     map.cant_eat = sortCantEatChips(map.cant_eat);
+    map.doesnt_like = sortDoesntLikeChips(map.doesnt_like);
+    map.loves = sortLoveChips(map.loves);
     return map;
   }, [loves, rules]);
 
