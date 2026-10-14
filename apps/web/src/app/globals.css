@@ -1806,9 +1806,32 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   padding: 16px;
 }
 
+.import-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
 .import-card h2 {
   margin: 0;
   font-size: 15px;
+}
+
+.import-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.import-field {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.import-submit {
+  flex: 0 0 auto;
 }
 
 .import-card textarea {
@@ -1903,27 +1926,6 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     border: 1px solid #eaeaea;
     border-radius: 12px;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.12);
-  }
-}
-
-@media (min-width: 768px) {
-  .import-card {
-    grid-template-columns: 1fr auto;
-    align-items: end;
-  }
-
-  .import-card h2,
-  .import-tabs,
-  .import-error {
-    grid-column: 1 / -1;
-  }
-
-  .import-field {
-    min-width: 0;
-  }
-
-  .import-submit {
-    justify-self: end;
   }
 }
 
@@ -2025,27 +2027,15 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   }
 
   .import-card {
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
     padding: 14px 16px;
   }
 
-  .import-card h2 {
-    grid-column: auto;
-    margin: 0 12px 0 0;
-    white-space: nowrap;
-  }
-
-  .import-tabs {
-    grid-column: auto;
-  }
-
-  .import-field {
-    min-width: 0;
+  .import-row {
+    flex-wrap: nowrap;
   }
 
   .import-submit {
-    justify-self: end;
+    min-width: 120px;
   }
 }
 
