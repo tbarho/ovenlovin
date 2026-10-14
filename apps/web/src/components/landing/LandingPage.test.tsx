@@ -30,6 +30,7 @@ const deploy: DeployInfo = {
 
 const status: ConfigStatus = {
   ready: true,
+  mode: "product",
   checks: [],
 };
 

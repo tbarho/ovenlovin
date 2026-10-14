@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { PlanService } from "@ovenlovin/core";
+import { PlanService, resolveWriteActor } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const saveMealPlanSchema = z.object({
@@ -42,6 +42,11 @@ async function handler(
 ): Promise<SaveMealPlanOutput> {
   const db = createDbClient(process.env.DATABASE_URL!);
   const planService = new PlanService(db);
+  const actor = resolveWriteActor({
+    userId: context.userId,
+    apiKeyId: context.apiKeyId,
+    apiKeyCreatedBy: context.apiKeyCreatedBy,
+  });
 
   // Create the meal plan
   const plan = await planService.createMealPlan({
@@ -52,7 +57,8 @@ async function handler(
     checkedAt: new Date().toISOString(),
     acknowledgedWarnings: input.acknowledgedWarnings ?? [],
     needsRecheck: false,
-    createdBy: context.userId as string,
+    createdBy: actor.createdBy,
+    createdByApiKeyId: actor.createdByApiKeyId,
   });
 
   // Create entries

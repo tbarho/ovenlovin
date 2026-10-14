@@ -12,6 +12,8 @@ export type RequestContext = {
   householdId?: string;
   isBot?: boolean;
   clientId?: string;
+  /** User who minted the API key. Used to attribute writes (set_by / created_by). */
+  apiKeyCreatedBy?: string;
   membershipRole?: "owner" | "admin" | "member" | "viewer";
 };
 
@@ -23,7 +25,7 @@ export async function getRequestContext(request: NextRequest): Promise<RequestCo
 }
 
 async function parseClerkAuth(): Promise<RequestContext> {
-  return getSessionContext();
+  return getSessionContext({ allowRedirect: false });
 }
 
 async function parseApiKey(apiKey: string): Promise<RequestContext> {
@@ -43,6 +45,7 @@ async function parseApiKey(apiKey: string): Promise<RequestContext> {
     clientId: result.key.id,
     householdId: result.key.householdId,
     isBot: true,
+    apiKeyCreatedBy: result.key.createdBy,
   };
 }
 

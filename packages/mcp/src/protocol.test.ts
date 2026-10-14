@@ -32,6 +32,31 @@ describe("MCP JSON schemas", () => {
     );
     expect(zodToMcpInputSchema(checkMealPlanTool.inputSchema).properties).toHaveProperty("plan");
   });
+
+  it("does not list defaulted input fields as required", () => {
+    const search = zodToMcpInputSchema(searchRecipesTool.inputSchema);
+    expect(search.required ?? []).not.toContain("maxResults");
+    expect(search.properties).toHaveProperty("maxResults");
+
+    const household = listedTools().find((tool) => tool.name === "get_household_context");
+    expect(household?.inputSchema.required ?? []).not.toEqual(
+      expect.arrayContaining([
+        "includeSchedule",
+        "includePeople",
+        "includePreferences",
+        "includeRecentMeals",
+      ])
+    );
+
+    const shopping = listedTools().find((tool) => tool.name === "export_shopping_list");
+    expect(shopping?.inputSchema.required ?? []).toEqual(["planId"]);
+    expect(shopping?.inputSchema.required ?? []).not.toEqual(
+      expect.arrayContaining(["format", "groupBy", "includePantryItems", "includeRuleWarnings"])
+    );
+
+    const save = listedTools().find((tool) => tool.name === "save_meal_plan");
+    expect(save?.inputSchema.required ?? []).not.toContain("status");
+  });
 });
 
 describe("dispatchMcpRequest", () => {

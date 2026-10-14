@@ -184,6 +184,7 @@ export class PeopleService extends BaseService {
         activeUntil: data.activeUntil ?? null,
         setBy: data.setBy,
         createdBy: data.createdBy,
+        createdByApiKeyId: data.createdByApiKeyId ?? null,
       })
       .returning();
 
@@ -329,6 +330,7 @@ export class PeopleService extends BaseService {
       activeFrom: row.activeFrom ?? null,
       activeUntil: row.activeUntil ?? null,
       setBy: row.setBy,
+      createdByApiKeyId: row.createdByApiKeyId ?? null,
     };
   }
 

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
-import { PeopleService } from "@ovenlovin/core";
+import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(
@@ -67,11 +67,15 @@ export async function PATCH(
       throw new NotFoundError("Rule", ruleId);
     }
 
-    const setBy = context.userId || "system";
+    const actor = resolveWriteActor({
+      userId: context.userId,
+      apiKeyId: context.clientId,
+      apiKeyCreatedBy: context.apiKeyCreatedBy,
+    });
 
     const updated = await service.updateRule(ruleId, {
       ...body,
-      setBy,
+      setBy: actor.setBy,
     });
 
     if (!updated) {

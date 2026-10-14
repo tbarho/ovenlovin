@@ -345,6 +345,28 @@ describe("matchIngredient", () => {
       expect(matchIngredient("salt")).toEqual([]);
     });
   });
+
+  describe("raw recipe lines", () => {
+    it("matches quantities and preparations via word boundaries", () => {
+      expect(matchIngredient("1/2 cup roasted peanuts")[0]?.allergenCode).toBe("peanut");
+      expect(matchIngredient("1/3 cup basil pesto")[0]?.allergenCode).toBe("pine_nut");
+      expect(matchIngredient("1/4 cup grated parmesan")[0]?.allergenCode).toBe("milk");
+      expect(matchIngredient("2 tbsp mayonnaise")[0]?.allergenCode).toBe("egg");
+      expect(matchIngredient("2 tbsp fish sauce")[0]?.allergenCode).toBe("fish");
+    });
+
+    it("matches Nutella as hazelnut and milk", () => {
+      const matches = matchIngredient("2 tbsp Nutella");
+      expect(matches.some((m) => m.allergenCode === "hazelnut")).toBe(true);
+      expect(matches.some((m) => m.allergenCode === "milk")).toBe(true);
+    });
+
+    it("does not treat coconut milk as dairy", () => {
+      const matches = matchIngredient("1 cup coconut milk");
+      expect(matches.some((m) => m.allergenCode === "coconut")).toBe(true);
+      expect(matches.some((m) => m.allergenCode === "milk")).toBe(false);
+    });
+  });
 });
 
 describe("buildIngredientMap", () => {

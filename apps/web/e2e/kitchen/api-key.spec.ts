@@ -5,6 +5,16 @@ type Tool = {
   inputSchema?: { type?: string; properties?: Record<string, unknown>; required?: string[] };
 };
 
+function parseMcpToolJson<T>(body: {
+  error?: { message?: string };
+  result?: { content?: Array<{ text?: string }> };
+}): T {
+  expect(body.error, JSON.stringify(body)).toBeUndefined();
+  const text = body.result?.content?.map((part) => part.text).join("\n") ?? "";
+  expect(text.length, JSON.stringify(body)).toBeGreaterThan(0);
+  return JSON.parse(text) as T;
+}
+
 async function createKitchenKey(request: APIRequestContext): Promise<string> {
   const created = await request.post("/api/v1/api-keys", {
     data: { name: "e2e rest+mcp key" },
@@ -104,6 +114,127 @@ test.describe("REST + MCP with a real API key", () => {
       called.result?.content?.map((part) => part.text).join("\n") ?? JSON.stringify(called);
     expect(text).not.toMatch(/\bstub\b/i);
     expect(text).toMatch(/e2e-kitchen|Ty's kitchen|Jake/i);
+  });
+
+  test("API-key callers can save a meal plan and add a person rule", async ({ request }) => {
+    const key = await createKitchenKey(request);
+    const headers = { Authorization: `ApiKey ${key}` };
+    let personId: string | undefined;
+    let planId: string | undefined;
+    let restRuleId: string | undefined;
+
+    try {
+      const createdPerson = await mcp(request, key, 10, "tools/call", {
+        name: "manage_people",
+        arguments: { action: "create", displayName: "TEST Parent A Person" },
+      });
+      expect(createdPerson.status(), await createdPerson.text()).toBe(200);
+      const personPayload = parseMcpToolJson<{
+        person?: { id?: string };
+        error?: { message?: string };
+      }>(await createdPerson.json());
+      personId = personPayload.person?.id;
+      expect(personId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+      const addedRule = await mcp(request, key, 11, "tools/call", {
+        name: "manage_person_rules",
+        arguments: {
+          action: "add",
+          personId,
+          kind: "custom",
+          target: "blueberries",
+          severity: "prefer_avoid",
+        },
+      });
+      expect(addedRule.status(), await addedRule.text()).toBe(200);
+      const rulePayload = parseMcpToolJson<{
+        status?: string;
+        rule?: { id?: string; target?: string };
+        error?: { message?: string };
+      }>(await addedRule.json());
+      expect(rulePayload.status).toBe("added");
+      expect(rulePayload.rule?.target).toBe("blueberries");
+      expect(JSON.stringify(rulePayload)).not.toMatch(/foreign key|set_by|created_by/i);
+
+      const restRule = await request.post(`/api/v1/people/${personId}/rules`, {
+        headers,
+        data: { kind: "custom", target: "food coloring", severity: "prefer_avoid" },
+      });
+      expect(restRule.status(), await restRule.text()).toBe(201);
+      const restBody = (await restRule.json()) as {
+        id?: string;
+        target?: string;
+        setBy?: string;
+        createdByApiKeyId?: string | null;
+      };
+      expect(restBody.target).toBe("food coloring");
+      expect(restBody.id).toBeTruthy();
+      expect(restBody.setBy).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
+      expect(restBody.createdByApiKeyId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
+      restRuleId = restBody.id;
+
+      const recipes = await request.get("/api/v1/recipes", { headers });
+      expect(recipes.status()).toBe(200);
+      const recipeList = (await recipes.json()) as { items: Array<{ id: string }> };
+      const recipeId = recipeList.items[0]?.id;
+      expect(recipeId).toBeTruthy();
+
+      const saved = await mcp(request, key, 12, "tools/call", {
+        name: "save_meal_plan",
+        arguments: {
+          weekStart: "2026-11-02",
+          status: "draft",
+          checkReportJson: { status: "complete" },
+          entries: [
+            {
+              date: "2026-11-02",
+              meal: "dinner",
+              recipeId,
+              servings: 4,
+              attendees: [personId],
+            },
+          ],
+        },
+      });
+      expect(saved.status(), await saved.text()).toBe(200);
+      const savedPayload = parseMcpToolJson<{
+        planId?: string;
+        entriesCount?: number;
+        error?: { message?: string };
+      }>(await saved.json());
+      expect(JSON.stringify(savedPayload)).not.toMatch(/null value in column "created_by"/i);
+      expect(savedPayload.planId).toBeTruthy();
+      expect(savedPayload.entriesCount).toBe(1);
+      planId = savedPayload.planId;
+
+      const loaded = await mcp(request, key, 13, "tools/call", {
+        name: "get_meal_plan",
+        arguments: { planId },
+      });
+      expect(loaded.status(), await loaded.text()).toBe(200);
+      const loadedPayload = parseMcpToolJson<{ entries?: unknown[] }>(await loaded.json());
+      expect(loadedPayload.entries).toHaveLength(1);
+    } finally {
+      if (planId) {
+        await mcp(request, key, 90, "tools/call", {
+          name: "delete_meal_plan",
+          arguments: { planId },
+        });
+      }
+      if (restRuleId && personId) {
+        await request.delete(`/api/v1/people/${personId}/rules/${restRuleId}`, { headers });
+      }
+      if (personId) {
+        await mcp(request, key, 91, "tools/call", {
+          name: "manage_people",
+          arguments: { action: "delete", personId },
+        });
+      }
+    }
   });
 
   test("meal-plan check accepts GET as well as POST", async ({ request }) => {
