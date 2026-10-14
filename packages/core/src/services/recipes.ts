@@ -1,14 +1,15 @@
 import { eq, and, isNull, desc, like, sql, asc, inArray } from "drizzle-orm";
-import { recipe, recipeIngredient, recipeStep, recipeSource } from "@ovenlovin/db";
+import { recipe, recipeIngredient, recipeNutrition, recipeStep, recipeSource } from "@ovenlovin/db";
 import type {
   Recipe,
   RecipeContentUpdate,
   RecipeDetails,
   RecipeImportDraft,
   RecipeMethodTag,
+  RecipeNutritionFacts,
 } from "../schemas/recipes";
 import { recipeMethodTagSchema, slugifyTitle } from "../schemas/recipes";
-import { parseIngredientLine } from "../parsing/ingredient-line";
+import { backfillParsedIngredient, parseIngredientLine } from "../parsing/ingredient-line";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
 import { CookbookService } from "./cookbooks";
@@ -103,6 +104,7 @@ export class RecipeService extends BaseService {
         title: data.title,
         slug: data.slug,
         description: data.description ?? null,
+        notes: data.notes ?? null,
         yieldQuantity: data.yieldQuantity ? String(data.yieldQuantity) : null,
         yieldUnit: data.yieldUnit ?? null,
         servings: data.servings ?? null,
@@ -167,6 +169,7 @@ export class RecipeService extends BaseService {
     await this.updateRecipe(id, {
       title: data.title,
       description: data.description,
+      notes: data.notes,
       servings: data.servings,
       prepTimeMinutes: data.prepTimeMinutes,
       cookTimeMinutes: data.cookTimeMinutes,
@@ -251,7 +254,7 @@ export class RecipeService extends BaseService {
     const found = await this.getRecipe(id);
     if (!found) return null;
 
-    const [ingredients, steps, sources] = await Promise.all([
+    const [ingredients, steps, sources, nutritionRows] = await Promise.all([
       this._db
         .select()
         .from(recipeIngredient)
@@ -267,13 +270,33 @@ export class RecipeService extends BaseService {
         .from(recipeSource)
         .where(and(eq(recipeSource.recipeId, id), isNull(recipeSource.deletedAt)))
         .limit(1),
+      this._db
+        .select()
+        .from(recipeNutrition)
+        .where(and(eq(recipeNutrition.recipeId, id), isNull(recipeNutrition.deletedAt)))
+        .limit(1),
     ]);
 
     const cookbooks = await new CookbookService(this._db).listCookbooksForRecipe(id);
+    const nutritionRow = nutritionRows[0];
+    const nutrition: RecipeNutritionFacts | null = nutritionRow
+      ? {
+          perServing: nutritionRow.perServing,
+          calories: nutritionRow.calories != null ? Number(nutritionRow.calories) : undefined,
+          protein: nutritionRow.protein != null ? Number(nutritionRow.protein) : undefined,
+          carbohydrates:
+            nutritionRow.carbohydrates != null ? Number(nutritionRow.carbohydrates) : undefined,
+          fat: nutritionRow.fat != null ? Number(nutritionRow.fat) : undefined,
+          fiber: nutritionRow.fiber != null ? Number(nutritionRow.fiber) : undefined,
+          sugar: nutritionRow.sugar != null ? Number(nutritionRow.sugar) : undefined,
+          sodium: nutritionRow.sodium != null ? Number(nutritionRow.sodium) : undefined,
+        }
+      : null;
 
     return {
       ...found,
       cookbooks,
+      nutrition,
       ingredients: ingredients.map((row) => ({
         id: row.id,
         createdAt: row.createdAt.toISOString(),
@@ -283,9 +306,12 @@ export class RecipeService extends BaseService {
         groupId: row.groupId ?? null,
         order: row.order,
         rawText: row.rawText,
-        quantityMin: row.quantityMin ? Number(row.quantityMin) : null,
-        quantityMax: row.quantityMax ? Number(row.quantityMax) : null,
-        unit: row.unit ?? null,
+        ...backfillParsedIngredient({
+          rawText: row.rawText,
+          quantityMin: row.quantityMin ? Number(row.quantityMin) : null,
+          quantityMax: row.quantityMax ? Number(row.quantityMax) : null,
+          unit: row.unit ?? null,
+        }),
         originalUnit: row.originalUnit ?? null,
         ingredientId: row.ingredientId ?? null,
         preparation: row.preparation ?? null,
@@ -347,6 +373,7 @@ export class RecipeService extends BaseService {
       title: draft.title || "Untitled recipe",
       slug,
       description: draft.description ?? null,
+      notes: draft.notes ?? null,
       yieldQuantity: draft.yieldQuantity ?? null,
       yieldUnit: draft.yieldUnit ?? null,
       servings: draft.servings ?? null,
@@ -424,6 +451,24 @@ export class RecipeService extends BaseService {
       licenseNote: draft.source.licenseNote ?? null,
     });
 
+    if (draft.nutrition) {
+      await this._db.insert(recipeNutrition).values({
+        recipeId: created.id,
+        perServing: draft.nutrition.perServing ?? true,
+        calories: draft.nutrition.calories != null ? String(draft.nutrition.calories) : null,
+        protein: draft.nutrition.protein != null ? String(draft.nutrition.protein) : null,
+        carbohydrates:
+          draft.nutrition.carbohydrates != null ? String(draft.nutrition.carbohydrates) : null,
+        fat: draft.nutrition.fat != null ? String(draft.nutrition.fat) : null,
+        fiber: draft.nutrition.fiber != null ? String(draft.nutrition.fiber) : null,
+        sugar: draft.nutrition.sugar != null ? String(draft.nutrition.sugar) : null,
+        sodium: draft.nutrition.sodium != null ? String(draft.nutrition.sodium) : null,
+        isComputed: false,
+        computationMethod: "schema.org NutritionInformation",
+        confidence: "1.00",
+      });
+    }
+
     const details = await this.getRecipeDetails(created.id);
     if (!details) throw new Error("Failed to load imported recipe");
     return details;
@@ -449,6 +494,7 @@ export class RecipeService extends BaseService {
       title: row.title,
       slug: row.slug,
       description: row.description ?? null,
+      notes: row.notes ?? null,
       yieldQuantity: row.yieldQuantity ? Number(row.yieldQuantity) : null,
       yieldUnit: row.yieldUnit ?? null,
       servings: row.servings ?? null,

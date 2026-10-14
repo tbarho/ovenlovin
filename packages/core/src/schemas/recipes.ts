@@ -20,6 +20,7 @@ export const recipeSchema = baseEntitySchema.merge(createdBySchema).extend({
   title: z.string().min(1).max(500),
   slug: z.string().min(1).max(500),
   description: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
   yieldQuantity: z.number().positive().nullable().optional(),
   yieldUnit: z.string().max(50).nullable().optional(),
   servings: z.number().int().positive().nullable().optional(),
@@ -52,6 +53,7 @@ export const recipeIngredientSchema = baseEntitySchema.extend({
   groupId: uuidSchema.nullable().optional(),
   order: z.number().int().nonnegative(),
   rawText: z.string().min(1),
+  name: z.string().min(1).optional(),
   quantityMin: z.number().nonnegative().nullable().optional(),
   quantityMax: z.number().positive().nullable().optional(),
   unit: z.string().max(100).nullable().optional(),
@@ -132,16 +134,29 @@ export type RecipeNutrition = z.infer<typeof recipeNutritionSchema>;
 export type RecipeSourceType = z.infer<typeof recipeSourceTypeSchema>;
 export type RecipeSource = z.infer<typeof recipeSourceSchema>;
 
+export type RecipeNutritionFacts = {
+  perServing: boolean;
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+};
+
 export type RecipeDetails = Recipe & {
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
   source: RecipeSource | null;
   cookbooks: Array<{ id: string; name: string; slug: string }>;
+  nutrition: RecipeNutritionFacts | null;
 };
 
 export type RecipeContentUpdate = {
   title?: string;
   description?: string | null;
+  notes?: string | null;
   servings?: number | null;
   prepTimeMinutes?: number | null;
   cookTimeMinutes?: number | null;
@@ -165,6 +180,7 @@ export type RecipeContentUpdate = {
 export type RecipeImportDraft = {
   title: string;
   description?: string;
+  notes?: string;
   yieldQuantity?: number;
   yieldUnit?: string;
   servings?: number;
@@ -178,6 +194,7 @@ export type RecipeImportDraft = {
   difficulty?: string;
   equipment?: string[];
   images?: string[];
+  nutrition?: RecipeNutritionFacts;
   ingredients: Array<{
     rawText: string;
     quantity?: { min: number; max?: number };

@@ -31,3 +31,19 @@ export async function enforceDemoMcpGuards(
   const context: RequestContext = { householdId, isBot: true };
   await enforceDemoRequestGuards(synthetic, context);
 }
+
+export function isSuccessfulImportRecipeCall(
+  body: unknown,
+  resultBody: string | undefined
+): boolean {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return false;
+  const message = body as { method?: string; params?: { name?: string } };
+  if (message.method !== "tools/call" || message.params?.name !== "import_recipe") return false;
+  if (!resultBody) return false;
+  try {
+    const parsed = JSON.parse(resultBody) as { error?: unknown };
+    return parsed.error == null;
+  } catch {
+    return false;
+  }
+}

@@ -18,6 +18,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       title: z.string(),
       slug: z.string(),
       description: z.string().nullable().optional(),
+      notes: z.string().nullable().optional(),
       ...recipeTimes,
       images: z.array(z.string()),
       status: z.enum(["draft", "needs_review", "published"]),
@@ -78,6 +79,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
             schema: z.object({
               title: z.string(),
               description: z.string().optional(),
+              notes: z.string().optional(),
               servings: z.number().int().positive().optional(),
               prepTimeMinutes: z.number().int().nonnegative().optional(),
               cookTimeMinutes: z.number().int().nonnegative().optional(),
@@ -102,7 +104,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "get",
     path: "/recipes/{id}",
     tags: ["recipes"],
-    summary: "Get a recipe with ingredients, steps, times, images, and source",
+    summary: "Get a recipe with ingredients, steps, times, notes, images, and source",
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: {
       200: {
@@ -125,6 +127,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
             schema: z.object({
               title: z.string().optional(),
               description: z.string().nullable().optional(),
+              notes: z.string().nullable().optional(),
               ...recipeTimes,
               images: z.array(z.string()).optional(),
               cookbookIds: z.array(z.string().uuid()).optional(),

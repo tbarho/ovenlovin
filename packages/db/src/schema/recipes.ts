@@ -31,6 +31,7 @@ export const recipe = pgTable("recipe", {
   title: varchar("title", { length: 500 }).notNull(),
   slug: varchar("slug", { length: 500 }).notNull(),
   description: text("description"),
+  notes: text("notes"),
   yieldQuantity: decimal("yield_quantity", { precision: 10, scale: 2 }),
   yieldUnit: varchar("yield_unit", { length: 50 }),
   servings: integer("servings"),
