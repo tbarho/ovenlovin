@@ -18,6 +18,6 @@ if (!existsSync(docsBaseDir)) {
 }
 
 mkdirSync(outputDir, { recursive: true });
-writeFileSync(outputFile, JSON.stringify(spec, null, 2));
+writeFileSync(outputFile, `${JSON.stringify(spec, null, 2)}\n`);
 
 console.log(`✓ OpenAPI spec exported to ${outputFile}`);
