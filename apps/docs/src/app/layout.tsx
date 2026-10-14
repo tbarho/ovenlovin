@@ -1,5 +1,5 @@
 import { withBasePath } from "@/lib/base-path";
-import { brandPublicPath } from "@ovenlovin/brand";
+import { DOCS_SHARE_ORIGIN, brandPublicPath, docsShareUrl } from "@ovenlovin/brand";
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider";
 import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
@@ -22,7 +22,7 @@ const fascinate = Fascinate_Inline({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://tbarho.github.io/ovenlovin"),
+  metadataBase: new URL(DOCS_SHARE_ORIGIN),
   icons: {
     icon: [
       { url: withBasePath(brandPublicPath.favicon), type: "image/svg+xml" },
@@ -33,11 +33,18 @@ export const metadata = {
   openGraph: {
     title: "OvenLovin Documentation",
     description: "The family recipe box your AI can actually use, and it knows who can't eat what.",
-    images: [{ url: withBasePath(brandPublicPath.og), width: 1200, height: 630, alt: "OvenLovin" }],
+    images: [
+      {
+        url: docsShareUrl(brandPublicPath.og),
+        width: 1200,
+        height: 630,
+        alt: "The family recipe box your AI can actually use, and it knows who can't eat what.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image" as const,
-    images: [withBasePath(brandPublicPath.og)],
+    images: [docsShareUrl(brandPublicPath.og)],
   },
   title: {
     default: "OvenLovin Documentation",

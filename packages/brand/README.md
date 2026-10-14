@@ -17,8 +17,8 @@ The wordmark is the single word **OvenLovin** (capital O, capital L, no space) s
 | `assets/favicon.svg` | SVG favicon wrapping a 64px PNG |
 | `assets/favicon-32.png` / `favicon-16.png` / `favicon.ico` | Raster favicons |
 | `assets/apple-touch-icon.png` | 180×180 home-screen icon |
-| `assets/og.png` | Open Graph image (light) |
-| `assets/og-dark.png` | Open Graph image (dark) |
+| `assets/og.png` | Open Graph card — Fascinate wordmark, pitch, product shot (white) |
+| `assets/og-dark.png` | Open Graph card on ink |
 
 Served copies live at:
 
@@ -30,5 +30,7 @@ Use the public paths from `brandPublicPath` (`/brand/mark.png`, `/brand/wordmark
 To regenerate the raster wordmarks after a font change:
 
 ```bash
-FONT_TTF=/path/to/FascinateInline-Regular.ttf node packages/brand/scripts/render-wordmarks.mjs
+FONT_TTF=/path/to/FascinateInline-Regular.ttf \
+GEIST_TTF=/path/to/Geist-Regular.ttf \
+node packages/brand/scripts/render-wordmarks.mjs --og-only
 ```
