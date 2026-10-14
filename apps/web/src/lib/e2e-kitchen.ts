@@ -24,6 +24,35 @@ export const E2E_PEOPLE = [
   { displayName: "Jake", emoji: "👦", color: "#3d8bfd" },
 ] as const;
 
+/** Dense list-card fixture: 6+ items in each People section. */
+export const E2E_TY_CANT_EAT = [
+  { kind: "allergen" as const, target: "sesame" },
+  { kind: "allergen" as const, target: "mustard" },
+  { kind: "allergen" as const, target: "celery" },
+  { kind: "allergen" as const, target: "lupin" },
+  { kind: "ingredient" as const, target: "eggplant" },
+  { kind: "ingredient" as const, target: "raisins" },
+];
+
+export const E2E_TY_DOESNT_LIKE = [
+  "cilantro",
+  "olives",
+  "mushrooms",
+  "onions",
+  "garlic",
+  "spicy",
+] as const;
+
+export const E2E_TY_LOVES = [
+  "salmon",
+  "mexican",
+  "spicy",
+  "italian",
+  "chicken",
+  "pasta",
+  "chocolate",
+] as const;
+
 const RECIPE_IMAGE = (slug: string) => `/e2e-kitchen/${slug}.svg`;
 
 /** Extra images exist so recipe detail can prove it only renders the main one. */
@@ -339,11 +368,35 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
   const ty = householdPeople.items.find((person) => person.displayName === "Ty");
   if (ty) {
     const tyRules = await people.getRulesForPerson(ty.id);
-    if (!tyRules.some((rule) => rule.target === "cilantro")) {
+    for (const item of E2E_TY_CANT_EAT) {
+      if (tyRules.some((rule) => rule.target === item.target && rule.severity === "block")) {
+        continue;
+      }
+      await people.createRule({
+        personId: ty.id,
+        kind: item.kind,
+        target: item.target,
+        severity: "block",
+        includeMayContain: false,
+        includeCrossContact: false,
+        sharedFacility: "ignore",
+        includeUnmappedIngredients: false,
+        includeDescendants: true,
+        treatCoconutAsTreeNut: true,
+        label: item.target,
+        note: null,
+        setBy: user.id,
+        createdBy: user.id,
+      });
+    }
+    for (const target of E2E_TY_DOESNT_LIKE) {
+      if (tyRules.some((rule) => rule.target === target && rule.severity === "prefer_avoid")) {
+        continue;
+      }
       await people.createRule({
         personId: ty.id,
         kind: "ingredient",
-        target: "cilantro",
+        target,
         severity: "prefer_avoid",
         includeMayContain: false,
         includeCrossContact: false,
@@ -351,23 +404,22 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
         includeUnmappedIngredients: false,
         includeDescendants: true,
         treatCoconutAsTreeNut: true,
-        label: "Cilantro",
+        label: target,
         note: null,
         setBy: user.id,
         createdBy: user.id,
       });
     }
     const tyLoves = await people.getPreferencesForPerson(ty.id, "love");
-    for (const value of ["salmon", "mexican", "spicy"] as const) {
-      if (!tyLoves.some((item) => item.value === value)) {
-        await people.createPreference({
-          personId: ty.id,
-          type: "love",
-          value,
-          weight: 1,
-          createdBy: user.id,
-        });
-      }
+    for (const value of E2E_TY_LOVES) {
+      if (tyLoves.some((item) => item.value === value)) continue;
+      await people.createPreference({
+        personId: ty.id,
+        type: "love",
+        value,
+        weight: 1,
+        createdBy: user.id,
+      });
     }
   }
 

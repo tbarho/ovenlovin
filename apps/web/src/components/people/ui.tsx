@@ -65,49 +65,58 @@ export function Chip({
   bucket,
   onClick,
   onRemove,
+  animated = true,
 }: {
   label: string;
   target?: string;
   bucket: ChipBucket;
   onClick?: () => void;
   onRemove?: () => void;
+  animated?: boolean;
 }) {
   const reduce = useReducedMotion();
+  const body = (
+    <div className="olp-chip-drag">
+      {onClick ? (
+        <button type="button" className="olp-chip-main" onClick={onClick}>
+          {target ? <FoodIcon id={iconIdForTarget(target)} size={16} /> : null}
+          {label}
+        </button>
+      ) : (
+        <span className="olp-chip-main">
+          {target ? <FoodIcon id={iconIdForTarget(target)} size={16} /> : null}
+          {label}
+        </span>
+      )}
+      {onRemove ? (
+        <button
+          type="button"
+          className="olp-chip-x"
+          aria-label={`Remove ${label}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+        >
+          ×
+        </button>
+      ) : null}
+    </div>
+  );
+
+  if (!animated) {
+    return <div className={`olp-chip olp-chip-${bucket}`}>{body}</div>;
+  }
+
   return (
     <motion.div
-      layout
       className={`olp-chip olp-chip-${bucket}`}
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={presenceTransition(reduce, "chip")}
     >
-      <div className="olp-chip-drag">
-        {onClick ? (
-          <button type="button" className="olp-chip-main" onClick={onClick}>
-            {target ? <FoodIcon id={iconIdForTarget(target)} size={16} /> : null}
-            {label}
-          </button>
-        ) : (
-          <span className="olp-chip-main">
-            {target ? <FoodIcon id={iconIdForTarget(target)} size={16} /> : null}
-            {label}
-          </span>
-        )}
-        {onRemove ? (
-          <button
-            type="button"
-            className="olp-chip-x"
-            aria-label={`Remove ${label}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onRemove();
-            }}
-          >
-            ×
-          </button>
-        ) : null}
-      </div>
+      {body}
     </motion.div>
   );
 }

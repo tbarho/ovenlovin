@@ -35,6 +35,7 @@ describe("PeopleHome", () => {
     expect(screen.getByRole("heading", { name: "Household 1" })).toBeInTheDocument();
     expect(screen.getByText("Child B")).toBeInTheDocument();
     expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent(/tree nut/i);
+    expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent("1");
     expect(screen.getByTestId(`person-card-doesnt_like-${person.id}`)).toHaveTextContent(
       /cilantro/i
     );
@@ -48,6 +49,83 @@ describe("PeopleHome", () => {
     expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent("None");
     expect(screen.getByTestId(`person-card-doesnt_like-${person.id}`)).toHaveTextContent("None");
     expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent("None");
+    expect(screen.getByTestId(`person-card-cant_eat-${person.id}`)).toHaveTextContent("0");
+  });
+
+  it("clamps dense lanes to a two-line budget and leads Can't eat with allergens", () => {
+    const person = testPerson({ displayName: "Parent A" });
+    const cantEat = [
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000021",
+        target: "eggplant",
+        kind: "ingredient",
+      }),
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000022",
+        target: "sesame",
+        kind: "allergen",
+      }),
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000023",
+        target: "mustard",
+        kind: "allergen",
+      }),
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000024",
+        target: "celery",
+        kind: "allergen",
+      }),
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000025",
+        target: "lupin",
+        kind: "allergen",
+      }),
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000026",
+        target: "raisins",
+        kind: "ingredient",
+      }),
+    ];
+    const doesntLike = ["cilantro", "olives", "mushrooms", "onions", "garlic", "spicy"].map(
+      (target, index) =>
+        testPersonRule({
+          id: `00000000-0000-4000-8000-00000000003${index}`,
+          target,
+          kind: "ingredient",
+          severity: "prefer_avoid",
+        })
+    );
+    const loves = ["pasta", "chicken", "italian", "spicy", "mexican", "salmon"].map(
+      (value, index) =>
+        testPreference({
+          id: `00000000-0000-4000-8000-00000000004${index}`,
+          value,
+        })
+    );
+    render(
+      <PeopleHome
+        householdName="Household 1"
+        people={[person]}
+        rules={[...cantEat, ...doesntLike]}
+        loves={loves}
+      />
+    );
+
+    const cant = screen.getByTestId(`person-card-cant_eat-${person.id}`);
+    expect(cant).toHaveTextContent("6");
+    expect(cant).toHaveTextContent(/mustard/i);
+    expect(cant).toHaveTextContent(/celery/i);
+    expect(cant).not.toHaveTextContent(/sesame/i);
+    expect(cant).not.toHaveTextContent(/eggplant/i);
+    expect(screen.getByTestId(`person-card-more-cant_eat-${person.id}`)).toHaveTextContent(
+      "+3 more"
+    );
+    expect(screen.getByTestId(`person-card-more-doesnt_like-${person.id}`)).toHaveTextContent(
+      "+3 more"
+    );
+    expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent(/salmon/i);
+    expect(screen.getByTestId(`person-card-more-loves-${person.id}`)).toHaveTextContent("+3 more");
+    expect(cant).not.toHaveTextContent(/raisins/i);
   });
 
   it("exposes only an in-card drag handle for reorder", () => {

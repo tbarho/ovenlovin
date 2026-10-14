@@ -18,6 +18,41 @@ const parent = testPerson({
   displayName: "Parent A",
   notes: writePersonNotes({ emoji: "🧑‍🍳", color: "#e07a3d" }),
 });
+const parentC = testPerson({
+  id: "00000000-0000-4000-8000-000000000017",
+  displayName: "Parent C",
+  sortOrder: 2,
+  notes: writePersonNotes({ emoji: "👩", color: "#db5a9a" }),
+});
+const childD = testPerson({
+  id: "00000000-0000-4000-8000-000000000018",
+  displayName: "Child D",
+  sortOrder: 3,
+  notes: writePersonNotes({ emoji: "🌻", color: "#c46a1b" }),
+});
+
+const denseCantEat = ["sesame", "mustard", "celery", "lupin", "eggplant", "raisins"].map(
+  (target, index) =>
+    testPersonRule({
+      id: `00000000-0000-4000-8000-00000000005${index}`,
+      personId: parent.id,
+      target,
+      kind: "ingredient",
+      sharedFacility: "ignore",
+      includeMayContain: false,
+      includeCrossContact: false,
+    })
+);
+const denseDoesntLike = ["cilantro", "olives", "mushrooms", "onions", "garlic", "spicy"].map(
+  (target, index) =>
+    testPersonRule({
+      id: `00000000-0000-4000-8000-00000000006${index}`,
+      personId: parent.id,
+      target,
+      kind: "ingredient",
+      severity: "prefer_avoid",
+    })
+);
 
 const rules = [
   testPersonRule({
@@ -46,6 +81,8 @@ const rules = [
     includeMayContain: false,
     includeCrossContact: false,
   }),
+  ...denseCantEat,
+  ...denseDoesntLike,
 ];
 
 const loves = [
@@ -53,6 +90,13 @@ const loves = [
     personId: child.id,
     value: "salmon",
   }),
+  ...["mexican", "spicy", "italian", "chicken", "pasta", "chocolate"].map((value, index) =>
+    testPreference({
+      id: `00000000-0000-4000-8000-00000000007${index}`,
+      personId: parent.id,
+      value,
+    })
+  ),
 ];
 
 export default async function PeoplePreviewPage({
@@ -90,7 +134,7 @@ export default async function PeoplePreviewPage({
         <div data-testid="preview-list">
           <PeopleHome
             householdName="Household 1"
-            people={[parent, child]}
+            people={[parent, child, parentC, childD]}
             rules={rules}
             loves={loves}
           />
