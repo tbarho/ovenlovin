@@ -188,7 +188,7 @@ export function PeopleReorder({
   const [order, setOrder] = useState(people.map((person) => person.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overlaySize, setOverlaySize] = useState<{ width?: number; height?: number }>({});
-  const dragHeightRef = useRef<number>(undefined);
+  const dragHeightRef = useRef<number | undefined>(undefined);
   const [liveMessage, setLiveMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
