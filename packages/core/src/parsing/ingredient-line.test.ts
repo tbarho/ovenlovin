@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseIngredientLine } from "./ingredient-line";
+import {
+  backfillParsedIngredient,
+  normalizeIngredientName,
+  parseIngredientLine,
+} from "./ingredient-line";
 
 describe("parseIngredientLine", () => {
   it("parses mixed fractions and cups", () => {
@@ -24,17 +28,67 @@ describe("parseIngredientLine", () => {
     expect(parsed.unit).toBe("tbsp");
   });
 
-  it("leaves unquantified lines alone", () => {
+  it("strips to-taste from an unquantified pantry staple", () => {
     const parsed = parseIngredientLine("salt to taste");
     expect(parsed.quantityMin).toBeNull();
     expect(parsed.unit).toBeNull();
-    expect(parsed.name).toBe("salt to taste");
+    expect(parsed.name).toBe("salt");
   });
 
-  it("parses count units", () => {
+  it("parses the item name separately from quantity, unit, and prep", () => {
     const parsed = parseIngredientLine("3 cloves garlic, minced");
     expect(parsed.quantityMin).toBe(3);
     expect(parsed.unit).toBe("clove");
-    expect(parsed.name).toBe("garlic, minced");
+    expect(parsed.name).toBe("garlic");
+  });
+
+  it("parses an onion line into the grocery item name", () => {
+    const parsed = parseIngredientLine("1 yellow onion");
+    expect(parsed.quantityMin).toBe(1);
+    expect(parsed.unit).toBeNull();
+    expect(parsed.name).toBe("yellow onion");
+  });
+
+  it("drops trailing parentheticals from the item name", () => {
+    const parsed = parseIngredientLine("1 cup flour (sifted)");
+    expect(parsed.name).toBe("flour");
+  });
+});
+
+describe("normalizeIngredientName", () => {
+  it("collapses case and punctuation for merge keys", () => {
+    expect(normalizeIngredientName("Olive Oil")).toBe("olive oil");
+    expect(normalizeIngredientName("all-purpose flour")).toBe("all purpose flour");
+  });
+});
+
+describe("backfillParsedIngredient", () => {
+  it("fills name on existing rows that only stored rawText, quantity, and unit", () => {
+    const backfilled = backfillParsedIngredient({
+      rawText: "2 tbsp olive oil",
+      quantityMin: 2,
+      unit: "tbsp",
+    });
+    expect(backfilled.name).toBe("olive oil");
+    expect(backfilled.quantityMin).toBe(2);
+    expect(backfilled.unit).toBe("tbsp");
+  });
+
+  it("parses quantity and unit when the stored row has only rawText", () => {
+    const backfilled = backfillParsedIngredient({ rawText: "1 yellow onion" });
+    expect(backfilled).toEqual({
+      name: "yellow onion",
+      quantityMin: 1,
+      quantityMax: null,
+      unit: null,
+    });
+  });
+
+  it("keeps an already-stored item name", () => {
+    const backfilled = backfillParsedIngredient({
+      rawText: "2 tbsp olive oil",
+      name: "extra-virgin olive oil",
+    });
+    expect(backfilled.name).toBe("extra-virgin olive oil");
   });
 });

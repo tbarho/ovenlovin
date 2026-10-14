@@ -8,7 +8,7 @@ import type {
   RecipeMethodTag,
 } from "../schemas/recipes";
 import { recipeMethodTagSchema, slugifyTitle } from "../schemas/recipes";
-import { parseIngredientLine } from "../parsing/ingredient-line";
+import { backfillParsedIngredient, parseIngredientLine } from "../parsing/ingredient-line";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
 import { CookbookService } from "./cookbooks";
@@ -283,9 +283,12 @@ export class RecipeService extends BaseService {
         groupId: row.groupId ?? null,
         order: row.order,
         rawText: row.rawText,
-        quantityMin: row.quantityMin ? Number(row.quantityMin) : null,
-        quantityMax: row.quantityMax ? Number(row.quantityMax) : null,
-        unit: row.unit ?? null,
+        ...backfillParsedIngredient({
+          rawText: row.rawText,
+          quantityMin: row.quantityMin ? Number(row.quantityMin) : null,
+          quantityMax: row.quantityMax ? Number(row.quantityMax) : null,
+          unit: row.unit ?? null,
+        }),
         originalUnit: row.originalUnit ?? null,
         ingredientId: row.ingredientId ?? null,
         preparation: row.preparation ?? null,
