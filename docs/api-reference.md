@@ -376,6 +376,70 @@ POST /api/v1/recipes/import
 }
 ```
 
+#### Import Recipe from Photo
+
+```
+POST /api/v1/recipes/import/photo
+```
+
+Extract a recipe from a recipe card, cookbook page, screenshot, or several pages of one recipe. Default is **preview only** so a human can review fields before save. The first photo is stored in Vercel Blob and becomes the recipe's single main image.
+
+Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC on Vercel). Vision model: `RK_MODEL_VISION` or `spacexai/grok-4.7`.
+
+**JSON** (Blob URL or base64):
+
+```json
+{
+  "imageUrl": "https://blob.vercel-storage.com/recipe-card.jpg",
+  "isHandwritten": false,
+  "save": false
+}
+```
+
+```json
+{
+  "imageBase64": "<base64>",
+  "mimeType": "image/jpeg",
+  "save": true,
+  "cookbookId": "11111111-1111-4111-8111-111111111111"
+}
+```
+
+**Multipart** (file upload):
+
+```bash
+curl -X POST https://your-app.vercel.app/api/v1/recipes/import/photo \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "image=@recipe-card.jpg" \
+  -F "image=@page-2.jpg"
+```
+
+**Response** (`200` preview, `201` when `save=true`):
+
+```json
+{
+  "title": "Weeknight Tomato Pasta",
+  "servings": 4,
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 20,
+  "notes": "Salt the pasta water well.",
+  "images": ["https://blob.vercel-storage.com/main.jpg"],
+  "overallConfidence": 0.88,
+  "needsReview": true,
+  "uncertainFields": [],
+  "allergenClassifications": [
+    {
+      "ingredientText": "parmesan",
+      "allergenCode": "milk",
+      "allergenName": "parmesan",
+      "relation": "contains"
+    }
+  ]
+}
+```
+
+Low-confidence or blurry photos return `uncertainFields` naming the values to check (`title`, `servings`, `times`, `ingredient: …`, `step N`). After preview, save the edited draft with `POST /api/v1/recipes` or call this endpoint with `save=true`.
+
 #### Check Recipe
 
 ```

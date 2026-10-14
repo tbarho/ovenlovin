@@ -41,6 +41,15 @@ describe("decideDemoWrite", () => {
     expect(nextCountersAfterSuccessfulImport(counters).importCount).toBe(1);
   });
 
+  it("counts photo import against the demo import cap", () => {
+    const decision = decideDemoWrite({
+      pathname: "/api/v1/recipes/import/photo",
+      method: "POST",
+      counters: { ...counters, importCount: 5 },
+    });
+    expect(decision).toMatchObject({ ok: false, code: "import_cap" });
+  });
+
   it("caps imports at five", () => {
     const decision = decideDemoWrite({
       pathname: "/api/v1/recipes/import",
