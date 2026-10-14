@@ -25,7 +25,7 @@ export async function getRequestContext(request: NextRequest): Promise<RequestCo
 }
 
 async function parseClerkAuth(): Promise<RequestContext> {
-  return getSessionContext();
+  return getSessionContext({ allowRedirect: false });
 }
 
 async function parseApiKey(apiKey: string): Promise<RequestContext> {
