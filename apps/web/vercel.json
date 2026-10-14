@@ -5,6 +5,14 @@
   "functions": {
     "src/app/api/demo/enter/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/v1/recipes/import/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
+    },
+    "src/app/mcp/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
     }
   },
   "crons": [

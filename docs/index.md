@@ -52,6 +52,9 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 - **OVENLOVIN_VERCEL_TEAM_SLUG** - optional Vercel team/account slug for dashboard links (not the GitHub owner)
 - **OVENLOVIN_VERCEL_PROJECT_SLUG** - optional Vercel project slug if it differs from the git repo name
 - **VERCEL_TOKEN** / **OVENLOVIN_VERCEL_TOKEN** - optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset. Otherwise links fall back to https://vercel.com/dashboard
+- **RECIPE_IMPORT_HEADLESS** - optional; set to `0` to skip headless Chromium on URL import (default: on). Used after Cloudflare-style blocks.
+- **RECIPE_IMPORT_CACHE_FALLBACK** - optional; set to `0` to skip public copies (Wayback Machine, then Jina Reader HTML). Default: on. No API key.
+- **RECIPE_IMPORT_CHROME_PATH** / **CHROME_PATH** - optional local Chrome/Chromium binary for non-Vercel hosts. On Vercel, `@sparticuz/chromium` is used.
 
 ### Local Development
 

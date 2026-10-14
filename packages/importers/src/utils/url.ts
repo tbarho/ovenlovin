@@ -1,76 +1,43 @@
 /* eslint-disable no-undef */
 import * as cheerio from "cheerio";
 
-export interface FetchResult {
-  html: string;
-  url: string;
-  finalUrl: string;
+export {
+  CHROME_USER_AGENT,
+  FULL_BROWSER_HEADERS,
+  RecipeImportFetchError,
+  fetchHtml,
+  getRecipePageRenderer,
+  importBlockedMessage,
+  installRecipePageRenderer,
+  isUsableRecipeHtml,
+  looksLikeBotChallenge,
+  shouldRetryFetchWithBrowserHeaders,
+  waybackMachineUrl,
+  jinaReaderUrl,
+  publicCopyRequests,
+  type FetchHtmlOptions,
+  type FetchResult,
+  type RecipePageRenderer,
+} from "./fetch-html";
+
+function isRecipeType(value: unknown): boolean {
+  if (value === "Recipe") return true;
+  return Array.isArray(value) && value.includes("Recipe");
 }
 
-const IMPORTER_HEADERS: Record<string, string> = {
-  "User-Agent": "OvenLovin Recipe Importer/0.1 (https://github.com/tbarho/ovenlovin)",
-  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-};
-
-/** Sites such as Natasha's Kitchen 403 the importer UA. Retry as a browser. */
-const BROWSER_HEADERS: Record<string, string> = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-  "Accept-Language": "en-US,en;q=0.9",
-  "Cache-Control": "no-cache",
-  "Upgrade-Insecure-Requests": "1",
-};
-
-const BLOCKED_STATUSES = new Set([401, 403, 406, 429]);
-
-export class RecipeImportFetchError extends Error {
-  readonly status: number;
-
-  constructor(url: string, status: number, statusText: string) {
-    super(importBlockedMessage(status, statusText || "Forbidden"));
-    this.name = "RecipeImportFetchError";
-    this.status = status;
+function findRecipeNode(data: unknown): Record<string, unknown> | null {
+  if (!data || typeof data !== "object") return null;
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const found = findRecipeNode(item);
+      if (found) return found;
+    }
+    return null;
   }
-}
-
-export function shouldRetryFetchWithBrowserHeaders(status: number): boolean {
-  return BLOCKED_STATUSES.has(status);
-}
-
-export function importBlockedMessage(status: number, statusText = "Forbidden"): string {
-  return `This site blocked the importer (${status} ${statusText}). Try importing by pasting the recipe text instead.`;
-}
-
-/**
- * Fetch HTML from a URL. On 403/401/406/429, retry once with browser-like
- * headers. If the site still blocks, throw a message that suggests paste import.
- */
-export async function fetchHtml(url: string): Promise<FetchResult> {
-  let response = await fetch(url, {
-    headers: IMPORTER_HEADERS,
-    redirect: "follow",
-  });
-
-  if (!response.ok && shouldRetryFetchWithBrowserHeaders(response.status)) {
-    response = await fetch(url, {
-      headers: BROWSER_HEADERS,
-      redirect: "follow",
-    });
-  }
-
-  if (!response.ok) {
-    throw new RecipeImportFetchError(url, response.status, response.statusText);
-  }
-
-  const html = await response.text();
-
-  return {
-    html,
-    url,
-    finalUrl: response.url,
-  };
+  const obj = data as Record<string, unknown>;
+  if (isRecipeType(obj["@type"])) return obj;
+  if (obj["@graph"]) return findRecipeNode(obj["@graph"]);
+  return null;
 }
 
 /**
@@ -89,17 +56,8 @@ export function extractJsonLd(html: string): Record<string, unknown> | null {
     try {
       const data = JSON.parse(content);
 
-      if (Array.isArray(data)) {
-        const recipe = data.find((item) => item["@type"] === "Recipe");
-        if (recipe) return recipe;
-      } else if (data["@type"] === "Recipe") {
-        return data;
-      } else if (data["@graph"]) {
-        const recipe = data["@graph"].find(
-          (item: { "@type"?: string }) => item["@type"] === "Recipe"
-        );
-        if (recipe) return recipe;
-      }
+      const recipe = findRecipeNode(data);
+      if (recipe) return recipe;
     } catch {
       continue;
     }

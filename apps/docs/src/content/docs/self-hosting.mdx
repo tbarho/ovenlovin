@@ -22,6 +22,9 @@ OvenLovin requires the following environment variables to function. Set these in
 | `RK_MODEL_DEFAULT` | No | Default LLM model (default: `spacexai/grok-4.7`) | N/A - set custom model |
 | `RK_MODEL_VISION` | No | Vision model for OCR (default: `spacexai/grok-4.7`) | N/A - set custom model |
 | `RK_MODEL_STT` | No | Speech-to-text model (default: `openai/whisper-1`) | N/A - set custom model |
+| `RECIPE_IMPORT_HEADLESS` | No | Set `0` to skip headless Chromium after a bot block (default on). Uses `@sparticuz/chromium` on Vercel | N/A |
+| `RECIPE_IMPORT_CACHE_FALLBACK` | No | Set `0` to skip the public Wayback Machine copy (default on) | [Wayback Machine](https://web.archive.org) |
+| `RECIPE_IMPORT_CHROME_PATH` | No | Local Chrome/Chromium path off Vercel | `/usr/bin/google-chrome` |
 
 ### Getting API Keys
 

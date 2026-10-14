@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
     "@ovenlovin/brand",
     "@ovenlovin/importers",
   ],
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  outputFileTracingIncludes: {
+    "/api/v1/recipes/import": ["./node_modules/@sparticuz/chromium/bin/**"],
+    "/mcp": ["./node_modules/@sparticuz/chromium/bin/**"],
+  },
 };
 
 export default nextConfig;
