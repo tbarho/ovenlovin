@@ -81,13 +81,12 @@ function PersonCardShell({
   handle,
 }: {
   person: Person;
-  renderPerson: (person: Person) => ReactNode;
+  renderPerson: (person: Person, handle: ReactNode) => ReactNode;
   handle: ReactNode;
 }) {
   return (
     <article className="olp-person-card" data-testid={`person-card-shell-${person.id}`}>
-      {handle}
-      {renderPerson(person)}
+      {renderPerson(person, handle)}
     </article>
   );
 }
@@ -99,7 +98,7 @@ function SortablePerson({
 }: {
   person: Person;
   disabled?: boolean;
-  renderPerson: (person: Person) => ReactNode;
+  renderPerson: (person: Person, handle: ReactNode) => ReactNode;
 }) {
   const reduce = useReducedMotion();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -145,13 +144,13 @@ export function PeopleReorder({
 }: {
   people: Person[];
   disabled?: boolean;
-  renderPerson: (person: Person) => ReactNode;
+  renderPerson: (person: Person, handle: ReactNode) => ReactNode;
   onReorder: (personIds: string[]) => Promise<void>;
 }) {
   const reduce = useReducedMotion();
   const [order, setOrder] = useState(people.map((person) => person.id));
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [overlayWidth, setOverlayWidth] = useState<number | undefined>();
+  const [overlaySize, setOverlaySize] = useState<{ width?: number; height?: number }>({});
   const [liveMessage, setLiveMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -190,8 +189,8 @@ export function PeopleReorder({
   function onDragStart(event: DragStartEvent) {
     const id = String(event.active.id);
     setActiveId(id);
-    const width = event.active.rect.current.initial?.width;
-    setOverlayWidth(width);
+    const rect = event.active.rect.current.initial;
+    setOverlaySize({ width: rect?.width, height: rect?.height });
     setLiveMessage(`Picked up ${nameOf(id)}.`);
   }
 
@@ -246,7 +245,7 @@ export function PeopleReorder({
           <div
             className="olp-person-ghost"
             data-testid="people-drag-overlay"
-            style={{ width: overlayWidth }}
+            style={{ width: overlaySize.width, height: overlaySize.height }}
           >
             <PersonCardShell
               person={activePerson}

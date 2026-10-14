@@ -22,7 +22,8 @@
   background: transparent;
 }
 
-.kitchen-people .olp-person-chip {
+.kitchen-people .olp-person-identity,
+.kitchen-people .olp-person-card-body {
   text-decoration: none;
   color: inherit;
 }
@@ -65,27 +66,53 @@
 }
 
 .olp-person-card,
-.kitchen-people .olp-person-card {
+.kitchen-people .olp-person-card,
+.olp-person-ghost .olp-person-card {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
   min-width: 0;
   width: 100%;
   height: 100%;
-  padding: 8px 12px 12px 4px;
-  border-radius: 12px;
+  padding: 8px 12px 12px;
+  overflow: hidden;
+  border: 1px solid #ece7e0;
+  border-radius: 16px;
   background: #ffffff;
+  box-shadow: 0 1px 2px rgba(22, 19, 16, 0.04);
 }
 
-.kitchen-people .olp-person-slot .olp-person-chip {
-  flex: 1;
+.olp-person-card-head,
+.olp-person-ghost .olp-person-card-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   min-width: 0;
-  background: transparent;
+}
+
+.olp-person-identity,
+.olp-person-ghost .olp-person-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.olp-person-identity b,
+.olp-person-ghost .olp-person-identity b {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .kitchen-people .olp-person-slot.is-dragging .olp-person-card {
-  background: #fffaf4;
-  box-shadow: inset 0 0 0 2px #d7c4b2;
-  border-radius: 12px;
+  background: transparent;
+  border: 1.5px dashed #d2c4b4;
+  box-shadow: none;
 }
 
 .kitchen-people .olp-person-slot.is-dragging .olp-person-card > * {
@@ -102,7 +129,7 @@
   width: 44px;
   min-width: 44px;
   min-height: 44px;
-  margin-top: 4px;
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 10px;
@@ -137,26 +164,12 @@
 
 .olp-person-ghost {
   cursor: grabbing;
-  border-radius: 12px;
-  box-shadow: 0 16px 40px rgba(22, 19, 16, 0.16);
   pointer-events: none;
 }
 
 .olp-person-ghost .olp-person-card {
-  background: #ffffff;
-}
-
-.olp-person-ghost .olp-person-chip {
-  background: transparent;
-}
-
-.kitchen-people .olp-person-chip {
-  display: flex;
-  align-items: flex-start;
-  min-height: 0;
-  padding: 8px 4px 4px;
-  border-radius: 12px;
-  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(22, 19, 16, 0.18);
+  transform: translateY(-4px);
 }
 
 .kitchen-people .olp-person-card-body,
@@ -165,13 +178,8 @@
   gap: 8px;
   min-width: 0;
   flex: 1;
-}
-
-.kitchen-people .olp-person-card-body > b,
-.olp-person-ghost .olp-person-card-body > b {
-  font-size: 16px;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  color: inherit;
+  text-decoration: none;
 }
 
 .kitchen-people .olp-person-card-lanes,
@@ -191,9 +199,9 @@
 
 .kitchen-people .olp-person-card-lane-cant_eat,
 .olp-person-ghost .olp-person-card-lane-cant_eat {
-  padding: 4px 6px 4px 4px;
-  margin: 0 -6px 0 -4px;
-  border-radius: 8px;
+  padding: 6px 8px;
+  margin: 0;
+  border-radius: 10px;
   background: #fff6f3;
 }
 
@@ -247,14 +255,14 @@
   color: #9a9a9a;
 }
 
-.kitchen-people .olp-person-chip .olp-chip-drag,
-.olp-person-ghost .olp-person-chip .olp-chip-drag {
+.kitchen-people .olp-person-card .olp-chip-drag,
+.olp-person-ghost .olp-person-card .olp-chip-drag {
   min-height: 0;
   height: var(--chip-row);
 }
 
-.kitchen-people .olp-person-chip .olp-chip-main,
-.olp-person-ghost .olp-person-chip .olp-chip-main {
+.kitchen-people .olp-person-card .olp-chip-main,
+.olp-person-ghost .olp-person-card .olp-chip-main {
   min-height: 0;
   height: var(--chip-row);
   padding: 0 7px;
@@ -263,8 +271,8 @@
   gap: 4px;
 }
 
-.kitchen-people .olp-person-chip .olp-food-icon,
-.olp-person-ghost .olp-person-chip .olp-food-icon {
+.kitchen-people .olp-person-card .olp-food-icon,
+.olp-person-ghost .olp-person-card .olp-food-icon {
   width: 12px;
   height: 12px;
 }
