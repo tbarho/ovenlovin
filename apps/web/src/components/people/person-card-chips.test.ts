@@ -19,7 +19,7 @@ describe("person card chips", () => {
 
   it("shows +N more after the two-line budget", () => {
     const items = ["a", "b", "c", "d", "e", "f"];
-    expect(budgetChips(items)).toEqual({ shown: ["a", "b", "c", "d"], more: 2 });
+    expect(budgetChips(items)).toEqual({ shown: ["a", "b", "c"], more: 3 });
     expect(budgetChips(["a", "b"])).toEqual({ shown: ["a", "b"], more: 0 });
   });
 });

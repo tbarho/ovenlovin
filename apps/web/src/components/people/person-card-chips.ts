@@ -22,5 +22,6 @@ export function sortCantEatChips(items: PersonCardChip[]): PersonCardChip[] {
 
 export function budgetChips<T>(items: T[], budget = PERSON_CARD_CHIP_BUDGET) {
   if (items.length <= budget) return { shown: items, more: 0 };
-  return { shown: items.slice(0, budget), more: items.length - budget };
+  const shownCount = Math.max(1, budget - 1);
+  return { shown: items.slice(0, shownCount), more: items.length - shownCount };
 }

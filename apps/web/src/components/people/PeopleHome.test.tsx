@@ -114,15 +114,16 @@ describe("PeopleHome", () => {
     const cant = screen.getByTestId(`person-card-cant_eat-${person.id}`);
     expect(cant).toHaveTextContent("6");
     expect(cant).toHaveTextContent(/mustard/i);
-    expect(cant).toHaveTextContent(/sesame/i);
+    expect(cant).toHaveTextContent(/celery/i);
+    expect(cant).not.toHaveTextContent(/sesame/i);
     expect(cant).not.toHaveTextContent(/eggplant/i);
     expect(screen.getByTestId(`person-card-more-cant_eat-${person.id}`)).toHaveTextContent(
-      "+2 more"
+      "+3 more"
     );
     expect(screen.getByTestId(`person-card-more-doesnt_like-${person.id}`)).toHaveTextContent(
-      "+2 more"
+      "+3 more"
     );
-    expect(screen.getByTestId(`person-card-more-loves-${person.id}`)).toHaveTextContent("+2 more");
+    expect(screen.getByTestId(`person-card-more-loves-${person.id}`)).toHaveTextContent("+3 more");
     expect(cant).not.toHaveTextContent(/raisins/i);
   });
 

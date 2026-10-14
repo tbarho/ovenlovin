@@ -182,11 +182,12 @@
 
 .kitchen-people .olp-person-card-lane,
 .olp-person-ghost .olp-person-card-lane {
+  --chip-row: 26px;
   display: grid;
   grid-template-columns: 5.5rem minmax(0, 1fr);
   gap: 8px;
   align-items: start;
-  min-height: calc(2 * 24px + 4px);
+  min-height: calc(2 * var(--chip-row) + 4px);
 }
 
 .kitchen-people .olp-person-card-lane-cant_eat,
@@ -235,8 +236,8 @@
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 4px;
-  min-height: calc(2 * 24px + 4px);
-  max-height: calc(2 * 24px + 4px);
+  min-height: calc(2 * var(--chip-row) + 4px);
+  max-height: calc(2 * var(--chip-row) + 4px);
   overflow: hidden;
 }
 
@@ -244,15 +245,23 @@
 .olp-person-ghost .olp-person-card-lane small {
   display: flex;
   align-items: center;
-  min-height: calc(2 * 24px + 4px);
+  min-height: calc(2 * var(--chip-row) + 4px);
   color: #9a9a9a;
+}
+
+.kitchen-people .olp-person-chip .olp-chip-drag,
+.olp-person-ghost .olp-person-chip .olp-chip-drag {
+  min-height: 0;
+  height: var(--chip-row);
 }
 
 .kitchen-people .olp-person-chip .olp-chip-main,
 .olp-person-ghost .olp-person-chip .olp-chip-main {
   min-height: 0;
-  padding: 3px 7px;
+  height: var(--chip-row);
+  padding: 0 7px;
   font-size: 11px;
+  line-height: var(--chip-row);
   gap: 4px;
 }
 
@@ -266,7 +275,8 @@
 .olp-person-ghost .olp-person-card-more {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  height: var(--chip-row);
+  min-height: var(--chip-row);
   padding: 0 7px;
   border-radius: 999px;
   background: #f4efe8;
