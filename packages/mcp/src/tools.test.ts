@@ -287,6 +287,7 @@ describe("MCP Tool Schemas", () => {
       expect(
         createRecipeTool.inputSchema.safeParse({
           title: "Toast",
+          notes: "Use leftover bread.",
           ingredients: [{ rawText: "1 slice bread" }],
           steps: [{ text: "Toast it." }],
         }).success

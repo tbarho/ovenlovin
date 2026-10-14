@@ -12,7 +12,7 @@ import {
   keepMainRecipeImages,
   RecipeService,
 } from "@ovenlovin/core";
-import { isAiGatewayConfigured, isDemoModeEnv } from "@ovenlovin/core/onboarding";
+import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
 import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
@@ -29,6 +29,7 @@ export interface ImportRecipeOutput {
   recipeId: string;
   status: "draft" | "needs_review" | "published";
   title: string;
+  notes?: string;
   servings?: number;
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
@@ -83,9 +84,7 @@ async function handler(
     draft.needsReview = false;
   }
 
-  draft.images = isDemoModeEnv(process.env)
-    ? keepMainRecipeImages(draft.images)
-    : await persistImages(keepMainRecipeImages(draft.images), context.householdId);
+  draft.images = await persistImages(keepMainRecipeImages(draft.images), context.householdId);
 
   const recipe = await recipeService.createRecipeFromDraft(draft, {
     householdId: context.householdId,
@@ -111,6 +110,7 @@ async function handler(
     recipeId: recipe.id,
     status: recipe.status,
     title: recipe.title,
+    notes: recipe.notes ?? undefined,
     servings: recipe.servings ?? undefined,
     prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,

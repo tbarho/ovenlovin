@@ -79,6 +79,17 @@ export interface RecipeDraft {
   difficulty?: string;
   equipment?: string[];
   images?: string[];
+  notes?: string;
+  nutrition?: {
+    perServing: boolean;
+    calories?: number;
+    protein?: number;
+    carbohydrates?: number;
+    fat?: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+  };
 
   ingredients: ParsedIngredient[];
   steps: ParsedStep[];
