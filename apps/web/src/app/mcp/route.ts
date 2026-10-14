@@ -27,6 +27,15 @@ function collectHeaders(request: NextRequest): Record<string, string> {
   return headers;
 }
 
+function authErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
+}
+
 function jsonRpcError(id: unknown, status: number, code: number, message: string) {
   return NextResponse.json(
     {
@@ -81,7 +90,7 @@ export async function POST(request: NextRequest) {
       headers: result.headers,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unauthorized";
+    const message = authErrorMessage(error, "Unauthorized");
     if (error instanceof ForbiddenError) {
       return jsonRpcError(id, 403, -32003, error.detail ?? message);
     }
@@ -94,7 +103,7 @@ export async function POST(request: NextRequest) {
       return jsonRpcError(id, 401, -32001, message);
     }
     console.error("MCP request error:", error);
-    return jsonRpcError(id, 500, -32603, error instanceof Error ? error.message : "Internal error");
+    return jsonRpcError(id, 500, -32603, authErrorMessage(error, "Internal error"));
   }
 }
 

@@ -80,12 +80,19 @@ async function loadSandbox(db: DbClient, id: string): Promise<DemoSandboxRecord 
   };
 }
 
+export async function findDemoSandboxById(
+  id: string,
+  db: DbClient = getDatabase()
+): Promise<DemoSandboxRecord | null> {
+  return loadSandbox(db, id);
+}
+
 export async function getOrCreateDemoSandbox(
   cookieId: string | undefined,
   db: DbClient = getDatabase()
 ): Promise<DemoSandboxRecord> {
   if (cookieId) {
-    const existing = await loadSandbox(db, cookieId);
+    const existing = await findDemoSandboxById(cookieId, db);
     if (existing) return existing;
   }
 

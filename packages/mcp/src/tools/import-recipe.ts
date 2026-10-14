@@ -6,8 +6,13 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { copyRemoteImages, keepMainRecipeImages, RecipeService } from "@ovenlovin/core";
-import { isDemoModeEnv } from "@ovenlovin/core/onboarding";
+import {
+  copyRemoteImages,
+  draftFromPlainText,
+  keepMainRecipeImages,
+  RecipeService,
+} from "@ovenlovin/core";
+import { isAiGatewayConfigured, isDemoModeEnv } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
 import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
@@ -61,21 +66,17 @@ async function handler(
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
 
-  if (isDemoModeEnv(process.env) && input.source === "paste") {
-    throw new Error(
-      "AI paste import is turned off in the public demo. Import from a public URL, or use the kitchen paste field."
-    );
-  }
-
   let draft;
   if (input.source === "url") {
     const importer = createUrlImporter();
     const raw = await importer.extract({ url: input.content });
     draft = await importer.toDraft(raw);
-  } else {
+  } else if (isAiGatewayConfigured(process.env)) {
     const importer = createPasteImporter();
     const raw = await importer.extract({ text: input.content });
     draft = await importer.toDraft(raw);
+  } else {
+    draft = draftFromPlainText(input.content);
   }
 
   if (input.skipReview) {
@@ -100,6 +101,12 @@ async function handler(
     }
   }
 
+  const scored = draft as {
+    overallConfidence?: number;
+    reviewReasons?: string[];
+  };
+  const confidence = typeof scored.overallConfidence === "number" ? scored.overallConfidence : 0.5;
+
   return {
     recipeId: recipe.id,
     status: recipe.status,
@@ -108,10 +115,10 @@ async function handler(
     prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
     images: recipe.images,
-    confidence: draft.overallConfidence,
-    lowConfidenceFields: draft.needsReview ? draft.reviewReasons : undefined,
+    confidence,
+    lowConfidenceFields: draft.needsReview ? scored.reviewReasons : undefined,
     message: draft.needsReview
-      ? `Recipe imported but needs review (confidence: ${Math.round(draft.overallConfidence * 100)}%)`
+      ? `Recipe imported but needs review (confidence: ${Math.round(confidence * 100)}%)`
       : `Recipe imported successfully`,
   };
 }

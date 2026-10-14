@@ -2,6 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "cd ../.. && pnpm install --prod=false && pnpm turbo run build --filter=@ovenlovin/web... && pnpm exec tsx packages/db/src/migrate.ts",
+  "functions": {
+    "src/app/api/demo/enter/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/demo-cleanup",

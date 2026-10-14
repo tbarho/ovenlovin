@@ -89,7 +89,7 @@ Never set `E2E_AUTH_BYPASS` in Vercel production env vars.
 
 ## Public demo
 
-`OVENLOVIN_DEMO_MODE=1` is a separate no-signup deploy. Logic lives in `apps/web/src/lib/demo/`. Product Vercel production must never enable it (build fails unless `OVENLOVIN_DEMO_PROJECT=1` on the dedicated demo project). See `docs/demo.md`.
+`OVENLOVIN_DEMO_MODE=1` is a separate no-signup deploy. Logic lives in `apps/web/src/lib/demo/`. First visit goes through `GET /api/demo/enter` (sets the sandbox cookie — do not `cookies().set` from a Server Component). Product Vercel production must never enable it (build fails unless `OVENLOVIN_DEMO_PROJECT=1` on the dedicated demo project). See `docs/demo.md`.
 
 ### Local Postgres + seed
 
