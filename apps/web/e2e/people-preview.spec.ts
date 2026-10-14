@@ -17,6 +17,16 @@ test("unsigned people preview shows the production people cards", async ({ page 
   await expect(
     page.getByTestId("person-card-loves-00000000-0000-4000-8000-000000000012")
   ).toContainText(/salmon/i);
+  const emptyCantEat = page
+    .getByTestId("person-card-cant_eat-00000000-0000-4000-8000-000000000017")
+    .first();
+  await expect(emptyCantEat).toHaveClass(/is-empty/);
+  await expect(emptyCantEat).toHaveCSS("border-left-width", "0px");
+  await expect(emptyCantEat).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  const filledCantEat = page.getByTestId(
+    "person-card-cant_eat-00000000-0000-4000-8000-000000000010"
+  );
+  await expect(filledCantEat).not.toHaveClass(/is-empty/);
   await page.screenshot({
     path: `../../e2e-artifacts/people-preview-list-${testInfo.project.name}.png`,
     fullPage: true,

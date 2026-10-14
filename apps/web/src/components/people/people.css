@@ -82,13 +82,17 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .kitchen-people .olp-person-slot {
   display: flex;
   min-width: 0;
-  height: 100%;
+  height: auto;
+}
+
+.kitchen-people .olp-person-slot.is-locked {
+  align-self: stretch;
 }
 
 .olp-person-card,
@@ -100,13 +104,17 @@
   position: relative;
   min-width: 0;
   width: 100%;
-  height: 100%;
+  height: auto;
   padding: 8px 12px 12px;
   overflow: hidden;
   border: 1px solid #ece7e0;
   border-radius: 16px;
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(22, 19, 16, 0.04);
+}
+
+.kitchen-people .olp-person-slot.is-locked .olp-person-card {
+  height: 100%;
 }
 
 .olp-person-card-head,
@@ -193,7 +201,6 @@
 
 .olp-person-ghost .olp-person-card {
   box-shadow: 0 16px 36px rgba(22, 19, 16, 0.18);
-  transform: translateY(-4px);
 }
 
 .kitchen-people .olp-person-card-body,
@@ -201,7 +208,6 @@
   display: grid;
   gap: 8px;
   min-width: 0;
-  flex: 1;
   color: inherit;
   text-decoration: none;
 }
@@ -221,8 +227,8 @@
   min-height: calc(16px + 2 * var(--chip-row) + 4px);
 }
 
-.kitchen-people .olp-person-card-lane-cant_eat,
-.olp-person-ghost .olp-person-card-lane-cant_eat {
+.kitchen-people .olp-person-card-lane-cant_eat:not(.is-empty),
+.olp-person-ghost .olp-person-card-lane-cant_eat:not(.is-empty) {
   padding: 6px 8px;
   margin: 0;
   border-radius: 10px;
@@ -241,8 +247,8 @@
   line-height: 1.2;
 }
 
-.kitchen-people .olp-person-card-lane-cant_eat .olp-person-card-lane-label,
-.olp-person-ghost .olp-person-card-lane-cant_eat .olp-person-card-lane-label {
+.kitchen-people .olp-person-card-lane-cant_eat:not(.is-empty) .olp-person-card-lane-label,
+.olp-person-ghost .olp-person-card-lane-cant_eat:not(.is-empty) .olp-person-card-lane-label {
   color: #a14a38;
 }
 
@@ -253,8 +259,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.kitchen-people .olp-person-card-lane-cant_eat .olp-person-card-lane-count,
-.olp-person-ghost .olp-person-card-lane-cant_eat .olp-person-card-lane-count {
+.kitchen-people .olp-person-card-lane-cant_eat:not(.is-empty) .olp-person-card-lane-count,
+.olp-person-ghost .olp-person-card-lane-cant_eat:not(.is-empty) .olp-person-card-lane-count {
   color: #c4473a;
 }
 
@@ -290,9 +296,8 @@
 
 .kitchen-people .olp-person-card-lane-cant_eat.is-empty,
 .olp-person-ghost .olp-person-card-lane-cant_eat.is-empty {
-  padding: 0 0 0 8px;
-  border-left: 3px solid #f0d2c8;
-  border-radius: 0;
+  padding: 0;
+  border: 0;
   background: transparent;
 }
 

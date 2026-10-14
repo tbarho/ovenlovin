@@ -1,5 +1,6 @@
 import type { Announcements, ScreenReaderInstructions } from "@dnd-kit/core";
 
+export const PEOPLE_REORDER_DND_ID = "people-reorder";
 export const PEOPLE_REORDER_HINT_ID = "people-reorder-hint";
 
 export const peopleReorderInstructions: ScreenReaderInstructions = {
