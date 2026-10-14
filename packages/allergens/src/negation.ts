@@ -60,6 +60,8 @@ function lineHasFreeClaim(line: string, hint: string): boolean {
   const options = { ignoreCompoundFoods: true, ignoreFalseFriends: true, ignoreNegation: true };
   return (
     phraseMatchesLine(`${hint} free`, line, options) ||
+    phraseMatchesLine(`free of ${hint}`, line, options) ||
+    phraseMatchesLine(`free from ${hint}`, line, options) ||
     phraseMatchesLine(`no ${hint}`, line, options) ||
     phraseMatchesLine(`without ${hint}`, line, options)
   );

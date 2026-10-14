@@ -10,7 +10,7 @@
 
 import type { AllergenRelation } from "@ovenlovin/core";
 import { lineNegatesAllergen } from "./negation";
-import { findPhraseStarts, phraseTokens } from "./phrase-match";
+import { findPhraseStarts, phraseTokens, registerNegationCompounds } from "./phrase-match";
 
 export interface IngredientAllergenMapping {
   /** Canonical ingredient name */
@@ -1078,3 +1078,7 @@ export function matchIngredient(
 
   return keep(found);
 }
+
+registerNegationCompounds(
+  ingredientAllergenMappings.flatMap((mapping) => [mapping.name, ...mapping.aliases])
+);
