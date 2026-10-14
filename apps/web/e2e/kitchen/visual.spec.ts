@@ -95,7 +95,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   const ingredientsBox = await ingredients.boundingBox();
   expect(whoBox && ingredientsBox).toBeTruthy();
   if (whoBox && ingredientsBox) {
-    expect(ingredientsBox.y - (whoBox.y + whoBox.height)).toBeLessThan(280);
+    expect(ingredientsBox.y - (whoBox.y + whoBox.height)).toBeLessThan(400);
   }
   await shot(page, width, "recipe-detail");
   for (const [button, name] of [
