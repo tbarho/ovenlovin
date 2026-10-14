@@ -4,8 +4,13 @@ import { enforceDemoRequestGuards } from "./enforce";
 
 const WRITE_TOOLS = new Set([
   "import_recipe",
+  "create_recipe",
+  "delete_recipe",
   "save_meal_plan",
+  "delete_meal_plan",
   "manage_cookbook",
+  "manage_people",
+  "manage_person_rules",
   "manage_person_loves",
   "reorder_people",
 ]);

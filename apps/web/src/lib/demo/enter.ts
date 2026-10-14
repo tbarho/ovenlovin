@@ -16,15 +16,24 @@ export function safeDemoEnterNext(raw: string | null | undefined): string {
   return raw;
 }
 
+const PUBLIC_PREFIXES = [
+  "/api",
+  "/mcp",
+  "/docs",
+  "/brand",
+  "/sign-in",
+  "/sign-up",
+  "/_next",
+  "/demo-kitchen",
+  "/prototype",
+];
+
 export function shouldRedirectToDemoEnter(pathname: string, cookieId: string | undefined): boolean {
   if (cookieId) return false;
-  if (pathname.startsWith("/api") || pathname === "/mcp" || pathname.startsWith("/mcp/")) {
-    return false;
-  }
-  if (pathname.startsWith("/_next") || pathname.startsWith("/demo-kitchen")) {
-    return false;
-  }
-  return true;
+  if (pathname === "/llms.txt") return false;
+  return !PUBLIC_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
 }
 
 export function wantsDemoEnterJson(input: {

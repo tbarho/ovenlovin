@@ -25,6 +25,9 @@ describe("demo enter helpers", () => {
     expect(shouldRedirectToDemoEnter(DEMO_ENTER_PATH, undefined)).toBe(false);
     expect(shouldRedirectToDemoEnter("/api/cron/demo-cleanup", undefined)).toBe(false);
     expect(shouldRedirectToDemoEnter("/mcp", undefined)).toBe(false);
+    expect(shouldRedirectToDemoEnter("/docs", undefined)).toBe(false);
+    expect(shouldRedirectToDemoEnter("/docs/connect-your-agent", undefined)).toBe(false);
+    expect(shouldRedirectToDemoEnter("/llms.txt", undefined)).toBe(false);
     expect(shouldRedirectToDemoEnter("/demo-kitchen/pesto.svg", undefined)).toBe(false);
   });
 
