@@ -1,10 +1,12 @@
 /**
  * Case-insensitive word/phrase matching with simple English plural tolerance.
  *
- * Used for custom / ingredient / diet rule targets and for Loves ranking.
- * Allergen checking still uses the taxonomy mapper — do not route peanut /
- * tree-nut safety through this helper.
+ * Used for allergen mapping against raw ingredient lines, custom / ingredient /
+ * diet rule targets, and Loves ranking. Compound-food exclusions (olive vs
+ * olive oil) apply unless callers opt out.
  */
+
+import { compoundsExcludingPhrase } from "./compound-foods";
 
 export function normalizePhrase(value: string): string {
   return value
@@ -37,16 +39,11 @@ export function phraseTokens(value: string): string[] {
   return normalizePhrase(value).split(" ").filter(Boolean).map(stemWord);
 }
 
-/**
- * True when `phrase` appears as a contiguous word/phrase in `line`.
- * "mushroom" matches "8 oz mushrooms, sliced"; "pine nut" matches "pine nuts".
- */
-export function phraseMatchesLine(phrase: string, line: string): boolean {
-  const needle = phraseTokens(phrase);
-  const haystack = phraseTokens(line);
-  if (needle.length === 0 || haystack.length === 0) return false;
-  if (needle.length > haystack.length) return false;
-
+export function tokenSequenceStarts(haystack: string[], needle: string[]): number[] {
+  if (needle.length === 0 || haystack.length === 0 || needle.length > haystack.length) {
+    return [];
+  }
+  const starts: number[] = [];
   for (let i = 0; i <= haystack.length - needle.length; i++) {
     let match = true;
     for (let j = 0; j < needle.length; j++) {
@@ -55,9 +52,68 @@ export function phraseMatchesLine(phrase: string, line: string): boolean {
         break;
       }
     }
-    if (match) return true;
+    if (match) starts.push(i);
+  }
+  return starts;
+}
+
+function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+/** True when this occurrence of `phrase` is only part of a different compound food. */
+export function occurrenceIsCompoundFood(phrase: string, line: string, start: number): boolean {
+  const needle = phraseTokens(phrase);
+  const haystack = phraseTokens(line);
+  const compounds = compoundsExcludingPhrase(phrase);
+  if (needle.length === 0 || compounds.length === 0) return false;
+
+  for (const compound of compounds) {
+    const compoundTokens = phraseTokens(compound);
+    if (compoundTokens.length === 0) continue;
+    for (const compoundStart of tokenSequenceStarts(haystack, compoundTokens)) {
+      if (
+        rangesOverlap(
+          start,
+          start + needle.length,
+          compoundStart,
+          compoundStart + compoundTokens.length
+        )
+      ) {
+        return true;
+      }
+    }
   }
   return false;
+}
+
+/**
+ * Token starts where `phrase` appears as a contiguous word/phrase in `line`,
+ * after compound-food exclusions (olive vs olive oil).
+ */
+export function findPhraseStarts(
+  phrase: string,
+  line: string,
+  options: { ignoreCompoundFoods?: boolean } = {}
+): number[] {
+  const needle = phraseTokens(phrase);
+  const haystack = phraseTokens(line);
+  return tokenSequenceStarts(haystack, needle).filter(
+    (start) => options.ignoreCompoundFoods || !occurrenceIsCompoundFood(phrase, line, start)
+  );
+}
+
+/**
+ * True when `phrase` appears as a contiguous word/phrase in `line`.
+ * "mushroom" matches "8 oz mushrooms, sliced"; "pine nut" matches "pine nuts".
+ * "olive" does not match "olive oil".
+ */
+export function phraseMatchesLine(
+  phrase: string,
+  line: string,
+  options: { ignoreCompoundFoods?: boolean } = {}
+): boolean {
+  return findPhraseStarts(phrase, line, options).length > 0;
 }
 
 export function phraseMatchesAny(phrase: string, lines: Iterable<string>): boolean {

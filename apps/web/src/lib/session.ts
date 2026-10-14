@@ -8,15 +8,25 @@ import { getDemoSessionContext } from "@/lib/demo/session";
 import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
 import { getE2eSessionContext } from "@/lib/e2e-kitchen";
 
-export async function getSessionContext(): Promise<RequestContext> {
+export async function getSessionContext(options?: {
+  allowRedirect?: boolean;
+}): Promise<RequestContext> {
   if (isE2eAuthBypassEnabled()) {
     return getE2eSessionContext();
   }
   if (isDemoModeEnabled()) {
-    return getDemoSessionContext();
+    return getDemoSessionContext({ allowRedirect: options?.allowRedirect ?? true });
   }
 
-  const { userId, orgId } = await auth();
+  let userId: string | null;
+  let orgId: string | null | undefined;
+  try {
+    const session = await auth();
+    userId = session.userId;
+    orgId = session.orgId;
+  } catch {
+    throw new UnauthorizedError("Authentication required");
+  }
 
   if (!userId) {
     throw new UnauthorizedError("Authentication required");

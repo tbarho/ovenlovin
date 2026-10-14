@@ -14,6 +14,13 @@ describe("phraseMatchesLine", () => {
     expect(phraseMatchesLine("olive", "kalamata olives")).toBe(true);
   });
 
+  it("does not treat olive oil as olives", () => {
+    expect(phraseMatchesLine("olive", "2 tbsp olive oil")).toBe(false);
+    expect(phraseMatchesLine("olives", "3 tbsp olive oil")).toBe(false);
+    expect(phraseMatchesLine("olive oil", "2 tbsp olive oil")).toBe(true);
+    expect(phraseMatchesLine("olive", "olive oil and kalamata olives")).toBe(true);
+  });
+
   it("does not match a substring inside a longer word", () => {
     expect(phraseMatchesLine("nut", "nutmeg")).toBe(false);
     expect(phraseMatchesLine("ham", "chamomile")).toBe(false);

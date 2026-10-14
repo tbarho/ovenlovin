@@ -18,6 +18,7 @@ import { deleteRecipeTool } from "./delete-recipe";
 import { deleteMealPlanTool } from "./delete-meal-plan";
 import { managePeopleTool } from "./manage-people";
 import { managePersonRulesTool } from "./manage-person-rules";
+import { manageHouseholdScheduleTool } from "./manage-household-schedule";
 
 export const MCP_TOOLS = [
   whoamiTool,
@@ -27,6 +28,7 @@ export const MCP_TOOLS = [
   importRecipeTool,
   deleteRecipeTool,
   getHouseholdContextTool,
+  manageHouseholdScheduleTool,
   getPersonRulesTool,
   managePeopleTool,
   managePersonRulesTool,

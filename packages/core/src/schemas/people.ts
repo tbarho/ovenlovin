@@ -44,6 +44,7 @@ export const personRuleSchema = baseEntitySchema.merge(createdBySchema).extend({
   activeFrom: z.string().date().nullable().optional(),
   activeUntil: z.string().date().nullable().optional(),
   setBy: uuidSchema,
+  createdByApiKeyId: uuidSchema.nullable().optional(),
 });
 
 export const personLabelNoteSchema = baseEntitySchema.merge(createdBySchema).extend({

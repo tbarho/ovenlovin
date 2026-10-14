@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { handleApiError } from "@/lib/api/errors";
 import { jsonResponse, paginatedResponse, createdResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, getIdempotencyKey } from "@/lib/api/middleware";
-import { createMealPlanBodySchema, PlanService } from "@ovenlovin/core";
+import { createMealPlanBodySchema, PlanService, resolveWriteActor } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest) {
@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
     const db = getDatabase();
     const service = new PlanService(db);
 
-    const createdBy = context.userId || context.clientId || "system";
+    const actor = resolveWriteActor({
+      userId: context.userId,
+      apiKeyId: context.clientId,
+      apiKeyCreatedBy: context.apiKeyCreatedBy,
+    });
 
     const plan = await service.createMealPlan({
       householdId,
@@ -52,7 +56,8 @@ export async function POST(request: NextRequest) {
       status: body.status ?? "draft",
       acknowledgedWarnings: [],
       needsRecheck: false,
-      createdBy,
+      createdBy: actor.createdBy,
+      createdByApiKeyId: actor.createdByApiKeyId,
     });
 
     if (body.entries) {

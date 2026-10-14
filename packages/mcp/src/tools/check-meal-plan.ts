@@ -120,6 +120,7 @@ async function handler(
               message: `Recipe ${entry.recipeId} not found`,
             },
           ],
+          incompleteReasons: [`Recipe ${entry.recipeId} was not found`],
         };
       }
 
@@ -142,20 +143,21 @@ async function handler(
         confidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
       }));
 
-      // Load attendee rules
       const contexts: RuleCheckContext[] = [];
+      const missingAttendees: string[] = [];
       for (const personId of entry.attendees) {
         const person = await peopleService.getPerson(personId);
-        if (!person) continue;
+        if (!person) {
+          missingAttendees.push(personId);
+          continue;
+        }
 
-        // Verify person belongs to the household
         if (person.householdId !== context.householdId) {
           throw new Error(`Unauthorized access to person: ${personId}`);
         }
 
         const rules = await peopleService.getRulesForPerson(personId);
         for (const rule of rules) {
-          // Only check active rules
           const now = new Date();
           if (rule.activeFrom && new Date(rule.activeFrom) > now) continue;
           if (rule.activeUntil && new Date(rule.activeUntil) < now) continue;
@@ -168,11 +170,26 @@ async function handler(
         }
       }
 
-      // Run rule checker
+      const loadReasons = [
+        ...(ingredients.length === 0
+          ? [`Recipe "${recipe.title}" has no ingredients to check`]
+          : []),
+        ...missingAttendees.map((personId) => `Could not load attendee ${personId}`),
+      ];
+
       const checkResult =
         contexts.length > 0 && ingredients.length > 0
           ? checkIngredientsAgainstRules(ingredients, contexts)
-          : { status: "complete" as const, findings: { block: [], warn: [], prefer_avoid: [] } };
+          : {
+              status: (loadReasons.length > 0 ? "incomplete" : "complete") as
+                "complete" | "incomplete",
+              findings: { block: [], warn: [], prefer_avoid: [] },
+              incompleteReasons: loadReasons.length > 0 ? loadReasons : undefined,
+            };
+
+      const entryIncompleteReasons = [
+        ...new Set([...(checkResult.incompleteReasons ?? []), ...loadReasons]),
+      ];
 
       // Convert findings to output format
       const findings: CheckMealPlanOutput["entries"][0]["findings"] = [];
@@ -243,6 +260,7 @@ async function handler(
         recipeTitle: recipe.title,
         findings,
         loveTags: loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
+        incompleteReasons: entryIncompleteReasons,
       };
     })
   );
@@ -264,10 +282,13 @@ async function handler(
     ),
   };
 
+  const allIncompleteReasons = entriesResults.flatMap((entry) => entry.incompleteReasons ?? []);
+
   return {
-    status: "complete",
+    status: allIncompleteReasons.length > 0 ? "incomplete" : "complete",
     overallSummary,
-    entries: entriesResults,
+    entries: entriesResults.map(({ incompleteReasons: _ignored, ...entry }) => entry),
+    incompleteReason: allIncompleteReasons.length > 0 ? allIncompleteReasons.join("; ") : undefined,
   };
 }
 

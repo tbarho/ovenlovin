@@ -43,6 +43,7 @@ export const mealPlanSchema = baseEntitySchema.merge(createdBySchema).extend({
   contentHash: z.string().max(64).nullable().optional(),
   acknowledgedWarnings: z.array(z.string()).default([]),
   needsRecheck: z.boolean().default(false),
+  createdByApiKeyId: uuidSchema.nullable().optional(),
 });
 
 export const mealPlanEntrySchema = baseEntitySchema.extend({

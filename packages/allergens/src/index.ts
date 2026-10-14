@@ -15,6 +15,20 @@ export {
 } from "./ingredient-mapping";
 
 export {
+  defaultCompoundFoodExclusions,
+  compoundsExcludingPhrase,
+  type CompoundFoodExclusion,
+} from "./compound-foods";
+
+export { hintPhrasesForTarget } from "./allergen-hints";
+
+export {
+  isBlockedForAttendees,
+  attendeeWarningsFromCheck,
+  type AttendeeWarning,
+} from "./attendee-filter";
+
+export {
   checkIngredientAgainstRule,
   checkIngredientsAgainstRules,
   type RuleCheckContext,
@@ -57,6 +71,9 @@ export {
   normalizePhrase,
   stemWord,
   phraseTokens,
+  tokenSequenceStarts,
+  occurrenceIsCompoundFood,
+  findPhraseStarts,
   phraseMatchesLine,
   phraseMatchesAny,
 } from "./phrase-match";

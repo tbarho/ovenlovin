@@ -83,7 +83,7 @@ const ingredientNameArb = fc.constantFrom(
   "salmon",
   "shrimp",
   "sesame seeds",
-  "flour",
+  "all-purpose flour",
   "sugar",
   "salt",
   "vanilla extract"
