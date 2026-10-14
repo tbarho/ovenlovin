@@ -180,6 +180,7 @@ No real family names, photos, or private data in fixtures, tests, or docs. Use g
 - **API**: cursor pagination, idempotency keys on writes, problem+json errors
 - **Naming**: camelCase for variables/functions, PascalCase for types/components
 - **Sheet-hosted inputs**: Never define a component inside another component’s render body — that remounts the tree (and blurs the field) on every keystroke. Keep `key` props stable; never use `Math.random()`, `Date.now()`, or the value being edited. Give each sheet a stable identity while it is open. Autofocus and focus-trap effects may depend only on `open`, not on inline `onClose` or draft state, so they run once when the sheet opens. Keep draft input state in the sheet form, not in a parent that rebuilds the sheet on every character.
+- **Motion**: Animate only when it conveys meaning — a state change, a spatial relationship (sheet/dialog enter/exit), reorder feedback, or confirming add/remove. Do not add decorative or ambient motion (hover bounces, staggered entrances, pulses, floating marks, press-scale gimmicks). Use the shared tokens in `apps/web/src/app/globals.css` (`--motion-fast`, `--motion-base`, `--motion-sheet`, `--motion-ease`) and `apps/web/src/lib/motion.ts`. Honor `prefers-reduced-motion` (tokens already collapse durations globally).
 
 ## Safety Invariants (Do Not Break)
 

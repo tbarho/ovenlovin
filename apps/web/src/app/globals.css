@@ -29,6 +29,10 @@
   --text-md: 1rem;
   --text-lg: 1.125rem;
   --text-input: var(--text-md);
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-sheet: 220ms;
+  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 * {
@@ -44,6 +48,15 @@ html {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -205,14 +218,12 @@ select {
   font-weight: 550;
   cursor: pointer;
   transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
+    border-color var(--motion-base) var(--motion-ease),
+    background var(--motion-base) var(--motion-ease);
 }
 
 .btn:hover {
   border-color: var(--orange);
-  transform: translateY(-1px);
 }
 
 .btn.primary {
@@ -488,22 +499,7 @@ select {
   width: clamp(108px, 17vw, 164px);
   height: auto;
   margin: 0;
-  animation: float 6s ease-in-out infinite;
   filter: drop-shadow(0 16px 24px rgba(196, 93, 40, 0.18));
-}
-
-.hero-mark:hover {
-  transform: rotate(-4deg) scale(1.04);
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
 }
 
 .badge {
@@ -579,26 +575,10 @@ select {
   height: 8px;
   border-radius: 50%;
   background: var(--ok);
-  box-shadow: 0 0 0 0 rgba(47, 158, 98, 0.45);
-  animation: live-pulse 2s ease-out infinite;
 }
 
 .live-pill.is-local .live-dot {
   background: var(--faint);
-  animation: none;
-  box-shadow: none;
-}
-
-@keyframes live-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(47, 158, 98, 0.45);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(47, 158, 98, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(47, 158, 98, 0);
-  }
 }
 
 .hero-deployed {
@@ -733,48 +713,6 @@ select {
   margin-top: 32px;
 }
 
-.rise > * {
-  opacity: 0;
-  animation: rise 0.65s cubic-bezier(0.2, 0.65, 0.25, 1) forwards;
-}
-
-.rise > *:nth-child(2) {
-  animation-delay: 0.06s;
-}
-.rise > *:nth-child(3) {
-  animation-delay: 0.12s;
-}
-.rise > *:nth-child(4) {
-  animation-delay: 0.18s;
-}
-.rise > *:nth-child(5) {
-  animation-delay: 0.24s;
-}
-.rise > *:nth-child(6) {
-  animation-delay: 0.3s;
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-mark,
-  .live-dot,
-  .rise > * {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-}
-
 .paths {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -797,13 +735,10 @@ select {
   border-radius: var(--r);
   background: var(--panel);
   box-shadow: var(--shadow);
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease;
+  transition: border-color var(--motion-base) var(--motion-ease);
 }
 
 .path-card:hover {
-  transform: translateY(-3px);
   border-color: var(--orange);
 }
 
@@ -1189,9 +1124,7 @@ select {
   border-radius: 18px;
   background: var(--panel);
   box-shadow: var(--shadow);
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease;
+  transition: border-color var(--motion-base) var(--motion-ease);
 }
 
 .cookbook-card h2 {
@@ -1201,7 +1134,6 @@ select {
 }
 
 .cookbook-card:hover {
-  transform: translateY(-3px);
   border-color: var(--orange);
 }
 
@@ -1234,13 +1166,10 @@ select {
 .recipe-card {
   overflow: hidden;
   padding: 0;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease;
+  transition: border-color var(--motion-base) var(--motion-ease);
 }
 
 .recipe-card:hover {
-  transform: translateY(-3px);
   border-color: var(--orange);
 }
 

@@ -1,93 +1,113 @@
 /**
- * MCP Server HTTP Endpoint
+ * MCP Streamable HTTP endpoint.
  *
- * Streamable HTTP transport for Model Context Protocol
- * Supports OAuth via Clerk + API key authentication
+ * POST /mcp  — JSON-RPC (stateless, one request per POST)
+ * GET  /mcp  — health
  *
- * POST /mcp
- * Content-Type: application/json
- * Authorization: Bearer <token>
+ * Auth: `Authorization: ApiKey <rkapi_…>` or `Bearer <rkapi_…>` / Clerk JWT.
+ * Household is derived from the key. No stub household, no shared transport.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServer, handleHttpRequest } from "@ovenlovin/mcp";
+import { authenticateRequest, handleHttpRequest } from "@ovenlovin/mcp";
 
-// Create singleton server instance
-const mcpServer = createServer({
+const SERVER_INFO = {
   name: "ovenlovin-mcp",
   version: "0.1.0",
-  databaseUrl: process.env.DATABASE_URL,
-  clerkSecretKey: process.env.CLERK_SECRET_KEY,
-});
+};
 
-/**
- * Handle MCP requests
- */
+function collectHeaders(request: NextRequest): Record<string, string> {
+  const headers: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+  return headers;
+}
+
+function jsonRpcUnauthorized(id: unknown, message: string) {
+  return NextResponse.json(
+    {
+      jsonrpc: "2.0",
+      id: id ?? null,
+      error: { code: -32001, message },
+    },
+    { status: 401, headers: { "Content-Type": "application/json" } }
+  );
+}
+
 export async function POST(request: NextRequest) {
+  let body: unknown = {};
   try {
-    // Parse request body
-    const body = await request.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        jsonrpc: "2.0",
+        id: null,
+        error: { code: -32700, message: "Parse error" },
+      },
+      { status: 400 }
+    );
+  }
 
-    // Extract headers
-    const headers: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
+  const headers = collectHeaders(request);
+  const id =
+    body && typeof body === "object" && !Array.isArray(body) && "id" in body
+      ? (body as { id?: unknown }).id
+      : null;
 
-    // Handle the MCP request
+  try {
     const result = await handleHttpRequest(
-      mcpServer,
+      null,
       {
         method: "POST",
-        body,
+        body: body as { jsonrpc?: string; id?: string | number | null; method?: string },
         headers,
       },
       {
-        // Auth will be implemented in a later PR
-        onAuth: async (authHeader: string) => {
-          // TODO: Validate Clerk OAuth token or API key
-          // For now, stub implementation
-          return {
-            householdId: "stub-household",
-            userId: "stub-user",
-            scopes: ["recipes:read", "recipes:write", "plans:write"],
-          };
-        },
+        requireAuth: true,
+        serverInfo: SERVER_INFO,
+        onAuth: async () => authenticateRequest(headers),
       }
     );
 
-    // Return response
-    if (typeof result.body === "string") {
-      return new NextResponse(result.body, {
-        status: result.status,
-        headers: result.headers,
-      });
+    if (!result.body) {
+      return new NextResponse(null, { status: result.status, headers: result.headers });
     }
 
-    // Handle streaming response (future enhancement)
-    return new NextResponse(JSON.stringify(result.body), {
+    return new NextResponse(result.body, {
       status: result.status,
       headers: result.headers,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unauthorized";
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: string }).code === "unauthorized"
+    ) {
+      return jsonRpcUnauthorized(id, message);
+    }
     console.error("MCP request error:", error);
     return NextResponse.json(
       {
-        error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        jsonrpc: "2.0",
+        id: id ?? null,
+        error: {
+          code: -32603,
+          message: error instanceof Error ? error.message : "Internal error",
+        },
       },
       { status: 500 }
     );
   }
 }
 
-/**
- * Health check
- */
 export async function GET() {
   return NextResponse.json({
     service: "ovenlovin-mcp",
-    version: "0.1.0",
+    version: SERVER_INFO.version,
     status: "ok",
     timestamp: new Date().toISOString(),
   });

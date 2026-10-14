@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useId, useRef, type ReactNode } from "react";
 import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
+import { presenceTransition } from "@/lib/motion";
 import { FoodIcon } from "./icons";
 import type { Bucket, Mark, Person } from "./model";
 
@@ -35,14 +36,15 @@ export function Avatar({
 }
 
 export function MarkBadge({ mark }: { mark: Mark }) {
+  const reduce = useReducedMotion();
   return (
     <motion.span
       className={`olp-mark olp-mark-${mark}`}
       aria-hidden="true"
       key={mark}
-      initial={{ scale: 0.7, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 420, damping: 18 }}
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={presenceTransition(reduce, "mark")}
     >
       {mark === "ok" ? "✓" : mark === "warn" ? "!" : "✕"}
     </motion.span>
@@ -62,14 +64,15 @@ export function Chip({
   onClick?: () => void;
   onRemove?: () => void;
 }) {
+  const reduce = useReducedMotion();
   return (
     <motion.div
       layout
       className={`olp-chip olp-chip-${bucket}`}
-      initial={{ scale: 0.86, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.9, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 420, damping: 22 }}
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={presenceTransition(reduce, "chip")}
     >
       <div className="olp-chip-drag">
         {onClick ? (
@@ -180,6 +183,7 @@ export function Sheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={presenceTransition(reduce, "sheet")}
           />
           <motion.div
             ref={panelRef}
@@ -188,10 +192,10 @@ export function Sheet({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            initial={reduce ? { y: 0 } : { y: 28 }}
+            initial={reduce ? { y: 0 } : { y: 12 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={reduce ? { y: 0 } : { y: 28 }}
-            transition={{ type: "spring", damping: 28, stiffness: 340 }}
+            exit={reduce ? { y: 0, opacity: 0 } : { y: 12, opacity: 0 }}
+            transition={presenceTransition(reduce, "sheet")}
             style={{ opacity: 1 }}
           >
             <div className="olp-sheet-handle" aria-hidden="true" />
@@ -248,15 +252,17 @@ export function Toast({
   onUndo?: () => void;
   onDismiss: () => void;
 }) {
+  const reduce = useReducedMotion();
   return (
     <AnimatePresence>
       {message ? (
         <motion.div
           className="olp-toast"
           role="status"
-          initial={{ y: 16, opacity: 0 }}
+          initial={reduce ? { opacity: 0 } : { y: 8, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 16, opacity: 0 }}
+          exit={reduce ? { opacity: 0 } : { y: 8, opacity: 0 }}
+          transition={presenceTransition(reduce, "toast")}
         >
           <span>{message}</span>
           {onUndo ? (

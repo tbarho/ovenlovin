@@ -261,7 +261,7 @@ async function checkRecipeForAttendees(
 export const searchRecipesTool = {
   name: "search_recipes",
   description:
-    "Search for recipes with optional filters. Can exclude recipes with blocking rules for specific attendees, annotate warnings, and boost dishes someone loves. Loves never hide a recipe.",
+    "Search for recipes with optional filters. Can exclude recipes with blocking rules for specific attendees, annotate warnings, and boost dishes someone loves. Loves never hide a recipe. Not medical advice — always check ingredient labels before serving.",
   inputSchema: searchRecipesSchema,
   handler,
 } as const;
