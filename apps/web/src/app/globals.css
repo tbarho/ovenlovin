@@ -468,6 +468,7 @@ select {
   width: 100%;
   max-height: none;
   height: 100%;
+  min-height: 100%;
   border-radius: 0;
   border: 0;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -478,8 +479,11 @@ select {
 }
 
 .sheet-root[data-sheet="picker"] .sheet-body {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 @media (min-width: 720px) {
@@ -505,8 +509,9 @@ select {
 
   .sheet-root[data-sheet="picker"] .sheet-panel {
     width: min(560px, calc(100% - 48px));
-    height: auto;
-    max-height: min(84%, 720px);
+    height: min(84vh, 720px);
+    max-height: min(84vh, 720px);
+    min-height: 0;
     margin: 24px;
     border: 1px solid #eaeaea;
     border-radius: 16px;
@@ -1880,19 +1885,34 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
 }
 
 .recipe-picker {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   min-height: 0;
+  flex: 1;
+}
+
+.recipe-picker .field {
+  flex: 0 0 auto;
 }
 
 .recipe-pick-list {
   display: grid;
+  align-content: start;
   gap: 6px;
   margin: 0;
-  padding: 0;
-  max-height: min(52vh, 420px);
+  padding: 0 0 4px;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow: auto;
   list-style: none;
+  overscroll-behavior: contain;
+}
+
+.recipe-picker .sheet-actions {
+  flex: 0 0 auto;
+  padding-top: 4px;
+  background: #fff;
 }
 
 .recipe-pick-row {

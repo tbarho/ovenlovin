@@ -68,8 +68,8 @@ export function CookbookRecipePicker({
   return (
     <BottomSheet open={open} title="Add recipes" layout="picker" onClose={onClose}>
       <div className="recipe-picker">
-        <label>
-          Search recipes
+        <label className="field">
+          <span className="field-label">Search recipes</span>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
