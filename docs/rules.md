@@ -105,6 +105,7 @@ Every rule has a severity that determines how it's handled:
 **Supported allergens**:
 - Peanuts
 - Tree nuts (almonds, cashews, walnuts, pecans, pistachios, macadamias, hazelnuts, Brazil nuts)
+- Coconut (separate from tree nuts; see below)
 - Dairy (milk, cheese, butter, cream, yogurt)
 - Eggs
 - Fish (salmon, tuna, cod, halibut)
@@ -122,6 +123,8 @@ Every rule has a severity that determines how it's handled:
   "notes": "Severe allergy - includes all tree nuts and nut oils"
 }
 ```
+
+**Coconut is not a tree nut by default.** FDA historically listed coconut as a tree nut, but most families who block tree nuts still eat coconut milk, oil, and flakes. A `tree_nut` rule stores `treatCoconutAsTreeNut` (boolean, **default `false`**). Turn it on per person in the People UI, REST, or `manage_person_rules` if that person also avoids coconut. Coconut itself is a separate allergen (`target: "coconut"`).
 
 **Matching**:
 - Exact matches: "peanuts", "peanut butter", "peanut oil"

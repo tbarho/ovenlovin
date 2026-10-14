@@ -37,7 +37,7 @@ describe("buildRuleWrite", () => {
       includeMayContain: true,
       includeCrossContact: true,
       includeDescendants: true,
-      treatCoconutAsTreeNut: true,
+      treatCoconutAsTreeNut: false,
     });
   });
 
@@ -92,15 +92,33 @@ describe("buildRuleWrite", () => {
     ).toThrow(/target/i);
   });
 
-  it("preserves an explicit coconut setting on tree nut rules", () => {
+  it("defaults treatCoconutAsTreeNut to false when omitted", () => {
     const payload = buildRuleWrite({
+      intent: "allergy",
+      target: "tree_nut",
+      severity: "block",
+      sharedFacility: "block",
+    });
+    expect(payload.treatCoconutAsTreeNut).toBe(false);
+  });
+
+  it("preserves an explicit coconut setting on tree nut rules", () => {
+    const on = buildRuleWrite({
+      intent: "allergy",
+      target: "tree_nut",
+      severity: "block",
+      sharedFacility: "block",
+      treatCoconutAsTreeNut: true,
+    });
+    const off = buildRuleWrite({
       intent: "allergy",
       target: "tree_nut",
       severity: "block",
       sharedFacility: "block",
       treatCoconutAsTreeNut: false,
     });
-    expect(payload.treatCoconutAsTreeNut).toBe(false);
+    expect(on.treatCoconutAsTreeNut).toBe(true);
+    expect(off.treatCoconutAsTreeNut).toBe(false);
   });
 });
 

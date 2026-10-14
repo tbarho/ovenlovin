@@ -8,7 +8,7 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=NEXT_PUBLIC_INSTANCE_NAME&envDescription=Optional%20instance%20name.%20USDA%20is%20optional%20and%20not%20required%20to%20deploy.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=The%20family%20recipe%20box%20your%20AI%20can%20actually%20use&demo-url=https://ovenlovin.vercel.app)
 
-Open-source recipe box and meal planner for families and their agents. Per-person allergen checks (US Big 9 + EU 14). MIT license.
+Open-source recipe box and meal planner for families and their agents. Per-person allergen checks (US Big 9 + EU 14). Coconut is its own allergen — tree-nut rules leave it off unless `treatCoconutAsTreeNut` is set. MIT license.
 
 > Not medical advice. Always read ingredient labels before serving.
 

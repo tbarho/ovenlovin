@@ -324,6 +324,16 @@ describe("MCP Tool Schemas", () => {
           severity: "block",
         }).success
       ).toBe(true);
+      expect(
+        managePersonRulesTool.inputSchema.safeParse({
+          action: "add",
+          personId: "550e8400-e29b-41d4-a716-446655440000",
+          kind: "allergen",
+          target: "tree_nut",
+          severity: "block",
+          treatCoconutAsTreeNut: true,
+        }).success
+      ).toBe(true);
     });
 
     it("validates manage_household_schedule", () => {

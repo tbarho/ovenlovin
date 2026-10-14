@@ -87,6 +87,21 @@ Persist the household people order used by lists, who-can-eat, and household con
 }
 ```
 
+### `manage_person_rules`
+
+List, add, or remove Can't eat / Doesn't like rules. Tree-nut rules accept `treatCoconutAsTreeNut` (default **false** — coconut is not a tree nut unless the family turns it on).
+
+```json
+{
+  "action": "add",
+  "personId": "person-id-1",
+  "kind": "allergen",
+  "target": "tree_nut",
+  "severity": "block",
+  "treatCoconutAsTreeNut": false
+}
+```
+
 ### `get_person_rules`
 
 Get detailed per-person rules (Can't eat / Doesn't like) and Loves.
