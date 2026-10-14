@@ -34,6 +34,13 @@ describe("URL Importer", () => {
       expect(draft.title).toBe("Classic Chocolate Chip Cookies");
       expect(draft.description).toContain("chocolate chip cookies");
       expect(draft.servings).toBe(24);
+      expect(draft.nutrition).toEqual({
+        perServing: true,
+        calories: 186,
+        protein: 2,
+        carbohydrates: 25,
+        fat: 9,
+      });
       expect(draft.prepTimeMinutes).toBe(15);
       expect(draft.cookTimeMinutes).toBe(12);
       expect(draft.totalTimeMinutes).toBe(27);
@@ -103,6 +110,24 @@ describe("URL Importer", () => {
         extractorVersion: "0.1.0",
       });
       expect(draft.images).toEqual(["https://example.com/og.jpg"]);
+    });
+
+    it("parses array recipeYield and strips a trailing Recipe from the title", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "url",
+        sourceUrl: "https://example.com/cauliflower",
+        rawData: {
+          ...chocolateChipCookiesJson,
+          name: "Spanish Cauliflower Rice Recipe",
+          recipeYield: ["6 servings"],
+          notes: "Rinse the cauliflower well.",
+        },
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+      expect(draft.title).toBe("Spanish Cauliflower Rice");
+      expect(draft.servings).toBe(6);
+      expect(draft.notes).toBe("Rinse the cauliflower well.");
     });
 
     it("should extract timers from steps", async () => {

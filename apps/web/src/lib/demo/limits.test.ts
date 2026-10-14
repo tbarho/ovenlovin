@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideDemoWrite } from "./limits";
+import { decideDemoWrite, nextCountersAfterSuccessfulImport } from "./limits";
 
 const counters = {
   importCount: 0,
@@ -25,6 +25,20 @@ describe("decideDemoWrite", () => {
       counters,
     });
     expect(decision).toMatchObject({ ok: false, code: "uploads_off" });
+  });
+
+  it("does not increment the import quota until the import succeeds", () => {
+    const decision = decideDemoWrite({
+      pathname: "/api/v1/recipes/import",
+      method: "POST",
+      counters,
+    });
+    expect(decision.ok).toBe(true);
+    if (decision.ok) {
+      expect(decision.next.importCount).toBe(0);
+      expect(decision.next.writesInWindow).toBe(1);
+    }
+    expect(nextCountersAfterSuccessfulImport(counters).importCount).toBe(1);
   });
 
   it("caps imports at five", () => {

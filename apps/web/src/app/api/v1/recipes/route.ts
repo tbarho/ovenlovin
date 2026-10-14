@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
         {
           title: body.title,
           description: body.description,
+          notes: body.notes,
           servings: body.servings,
           prepTimeMinutes: body.prepTimeMinutes,
           cookTimeMinutes: body.cookTimeMinutes,

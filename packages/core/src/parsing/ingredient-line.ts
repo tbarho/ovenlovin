@@ -79,6 +79,25 @@ export type ParsedIngredientLine = {
   name: string;
 };
 
+/** Trailing notes that are prep, not the grocery item. */
+const PREP_NOTES =
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+
+export type BackfillableIngredient = {
+  rawText: string;
+  name?: string | null;
+  quantityMin?: number | null;
+  quantityMax?: number | null;
+  unit?: string | null;
+};
+
+export type BackfilledIngredient = {
+  name: string;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  unit: string | null;
+};
+
 function parseNumberToken(token: string): number | null {
   const unicode = UNICODE_FRACTIONS[token];
   if (unicode != null) return unicode;
@@ -163,6 +182,25 @@ function consumeUnit(text: string): { unit: string | null; rest: string } {
   return { unit: null, rest: text };
 }
 
+function cleanItemName(rest: string): string {
+  let name = rest
+    .replace(/^of\s+/i, "")
+    .replace(/^,\s*/, "")
+    .replace(/\s*\([^)]*\)\s*$/g, "")
+    .replace(/\s+to taste$/i, "")
+    .trim();
+
+  const comma = name.lastIndexOf(",");
+  if (comma > 0) {
+    const tail = name.slice(comma + 1).trim();
+    if (PREP_NOTES.test(tail)) {
+      name = name.slice(0, comma).trim();
+    }
+  }
+
+  return name;
+}
+
 export function parseIngredientLine(rawText: string): ParsedIngredientLine {
   const trimmed = rawText.trim();
   const quantity = consumeLeadingQuantity(trimmed);
@@ -174,9 +212,31 @@ export function parseIngredientLine(rawText: string): ParsedIngredientLine {
     quantityMin: quantity.min,
     quantityMax: quantity.max,
     unit: unit.unit,
-    name: unit.rest
-      .replace(/^of\s+/i, "")
-      .replace(/^,\s*/, "")
-      .trim(),
+    name: cleanItemName(unit.rest),
+  };
+}
+
+/** Lowercase merge key so "Olive Oil" and "olive oil" collapse together. */
+export function normalizeIngredientName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/-/g, " ")
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Fill a stored recipe line that only has rawText / quantity / unit with an
+ * item-level name (and any missing qty/unit) so existing recipes backfill on read.
+ */
+export function backfillParsedIngredient(input: BackfillableIngredient): BackfilledIngredient {
+  const parsed = parseIngredientLine(input.rawText);
+  const storedName = input.name?.trim();
+  return {
+    name: storedName || parsed.name,
+    quantityMin: input.quantityMin ?? parsed.quantityMin,
+    quantityMax: input.quantityMax ?? parsed.quantityMax,
+    unit: input.unit ?? parsed.unit,
   };
 }
