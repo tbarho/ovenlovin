@@ -43,6 +43,8 @@ describe("PeopleReorder", () => {
     const handle = screen.getByRole("button", { name: "Reorder Ty" });
     expect(handle).toHaveStyle({ minWidth: "44px", minHeight: "44px", cursor: "grab" });
     expect(handle.closest(`[data-testid="person-card-shell-${ty.id}"]`)).toBeTruthy();
+    expect(handle.getAttribute("aria-describedby")).toBe("people-reorder-hint people-reorder");
+    expect(handle.getAttribute("aria-describedby")).not.toMatch(/DndDescribedBy/);
   });
 
   it("persists a keyboard reorder and announces the new position", async () => {

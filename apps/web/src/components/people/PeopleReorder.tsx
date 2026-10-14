@@ -25,6 +25,7 @@ import { useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { MOTION_SECONDS } from "@/lib/motion";
 import {
+  PEOPLE_REORDER_DND_ID,
   PEOPLE_REORDER_HINT_ID,
   movedLiveMessage,
   peopleReorderAnnouncements,
@@ -69,11 +70,16 @@ function DragHandle({
       className="olp-drag-handle"
       data-testid={personId ? `people-drag-handle-${personId}` : undefined}
       aria-label={`Reorder ${name}`}
-      aria-describedby={PEOPLE_REORDER_HINT_ID}
       disabled={disabled}
       style={{ minWidth: 44, minHeight: 44, cursor: "grab" }}
       {...attributes}
       {...listeners}
+      aria-describedby={[
+        PEOPLE_REORDER_HINT_ID,
+        (attributes as { "aria-describedby"?: string } | undefined)?.["aria-describedby"],
+      ]
+        .filter(Boolean)
+        .join(" ")}
       onPointerDown={(event) => {
         onMeasure?.(event.currentTarget);
         const listener = (listeners as { onPointerDown?: (e: typeof event) => void } | undefined)
@@ -266,6 +272,7 @@ export function PeopleReorder({
 
   return (
     <DndContext
+      id={PEOPLE_REORDER_DND_ID}
       sensors={sensors}
       collisionDetection={closestCenter}
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
@@ -293,9 +300,11 @@ export function PeopleReorder({
                 const rects = slots.map((slot) => slot.getBoundingClientRect());
                 const groups: number[][] = [];
                 rects.forEach((rect, slotIndex) => {
-                  const group = groups.find(
-                    (members) => Math.abs((rects[members[0]]?.top ?? 0) - rect.top) < 8
-                  );
+                  const group = groups.find((members) => {
+                    const first = members[0];
+                    if (first === undefined) return false;
+                    return Math.abs((rects[first]?.top ?? 0) - rect.top) < 8;
+                  });
                   if (group) group.push(slotIndex);
                   else groups.push([slotIndex]);
                 });
