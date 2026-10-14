@@ -32,6 +32,8 @@ describe("generateOpenApiDocument", () => {
     );
     expect(spec.paths?.["/recipes"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/{id}"]?.delete).toBeTruthy();
+    const recipe = spec.components?.schemas?.Recipe as { properties?: Record<string, unknown> };
+    expect(recipe?.properties).toHaveProperty("notes");
     expect(spec.paths?.["/meal-plans/{id}"]?.delete).toBeTruthy();
   });
 

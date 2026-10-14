@@ -1,13 +1,18 @@
 import { NextRequest } from "next/server";
-import { createPasteImporter, createUrlImporter } from "@ovenlovin/importers";
+import {
+  createPasteImporter,
+  createUrlImporter,
+  RecipeImportFetchError,
+} from "@ovenlovin/importers";
 import { copyRemoteImages, keepMainRecipeImages, RecipeService } from "@ovenlovin/core";
-import { isAiGatewayConfigured, isDemoModeEnv } from "@ovenlovin/core/onboarding";
+import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
 import { draftFromPlainText } from "@/lib/plain-import";
 import { createVercelImagePut } from "@/lib/blob-store";
+import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,13 +41,11 @@ export async function POST(request: NextRequest) {
       draft = draftFromPlainText(body.content);
     }
 
-    draft.images = isDemoModeEnv(process.env)
-      ? keepMainRecipeImages(draft.images)
-      : await copyRemoteImages(
-          keepMainRecipeImages(draft.images),
-          createVercelImagePut(),
-          `recipes/${householdId}`
-        );
+    draft.images = await copyRemoteImages(
+      keepMainRecipeImages(draft.images),
+      createVercelImagePut(),
+      `recipes/${householdId}`
+    );
 
     const db = getDatabase();
     const service = new RecipeService(db);
@@ -51,8 +54,13 @@ export async function POST(request: NextRequest) {
       createdBy: createdBy as string,
     });
 
+    await recordSuccessfulDemoImport(householdId);
+
     return createdResponse(recipe, `/api/v1/recipes/${recipe.id}`);
   } catch (error) {
+    if (error instanceof RecipeImportFetchError) {
+      return handleApiError(new BadRequestError(error.message), request.url);
+    }
     return handleApiError(error, request.url);
   }
 }
