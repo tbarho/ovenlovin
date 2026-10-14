@@ -148,10 +148,10 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByTestId("bucket-doesnt_like")).toBeVisible();
   await expect(page.getByTestId("bucket-loves")).toBeVisible();
   await shot(page, width, "person-jake");
-  await page.getByTestId("bucket-cant_eat").getByRole("button", { name: "Add" }).click();
-  await expect(page.getByRole("dialog", { name: /can't eat/i })).toBeVisible();
-  await shot(page, width, "sheet-add-rule");
-  await closeSheet(page);
+  await page.getByTestId("bucket-cant_eat").getByPlaceholder("Add…").click();
+  await expect(page.getByTestId("tile-peanut")).toBeVisible();
+  await shot(page, width, "inline-add-rule");
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: /edit jake/i }).click();
   await expect(page.getByRole("dialog", { name: /edit person/i })).toBeVisible();
   await shot(page, width, "sheet-edit-person");

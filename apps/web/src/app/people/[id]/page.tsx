@@ -14,6 +14,7 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
   if (!person) notFound();
   const rules = await service.getRulesForPerson(id);
   const loves = await service.getPreferencesForPerson(id, "love");
+  const householdPeople = await service.listPeopleByHousehold(person.householdId, { limit: 40 });
 
-  return <PersonPage person={person} rules={rules} loves={loves} />;
+  return <PersonPage person={person} people={householdPeople.items} rules={rules} loves={loves} />;
 }

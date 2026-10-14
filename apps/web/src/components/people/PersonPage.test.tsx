@@ -9,7 +9,7 @@ import { PersonPage } from "./PersonPage";
 const mockedApi = vi.mocked(api);
 
 function addIn(bucket: string) {
-  fireEvent.click(within(screen.getByTestId(bucket)).getByRole("button", { name: "Add" }));
+  fireEvent.focus(within(screen.getByTestId(bucket)).getByPlaceholderText("Add…"));
 }
 
 describe("PersonPage", () => {
@@ -79,7 +79,11 @@ describe("PersonPage", () => {
     render(<PersonPage person={testPerson({ displayName: "Child B" })} rules={[]} />);
 
     addIn("bucket-doesnt_like");
-    await typeFullWordAndKeepFocus(user, screen.getByLabelText(/search foods/i), "durian");
+    await typeFullWordAndKeepFocus(
+      user,
+      within(screen.getByTestId("bucket-doesnt_like")).getByLabelText(/add to doesn't like/i),
+      "durian"
+    );
     fireEvent.click(screen.getByTestId("use-custom"));
 
     const [, init] = mockedApi.mock.calls[0] ?? [];
@@ -130,20 +134,63 @@ describe("PersonPage", () => {
     });
   });
 
-  it("portals the add-rule sheet onto document.body so it covers the kitchen header", async () => {
+  it("adds from the inline typeahead without opening a sheet", async () => {
     const { container } = render(<PersonPage person={testPerson()} rules={[]} />);
     addIn("bucket-cant_eat");
+    expect(document.querySelector(".olp-sheet-root")).toBeNull();
+    expect(
+      within(screen.getByTestId("bucket-cant_eat")).getByTestId("tile-tree_nut")
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /edit parent a/i }));
     const root = document.querySelector(".olp-sheet-root");
     expect(root).toBeTruthy();
     expect(root?.parentElement).toBe(document.body);
     expect(container.querySelector(".olp-sheet-root")).toBeNull();
   });
 
-  it("keeps focus while typing in the add-rule search", async () => {
+  it("keeps focus while typing in the inline add field", async () => {
     const user = userEvent.setup();
     render(<PersonPage person={testPerson()} rules={[]} />);
-    addIn("bucket-cant_eat");
-    await typeFullWordAndKeepFocus(user, screen.getByLabelText(/search foods/i), "garlic");
-    expect(within(screen.getByRole("dialog")).getByTestId("tile-garlic")).toBeInTheDocument();
+    const input = within(screen.getByTestId("bucket-cant_eat")).getByLabelText(/add to can't eat/i);
+    await typeFullWordAndKeepFocus(user, input, "garlic");
+    expect(
+      within(screen.getByTestId("bucket-cant_eat")).getByTestId("tile-garlic")
+    ).toBeInTheDocument();
+  });
+
+  it("adds the first typeahead match on Enter", async () => {
+    const user = userEvent.setup();
+    mockedApi.mockResolvedValue(
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000097",
+        kind: "ingredient",
+        target: "garlic",
+        severity: "prefer_avoid",
+      })
+    );
+    render(<PersonPage person={testPerson()} rules={[]} />);
+    const input = within(screen.getByTestId("bucket-doesnt_like")).getByLabelText(
+      /add to doesn't like/i
+    );
+    await typeFullWordAndKeepFocus(user, input, "garlic");
+    await user.keyboard("{Enter}");
+    expect(mockedApi).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(mockedApi.mock.calls[0]?.[1]?.body))).toMatchObject({
+      target: "garlic",
+      severity: "prefer_avoid",
+    });
+  });
+
+  it("switches people from the household row", () => {
+    const current = testPerson({ displayName: "Ty" });
+    const jake = testPerson({
+      id: "00000000-0000-4000-8000-000000000018",
+      displayName: "Jake",
+    });
+    render(<PersonPage person={current} people={[current, jake]} rules={[]} />);
+    expect(screen.getByTestId(`switch-person-${jake.id}`)).toHaveAttribute(
+      "href",
+      `/people/${jake.id}`
+    );
   });
 });

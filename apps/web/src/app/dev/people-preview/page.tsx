@@ -65,6 +65,7 @@ export default async function PeoplePreviewPage({
         <div data-testid="preview-person">
           <PersonPage
             person={child}
+            people={[parent, child]}
             rules={rules.filter((rule) => rule.personId === child.id)}
             loves={loves.filter((item) => item.personId === child.id)}
           />
