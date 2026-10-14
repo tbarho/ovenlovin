@@ -1,18 +1,52 @@
 import { describe, expect, it } from "vitest";
-import { assignAisle, isPantryStaple } from "./shopping-aisles";
+import { assignAisle, canonicalIngredientName, isPantryStaple } from "./shopping-aisles";
 
 describe("assignAisle", () => {
   it("maps fixture grocery names to store sections", () => {
-    expect(assignAisle("yellow onion")).toEqual({ aisle: "Produce", category: "produce" });
-    expect(assignAisle("shredded mozzarella")).toEqual({ aisle: "Dairy", category: "dairy" });
-    expect(assignAisle("ziti")).toEqual({ aisle: "Grains", category: "grains" });
-    expect(assignAisle("olive oil")).toEqual({ aisle: "Oils & vinegar", category: "pantry" });
-    expect(assignAisle("acorn squash")).toEqual({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("yellow onion")).toMatchObject({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("shredded mozzarella")).toMatchObject({ aisle: "Dairy", category: "dairy" });
+    expect(assignAisle("ziti")).toMatchObject({ aisle: "Grains", category: "grains" });
+    expect(assignAisle("olive oil")).toMatchObject({
+      aisle: "Oils & vinegar",
+      category: "pantry",
+    });
+    expect(assignAisle("acorn squash")).toMatchObject({ aisle: "Produce", category: "produce" });
+  });
+
+  it("places carrots and other common produce, not Other", () => {
+    expect(assignAisle("carrots")).toMatchObject({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("4 carrots")).toMatchObject({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("celery")).toMatchObject({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("cauliflower")).toMatchObject({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("sweet potatoes")).toMatchObject({ aisle: "Produce", category: "produce" });
+  });
+
+  it("uses protein for meat and seafood, and distinct store aisles", () => {
+    expect(assignAisle("chicken thighs")).toMatchObject({ aisle: "Meat", category: "protein" });
+    expect(assignAisle("salmon")).toMatchObject({ aisle: "Seafood", category: "protein" });
+    expect(assignAisle("tofu")).toMatchObject({ aisle: "Produce", category: "protein" });
   });
 
   it("does not put black pepper in produce", () => {
-    expect(assignAisle("black pepper")).toEqual({ aisle: "Spices", category: "spices" });
-    expect(assignAisle("bell pepper")).toEqual({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("black pepper")).toMatchObject({ aisle: "Spices", category: "spices" });
+    expect(assignAisle("bell pepper")).toMatchObject({ aisle: "Produce", category: "produce" });
+  });
+
+  it("maps frozen and pantry staples", () => {
+    expect(assignAisle("frozen peas and carrots")).toMatchObject({
+      aisle: "Frozen",
+      category: "frozen",
+    });
+    expect(assignAisle("all-purpose flour")).toMatchObject({ aisle: "Baking", category: "pantry" });
+  });
+});
+
+describe("canonicalIngredientName", () => {
+  it("collapses salt variants to salt", () => {
+    expect(canonicalIngredientName("salt")).toBe("salt");
+    expect(canonicalIngredientName("kosher salt")).toBe("salt");
+    expect(canonicalIngredientName("sea salt")).toBe("salt");
+    expect(canonicalIngredientName("table salt")).toBe("salt");
   });
 });
 
