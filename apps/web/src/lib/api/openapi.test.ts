@@ -38,6 +38,8 @@ describe("generateOpenApiDocument", () => {
     const recipe = spec.components?.schemas?.Recipe as { properties?: Record<string, unknown> };
     expect(recipe?.properties).toHaveProperty("notes");
     expect(spec.paths?.["/meal-plans/{id}"]?.delete).toBeTruthy();
+    expect(spec.paths?.["/meal-plans/{id}/check"]?.get).toBeTruthy();
+    expect(spec.paths?.["/meal-plans/{id}/check"]?.post).toBeTruthy();
   });
 
   it("documents meal-plan POST and PATCH bodies with entries and no silent extras", () => {

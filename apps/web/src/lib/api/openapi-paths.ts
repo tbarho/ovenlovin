@@ -674,6 +674,16 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   });
 
   registry.registerPath({
+    method: "post",
+    path: "/meal-plans/{id}/check",
+    tags: ["meal-plans"],
+    summary:
+      "Check a meal plan against per-person rules. Same as GET; POST is kept for existing clients.",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: { 200: { description: "Check report" } },
+  });
+
+  registry.registerPath({
     method: "get",
     path: "/meal-plans/{id}/shopping-list",
     tags: ["meal-plans"],

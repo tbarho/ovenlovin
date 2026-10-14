@@ -237,6 +237,28 @@ test.describe("REST + MCP with a real API key", () => {
     }
   });
 
+  test("meal-plan check accepts GET as well as POST", async ({ request }) => {
+    const key = await createKitchenKey(request);
+    const headers = { Authorization: `ApiKey ${key}` };
+    const listed = await request.get("/api/v1/meal-plans", { headers });
+    expect(listed.status()).toBe(200);
+    const planId = ((await listed.json()) as { items: Array<{ id: string }> }).items[0]?.id;
+    expect(planId).toBeTruthy();
+
+    const viaGet = await request.get(`/api/v1/meal-plans/${planId}/check`, { headers });
+    expect(viaGet.status(), await viaGet.text()).toBe(200);
+    expect(viaGet.status()).not.toBe(405);
+    const getBody = (await viaGet.json()) as { status?: string; planId?: string };
+    expect(getBody.planId).toBe(planId);
+    expect(getBody.status).toMatch(/complete|incomplete/);
+
+    const viaPost = await request.post(`/api/v1/meal-plans/${planId}/check`, { headers });
+    expect(viaPost.status(), await viaPost.text()).toBe(200);
+    const postBody = (await viaPost.json()) as { status?: string; planId?: string };
+    expect(postBody.planId).toBe(planId);
+    expect(postBody.status).toBe(getBody.status);
+  });
+
   test("REST meal-plan POST and PATCH persist entries and reject unknown fields", async ({
     request,
   }) => {

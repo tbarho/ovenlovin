@@ -1610,6 +1610,26 @@
             "description": "Check report"
           }
         }
+      },
+      "post": {
+        "tags": ["meal-plans"],
+        "summary": "Check a meal plan against per-person rules. Same as GET; POST is kept for existing clients.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check report"
+          }
+        }
       }
     },
     "/meal-plans/{id}/shopping-list": {
