@@ -6,7 +6,7 @@ import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
 import { generateOpenApiDocument } from "../src/lib/api/openapi";
 
-const spec = generateOpenApiDocument();
+const spec = generateOpenApiDocument("https://ovenlovin.vercel.app");
 const outputDir = join(__dirname, "../../docs/src/content/api");
 const outputFile = join(outputDir, "openapi.json");
 

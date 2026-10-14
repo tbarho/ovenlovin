@@ -67,6 +67,38 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   });
 
   registry.registerPath({
+    method: "post",
+    path: "/recipes",
+    tags: ["recipes"],
+    summary: "Create a recipe directly (title, ingredients, steps)",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              title: z.string(),
+              description: z.string().optional(),
+              servings: z.number().int().positive().optional(),
+              prepTimeMinutes: z.number().int().nonnegative().optional(),
+              cookTimeMinutes: z.number().int().nonnegative().optional(),
+              images: z.array(z.string()).optional(),
+              ingredients: z.array(z.object({ rawText: z.string() })).optional(),
+              steps: z.array(z.object({ text: z.string() })).optional(),
+              cookbookId: z.string().uuid().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Created recipe",
+        content: { "application/json": { schema: recipeSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
     method: "get",
     path: "/recipes/{id}",
     tags: ["recipes"],
@@ -109,6 +141,15 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         content: { "application/json": { schema: recipeSchema } },
       },
     },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/recipes/{id}",
+    tags: ["recipes"],
+    summary: "Soft-delete a recipe",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: { 204: { description: "Deleted" } },
   });
 
   registry.registerPath({
@@ -345,5 +386,325 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         content: { "application/json": { schema: z.object({ url: z.string() }) } },
       },
     },
+  });
+
+  const personRuleSchema = z
+    .object({
+      id: z.string().uuid(),
+      personId: z.string().uuid(),
+      kind: z.enum(["allergen", "ingredient", "ingredient_category", "diet", "tag", "custom"]),
+      target: z.string(),
+      severity: z.enum(["block", "warn", "prefer_avoid"]),
+      label: z.string().nullable().optional(),
+    })
+    .openapi("PersonRule");
+
+  registry.registerPath({
+    method: "get",
+    path: "/people",
+    tags: ["people"],
+    summary: "List people in the household",
+    responses: {
+      200: {
+        description: "People page",
+        content: { "application/json": { schema: z.object({ items: z.array(personSchema) }) } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/people",
+    tags: ["people"],
+    summary: "Create a person",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({ displayName: z.string(), notes: z.string().optional() }),
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Created person",
+        content: { "application/json": { schema: personSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/people/{id}",
+    tags: ["people"],
+    summary: "Get a person",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: { description: "Person", content: { "application/json": { schema: personSchema } } },
+    },
+  });
+
+  registry.registerPath({
+    method: "patch",
+    path: "/people/{id}",
+    tags: ["people"],
+    summary: "Update a person",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              displayName: z.string().optional(),
+              notes: z.string().nullable().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Updated person",
+        content: { "application/json": { schema: personSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/people/{id}",
+    tags: ["people"],
+    summary: "Soft-delete a person",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: { 204: { description: "Deleted" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/people/{id}/rules",
+    tags: ["people"],
+    summary: "List a person's Can't eat / Doesn't like rules",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: {
+        description: "Rules",
+        content: { "application/json": { schema: z.array(personRuleSchema) } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/people/{id}/rules",
+    tags: ["people"],
+    summary: "Add a rule. Not medical advice — always check labels.",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              kind: z.enum([
+                "allergen",
+                "ingredient",
+                "ingredient_category",
+                "diet",
+                "tag",
+                "custom",
+              ]),
+              target: z.string(),
+              severity: z.enum(["block", "warn", "prefer_avoid"]),
+              label: z.string().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Created rule",
+        content: { "application/json": { schema: personRuleSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/people/{id}/rules/{ruleId}",
+    tags: ["people"],
+    summary: "Remove a rule",
+    request: { params: z.object({ id: z.string().uuid(), ruleId: z.string().uuid() }) },
+    responses: { 204: { description: "Deleted" } },
+  });
+
+  const mealPlanSchema = z
+    .object({
+      id: z.string().uuid(),
+      householdId: z.string().uuid(),
+      weekStart: z.string(),
+      status: z.enum(["draft", "approved", "archived"]),
+      needsRecheck: z.boolean(),
+    })
+    .openapi("MealPlan");
+
+  registry.registerPath({
+    method: "get",
+    path: "/meal-plans",
+    tags: ["meal-plans"],
+    summary: "List meal plans",
+    request: {
+      query: z.object({
+        weekStart: z.string().optional(),
+        weekEnd: z.string().optional(),
+        status: z.string().optional(),
+      }),
+    },
+    responses: {
+      200: {
+        description: "Meal plan page",
+        content: { "application/json": { schema: z.object({ items: z.array(mealPlanSchema) }) } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/meal-plans",
+    tags: ["meal-plans"],
+    summary: "Create a meal plan",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              weekStart: z.string(),
+              status: z.enum(["draft", "approved"]).optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Created plan",
+        content: { "application/json": { schema: mealPlanSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/meal-plans/{id}",
+    tags: ["meal-plans"],
+    summary: "Get a meal plan",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: {
+        description: "Meal plan",
+        content: { "application/json": { schema: mealPlanSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "patch",
+    path: "/meal-plans/{id}",
+    tags: ["meal-plans"],
+    summary: "Update a meal plan",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              status: z.enum(["draft", "approved", "archived"]).optional(),
+              acknowledgedWarnings: z.array(z.string()).optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Updated plan",
+        content: { "application/json": { schema: mealPlanSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/meal-plans/{id}",
+    tags: ["meal-plans"],
+    summary: "Soft-delete a meal plan",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: { 204: { description: "Deleted" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/meal-plans/{id}/check",
+    tags: ["meal-plans"],
+    summary: "Check a meal plan against per-person rules. Not medical advice.",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: { 200: { description: "Check report" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/meal-plans/{id}/shopping-list",
+    tags: ["meal-plans"],
+    summary: "Export a shopping list for a meal plan",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      query: z.object({ format: z.enum(["json", "csv", "markdown", "text"]).optional() }),
+    },
+    responses: { 200: { description: "Shopping list" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/households",
+    tags: ["households"],
+    summary: "Get the authenticated household",
+    responses: { 200: { description: "Household" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/api-keys",
+    tags: ["api-keys"],
+    summary: "List API keys (hashes only)",
+    responses: { 200: { description: "API keys" } },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/api-keys",
+    tags: ["api-keys"],
+    summary: "Create an API key. The plaintext is returned once.",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              name: z.string().optional(),
+              scopes: z.array(z.string()).optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: { 201: { description: "Created key with plaintext" } },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/api-keys/{id}",
+    tags: ["api-keys"],
+    summary: "Revoke an API key",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: { 204: { description: "Revoked" } },
   });
 }

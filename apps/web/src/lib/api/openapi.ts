@@ -13,30 +13,33 @@ export const registry = new OpenAPIRegistry();
 
 registerApiPaths(registry);
 
-export function generateOpenApiDocument(): oas30.OpenAPIObject {
-  registry.registerComponent("securitySchemes", "bearerAuth", {
-    type: "http",
-    scheme: "bearer",
-    bearerFormat: "JWT",
-    description: "Clerk JWT token for authenticated users",
-  });
-
+export function generateOpenApiDocument(origin?: string): oas30.OpenAPIObject {
   registry.registerComponent("securitySchemes", "apiKey", {
     type: "apiKey",
     in: "header",
     name: "Authorization",
-    description: "API key for bot clients. Format: `ApiKey <key>`",
+    description:
+      "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings.",
+  });
+
+  registry.registerComponent("securitySchemes", "bearerAuth", {
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "API key or Clerk JWT",
+    description:
+      "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT.",
   });
 
   const generator = new OpenApiGeneratorV3(registry.definitions);
+  const base = (origin ?? "https://ovenlovin.vercel.app").replace(/\/$/, "");
 
   return generator.generateDocument({
     openapi: "3.1.0",
     info: {
-      version: "1.0.0",
+      version: "0.1.0",
       title: "OvenLovin API",
       description:
-        "LLM-optimized recipe & family meal-planning API. Bot-first interfaces for Grok, ChatGPT, Claude, and other AI agents.",
+        "The family recipe box your AI can actually use, and it knows who can't eat what. REST for agents. Not medical advice — always check labels.",
       license: {
         name: "MIT",
         url: "https://github.com/tbarho/ovenlovin/blob/main/LICENSE",
@@ -48,14 +51,15 @@ export function generateOpenApiDocument(): oas30.OpenAPIObject {
     },
     servers: [
       {
-        url: "https://your-app.vercel.app/api/v1",
-        description: "Your OvenLovin instance",
+        url: `${base}/api/v1`,
+        description: "This OvenLovin instance",
       },
       {
         url: "http://localhost:3000/api/v1",
         description: "Local development",
       },
     ],
+    security: [{ apiKey: [] }, { bearerAuth: [] }],
   });
 }
 
