@@ -127,6 +127,12 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto("/people");
   await expect(page.getByText("Jake")).toBeVisible();
+  await expect(page.locator('[data-testid^="person-card-cant_eat-"]').first()).toBeVisible();
+  await expect(page.locator('[data-testid^="person-card-doesnt_like-"]').first()).toBeVisible();
+  await expect(page.locator('[data-testid^="person-card-loves-"]').first()).toBeVisible();
+  await expect(
+    page.locator('[data-testid^="person-card-loves-"]').filter({ hasText: /salmon/i })
+  ).toHaveCount(1);
   await shot(page, width, "people-list");
 
   await page.goto(urls.tyHref);

@@ -3,7 +3,7 @@ import { WhoCanEat } from "@/components/kitchen/WhoCanEat";
 import { PeopleHome } from "@/components/people/PeopleHome";
 import { PersonPage } from "@/components/people/PersonPage";
 import { writePersonNotes } from "@/lib/person-appearance";
-import { testPerson, testPersonRule } from "@/test/fixtures";
+import { testPerson, testPersonRule, testPreference } from "@/test/fixtures";
 import "@/app/prototype/people/prototype.css";
 import "@/components/people/people.css";
 
@@ -46,6 +46,13 @@ const rules = [
   }),
 ];
 
+const loves = [
+  testPreference({
+    personId: child.id,
+    value: "salmon",
+  }),
+];
+
 export default async function PeoplePreviewPage({
   searchParams,
 }: {
@@ -56,7 +63,11 @@ export default async function PeoplePreviewPage({
     <AppChrome>
       {view === "person" ? (
         <div data-testid="preview-person">
-          <PersonPage person={child} rules={rules.filter((rule) => rule.personId === child.id)} />
+          <PersonPage
+            person={child}
+            rules={rules.filter((rule) => rule.personId === child.id)}
+            loves={loves.filter((item) => item.personId === child.id)}
+          />
         </div>
       ) : view === "recipe" ? (
         <div data-testid="preview-recipe" className="kitchen">
@@ -73,7 +84,12 @@ export default async function PeoplePreviewPage({
         </div>
       ) : (
         <div data-testid="preview-list">
-          <PeopleHome householdName="Household 1" people={[parent, child]} rules={rules} />
+          <PeopleHome
+            householdName="Household 1"
+            people={[parent, child]}
+            rules={rules}
+            loves={loves}
+          />
         </div>
       )}
     </AppChrome>

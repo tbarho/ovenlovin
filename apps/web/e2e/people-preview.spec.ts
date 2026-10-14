@@ -7,6 +7,12 @@ test("unsigned people preview shows the production people cards", async ({ page 
   await expect(page.getByRole("heading", { name: "Household 1" })).toBeVisible();
   await expect(page.getByText("Child B")).toBeVisible();
   await expect(page.getByTestId("severe-badge")).toHaveText(/1 severe allergy/i);
+  await expect(
+    page.getByTestId("person-card-cant_eat-00000000-0000-4000-8000-000000000012")
+  ).toContainText(/peanut/i);
+  await expect(
+    page.getByTestId("person-card-loves-00000000-0000-4000-8000-000000000012")
+  ).toContainText(/salmon/i);
   await page.screenshot({
     path: `../../e2e-artifacts/people-preview-list-${testInfo.project.name}.png`,
     fullPage: true,

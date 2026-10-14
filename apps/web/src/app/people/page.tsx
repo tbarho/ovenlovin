@@ -14,13 +14,16 @@ export default async function PeoplePage() {
   const people = await service.listPeopleByHousehold(context.householdId, {
     limit: 40,
   });
-  const rules = await service.getRulesForPeople(people.items.map((person) => person.id));
+  const personIds = people.items.map((person) => person.id);
+  const rules = await service.getRulesForPeople(personIds);
+  const loves = await service.getPreferencesForPeople(personIds, "love");
 
   return (
     <PeopleHome
       householdName={household?.name ?? "Your kitchen"}
       people={people.items}
       rules={rules}
+      loves={loves}
     />
   );
 }

@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { displayNameForTarget, uiBucketForRule } from "@ovenlovin/allergens";
-import type { Person, PersonRule } from "@ovenlovin/core";
+import {
+  RULE_UI_BUCKETS,
+  displayNameForTarget,
+  loveLabel,
+  uiBucketForRule,
+} from "@ovenlovin/allergens";
+import type { Person, PersonRule, Preference } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
 import { summarizePeople } from "@/lib/people-summary";
 import {
@@ -14,10 +19,45 @@ import {
   writePersonNotes,
   type PersonAppearance,
 } from "@/lib/person-appearance";
-import { Avatar, Chip, EmptyState } from "./ui";
+import { Avatar, Chip, EmptyState, type ChipBucket } from "./ui";
 
-function PersonCard({ person, rules }: { person: Person; rules: PersonRule[] }) {
+const CARD_LANES: Array<{ bucket: ChipBucket; label: string }> = [
+  ...RULE_UI_BUCKETS,
+  { bucket: "loves", label: "Loves" },
+];
+
+const EMPTY_LOVES: Preference[] = [];
+
+function PersonCard({
+  person,
+  rules,
+  loves,
+}: {
+  person: Person;
+  rules: PersonRule[];
+  loves: Preference[];
+}) {
   const appearance = appearanceForPerson(person);
+  const grouped = useMemo(() => {
+    const map: Record<ChipBucket, Array<{ key: string; target: string; label: string }>> = {
+      cant_eat: [],
+      doesnt_like: [],
+      loves: loves.map((item) => ({
+        key: item.id,
+        target: item.value,
+        label: loveLabel(item.value),
+      })),
+    };
+    for (const rule of rules) {
+      map[uiBucketForRule(rule)].push({
+        key: rule.id,
+        target: rule.target,
+        label: displayNameForTarget(rule.target),
+      });
+    }
+    return map;
+  }, [loves, rules]);
+
   return (
     <Link
       href={`/people/${person.id}`}
@@ -25,22 +65,36 @@ function PersonCard({ person, rules }: { person: Person; rules: PersonRule[] }) 
       data-testid={`person-chip-${person.id}`}
     >
       <Avatar name={person.displayName} appearance={appearance} size={48} />
-      <span>
+      <span className="olp-person-card-body">
         <b>{person.displayName}</b>
-        {rules.length > 0 ? (
-          <span className="olp-passport">
-            {rules.map((rule) => (
-              <Chip
-                key={rule.id}
-                target={rule.target}
-                label={displayNameForTarget(rule.target)}
-                bucket={uiBucketForRule(rule)}
-              />
-            ))}
-          </span>
-        ) : (
-          <small>No rules</small>
-        )}
+        <span className="olp-person-card-lanes">
+          {CARD_LANES.map((lane) => {
+            const items = grouped[lane.bucket];
+            return (
+              <span
+                key={lane.bucket}
+                className={`olp-person-card-lane olp-person-card-lane-${lane.bucket}`}
+                data-testid={`person-card-${lane.bucket}-${person.id}`}
+              >
+                <span className="olp-person-card-lane-label">{lane.label}</span>
+                {items.length > 0 ? (
+                  <span className="olp-passport">
+                    {items.map((item) => (
+                      <Chip
+                        key={item.key}
+                        target={item.target}
+                        label={item.label}
+                        bucket={lane.bucket}
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  <small>None</small>
+                )}
+              </span>
+            );
+          })}
+        </span>
       </span>
     </Link>
   );
@@ -135,10 +189,12 @@ export function PeopleHome({
   householdName,
   people,
   rules,
+  loves = EMPTY_LOVES,
 }: {
   householdName: string;
   people: Person[];
   rules: PersonRule[];
+  loves?: Preference[];
 }) {
   const summary = useMemo(() => summarizePeople(people, rules), [people, rules]);
   const rulesByPerson = useMemo(() => {
@@ -150,6 +206,15 @@ export function PeopleHome({
     }
     return map;
   }, [rules]);
+  const lovesByPerson = useMemo(() => {
+    const map = new Map<string, Preference[]>();
+    for (const item of loves) {
+      const list = map.get(item.personId) ?? [];
+      list.push(item);
+      map.set(item.personId, list);
+    }
+    return map;
+  }, [loves]);
 
   return (
     <div className="olp kitchen-people">
@@ -176,6 +241,7 @@ export function PeopleHome({
                 key={person.id}
                 person={person}
                 rules={rulesByPerson.get(person.id) ?? []}
+                loves={lovesByPerson.get(person.id) ?? []}
               />
             ))}
           </div>
