@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { draftFromPlainText, parseMinutesFromText } from "./plain-import";
+import { draftFromPlainText, parseMinutesFromText, stripLeadingStepNumber } from "./plain-import";
 
 describe("draftFromPlainText", () => {
   it("uses the first line as the title and labeled sections", () => {
@@ -67,6 +67,39 @@ describe("draftFromPlainText", () => {
     expect(draft.totalTimeMinutes).toBe(75);
     expect(draft.notes).toBe("Use leftover steak.\nServe over egg noodles.");
     expect(draft.steps.map((item) => item.text)).toEqual(["Roast until flaky."]);
+  });
+
+  it("strips leading step numbers and captures a Source URL", () => {
+    const draft = draftFromPlainText(
+      [
+        "Beef Stroganoff",
+        "Source: https://natashaskitchen.com/beef-stroganoff/",
+        "Ingredients",
+        "1 lb beef",
+        "Steps",
+        "1. Sear the beef.",
+        "2) Stir in sour cream.",
+      ].join("\n")
+    );
+    expect(draft.steps.map((item) => item.text)).toEqual(["Sear the beef.", "Stir in sour cream."]);
+    expect(draft.source.url).toBe("https://natashaskitchen.com/beef-stroganoff/");
+    expect(draft.ingredients.map((item) => item.rawText)).toEqual(["1 lb beef"]);
+  });
+
+  it("stores a non-URL Source line as attribution", () => {
+    const draft = draftFromPlainText(
+      ["Soup", "Source: Family cookbook", "Ingredients", "1 onion", "Steps", "Simmer."].join("\n")
+    );
+    expect(draft.source.url).toBeUndefined();
+    expect(draft.source.attribution).toBe("Family cookbook");
+  });
+});
+
+describe("stripLeadingStepNumber", () => {
+  it("removes 1. and 2) prefixes but leaves ingredient-like text", () => {
+    expect(stripLeadingStepNumber("1. Sear the beef.")).toBe("Sear the beef.");
+    expect(stripLeadingStepNumber("2) Mix well.")).toBe("Mix well.");
+    expect(stripLeadingStepNumber("1 cup flour")).toBe("1 cup flour");
   });
 });
 
