@@ -159,27 +159,50 @@
   background: #ffffff;
 }
 
-.kitchen-people .olp-person-card-body {
+.kitchen-people .olp-person-card-body,
+.olp-person-ghost .olp-person-card-body {
   display: grid;
   gap: 8px;
   min-width: 0;
   flex: 1;
 }
 
-.kitchen-people .olp-person-card-lanes {
+.kitchen-people .olp-person-card-body > b,
+.olp-person-ghost .olp-person-card-body > b {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.kitchen-people .olp-person-card-lanes,
+.olp-person-ghost .olp-person-card-lanes {
   display: grid;
   gap: 6px;
 }
 
-.kitchen-people .olp-person-card-lane {
+.kitchen-people .olp-person-card-lane,
+.olp-person-ghost .olp-person-card-lane {
   display: grid;
-  grid-template-columns: 5.75rem minmax(0, 1fr);
+  grid-template-columns: 5.5rem minmax(0, 1fr);
   gap: 8px;
   align-items: start;
+  min-height: calc(2 * 24px + 4px);
 }
 
-.kitchen-people .olp-person-card-lane-label {
-  padding-top: 5px;
+.kitchen-people .olp-person-card-lane-cant_eat,
+.olp-person-ghost .olp-person-card-lane-cant_eat {
+  padding: 4px 6px 4px 4px;
+  margin: 0 -6px 0 -4px;
+  border-radius: 8px;
+  background: #fff6f3;
+}
+
+.kitchen-people .olp-person-card-lane-label,
+.olp-person-ghost .olp-person-card-lane-label {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding-top: 4px;
   color: #6b6b6b;
   font-size: 11px;
   font-weight: 700;
@@ -187,19 +210,69 @@
   line-height: 1.2;
 }
 
-.kitchen-people .olp-person-card-lane .olp-passport {
-  gap: 4px;
+.kitchen-people .olp-person-card-lane-cant_eat .olp-person-card-lane-label,
+.olp-person-ghost .olp-person-card-lane-cant_eat .olp-person-card-lane-label {
+  color: #a14a38;
 }
 
-.kitchen-people .olp-person-card-lane small {
-  padding-top: 4px;
+.kitchen-people .olp-person-card-lane-count,
+.olp-person-ghost .olp-person-card-lane-count {
+  color: #9a9a9a;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.kitchen-people .olp-person-card-lane-cant_eat .olp-person-card-lane-count,
+.olp-person-ghost .olp-person-card-lane-cant_eat .olp-person-card-lane-count {
+  color: #c4473a;
+}
+
+.kitchen-people .olp-person-card-chips,
+.kitchen-people .olp-person-card-lane .olp-passport,
+.olp-person-ghost .olp-person-card-chips,
+.olp-person-ghost .olp-person-card-lane .olp-passport {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 4px;
+  min-height: calc(2 * 24px + 4px);
+  max-height: calc(2 * 24px + 4px);
+  overflow: hidden;
+}
+
+.kitchen-people .olp-person-card-lane small,
+.olp-person-ghost .olp-person-card-lane small {
+  display: flex;
+  align-items: center;
+  min-height: calc(2 * 24px + 4px);
   color: #9a9a9a;
 }
 
-.kitchen-people .olp-person-chip .olp-chip-main {
+.kitchen-people .olp-person-chip .olp-chip-main,
+.olp-person-ghost .olp-person-chip .olp-chip-main {
   min-height: 0;
-  padding: 4px 8px;
-  font-size: 12px;
+  padding: 3px 7px;
+  font-size: 11px;
+  gap: 4px;
+}
+
+.kitchen-people .olp-person-chip .olp-food-icon,
+.olp-person-ghost .olp-person-chip .olp-food-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.kitchen-people .olp-person-card-more,
+.olp-person-ghost .olp-person-card-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #f4efe8;
+  color: #5c564c;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .olp-person-switch {

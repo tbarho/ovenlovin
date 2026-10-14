@@ -1,105 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  RULE_UI_BUCKETS,
-  displayNameForTarget,
-  loveLabel,
-  uiBucketForRule,
-} from "@ovenlovin/allergens";
 import type { Person, PersonRule, Preference } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
 import { summarizePeople } from "@/lib/people-summary";
 import {
   AVATAR_COLORS,
   AVATAR_EMOJIS,
-  appearanceForPerson,
   writePersonNotes,
   type PersonAppearance,
 } from "@/lib/person-appearance";
 import { PeopleReorder } from "./PeopleReorder";
-import { Avatar, Chip, EmptyState, type ChipBucket } from "./ui";
-
-const CARD_LANES: Array<{ bucket: ChipBucket; label: string }> = [
-  ...RULE_UI_BUCKETS,
-  { bucket: "loves", label: "Loves" },
-];
+import { PersonCard } from "./PersonCard";
+import { Avatar, EmptyState } from "./ui";
 
 const EMPTY_LOVES: Preference[] = [];
-
-function PersonCard({
-  person,
-  rules,
-  loves,
-}: {
-  person: Person;
-  rules: PersonRule[];
-  loves: Preference[];
-}) {
-  const appearance = appearanceForPerson(person);
-  const grouped = useMemo(() => {
-    const map: Record<ChipBucket, Array<{ key: string; target: string; label: string }>> = {
-      cant_eat: [],
-      doesnt_like: [],
-      loves: loves.map((item) => ({
-        key: item.id,
-        target: item.value,
-        label: loveLabel(item.value),
-      })),
-    };
-    for (const rule of rules) {
-      map[uiBucketForRule(rule)].push({
-        key: rule.id,
-        target: rule.target,
-        label: displayNameForTarget(rule.target),
-      });
-    }
-    return map;
-  }, [loves, rules]);
-
-  return (
-    <Link
-      href={`/people/${person.id}`}
-      className="olp-person-chip"
-      data-testid={`person-chip-${person.id}`}
-    >
-      <Avatar name={person.displayName} appearance={appearance} size={48} />
-      <span className="olp-person-card-body">
-        <b>{person.displayName}</b>
-        <span className="olp-person-card-lanes">
-          {CARD_LANES.map((lane) => {
-            const items = grouped[lane.bucket];
-            return (
-              <span
-                key={lane.bucket}
-                className={`olp-person-card-lane olp-person-card-lane-${lane.bucket}`}
-                data-testid={`person-card-${lane.bucket}-${person.id}`}
-              >
-                <span className="olp-person-card-lane-label">{lane.label}</span>
-                {items.length > 0 ? (
-                  <span className="olp-passport">
-                    {items.map((item) => (
-                      <Chip
-                        key={item.key}
-                        target={item.target}
-                        label={item.label}
-                        bucket={lane.bucket}
-                      />
-                    ))}
-                  </span>
-                ) : (
-                  <small>None</small>
-                )}
-              </span>
-            );
-          })}
-        </span>
-      </span>
-    </Link>
-  );
-}
 
 function AddPersonForm() {
   const router = useRouter();

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { E2E_PEOPLE, E2E_RECIPES } from "./e2e-kitchen";
+import {
+  E2E_PEOPLE,
+  E2E_RECIPES,
+  E2E_TY_CANT_EAT,
+  E2E_TY_DOESNT_LIKE,
+  E2E_TY_LOVES,
+} from "./e2e-kitchen";
 
 describe("e2e kitchen fixture", () => {
   it("seeds the requested household members", () => {
@@ -21,6 +27,14 @@ describe("e2e kitchen fixture", () => {
       1
     );
     expect(E2E_RECIPES.filter((recipe) => recipe.cookbook === "weekend").length).toBeGreaterThan(1);
+  });
+
+  it("seeds a dense person with 6+ items in every People card section", () => {
+    expect(E2E_TY_CANT_EAT.length).toBeGreaterThanOrEqual(6);
+    expect(E2E_TY_DOESNT_LIKE.length).toBeGreaterThanOrEqual(6);
+    expect(E2E_TY_LOVES.length).toBeGreaterThanOrEqual(6);
+    expect(E2E_TY_CANT_EAT.filter((item) => item.kind === "allergen").length).toBeGreaterThan(1);
+    expect(E2E_TY_LOVES[0]).toBe("salmon");
   });
 
   it("includes a peanut dish and a pine-nut pesto so Jake's rules fire", () => {
