@@ -183,11 +183,10 @@
 .kitchen-people .olp-person-card-lane,
 .olp-person-ghost .olp-person-card-lane {
   --chip-row: 26px;
-  display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  gap: 8px;
-  align-items: start;
-  min-height: calc(2 * var(--chip-row) + 4px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: calc(16px + 2 * var(--chip-row) + 4px);
 }
 
 .kitchen-people .olp-person-card-lane-cant_eat,
@@ -203,7 +202,6 @@
   display: flex;
   align-items: baseline;
   gap: 5px;
-  padding-top: 4px;
   color: #6b6b6b;
   font-size: 11px;
   font-weight: 700;
