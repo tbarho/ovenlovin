@@ -9,6 +9,12 @@ export function recipeGalleryImages(images: string[] | null | undefined): string
   return (images ?? []).filter((image) => image.trim().length > 0);
 }
 
+/** Import and recipe-detail persist only the main photo. Cookbook mosaics still use one image per recipe. */
+export function keepMainRecipeImages(images: string[] | null | undefined): string[] {
+  const main = recipeMainImage(images);
+  return main ? [main] : [];
+}
+
 export function isStoredBlobUrl(url: string): boolean {
   try {
     const host = new URL(url).host;

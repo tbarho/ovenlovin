@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createPasteImporter, createUrlImporter } from "@ovenlovin/importers";
-import { copyRemoteImages, RecipeService } from "@ovenlovin/core";
+import { copyRemoteImages, keepMainRecipeImages, RecipeService } from "@ovenlovin/core";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     draft.images = await copyRemoteImages(
-      draft.images ?? [],
+      keepMainRecipeImages(draft.images),
       createVercelImagePut(),
       `recipes/${householdId}`
     );
