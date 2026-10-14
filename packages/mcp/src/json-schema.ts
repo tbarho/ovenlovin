@@ -14,7 +14,7 @@ export type McpJsonSchema = {
  */
 export function zodToMcpInputSchema(schema: z.ZodType): McpJsonSchema {
   try {
-    const raw = z.toJSONSchema(schema) as Record<string, unknown>;
+    const raw = z.toJSONSchema(schema, { io: "input" }) as Record<string, unknown>;
     const { $schema: _ignored, ...rest } = raw;
     if (rest.type === "object" || rest.properties || rest.$ref) {
       return { type: "object", ...rest } as McpJsonSchema;
