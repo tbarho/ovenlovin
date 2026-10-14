@@ -56,5 +56,20 @@ describe("describeConfigStatus", () => {
     expect(status.mode).toBe("demo");
     expect(status.checks.find((c) => c.id === "clerk")?.detail).toMatch(/not required/);
     expect(status.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/URL import works/);
+    expect(status.checks.find((c) => c.id === "blob")?.configured).toBe(false);
+    expect(status.checks.find((c) => c.id === "blob")?.required).toBe(false);
+    expect(status.checks.find((c) => c.id === "blob")?.detail).toMatch(/BLOB_READ_WRITE_TOKEN/);
+  });
+
+  it("reports when Vercel Blob is configured", () => {
+    const status = describeConfigStatus({
+      databaseConfigured: true,
+      databaseReachable: true,
+      clerkConfigured: true,
+      aiGatewayConfigured: true,
+      blobConfigured: true,
+    });
+    expect(status.checks.find((c) => c.id === "blob")?.configured).toBe(true);
+    expect(status.checks.find((c) => c.id === "blob")?.detail).toMatch(/copied to Vercel Blob/);
   });
 });

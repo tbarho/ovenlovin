@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   copyRemoteImages,
+  headersForRemoteImage,
   imageExtensionFromUrl,
+  isBlobStoreConfigured,
   isStoredBlobUrl,
   keepMainRecipeImages,
   recipeGalleryImages,
@@ -53,6 +55,18 @@ describe("recipe images", () => {
     expect(result[0]).toBe("https://blob.example/recipes/hh/1.jpg");
     expect(result[1]).toBe("https://cdn.example/fail.jpg");
     expect(result[2]).toBe("https://abc.public.blob.vercel-storage.com/already.jpg");
+    expect(fetchMock).toHaveBeenCalled();
+    const firstHeaders = fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> };
+    expect(firstHeaders.headers?.["User-Agent"]).toMatch(/Mozilla\/5.0/);
+    expect(firstHeaders.headers?.Referer).toBe("https://cdn.example/");
     vi.unstubAllGlobals();
+  });
+
+  it("builds browser-like image headers and reports when Blob is configured", () => {
+    expect(headersForRemoteImage("https://cdn.example/photo.jpg")["User-Agent"]).toMatch(
+      /Mozilla\/5.0/
+    );
+    expect(isBlobStoreConfigured({ BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_x" })).toBe(true);
+    expect(isBlobStoreConfigured({})).toBe(false);
   });
 });

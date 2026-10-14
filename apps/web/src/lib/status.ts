@@ -4,6 +4,7 @@ import {
   isAiGatewayConfigured,
   type ConfigStatus,
 } from "@ovenlovin/core/onboarding";
+import { isBlobStoreConfigured } from "@ovenlovin/core";
 import { isDemoModeEnabled } from "./demo/mode";
 
 export async function getConfigStatus(): Promise<ConfigStatus> {
@@ -30,6 +31,7 @@ export async function getConfigStatus(): Promise<ConfigStatus> {
     databaseReachable,
     clerkConfigured,
     aiGatewayConfigured,
+    blobConfigured: isBlobStoreConfigured(process.env),
     demoMode: isDemoModeEnabled(),
   });
 }

@@ -53,6 +53,42 @@ export type StoredImagePut = {
   (input: ImagePutInput): Promise<string | null>;
 };
 
+/** Sites that 403 the importer UA often 403 bare image fetches too. */
+export const RECIPE_IMAGE_FETCH_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
+const BLOCKED_IMAGE_STATUSES = new Set([401, 403, 406, 429]);
+
+export function headersForRemoteImage(url: string): Record<string, string> {
+  try {
+    return { ...RECIPE_IMAGE_FETCH_HEADERS, Referer: `${new URL(url).origin}/` };
+  } catch {
+    return { ...RECIPE_IMAGE_FETCH_HEADERS };
+  }
+}
+
+export function isBlobStoreConfigured(
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  return Boolean(env.BLOB_READ_WRITE_TOKEN);
+}
+
+async function fetchRemoteImage(url: string): Promise<Response> {
+  const headers = headersForRemoteImage(url);
+  let response = await fetch(url, { redirect: "follow", headers });
+  if (!response.ok && BLOCKED_IMAGE_STATUSES.has(response.status)) {
+    response = await fetch(url, {
+      redirect: "follow",
+      headers: { ...headers, "Cache-Control": "no-cache" },
+    });
+  }
+  return response;
+}
+
 export async function copyRemoteImages(
   urls: string[],
   put: StoredImagePut | undefined,
@@ -70,10 +106,7 @@ export async function copyRemoteImages(
     }
 
     try {
-      const response = await fetch(url, {
-        redirect: "follow",
-        headers: { Accept: "image/*,*/*;q=0.8" },
-      });
+      const response = await fetchRemoteImage(url);
       if (!response.ok) {
         copied.push(url);
         continue;

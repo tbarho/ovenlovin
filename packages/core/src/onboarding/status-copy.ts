@@ -1,5 +1,5 @@
 export type ConfigFlag = {
-  id: "database" | "clerk" | "aiGateway";
+  id: "database" | "clerk" | "aiGateway" | "blob";
   label: string;
   configured: boolean;
   required: boolean;
@@ -18,6 +18,7 @@ export function describeConfigStatus(input: {
   databaseReachable?: boolean;
   clerkConfigured: boolean;
   aiGatewayConfigured: boolean;
+  blobConfigured?: boolean;
   demoMode?: boolean;
 }): ConfigStatus {
   const demo = input.demoMode === true;
@@ -55,6 +56,16 @@ export function describeConfigStatus(input: {
         : input.aiGatewayConfigured
           ? "Recipe paste import can use the gateway via OIDC or an API key."
           : "On Vercel, AI Gateway authenticates with OIDC — no API key needed. For local or non-Vercel hosts, set AI_GATEWAY_API_KEY. URL import still works without it.",
+    },
+    {
+      id: "blob",
+      label: "Vercel Blob",
+      configured: input.blobConfigured === true,
+      required: false,
+      detail:
+        input.blobConfigured === true
+          ? "Imported recipe photos are copied to Vercel Blob."
+          : "Connect a Blob store to this Vercel project (Storage → Blob) so BLOB_READ_WRITE_TOKEN is set. Without it, imported images stay hot-linked to the source site.",
     },
   ];
 
