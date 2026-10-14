@@ -106,6 +106,7 @@ describe("Paste Importer", () => {
           prepTimeMinutes: 15,
           cookTimeMinutes: 12,
           totalTimeMinutes: 27,
+          notes: "Chill the dough overnight.",
           ingredients: [
             {
               text: "2 1/4 cups all-purpose flour",
@@ -139,6 +140,7 @@ describe("Paste Importer", () => {
       expect(draft.prepTimeMinutes).toBe(15);
       expect(draft.cookTimeMinutes).toBe(12);
       expect(draft.totalTimeMinutes).toBe(27);
+      expect(draft.notes).toBe("Chill the dough overnight.");
 
       expect(draft.ingredients).toHaveLength(2);
       expect(draft.ingredients[0].rawText).toBe("2 1/4 cups all-purpose flour");

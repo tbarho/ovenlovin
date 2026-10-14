@@ -28,7 +28,7 @@ export interface GetRecipeOutput {
   id: string;
   title: string;
   description?: string;
-  notes?: string;
+  notes: string | null;
   yieldQuantity?: number;
   yieldUnit?: string;
   servings?: number;
@@ -188,7 +188,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     id: recipe.id,
     title: recipe.title,
     description: recipe.description ?? undefined,
-    notes: recipe.notes ?? undefined,
+    notes: recipe.notes ?? null,
     yieldQuantity: recipe.yieldQuantity ?? undefined,
     yieldUnit: recipe.yieldUnit ?? undefined,
     servings: recipe.servings ?? undefined,
