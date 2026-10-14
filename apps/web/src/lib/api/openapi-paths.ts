@@ -671,7 +671,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     summary:
       "Check a meal plan against per-person rules and schedule time budgets. Not medical advice.",
     request: { params: z.object({ id: z.string().uuid() }) },
-    responses: { 200: { description: "Check report" } },
+    responses: {
+      200: { description: "Check report" },
+      404: { description: "Meal plan not found (including a malformed id)" },
+    },
   });
 
   registry.registerPath({
@@ -681,7 +684,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     summary:
       "Check a meal plan against per-person rules and schedule time budgets. Same as GET; POST is kept for existing clients.",
     request: { params: z.object({ id: z.string().uuid() }) },
-    responses: { 200: { description: "Check report" } },
+    responses: {
+      200: { description: "Check report" },
+      404: { description: "Meal plan not found (including a malformed id)" },
+    },
   });
 
   registry.registerPath({

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { handleApiError, isNextRedirectError, UnauthorizedError } from "./errors";
+import {
+  handleApiError,
+  isNextRedirectError,
+  NotFoundError,
+  requireResourceId,
+  UnauthorizedError,
+} from "./errors";
 
 describe("handleApiError", () => {
   it("returns problem+json 401 for UnauthorizedError", async () => {
@@ -30,5 +36,20 @@ describe("handleApiError", () => {
     const body = (await response.json()) as { status?: number; title?: string };
     expect(body.status).toBe(401);
     expect(body.title).toBe("Unauthorized");
+  });
+
+  it("returns problem+json 404 for a malformed meal plan id", async () => {
+    expect(() => requireResourceId("MealPlan", "x")).toThrow(NotFoundError);
+
+    const response = handleApiError(
+      new NotFoundError("MealPlan", "x"),
+      "https://ovenlovin-demo.vercel.app/api/v1/meal-plans/x/check"
+    );
+    expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toMatch(/problem\+json/);
+    const body = (await response.json()) as { status?: number; title?: string; detail?: string };
+    expect(body.status).toBe(404);
+    expect(body.title).toBe("Not Found");
+    expect(body.detail).toMatch(/MealPlan with id x not found/);
   });
 });
