@@ -119,6 +119,16 @@ export class NotFoundError extends ApiError {
   }
 }
 
+const RESOURCE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Invalid ids (e.g. "x") must 404 as problem+json, not 500 from Postgres uuid parse. */
+export function requireResourceId(resource: string, id: string): string {
+  if (!RESOURCE_ID.test(id)) {
+    throw new NotFoundError(resource, id);
+  }
+  return id;
+}
+
 export class ConflictError extends ApiError {
   constructor(detail: string, extensions?: Record<string, unknown>) {
     super(409, "https://your-app.vercel.app/problems/conflict", "Conflict", detail, extensions);

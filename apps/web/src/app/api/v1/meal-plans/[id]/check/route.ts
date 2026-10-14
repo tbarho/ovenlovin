@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { handleApiError, NotFoundError } from "@/lib/api/errors";
+import { handleApiError, NotFoundError, requireResourceId } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { PlanService, PeopleService } from "@ovenlovin/core";
@@ -17,6 +17,7 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
   const householdId = requireHouseholdId(context);
 
   const { id } = await params;
+  requireResourceId("MealPlan", id);
 
   const db = getDatabase();
   const planService = new PlanService(db);
