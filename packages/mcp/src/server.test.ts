@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createServer } from "./server";
 
 describe("MCP Server", () => {
-  it("placeholder test", () => {
-    // Placeholder test - actual tests will be added when implementing tool logic
-    expect(true).toBe(true);
+  it("creates a stdio server without a stub household baked in", () => {
+    const server = createServer({ name: "ovenlovin-mcp", version: "0.1.0" });
+    expect(server).toBeTruthy();
   });
 });

@@ -158,10 +158,8 @@ function FeatureCard({
   description: string;
 }): React.ReactElement {
   return (
-    <div className="group rounded-xl border border-[var(--ol-border)] bg-background p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-[0_12px_40px_-20px_rgba(0,0,0,0.35)] dark:hover:shadow-[0_12px_40px_-16px_rgba(255,255,255,0.18)]">
-      <div className="mb-3 text-foreground transition-transform duration-200 group-hover:scale-105">
-        {icon}
-      </div>
+    <div className="group rounded-xl border border-[var(--ol-border)] bg-background p-6 transition-colors duration-200 hover:border-foreground/20">
+      <div className="mb-3 text-foreground">{icon}</div>
       <h3 className="mb-1.5 font-semibold tracking-tight">{title}</h3>
       <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
     </div>

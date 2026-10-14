@@ -31,7 +31,7 @@ export function LandingPage({
       <SiteHeader signedIn={signedIn} clerkEnabled={clerkEnabled} />
       <main>
         <section className="hero" id="live">
-          <div className="wrap rise">
+          <div className="wrap">
             <div className="hero-identity">
               <Image
                 className="hero-mark"

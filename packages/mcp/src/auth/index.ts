@@ -3,6 +3,7 @@ import { getDatabase } from "@ovenlovin/db";
 import { ApiKeyService } from "@ovenlovin/core";
 import { eq } from "drizzle-orm";
 import { household } from "@ovenlovin/db/schema";
+import { parseAuthorizationHeader } from "./authorization";
 
 /**
  * Authentication and authorization for MCP server
@@ -33,29 +34,22 @@ export interface AuthError {
  * @throws AuthError if authentication fails
  */
 export async function authenticateRequest(headers: Record<string, string>): Promise<AuthContext> {
-  const authHeader = headers["authorization"] || headers["Authorization"];
-
-  if (!authHeader) {
+  try {
+    const scheme = parseAuthorizationHeader(headers["authorization"] || headers["Authorization"]);
+    if (scheme.kind === "apiKey") {
+      return parseApiKey(scheme.token);
+    }
+    return parseClerkToken(scheme.token);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error) {
+      const message = error instanceof Error ? error.message : "Unauthorized";
+      throw { code: "unauthorized", message } as AuthError;
+    }
     throw {
       code: "unauthorized",
-      message: "Missing Authorization header",
+      message: "Invalid authorization scheme. Use Bearer or ApiKey.",
     } as AuthError;
   }
-
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    return parseClerkToken(token);
-  }
-
-  if (authHeader.startsWith("ApiKey ")) {
-    const apiKey = authHeader.slice(7);
-    return parseApiKey(apiKey);
-  }
-
-  throw {
-    code: "unauthorized",
-    message: "Invalid authorization scheme. Use Bearer or ApiKey.",
-  } as AuthError;
 }
 
 async function parseClerkToken(token: string): Promise<AuthContext> {
