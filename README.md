@@ -75,6 +75,14 @@ You will be prompted for:
 
 On Vercel, AI Gateway authenticates with OIDC (`VERCEL_OIDC_TOKEN`) — no `AI_GATEWAY_API_KEY` is required. Set that key only for local or non-Vercel hosts.
 
+Optional, so the landing page can link the Vercel project (not the GitHub owner):
+
+- `OVENLOVIN_VERCEL_TEAM_SLUG` — Vercel team/account slug (example: `ty-barho`)
+- `OVENLOVIN_VERCEL_PROJECT_SLUG` — Vercel project slug if it differs from the git repo name
+- `VERCEL_TOKEN` or `OVENLOVIN_VERCEL_TOKEN` — if slugs are unset, the server resolves them from `VERCEL_PROJECT_ID` via the Vercel API (cached)
+
+Do not treat `VERCEL_GIT_REPO_OWNER` as the Vercel scope. If the slug cannot be determined, links fall back to [vercel.com/dashboard](https://vercel.com/dashboard).
+
 See the [self-hosting documentation](https://tbarho.github.io/ovenlovin/docs/self-hosting) for detailed configuration instructions.
 
 ## Quick Start (Local Development)

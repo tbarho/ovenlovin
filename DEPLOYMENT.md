@@ -44,6 +44,9 @@ The Deploy button provisions Neon, Blob, and Clerk via the `stores` parameter. C
 #### Optional
 - `AI_GATEWAY_API_KEY` - only needed off Vercel; on Vercel, AI Gateway uses OIDC
 - `NEXT_PUBLIC_APP_URL` - Base URL for the app (auto-set by Vercel)
+- `OVENLOVIN_VERCEL_TEAM_SLUG` - Vercel team/account slug for dashboard links (not the GitHub owner; example: `ty-barho`)
+- `OVENLOVIN_VERCEL_PROJECT_SLUG` - Vercel project slug if it differs from the git repo name
+- `VERCEL_TOKEN` / `OVENLOVIN_VERCEL_TOKEN` - optional; used to resolve the team/project slugs from `VERCEL_PROJECT_ID` when the overrides are unset. Without slugs or a token, links fall back to https://vercel.com/dashboard
 
 ### Database Migrations
 
