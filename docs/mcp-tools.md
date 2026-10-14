@@ -18,8 +18,9 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 
 ## Household and plans
 
-- `get_household_context` — includes per-person Loves (never used to hide recipes)
+- `get_household_context` — people in household `sortOrder`, plus per-person Loves (never used to hide recipes)
 - `get_person_rules` — Can't eat / Doesn't like rules plus Loves
+- `reorder_people` — persist household people order (`personIds` must list everyone once)
 - `manage_person_loves` — `list`, `add`, `remove` a food, cuisine, or style someone loves
 - `search_recipes` — attendee warnings plus love boosts and “Name loves this” tags
 - `save_meal_plan`

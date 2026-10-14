@@ -57,6 +57,56 @@
   gap: 12px;
 }
 
+.kitchen-people .olp-person-slot {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  gap: 8px;
+}
+
+.kitchen-people .olp-person-slot .olp-person-chip {
+  flex: 1;
+}
+
+.kitchen-people .olp-person-slot.is-dragging {
+  opacity: 0.72;
+}
+
+.kitchen-people .olp-person-tools {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.kitchen-people .olp-drag-handle,
+.kitchen-people .olp-move-btn {
+  appearance: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #6b6b6b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.kitchen-people .olp-move-btn {
+  cursor: pointer;
+}
+
+.kitchen-people .olp-drag-handle:disabled,
+.kitchen-people .olp-move-btn:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
 .kitchen-people .olp-person-chip {
   display: flex;
   align-items: flex-start;

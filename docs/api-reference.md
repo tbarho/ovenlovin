@@ -522,6 +522,20 @@ POST /api/v1/households/{householdId}/people/{personId}/rules
 
 **Response**: `201 Created` with created rule object
 
+#### Reorder people
+
+Household people have a persistent `sortOrder`. `GET /api/v1/people` returns that order (used by the people list, who-can-eat, and pickers). New people are appended.
+
+```
+POST /api/v1/people/reorder
+```
+
+```json
+{ "personIds": ["person-ty", "person-bec", "person-ellie"] }
+```
+
+`personIds` must list every household person exactly once. Response: `{ "items": [/* people in the new order */] }`. `PATCH /api/v1/people/{id}` also accepts `sortOrder`.
+
 #### Person Loves (preferences)
 
 Loves never hide recipes. They boost ranking (meal planner / `search_recipes`) and show a small “{Name} loves this” tag.

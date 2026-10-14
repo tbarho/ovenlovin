@@ -19,6 +19,7 @@ import {
   writePersonNotes,
   type PersonAppearance,
 } from "@/lib/person-appearance";
+import { PeopleReorder } from "./PeopleReorder";
 import { Avatar, Chip, EmptyState, type ChipBucket } from "./ui";
 
 const CARD_LANES: Array<{ bucket: ChipBucket; label: string }> = [
@@ -196,6 +197,7 @@ export function PeopleHome({
   rules: PersonRule[];
   loves?: Preference[];
 }) {
+  const router = useRouter();
   const summary = useMemo(() => summarizePeople(people, rules), [people, rules]);
   const rulesByPerson = useMemo(() => {
     const map = new Map<string, PersonRule[]>();
@@ -235,16 +237,23 @@ export function PeopleHome({
         {people.length === 0 ? (
           <EmptyState title="No one yet" body="Add a name and avatar." />
         ) : (
-          <div className="olp-person-row">
-            {people.map((person) => (
+          <PeopleReorder
+            people={people}
+            renderPerson={(person) => (
               <PersonCard
-                key={person.id}
                 person={person}
                 rules={rulesByPerson.get(person.id) ?? []}
                 loves={lovesByPerson.get(person.id) ?? []}
               />
-            ))}
-          </div>
+            )}
+            onReorder={async (personIds) => {
+              await api("/api/v1/people/reorder", {
+                method: "POST",
+                body: JSON.stringify({ personIds }),
+              });
+              router.refresh();
+            }}
+          />
         )}
 
         <AddPersonForm />

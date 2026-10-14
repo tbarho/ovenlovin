@@ -18,6 +18,15 @@ describe("whoCanEat", () => {
     treatCoconutAsTreeNut: false,
   });
 
+  it("preserves the household people order", () => {
+    const result = whoCanEat({
+      people: [parent, child],
+      rules: [treeNut],
+      ingredients: [{ id: "pesto", name: "1/3 cup pesto" }],
+    });
+    expect(result.people.map((item) => item.personId)).toEqual([parent.id, child.id]);
+  });
+
   it("blocks Child B on pesto pine nuts via the real checker", () => {
     const result = whoCanEat({
       people: [parent, child],

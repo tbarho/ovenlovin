@@ -1,8 +1,11 @@
-import { eq, and, isNull, desc, inArray } from "drizzle-orm";
+import { eq, and, isNull, desc, asc, inArray, sql } from "drizzle-orm";
 import { person, personRule, preference } from "@ovenlovin/db";
 import type { Person, PersonRule, Preference } from "../schemas/people";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
+import { PeopleOrderError, orderedPersonIds } from "./people-order";
+
+export { PeopleOrderError, movePersonId, orderedPersonIds } from "./people-order";
 
 export class PeopleService extends BaseService {
   async getPerson(id: string): Promise<Person | null> {
@@ -25,7 +28,7 @@ export class PeopleService extends BaseService {
       .select()
       .from(person)
       .where(and(eq(person.householdId, householdId), isNull(person.deletedAt)))
-      .orderBy(desc(person.createdAt))
+      .orderBy(asc(person.sortOrder), asc(person.createdAt), asc(person.id))
       .limit(limit + 1);
 
     const people = results.map((r) => this.mapPerson(r));
@@ -34,8 +37,15 @@ export class PeopleService extends BaseService {
   }
 
   async createPerson(
-    data: Omit<Person, "id" | "createdAt" | "updatedAt" | "deletedAt">
+    data: Omit<Person, "id" | "createdAt" | "updatedAt" | "deletedAt" | "sortOrder"> & {
+      sortOrder?: number;
+    }
   ): Promise<Person> {
+    const [countRow] = await this._db
+      .select({ next: sql<number>`coalesce(max(${person.sortOrder}), -1) + 1` })
+      .from(person)
+      .where(and(eq(person.householdId, data.householdId), isNull(person.deletedAt)));
+
     const [created] = await this._db
       .insert(person)
       .values({
@@ -47,12 +57,38 @@ export class PeopleService extends BaseService {
         sex: data.sex ?? null,
         activityProfile: data.activityProfile ?? null,
         notes: data.notes ?? null,
+        sortOrder: data.sortOrder ?? Number(countRow?.next ?? 0),
         createdBy: data.createdBy,
       })
       .returning();
 
     if (!created) throw new Error("Failed to create person");
     return this.mapPerson(created);
+  }
+
+  async reorderPeople(householdId: string, personIds: string[]): Promise<Person[]> {
+    const current = await this.listPeopleByHousehold(householdId, { limit: 200 });
+    const ordered = orderedPersonIds(
+      current.items.map((item) => item.id),
+      personIds
+    );
+
+    await this._db.transaction(async (tx) => {
+      for (const [index, id] of ordered.entries()) {
+        await tx
+          .update(person)
+          .set({ sortOrder: index, updatedAt: new Date() })
+          .where(
+            and(eq(person.id, id), eq(person.householdId, householdId), isNull(person.deletedAt))
+          );
+      }
+    });
+
+    const next = await this.listPeopleByHousehold(householdId, { limit: 200 });
+    if (next.items.map((item) => item.id).join() !== ordered.join()) {
+      throw new PeopleOrderError("Could not persist the household order. Refresh and try again.");
+    }
+    return next.items;
   }
 
   async updatePerson(
@@ -267,6 +303,7 @@ export class PeopleService extends BaseService {
       sex: row.sex ?? null,
       activityProfile: row.activityProfile ?? null,
       notes: row.notes ?? null,
+      sortOrder: row.sortOrder ?? 0,
     };
   }
 

@@ -10,7 +10,8 @@
     "./onboarding": "./src/onboarding/index.ts",
     "./media": "./src/media/recipe-images.ts",
     "./parsing": "./src/parsing/ingredient-line.ts",
-    "./scaling": "./src/scaling/servings.ts"
+    "./scaling": "./src/scaling/servings.ts",
+    "./people-order": "./src/services/people-order.ts"
   },
   "scripts": {
     "test": "vitest run",

@@ -12,6 +12,7 @@ export const personSchema = baseEntitySchema.merge(createdBySchema).extend({
   sex: sexSchema.nullable().optional(),
   activityProfile: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  sortOrder: z.number().int().nonnegative().default(0),
 });
 
 export const ruleKindSchema = z.enum([

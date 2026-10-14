@@ -238,6 +238,39 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: { 200: { description: "Membership saved" } },
   });
 
+  const personSchema = z
+    .object({
+      id: z.string().uuid(),
+      householdId: z.string().uuid(),
+      displayName: z.string(),
+      sortOrder: z.number().int().nonnegative(),
+    })
+    .openapi("Person");
+
+  registry.registerPath({
+    method: "post",
+    path: "/people/reorder",
+    tags: ["people"],
+    summary: "Set the persistent household people order",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              personIds: z.array(z.string().uuid()).min(1),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "People in the saved order",
+        content: { "application/json": { schema: z.object({ items: z.array(personSchema) }) } },
+      },
+    },
+  });
+
   const preferenceSchema = z
     .object({
       id: z.string().uuid(),
