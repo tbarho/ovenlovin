@@ -1,7 +1,7 @@
 "use client";
 
-import { movePersonId } from "@ovenlovin/core";
 import type { Person } from "@ovenlovin/core";
+import { movePersonId } from "@ovenlovin/core/people-order";
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 
 export function PeopleReorder({
