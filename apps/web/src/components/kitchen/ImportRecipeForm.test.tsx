@@ -48,8 +48,8 @@ describe("ImportRecipeForm photo import", () => {
   });
 
   it("shows a progress state while the photo is being read", async () => {
-    let resolveExtract: ((value: { ok: boolean; json: () => Promise<typeof preview> }) => void)
-      | undefined;
+    let resolveExtract:
+      ((value: { ok: boolean; json: () => Promise<typeof preview> }) => void) | undefined;
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(
