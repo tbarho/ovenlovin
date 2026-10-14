@@ -668,7 +668,8 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "get",
     path: "/meal-plans/{id}/check",
     tags: ["meal-plans"],
-    summary: "Check a meal plan against per-person rules. Not medical advice.",
+    summary:
+      "Check a meal plan against per-person rules and schedule time budgets. Not medical advice.",
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: { 200: { description: "Check report" } },
   });
@@ -678,7 +679,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/meal-plans/{id}/check",
     tags: ["meal-plans"],
     summary:
-      "Check a meal plan against per-person rules. Same as GET; POST is kept for existing clients.",
+      "Check a meal plan against per-person rules and schedule time budgets. Same as GET; POST is kept for existing clients.",
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: { 200: { description: "Check report" } },
   });

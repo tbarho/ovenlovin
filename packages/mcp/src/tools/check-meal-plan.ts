@@ -6,7 +6,14 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { RecipeService, PeopleService } from "@ovenlovin/core";
+import {
+  PeopleService,
+  RecipeService,
+  ScheduleService,
+  nightForDate,
+  recipeTotalTimeMinutes,
+  scheduleIssuesForNight,
+} from "@ovenlovin/core";
 import { createDbClient, recipeIngredient } from "@ovenlovin/db";
 import { eq, and, isNull } from "drizzle-orm";
 import {
@@ -79,6 +86,7 @@ async function handler(
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
   const peopleService = new PeopleService(db);
+  const schedule = await new ScheduleService(db).getSchedule(context.householdId);
 
   const attendeeIds = [...new Set(input.plan.entries.flatMap((entry) => entry.attendees))];
   const attendeePeople = await Promise.all(
@@ -254,11 +262,19 @@ async function handler(
         lovePeople
       );
 
+      const scheduleIssues = scheduleIssuesForNight({
+        date: entry.date,
+        recipeTitle: recipe.title,
+        recipeTotalMinutes: recipeTotalTimeMinutes(recipe),
+        night: nightForDate(schedule.weeklyTemplate, entry.date),
+      });
+
       return {
         date: entry.date,
         meal: entry.meal,
         recipeTitle: recipe.title,
         findings,
+        scheduleIssues: scheduleIssues.length > 0 ? scheduleIssues : undefined,
         loveTags: loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
         incompleteReasons: entryIncompleteReasons,
       };
@@ -273,7 +289,10 @@ async function handler(
       0
     ),
     warnings: entriesResults.reduce(
-      (sum, entry) => sum + entry.findings.filter((f) => f.severity === "warn").length,
+      (sum, entry) =>
+        sum +
+        entry.findings.filter((f) => f.severity === "warn").length +
+        (entry.scheduleIssues?.length ?? 0),
       0
     ),
     preferAvoidances: entriesResults.reduce(

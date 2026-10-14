@@ -22,3 +22,11 @@ export {
   type WeeklyNight,
   type WeekdayName,
 } from "./schedule/week";
+export {
+  nightForDate,
+  recipeTotalTimeMinutes,
+  scheduleIssuesForNight,
+  weekdayFromIsoDate,
+  type ScheduleIssue,
+  type ScheduleIssueType,
+} from "./schedule/check";
