@@ -64,6 +64,17 @@ Import a recipe from URL or pasted text.
 }
 ```
 
+### `import_recipe_from_image`
+
+Import a recipe from a photo URL or base64. Extra pages go in `images[]`. The first photo is the main image.
+
+```json
+{
+  "imageUrl": "https://blob.vercel-storage.com/recipe-card.jpg",
+  "skipReview": false
+}
+```
+
 ### `get_household_context`
 
 Get household schedule, people, rules, preferences, and recent meals.

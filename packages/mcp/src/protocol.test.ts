@@ -21,6 +21,10 @@ describe("MCP JSON schemas", () => {
     const imported = tools.find((tool) => tool.name === "import_recipe");
     expect(imported?.inputSchema.properties).toHaveProperty("source");
     expect(imported?.inputSchema.properties).toHaveProperty("content");
+
+    const fromImage = tools.find((tool) => tool.name === "import_recipe_from_image");
+    expect(fromImage?.inputSchema.properties).toHaveProperty("imageUrl");
+    expect(fromImage?.inputSchema.properties).toHaveProperty("imageBase64");
   });
 
   it("converts zod objects via Zod 4 toJSONSchema", () => {
@@ -50,8 +54,16 @@ describe("MCP JSON schemas", () => {
 
     const shopping = listedTools().find((tool) => tool.name === "export_shopping_list");
     expect(shopping?.inputSchema.required ?? []).toEqual(["planId"]);
+    expect(shopping?.inputSchema.properties).toHaveProperty("includeStaples");
+    expect(shopping?.inputSchema.properties).toHaveProperty("includePantryItems");
     expect(shopping?.inputSchema.required ?? []).not.toEqual(
-      expect.arrayContaining(["format", "groupBy", "includePantryItems", "includeRuleWarnings"])
+      expect.arrayContaining([
+        "format",
+        "groupBy",
+        "includeStaples",
+        "includePantryItems",
+        "includeRuleWarnings",
+      ])
     );
 
     const save = listedTools().find((tool) => tool.name === "save_meal_plan");

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { MealPlanEntry } from "../schemas/plans";
-import { ShoppingListService, servingsScale } from "./shopping-list";
+import {
+  KITCHEN_STAPLES_SECTION,
+  ShoppingListService,
+  resolveIncludeStaples,
+  servingsScale,
+} from "./shopping-list";
 
 const service = new ShoppingListService();
 
@@ -37,6 +42,15 @@ function build(
   });
 }
 
+describe("resolveIncludeStaples", () => {
+  it("prefers includeStaples over the includePantryItems alias", () => {
+    expect(resolveIncludeStaples({})).toBe(false);
+    expect(resolveIncludeStaples({ includeStaples: true })).toBe(true);
+    expect(resolveIncludeStaples({ includePantryItems: true })).toBe(true);
+    expect(resolveIncludeStaples({ includeStaples: false, includePantryItems: true })).toBe(false);
+  });
+});
+
 describe("servingsScale", () => {
   it("scales plan entry servings relative to recipe servings even when scaleFactor is 1", () => {
     expect(servingsScale(6, 4, 1)).toBe(1.5);
@@ -72,7 +86,7 @@ describe("ShoppingListService", () => {
           ingredients: [{ rawText: "3 tbsp olive oil" }],
         },
       ],
-      { includePantryItems: true }
+      { includeStaples: true }
     );
 
     const oil = list.ingredients.find((item) => item.name === "olive oil");
@@ -119,7 +133,7 @@ describe("ShoppingListService", () => {
           ingredients: [{ rawText: "1 tsp salt" }],
         },
       ],
-      { includePantryItems: true }
+      { includeStaples: true }
     );
 
     expect(list.ingredients[0]).toMatchObject({ name: "salt", quantity: 2, unit: "tsp" });
@@ -201,7 +215,7 @@ describe("ShoppingListService", () => {
           ingredients: [{ rawText: "1 tbsp olive oil" }],
         },
       ],
-      { includePantryItems: true }
+      { includeStaples: true }
     );
 
     expect(list.ingredients[0]).toMatchObject({
@@ -273,7 +287,7 @@ describe("ShoppingListService", () => {
           ingredients: [{ rawText: "1 tsp sea salt" }],
         },
       ],
-      { includePantryItems: true }
+      { includeStaples: true }
     );
 
     expect(list.ingredients).toHaveLength(1);
@@ -305,7 +319,7 @@ describe("ShoppingListService", () => {
     ]);
   });
 
-  it("S6: includePantryItems excludes salt and oil by default and separates them when true", () => {
+  it("S6: includeStaples excludes salt and oil by default and separates them when true", () => {
     const entries = [
       {
         entry: entry({ recipeId: "a", servings: 4 }),
@@ -319,22 +333,45 @@ describe("ShoppingListService", () => {
       },
     ];
 
-    const withoutPantry = build(entries);
-    expect(withoutPantry.includePantryItems).toBe(false);
-    expect(withoutPantry.ingredients.map((item) => item.name)).toEqual(["yellow onion"]);
-    expect(withoutPantry.itemCount).toBe(1);
+    const withoutStaples = build(entries);
+    expect(withoutStaples.includeStaples).toBe(false);
+    expect(withoutStaples.includePantryItems).toBe(false);
+    expect(withoutStaples.ingredients.map((item) => item.name)).toEqual(["yellow onion"]);
+    expect(withoutStaples.itemCount).toBe(1);
 
-    const withPantry = build(entries, { includePantryItems: true });
-    expect(withPantry.itemCount).toBe(3);
-    expect(withPantry.sections.map((section) => section.name).sort()).toEqual([
-      "Pantry staples",
+    const withStaples = build(entries, { includeStaples: true });
+    expect(withStaples.includeStaples).toBe(true);
+    expect(withStaples.includePantryItems).toBe(true);
+    expect(withStaples.itemCount).toBe(3);
+    expect(withStaples.sections.map((section) => section.name).sort()).toEqual([
+      KITCHEN_STAPLES_SECTION,
       "Produce",
     ]);
     expect(
-      withPantry.sections
-        .find((section) => section.name === "Pantry staples")
+      withStaples.sections
+        .find((section) => section.name === KITCHEN_STAPLES_SECTION)
         ?.items.map((item) => item.name)
     ).toEqual(["olive oil", "salt"]);
+  });
+
+  it("accepts includePantryItems as an alias for includeStaples", () => {
+    const entries = [
+      {
+        entry: entry({ recipeId: "a", servings: 4 }),
+        recipeTitle: "A",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 tsp salt" }],
+      },
+    ];
+
+    const viaAlias = build(entries, { includePantryItems: true });
+    expect(viaAlias.includeStaples).toBe(true);
+    expect(viaAlias.includePantryItems).toBe(true);
+    expect(viaAlias.ingredients.map((item) => item.name)).toEqual(["salt"]);
+
+    const canonicalWins = build(entries, { includeStaples: false, includePantryItems: true });
+    expect(canonicalWins.includeStaples).toBe(false);
+    expect(canonicalWins.ingredients).toEqual([]);
   });
 
   it("S7: JSON export is the shared core shape used by MCP and REST", () => {
@@ -352,6 +389,7 @@ describe("ShoppingListService", () => {
       mealPlanId: "plan-1",
       weekStart: "2026-10-12",
       groupBy: "aisle",
+      includeStaples: false,
       includePantryItems: false,
       itemCount: 1,
       ingredients: [{ name: "acorn squash", quantity: 1 }],

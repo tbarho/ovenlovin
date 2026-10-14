@@ -7,6 +7,7 @@ import {
   searchRecipesTool,
   getRecipeTool,
   importRecipeTool,
+  importRecipeFromImageTool,
   getHouseholdContextTool,
   getPersonRulesTool,
   checkMealPlanTool,
@@ -192,6 +193,27 @@ describe("MCP Tool Schemas", () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it("accepts includeStaples and the includePantryItems alias", () => {
+      const canonical = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+        includeStaples: true,
+      });
+      expect(canonical.success).toBe(true);
+      if (canonical.success) {
+        expect(canonical.data.includeStaples).toBe(true);
+      }
+
+      const alias = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+        includePantryItems: true,
+      });
+      expect(alias.success).toBe(true);
+      if (alias.success) {
+        expect(alias.data.includePantryItems).toBe(true);
+        expect(alias.data.includeStaples).toBeUndefined();
+      }
+    });
   });
 
   describe("import_recipe", () => {
@@ -362,6 +384,36 @@ describe("MCP Tool Schemas", () => {
       if (result.success) {
         expect(result.data.skipReview).toBe(false);
       }
+    });
+  });
+
+  describe("import_recipe_from_image", () => {
+    it("accepts an image URL", () => {
+      const result = importRecipeFromImageTool.inputSchema.safeParse({
+        imageUrl: "https://blob.vercel-storage.com/card.jpg",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.skipReview).toBe(false);
+      }
+    });
+
+    it("accepts base64 or a multi-page images array", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          imageBase64: "abc123",
+          mimeType: "image/jpeg",
+        }).success
+      ).toBe(true);
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          images: [{ url: "https://example.com/page-1.jpg" }, { base64: "abc123" }],
+        }).success
+      ).toBe(true);
+    });
+
+    it("rejects a call with no image", () => {
+      expect(importRecipeFromImageTool.inputSchema.safeParse({}).success).toBe(false);
     });
   });
 });

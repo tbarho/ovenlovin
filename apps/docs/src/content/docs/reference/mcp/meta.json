@@ -10,6 +10,7 @@
     "get-meal-plan",
     "export-shopping-list",
     "import-recipe",
+    "import-recipe-from-image",
     "list-cookbooks",
     "get-cookbook",
     "manage-cookbook"

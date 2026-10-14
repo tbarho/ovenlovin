@@ -45,7 +45,17 @@ export function scheduleIssuesForNight(input: {
 }): ScheduleIssue[] {
   const issues: ScheduleIssue[] = [];
   const night = input.night;
-  if (!night || input.recipeTotalMinutes == null) return issues;
+  if (!night) return issues;
+
+  if (!night.cooking) {
+    issues.push({
+      type: "method_mismatch",
+      message: `"${input.recipeTitle}" is planned on ${night.day}, which is marked as not a cooking night.`,
+    });
+    return issues;
+  }
+
+  if (input.recipeTotalMinutes == null) return issues;
 
   if (input.recipeTotalMinutes > night.timeBudgetMinutes) {
     issues.push({

@@ -742,7 +742,10 @@ GET /api/v1/meal-plans/{planId}/shopping-list
 ```
 
 **Query parameters**:
-- `format` (string, optional) - `json` (default) or `text`
+- `format` (string, optional) - `json` (default), `csv`, `markdown`, or `text`
+- `groupBy` (string, optional) - `aisle` (default), `recipe`, or `category`
+- `includeStaples` (boolean, optional) - Include kitchen staples such as salt, pepper, and oil. Distinct from the **pantry** food-taxonomy category (flour, canned goods). Default `false`.
+- `includePantryItems` (boolean, optional) - Deprecated alias for `includeStaples`.
 
 **Response** (JSON):
 ```json
@@ -812,7 +815,8 @@ In addition to the REST API, OvenLovin provides a Model Context Protocol (MCP) s
 **Tools**:
 - `search_recipes` - Search recipes by text and filters
 - `get_recipe` - Get full recipe details
-- `import_recipe` - Import from URL, text, or photo
+- `import_recipe` - Import from URL or pasted text
+- `import_recipe_from_image` - Import from a photo URL or base64
 - `get_household_context` - Get household members and dietary rules
 - `save_meal_plan` - Create or update a meal plan
 - `check_meal_plan` - Run allergen and dietary rule checks

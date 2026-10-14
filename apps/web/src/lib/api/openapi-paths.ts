@@ -816,7 +816,16 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       query: z.object({
         format: z.enum(["json", "csv", "markdown", "text"]).optional(),
         groupBy: z.enum(["aisle", "recipe", "category"]).optional(),
-        includePantryItems: z.coerce.boolean().optional(),
+        includeStaples: z.coerce
+          .boolean()
+          .optional()
+          .describe(
+            "Include kitchen staples such as salt, pepper, and oil. Distinct from the pantry food-taxonomy category (flour, canned goods). Alias: includePantryItems."
+          ),
+        includePantryItems: z.coerce
+          .boolean()
+          .optional()
+          .describe("Deprecated alias for includeStaples."),
       }),
     },
     responses: { 200: { description: "Shopping list" } },
