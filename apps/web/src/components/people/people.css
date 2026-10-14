@@ -28,8 +28,34 @@
   color: inherit;
 }
 
-.kitchen-people .olp-add-person {
-  margin-top: 8px;
+.kitchen-people .olp-add-person-launch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px dashed #d7c4b2;
+  border-radius: 16px;
+  background: #fffdf9;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.kitchen-people .olp-add-person-launch:hover,
+.kitchen-people .olp-add-person-launch:focus-visible {
+  border-color: #c45d28;
+  background: #fff6ee;
+}
+
+.kitchen-people .olp-add-person,
+.olp-sheet .olp-add-person {
+  margin-top: 0;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .who-can-eat {
@@ -109,14 +135,12 @@
   line-height: 1.2;
 }
 
-.kitchen-people .olp-person-slot.is-dragging .olp-person-card {
-  background: transparent;
+.olp-person-placeholder,
+.kitchen-people .olp-person-placeholder {
+  width: 100%;
   border: 1.5px dashed #d2c4b4;
-  box-shadow: none;
-}
-
-.kitchen-people .olp-person-slot.is-dragging .olp-person-card > * {
-  visibility: hidden;
+  border-radius: 16px;
+  background: transparent;
 }
 
 .olp-drag-handle,
@@ -255,6 +279,28 @@
   color: #9a9a9a;
 }
 
+.kitchen-people .olp-person-card-lane.is-empty,
+.olp-person-ghost .olp-person-card-lane.is-empty {
+  min-height: 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.kitchen-people .olp-person-card-lane-cant_eat.is-empty,
+.olp-person-ghost .olp-person-card-lane-cant_eat.is-empty {
+  padding: 0 0 0 8px;
+  border-left: 3px solid #f0d2c8;
+  border-radius: 0;
+  background: transparent;
+}
+
+.kitchen-people .olp-person-card-lane.is-empty small,
+.olp-person-ghost .olp-person-card-lane.is-empty small {
+  min-height: 0;
+}
+
 .kitchen-people .olp-person-card .olp-chip-drag,
 .olp-person-ghost .olp-person-card .olp-chip-drag {
   min-height: 0;
@@ -383,9 +429,8 @@
   min-height: 44px;
 }
 
-.kitchen-people .olp-add-person {
-  max-width: 520px;
-  border-radius: 12px;
+.kitchen-people .olp-add-person-launch {
+  width: min(280px, 100%);
 }
 
 .kitchen-person .olp-stack {
@@ -425,7 +470,7 @@
 
 @media (min-width: 1024px) {
   .kitchen-people .olp-person-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
 
@@ -438,8 +483,8 @@
     gap: 16px;
   }
 
-  .kitchen-people .olp-add-person {
-    width: min(420px, 100%);
+  .kitchen-people .olp-add-person-launch {
+    width: min(240px, 100%);
   }
 }
 

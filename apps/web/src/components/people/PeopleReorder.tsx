@@ -21,7 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Person } from "@ovenlovin/core";
 import { useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { MOTION_SECONDS } from "@/lib/motion";
 import {
   PEOPLE_REORDER_HINT_ID,
@@ -51,12 +51,14 @@ function DragHandle({
   disabled,
   listeners,
   attributes,
+  onMeasure,
 }: {
   name: string;
   personId?: string;
   disabled?: boolean;
   listeners?: object;
   attributes?: object;
+  onMeasure?: (el: HTMLElement) => void;
 }) {
   return (
     <button
@@ -69,6 +71,18 @@ function DragHandle({
       style={{ minWidth: 44, minHeight: 44, cursor: "grab" }}
       {...attributes}
       {...listeners}
+      onPointerDown={(event) => {
+        onMeasure?.(event.currentTarget);
+        const listener = (listeners as { onPointerDown?: (e: typeof event) => void } | undefined)
+          ?.onPointerDown;
+        listener?.(event);
+      }}
+      onFocus={(event) => {
+        onMeasure?.(event.currentTarget);
+        const listener = (listeners as { onFocus?: (e: typeof event) => void } | undefined)
+          ?.onFocus;
+        listener?.(event);
+      }}
     >
       <GripIcon />
     </button>
@@ -95,22 +109,30 @@ function SortablePerson({
   person,
   disabled,
   renderPerson,
+  lockHeight,
+  onMeasure,
 }: {
   person: Person;
   disabled?: boolean;
   renderPerson: (person: Person, handle: ReactNode) => ReactNode;
+  lockHeight?: number;
+  onMeasure?: (el: HTMLElement) => void;
 }) {
   const reduce = useReducedMotion();
+  const ownHeight = useRef<number | undefined>(undefined);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: person.id,
     disabled,
   });
+  const dropHeight = (isDragging ? ownHeight.current : undefined) ?? lockHeight;
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition: reduce
       ? undefined
       : (transition ?? `transform ${MOTION_SECONDS.base}s ${MOTION_EASE_CSS}`),
+    minHeight: dropHeight,
+    height: isDragging && dropHeight ? dropHeight : undefined,
   };
 
   return (
@@ -119,19 +141,34 @@ function SortablePerson({
       style={style}
       className={`olp-person-slot${isDragging ? " is-dragging" : ""}`}
     >
-      <PersonCardShell
-        person={person}
-        renderPerson={renderPerson}
-        handle={
-          <DragHandle
-            name={person.displayName}
-            personId={person.id}
-            disabled={disabled}
-            listeners={listeners}
-            attributes={attributes}
-          />
-        }
-      />
+      {isDragging ? (
+        <div
+          className="olp-person-placeholder"
+          data-testid={`people-drop-placeholder-${person.id}`}
+          aria-hidden="true"
+          style={{ height: dropHeight }}
+        />
+      ) : (
+        <PersonCardShell
+          person={person}
+          renderPerson={renderPerson}
+          handle={
+            <DragHandle
+              name={person.displayName}
+              personId={person.id}
+              disabled={disabled}
+              listeners={listeners}
+              attributes={attributes}
+              onMeasure={(el) => {
+                const slot = el.closest(".olp-person-slot");
+                const height = slot?.getBoundingClientRect().height;
+                if (height) ownHeight.current = height;
+                onMeasure?.(el);
+              }}
+            />
+          }
+        />
+      )}
     </div>
   );
 }
@@ -151,6 +188,7 @@ export function PeopleReorder({
   const [order, setOrder] = useState(people.map((person) => person.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overlaySize, setOverlaySize] = useState<{ width?: number; height?: number }>({});
+  const dragHeightRef = useRef<number | undefined>(undefined);
   const [liveMessage, setLiveMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -232,6 +270,12 @@ export function PeopleReorder({
               person={person}
               disabled={disabled}
               renderPerson={renderPerson}
+              lockHeight={activeId ? dragHeightRef.current : undefined}
+              onMeasure={(el) => {
+                const slot = el.closest(".olp-person-slot");
+                const height = slot?.getBoundingClientRect().height;
+                if (height) dragHeightRef.current = height;
+              }}
             />
           ))}
         </div>
