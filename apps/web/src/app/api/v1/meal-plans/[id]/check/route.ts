@@ -2,7 +2,15 @@ import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
-import { PlanService, PeopleService } from "@ovenlovin/core";
+import {
+  PlanService,
+  PeopleService,
+  RecipeService,
+  ScheduleService,
+  nightForDate,
+  recipeTotalTimeMinutes,
+  scheduleIssuesForNight,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import {
   checkMealPlan,
@@ -21,6 +29,9 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
   const db = getDatabase();
   const planService = new PlanService(db);
   const peopleService = new PeopleService(db);
+  const recipeService = new RecipeService(db);
+  const schedule = await new ScheduleService(db).getSchedule(householdId);
+  const recipeMinutesByEntryId = new Map<string, number | null>();
 
   const plan = await planService.getMealPlan(id);
   if (!plan || plan.householdId !== householdId) {
@@ -39,7 +50,10 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
         ingredients = ingredientRows.map((ing) => ({
           name: ing.rawText,
         }));
-        recipeTitle = (await planService.getRecipeTitle(entry.recipeId)) ?? undefined;
+        const recipe = await recipeService.getRecipe(entry.recipeId);
+        recipeTitle =
+          recipe?.title ?? (await planService.getRecipeTitle(entry.recipeId)) ?? undefined;
+        recipeMinutesByEntryId.set(entry.id, recipeTotalTimeMinutes(recipe));
       }
 
       return {
@@ -86,7 +100,18 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
     status: checkResult.status,
     planId: id,
     checkedAt: new Date().toISOString(),
-    byEntry: checkResult.byEntry,
+    byEntry: checkResult.byEntry.map((entry) => {
+      const scheduleIssues = scheduleIssuesForNight({
+        date: entry.date,
+        recipeTitle: entry.recipeTitle ?? "This recipe",
+        recipeTotalMinutes: recipeMinutesByEntryId.get(entry.entryId) ?? null,
+        night: nightForDate(schedule.weeklyTemplate, entry.date),
+      });
+      return {
+        ...entry,
+        scheduleIssues: scheduleIssues.length > 0 ? scheduleIssues : undefined,
+      };
+    }),
     byPerson: checkResult.byPerson,
     summary: checkResult.summary,
     incompleteReasons: checkResult.incompleteReasons,
