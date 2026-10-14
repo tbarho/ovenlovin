@@ -233,7 +233,8 @@ Model Context Protocol server for structured tool access:
 Available tools:
 - `search_recipes` - Search recipes by text, filters
 - `get_recipe` - Get full recipe details
-- `import_recipe` - Import from URL, text, or photo (copies the main image into Vercel Blob)
+- `import_recipe` - Import from URL or pasted text (copies the main image into Vercel Blob)
+- `import_recipe_from_image` - Import from a photo URL or base64 (AI Gateway vision; first photo is the main image)
 - `list_cookbooks` / `get_cookbook` / `manage_cookbook` - Organize recipes in many-to-many cookbooks
 - `get_household_context` - Get household members and dietary rules
 - `save_meal_plan` - Create or update a meal plan

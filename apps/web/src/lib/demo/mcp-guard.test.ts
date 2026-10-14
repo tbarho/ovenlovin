@@ -21,4 +21,13 @@ describe("isSuccessfulImportRecipeCall", () => {
       )
     ).toBe(false);
   });
+
+  it("counts import_recipe_from_image as an import", () => {
+    expect(
+      isSuccessfulImportRecipeCall(
+        { method: "tools/call", params: { name: "import_recipe_from_image" } },
+        JSON.stringify({ result: { recipeId: "1" } })
+      )
+    ).toBe(true);
+  });
 });

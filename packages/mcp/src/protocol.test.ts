@@ -21,6 +21,10 @@ describe("MCP JSON schemas", () => {
     const imported = tools.find((tool) => tool.name === "import_recipe");
     expect(imported?.inputSchema.properties).toHaveProperty("source");
     expect(imported?.inputSchema.properties).toHaveProperty("content");
+
+    const fromImage = tools.find((tool) => tool.name === "import_recipe_from_image");
+    expect(fromImage?.inputSchema.properties).toHaveProperty("imageUrl");
+    expect(fromImage?.inputSchema.properties).toHaveProperty("imageBase64");
   });
 
   it("converts zod objects via Zod 4 toJSONSchema", () => {

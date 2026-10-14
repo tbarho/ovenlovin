@@ -304,7 +304,8 @@ Model Context Protocol server for AI agents.
 **Tools**:
 - `search_recipes` - Search with filters
 - `get_recipe` - Get full details
-- `import_recipe` - Import from URL/text/photo
+- `import_recipe` - Import from URL or pasted text
+- `import_recipe_from_image` - Import from a photo URL or base64
 - `get_household_context` - Get members and rules
 - `save_meal_plan` - Create/update plan
 - `check_meal_plan` - Run allergen checks

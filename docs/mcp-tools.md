@@ -7,6 +7,7 @@ Remote MCP server: `https://your-app.vercel.app/mcp`
 - `search_recipes` — search by text, method tags, and attendee warnings. `forAttendees` hides block hits and returns `hiddenCount` / `hidden` (recipe, person, ingredient, why)
 - `get_recipe` — full recipe including servings, prep/cook times, images, cookbooks, and source URL (`includeSource` defaults to true)
 - `import_recipe` — URL or paste import. Pulls schema.org times and the main image, then copies that image into Vercel Blob. Optional `cookbookId`
+- `import_recipe_from_image` — photo import from an `imageUrl` or `imageBase64` (optional extra `images[]` pages). Uses AI Gateway vision (`RK_MODEL_VISION`). Saves the first photo as the single main image. Returns `uncertainFields` when the photo is hard to read.
 
 ## Cookbooks
 
