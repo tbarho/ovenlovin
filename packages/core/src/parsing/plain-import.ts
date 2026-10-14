@@ -6,6 +6,7 @@ const NOTES_HEADER = /^(notes?|note|tips?|cook(?:'?s)? notes?)\s*:?\s*$/i;
 const SERVINGS_LINE = /^(?:servings?|serves|yield|makes)\s*:?\s*(.+)$/i;
 const TIME_LINE = /^(prep|cook|total)(?:\s*time)?\s*:?\s*(.+)$/i;
 const INLINE_NOTES = /^(?:notes?|note|tips?)\s*:\s+(.+)$/i;
+const SOURCE_LINE = /^source\s*:\s*(.+)$/i;
 
 function firstPositiveInt(text: string): number | undefined {
   const match = text.match(/(\d+(?:\.\d+)?)/);
@@ -43,7 +44,27 @@ type PasteMeta = {
   cookTimeMinutes?: number;
   totalTimeMinutes?: number;
   notes?: string;
+  sourceUrl?: string;
+  sourceName?: string;
 };
+
+export function stripLeadingStepNumber(text: string): string {
+  return text.replace(/^\s*(?:\d+|[A-Za-z]|[ivxlcdm]+)[.)]\s+/i, "").trim();
+}
+
+function parseSourceValue(value: string): { sourceUrl?: string; sourceName?: string } {
+  const trimmed = value.trim();
+  if (!trimmed) return {};
+  try {
+    const url = new globalThis.URL(trimmed);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return { sourceUrl: url.toString() };
+    }
+  } catch {
+    // not a URL
+  }
+  return { sourceName: trimmed };
+}
 
 function applyTime(meta: PasteMeta, kind: string, minutes: number | undefined): void {
   if (minutes == null) return;
@@ -107,6 +128,14 @@ export function extractPasteMetadata(lines: string[]): { kept: string[]; meta: P
       continue;
     }
 
+    const sourceMatch = line.match(SOURCE_LINE);
+    if (sourceMatch?.[1]) {
+      const parsed = parseSourceValue(sourceMatch[1]);
+      if (parsed.sourceUrl) meta.sourceUrl = parsed.sourceUrl;
+      if (parsed.sourceName) meta.sourceName = parsed.sourceName;
+      continue;
+    }
+
     kept.push(line);
   }
 
@@ -167,9 +196,14 @@ export function draftFromPlainText(text: string): RecipeImportDraft {
     cookTimeMinutes: meta.cookTimeMinutes,
     totalTimeMinutes: meta.totalTimeMinutes,
     ingredients: ingredientLines.map((rawText) => ({ rawText, confidence: 0.5 })),
-    steps: stepLines.map((stepText, order) => ({ text: stepText, order })),
+    steps: stepLines.map((stepText, order) => ({
+      text: stripLeadingStepNumber(stepText),
+      order,
+    })),
     source: {
       type: "paste",
+      url: meta.sourceUrl,
+      attribution: meta.sourceName,
       importerName: "plain-paste",
       importerVersion: "0.1.0",
       rawExtractionJson: { text },
