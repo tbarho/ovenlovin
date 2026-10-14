@@ -781,6 +781,64 @@ select {
   color: var(--muted);
 }
 
+.docs-page {
+  padding-bottom: 24px;
+}
+
+.docs-page .eyebrow {
+  margin: 0 0 10px;
+  color: var(--orange-deep);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.docs-page h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 52px);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.docs-page .lead {
+  max-width: 52ch;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.5;
+}
+
+.docs-page .hero-ctas {
+  margin-top: 28px;
+}
+
+.docs-page ol {
+  max-width: 60ch;
+  margin: 16px 0 0;
+  padding-left: 1.2em;
+  color: var(--muted);
+}
+
+.docs-page code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+.docs-page .copy-pre {
+  margin: 16px 0 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--code);
+  color: var(--code-ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .status-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1646,7 +1704,7 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
 
   .kitchen-tabbar ul {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     max-width: var(--max);
     margin: 0 auto;
@@ -1983,6 +2041,205 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
 
   .import-submit {
     min-width: 120px;
+  }
+}
+
+.allergen-disclaimer {
+  margin: 0 0 var(--space-3);
+  padding: 12px 14px;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #fafafa;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.week-recheck {
+  margin: -8px 0 var(--space-3);
+  padding: 12px 14px;
+  border: 1px solid #f1d2a4;
+  border-radius: 12px;
+  background: #fff8ec;
+  color: #8a5a12;
+  font-size: 14px;
+}
+
+.week-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.week-day {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.week-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.week-day-head h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.03em;
+}
+
+.week-empty {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.week-meals {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-meal-link {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: inherit;
+}
+
+.week-meal-link img,
+.week-meal-fallback {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  background: var(--cream);
+}
+
+.week-meal-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--orange-deep);
+  font-weight: 650;
+}
+
+.week-meal-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.week-meal-copy h3 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+
+.week-slot {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.week-finding {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+  font-weight: 550;
+}
+
+.week-finding[data-severity="block"] {
+  color: #9b1c1c;
+}
+
+.week-finding[data-severity="warn"] {
+  color: #8a5a12;
+}
+
+.shop-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shop-item {
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.shop-item label {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.shop-item input {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  accent-color: var(--orange);
+}
+
+.shop-item-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shop-item-body strong {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.shop-item.is-done .shop-item-body strong,
+.shop-item.is-done .shop-item-body .muted {
+  text-decoration: line-through;
+  color: var(--faint);
+}
+
+@media (min-width: 1024px) {
+  .week-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .week-day {
+    padding: 12px 10px 14px;
+  }
+
+  .week-day-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin-bottom: 10px;
+  }
+
+  .week-meal-link {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .week-meal-link img,
+  .week-meal-fallback {
+    width: 100%;
+    height: 88px;
   }
 }
 

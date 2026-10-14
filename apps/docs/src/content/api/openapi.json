@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "version": "1.0.0",
+    "version": "0.1.0",
     "title": "OvenLovin API",
-    "description": "LLM-optimized recipe & family meal-planning API. Bot-first interfaces for Grok, ChatGPT, Claude, and other AI agents.",
+    "description": "The family recipe box your AI can actually use, and it knows who can't eat what. REST for agents. Not medical advice — always check labels.",
     "license": {
       "name": "MIT",
       "url": "https://github.com/tbarho/ovenlovin/blob/main/LICENSE"
@@ -15,27 +15,35 @@
   },
   "servers": [
     {
-      "url": "https://your-app.vercel.app/api/v1",
-      "description": "Production"
+      "url": "https://ovenlovin.vercel.app/api/v1",
+      "description": "This OvenLovin instance"
     },
     {
       "url": "http://localhost:3000/api/v1",
       "description": "Local development"
     }
   ],
+  "security": [
+    {
+      "apiKey": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ],
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
-        "description": "Clerk JWT token for authenticated users"
-      },
       "apiKey": {
         "type": "apiKey",
         "in": "header",
         "name": "Authorization",
-        "description": "API key for bot clients. Format: `ApiKey <key>`"
+        "description": "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings."
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API key or Clerk JWT",
+        "description": "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT."
       }
     },
     "schemas": {
@@ -152,6 +160,103 @@
           }
         },
         "required": ["id", "householdId", "name", "slug", "sortOrder"]
+      },
+      "Person": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "householdId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": ["id", "householdId", "displayName", "sortOrder"]
+      },
+      "Preference": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "personId", "type", "value", "weight"]
+      },
+      "PersonRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["allergen", "ingredient", "ingredient_category", "diet", "tag", "custom"]
+          },
+          "target": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["block", "warn", "prefer_avoid"]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["id", "personId", "kind", "target", "severity"]
+      },
+      "MealPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "householdId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weekStart": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "approved", "archived"]
+          },
+          "needsRecheck": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "householdId", "weekStart", "status", "needsRecheck"]
       }
     },
     "parameters": {}
@@ -224,6 +329,87 @@
                     }
                   },
                   "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["recipes"],
+        "summary": "Create a recipe directly (title, ingredients, steps)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "servings": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "prepTimeMinutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cookTimeMinutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "ingredients": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "rawText": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["rawText"]
+                    }
+                  },
+                  "steps": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["text"]
+                    }
+                  },
+                  "cookbookId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": ["title"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
                 }
               }
             }
@@ -359,6 +545,26 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["recipes"],
+        "summary": "Soft-delete a recipe",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
           }
         }
       }
@@ -593,6 +799,172 @@
         }
       }
     },
+    "/people/reorder": {
+      "post": {
+        "tags": ["people"],
+        "summary": "Set the persistent household people order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "personIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["personIds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "People in the saved order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Person"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}/preferences": {
+      "get": {
+        "tags": ["people"],
+        "summary": "List a person's preferences, including Loves",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Preference"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["people"],
+        "summary": "Add a preference such as a Love (never filters recipes)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "weight": {
+                    "type": "integer"
+                  }
+                },
+                "required": ["value"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created preference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preference"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}/preferences/{prefId}": {
+      "delete": {
+        "tags": ["people"],
+        "summary": "Remove a preference",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "prefId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
     "/uploads/images": {
       "post": {
         "tags": ["recipes"],
@@ -613,6 +985,595 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/people": {
+      "get": {
+        "tags": ["people"],
+        "summary": "List people in the household",
+        "responses": {
+          "200": {
+            "description": "People page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Person"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["people"],
+        "summary": "Create a person",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                },
+                "required": ["displayName"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}": {
+      "get": {
+        "tags": ["people"],
+        "summary": "Get a person",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["people"],
+        "summary": "Update a person",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["people"],
+        "summary": "Soft-delete a person",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/people/{id}/rules": {
+      "get": {
+        "tags": ["people"],
+        "summary": "List a person's Can't eat / Doesn't like rules",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonRule"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["people"],
+        "summary": "Add a rule. Not medical advice — always check labels.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "allergen",
+                      "ingredient",
+                      "ingredient_category",
+                      "diet",
+                      "tag",
+                      "custom"
+                    ]
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["block", "warn", "prefer_avoid"]
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": ["kind", "target", "severity"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonRule"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/people/{id}/rules/{ruleId}": {
+      "delete": {
+        "tags": ["people"],
+        "summary": "Remove a rule",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ruleId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/meal-plans": {
+      "get": {
+        "tags": ["meal-plans"],
+        "summary": "List meal plans",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "weekStart",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "weekEnd",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meal plan page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MealPlan"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["meal-plans"],
+        "summary": "Create a meal plan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "weekStart": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["draft", "approved"]
+                  }
+                },
+                "required": ["weekStart"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meal-plans/{id}": {
+      "get": {
+        "tags": ["meal-plans"],
+        "summary": "Get a meal plan",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meal plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["meal-plans"],
+        "summary": "Update a meal plan",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["draft", "approved", "archived"]
+                  },
+                  "acknowledgedWarnings": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["meal-plans"],
+        "summary": "Soft-delete a meal plan",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/meal-plans/{id}/check": {
+      "get": {
+        "tags": ["meal-plans"],
+        "summary": "Check a meal plan against per-person rules. Not medical advice.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check report"
+          }
+        }
+      }
+    },
+    "/meal-plans/{id}/shopping-list": {
+      "get": {
+        "tags": ["meal-plans"],
+        "summary": "Export a shopping list for a meal plan",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["json", "csv", "markdown", "text"]
+            },
+            "required": false,
+            "name": "format",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shopping list"
+          }
+        }
+      }
+    },
+    "/households": {
+      "get": {
+        "tags": ["households"],
+        "summary": "Get the authenticated household",
+        "responses": {
+          "200": {
+            "description": "Household"
+          }
+        }
+      }
+    },
+    "/api-keys": {
+      "get": {
+        "tags": ["api-keys"],
+        "summary": "List API keys (hashes only)",
+        "responses": {
+          "200": {
+            "description": "API keys"
+          }
+        }
+      },
+      "post": {
+        "tags": ["api-keys"],
+        "summary": "Create an API key. The plaintext is returned once.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created key with plaintext"
+          }
+        }
+      }
+    },
+    "/api-keys/{id}": {
+      "delete": {
+        "tags": ["api-keys"],
+        "summary": "Revoke an API key",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
           }
         }
       }

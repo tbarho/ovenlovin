@@ -457,8 +457,26 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
       createdRecipes.push(details);
     }
 
-    const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 5 } });
-    if (existingPlans.items.length === 0) {
+    const existingKeys = await keys.listForHousehold(household.id);
+    if (existingKeys.length === 0) {
+      await keys.create(
+        {
+          householdId: household.id,
+          name: "Grok kitchen key",
+          scopes: ["recipes:read", "recipes:write", "people:read", "plans:read"],
+        },
+        user.id
+      );
+    }
+  }
+
+  const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 5 } });
+  if (existingPlans.items.length === 0) {
+    const dinnerRecipes = await recipes.listRecipes(household.id, { pagination: { limit: 40 } });
+    const dinner = dinnerRecipes.items.filter((recipe) =>
+      ["weeknight-pesto-pasta", "sheet-pan-salmon", "veggie-tacos"].includes(recipe.slug)
+    );
+    if (dinner.length > 0) {
       const plan = await plans.createMealPlan({
         householdId: household.id,
         weekStart: "2026-10-12",
@@ -467,13 +485,8 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
         needsRecheck: false,
         createdBy: user.id,
       });
-      const attendees = existingPeople.items.length
-        ? existingPeople.items.map((person) => person.id)
-        : (await people.listPeopleByHousehold(household.id, { limit: 40 })).items.map(
-            (person) => person.id
-          );
-      const dinner = createdRecipes.filter((recipe) =>
-        ["weeknight-pesto-pasta", "sheet-pan-salmon", "veggie-tacos"].includes(recipe.slug)
+      const attendees = (await people.listPeopleByHousehold(household.id, { limit: 40 })).items.map(
+        (person) => person.id
       );
       const dates = ["2026-10-12", "2026-10-13", "2026-10-14"];
       for (const [index, recipe] of dinner.entries()) {
@@ -489,18 +502,6 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
           scaleFactor: 1,
         });
       }
-    }
-
-    const existingKeys = await keys.listForHousehold(household.id);
-    if (existingKeys.length === 0) {
-      await keys.create(
-        {
-          householdId: household.id,
-          name: "Grok kitchen key",
-          scopes: ["recipes:read", "recipes:write", "people:read", "plans:read"],
-        },
-        user.id
-      );
     }
   }
 

@@ -22,8 +22,10 @@ describe("isKitchenNavActive", () => {
     expect(isKitchenNavActive("/settings", "/people")).toBe(false);
   });
 
-  it("never marks hash links as current", () => {
-    expect(isKitchenNavActive("/people", null)).toBe(false);
-    expect(isKitchenNavActive("/", null)).toBe(false);
+  it("marks Plan and List as current on their own routes", () => {
+    expect(isKitchenNavActive("/plans", "/plans")).toBe(true);
+    expect(isKitchenNavActive("/list", "/list")).toBe(true);
+    expect(isKitchenNavActive("/plans", "/list")).toBe(false);
+    expect(isKitchenNavActive("/list", "/plans")).toBe(false);
   });
 });

@@ -31,6 +31,28 @@ export function AgentsIcon() {
   );
 }
 
+export function PlanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M7.5 3.75a.75.75 0 0 1 .75.75V6h7.5V4.5a.75.75 0 0 1 1.5 0V6h.75A1.75 1.75 0 0 1 19.75 7.75v11A1.75 1.75 0 0 1 18 20.5H6a1.75 1.75 0 0 1-1.75-1.75v-11A1.75 1.75 0 0 1 6 6h.75V4.5a.75.75 0 0 1 .75-.75ZM5.75 10.5v8.25c0 .14.11.25.25.25h12a.25.25 0 0 0 .25-.25V10.5H5.75Zm2.5 2.25h2.5v2.25h-2.5v-2.25Zm4.25 0h2.5v2.25h-2.5v-2.25Z"
+      />
+    </svg>
+  );
+}
+
+export function ListIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M8.2 6.2 6.4 8 5.2 6.8 4 8l2.4 2.4L9.4 7.4 8.2 6.2Zm4.05.8h7.75v1.5h-7.75V7ZM8.2 12.2 6.4 14l-1.2-1.2L4 14l2.4 2.4 3-3-1.2-1.2Zm4.05.8h7.75v1.5h-7.75V13ZM8.2 18.2 6.4 20l-1.2-1.2L4 20l2.4 2.4 3-3-1.2-1.2Zm4.05.8h7.75v1.5h-7.75V19Z"
+      />
+    </svg>
+  );
+}
+
 export function SettingsIcon() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
