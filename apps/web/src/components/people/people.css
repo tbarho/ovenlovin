@@ -55,63 +55,106 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  align-items: stretch;
 }
 
 .kitchen-people .olp-person-slot {
   display: flex;
-  align-items: stretch;
   min-width: 0;
-  gap: 8px;
+  height: 100%;
+}
+
+.olp-person-card,
+.kitchen-people .olp-person-card {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px 12px 4px;
+  border-radius: 12px;
+  background: #ffffff;
 }
 
 .kitchen-people .olp-person-slot .olp-person-chip {
   flex: 1;
+  min-width: 0;
+  background: transparent;
 }
 
-.kitchen-people .olp-person-slot.is-dragging {
-  opacity: 0.72;
+.kitchen-people .olp-person-slot.is-dragging .olp-person-card {
+  background: #fffaf4;
+  box-shadow: inset 0 0 0 2px #d7c4b2;
+  border-radius: 12px;
 }
 
-.kitchen-people .olp-person-tools {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  gap: 4px;
+.kitchen-people .olp-person-slot.is-dragging .olp-person-card > * {
+  visibility: hidden;
 }
 
-.kitchen-people .olp-drag-handle,
-.kitchen-people .olp-move-btn {
+.olp-drag-handle,
+.kitchen-people .olp-drag-handle {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
   min-width: 44px;
   min-height: 44px;
+  margin-top: 4px;
   padding: 0;
-  border: 1px solid #eaeaea;
+  border: 0;
   border-radius: 10px;
-  background: #ffffff;
-  color: #6b6b6b;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 650;
+  background: transparent;
+  color: #8a8376;
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
 
-.kitchen-people .olp-move-btn {
-  cursor: pointer;
+.olp-drag-handle:hover,
+.olp-drag-handle:focus-visible,
+.kitchen-people .olp-drag-handle:hover,
+.kitchen-people .olp-drag-handle:focus-visible {
+  background: #fff6ee;
+  color: #5c564c;
 }
 
-.kitchen-people .olp-drag-handle:disabled,
-.kitchen-people .olp-move-btn:disabled {
-  cursor: default;
-  opacity: 0.4;
+.olp-drag-handle:active,
+.olp-drag-handle[aria-pressed="true"],
+.kitchen-people .olp-drag-handle:active,
+.kitchen-people .olp-drag-handle[aria-pressed="true"] {
+  cursor: grabbing;
+  color: #c45d28;
+}
+
+.olp-drag-handle:disabled,
+.kitchen-people .olp-drag-handle:disabled {
+  cursor: grabbing;
+  opacity: 0.7;
+}
+
+.olp-person-ghost {
+  cursor: grabbing;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(22, 19, 16, 0.16);
+  pointer-events: none;
+}
+
+.olp-person-ghost .olp-person-card {
+  background: #ffffff;
+}
+
+.olp-person-ghost .olp-person-chip {
+  background: transparent;
 }
 
 .kitchen-people .olp-person-chip {
   display: flex;
   align-items: flex-start;
   min-height: 0;
-  padding: 16px;
+  padding: 8px 4px 4px;
   border-radius: 12px;
   background: #ffffff;
 }

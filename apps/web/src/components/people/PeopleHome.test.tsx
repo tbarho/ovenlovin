@@ -50,8 +50,7 @@ describe("PeopleHome", () => {
     expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent("None");
   });
 
-  it("reorders people with the keyboard fallback", async () => {
-    const user = userEvent.setup();
+  it("exposes only an in-card drag handle for reorder", () => {
     const ty = testPerson({
       id: "00000000-0000-4000-8000-000000000010",
       displayName: "Ty",
@@ -62,14 +61,13 @@ describe("PeopleHome", () => {
       displayName: "Jake",
       sortOrder: 1,
     });
-    mockedApi.mockResolvedValue({ items: [jake, ty] });
     render(<PeopleHome householdName="Household 1" people={[ty, jake]} rules={[]} loves={[]} />);
 
-    await user.click(screen.getByRole("button", { name: "Move Ty down" }));
-    expect(mockedApi).toHaveBeenCalledWith("/api/v1/people/reorder", {
-      method: "POST",
-      body: JSON.stringify({ personIds: [jake.id, ty.id] }),
-    });
+    expect(screen.queryByRole("button", { name: "Move Ty down" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Move Ty up" })).not.toBeInTheDocument();
+    const handle = screen.getByRole("button", { name: "Reorder Ty" });
+    expect(handle).toHaveStyle({ minWidth: "44px", minHeight: "44px", cursor: "grab" });
+    expect(handle.closest(`[data-testid="person-card-shell-${ty.id}"]`)).toBeTruthy();
   });
 
   it("adds a person with a chosen emoji", async () => {
