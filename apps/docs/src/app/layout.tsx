@@ -1,5 +1,5 @@
 import { withBasePath } from "@/lib/base-path";
-import { brandPublicPath } from "@ovenlovin/brand";
+import { DOCS_SHARE_ORIGIN, brandPublicPath, docsShareUrl } from "@ovenlovin/brand";
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider";
 import { Fascinate_Inline, Geist, Geist_Mono } from "next/font/google";
@@ -22,6 +22,7 @@ const fascinate = Fascinate_Inline({
 });
 
 export const metadata = {
+  metadataBase: new URL(DOCS_SHARE_ORIGIN),
   icons: {
     icon: [
       { url: withBasePath(brandPublicPath.favicon), type: "image/svg+xml" },
@@ -31,20 +32,25 @@ export const metadata = {
   },
   openGraph: {
     title: "OvenLovin Documentation",
-    description:
-      "LLM-optimized recipe and family meal-planning platform. Built for AI agents to help families manage weekly meal planning with per-person dietary rules and allergy checking.",
-    images: [{ url: withBasePath(brandPublicPath.og), width: 1200, height: 630, alt: "OvenLovin" }],
+    description: "The family recipe box your AI can actually use, and it knows who can't eat what.",
+    images: [
+      {
+        url: docsShareUrl(brandPublicPath.og),
+        width: 1200,
+        height: 630,
+        alt: "The family recipe box your AI can actually use, and it knows who can't eat what.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image" as const,
-    images: [withBasePath(brandPublicPath.og)],
+    images: [docsShareUrl(brandPublicPath.og)],
   },
   title: {
     default: "OvenLovin Documentation",
     template: "%s | OvenLovin",
   },
-  description:
-    "LLM-optimized recipe and family meal-planning platform. Built for AI agents to help families manage weekly meal planning with per-person dietary rules and allergy checking.",
+  description: "The family recipe box your AI can actually use, and it knows who can't eat what.",
   keywords: [
     "recipe management",
     "meal planning",

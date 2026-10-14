@@ -21,8 +21,10 @@ Open-source recipe box and meal planner for families and their agents. Per-perso
 - **Recipes & cookbooks** — import a URL or paste, file dishes in cookbooks, cook from a photo-first shelf
 - **People & rules** — Can't eat / Doesn't like / Loves, set by the household. Loves never hide a recipe
 - **Who can eat this** — named per-person findings on every dish (`block` / `warn` / `prefer-avoid`)
+- **Meal plan & list** — week view and shopping list, with the same per-person warnings
 - **Agents** — REST `/api/v1` (API key or Clerk), MCP Streamable HTTP at `/mcp`, OpenAPI, `/llms.txt`
 - **Auth & data** — Clerk organizations as households, Neon Postgres + Drizzle, Vercel Blob, Vercel AI Gateway
+- **Public demo** — no-signup sandbox kitchen (separate demo project; never on product production)
 
 <p align="center">
   <img src="docs/assets/kitchen-recipe.png" width="340" alt="Recipe with who-can-eat" />
@@ -37,7 +39,6 @@ Open-source recipe box and meal planner for families and their agents. Per-perso
 
 ## Roadmap
 
-- Meal plan week view and shopping list UI (API + MCP already exist)
 - CLI, published SDK, voice import, and third-party app export
 - USDA FoodData Central nutrition (optional `USDA_FDC_API_KEY` — not required to deploy)
 - Native apps
@@ -106,3 +107,10 @@ CLI and shared UI packages are not shipped.
 ## License
 
 [MIT](./LICENSE)
+
+## Community
+
+- [Contributing](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Security](./SECURITY.md)
+- [Changelog](./CHANGELOG.md)

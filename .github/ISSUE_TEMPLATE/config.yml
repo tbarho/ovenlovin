@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security or allergen-check miss
+    url: https://github.com/tbarho/ovenlovin/security/advisories/new
+    about: Private report. Do not file a public issue for a block-rule miss or leaked secret.
+  - name: Docs
+    url: https://tbarho.github.io/ovenlovin/
+    about: Self-hosting, MCP, and REST.

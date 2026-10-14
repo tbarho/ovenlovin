@@ -1,0 +1,32 @@
+name: Feature
+description: A change you want in OvenLovin
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Check [issue #1](https://github.com/tbarho/ovenlovin/issues/1) and open PRs before proposing a large feature.
+  - type: textarea
+    id: want
+    attributes:
+      label: What do you want
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: Who is this for — a household cook, or an agent?
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Kitchen UI
+        - REST / API
+        - MCP tools
+        - Import
+        - Docs / agents
+        - Other

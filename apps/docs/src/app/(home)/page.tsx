@@ -43,8 +43,7 @@ export default function HomePage(): React.ReactElement {
           </h1>
           <div className="ol-hero-flourish mx-auto mt-5" aria-hidden />
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            LLM-optimized recipe and family meal-planning platform. Built for AI agents to help
-            families manage weekly meal planning with per-person dietary rules and allergy checking.
+            The family recipe box your AI can actually use, and it knows who can&apos;t eat what.
           </p>
           <div className="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <a
