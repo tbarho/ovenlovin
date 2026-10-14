@@ -3,6 +3,7 @@ import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db
 import type { MealPlan, MealPlanEntry } from "../schemas/plans";
 import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
+import { backfillParsedIngredient } from "../parsing/ingredient-line";
 import { BaseService } from "./base";
 
 export class PlanService extends BaseService {
@@ -146,22 +147,32 @@ export class PlanService extends BaseService {
       .where(and(eq(recipeIngredient.recipeId, recipeId), isNull(recipeIngredient.deletedAt)))
       .orderBy(recipeIngredient.order);
 
-    return ingredients.map((ing) => ({
-      ...ing,
-      createdAt: ing.createdAt.toISOString(),
-      updatedAt: ing.updatedAt.toISOString(),
-      deletedAt: ing.deletedAt?.toISOString() ?? undefined,
-      groupId: ing.groupId ?? undefined,
-      ingredientId: ing.ingredientId ?? undefined,
-      quantityMin: ing.quantityMin ? Number(ing.quantityMin) : undefined,
-      quantityMax: ing.quantityMax ? Number(ing.quantityMax) : undefined,
-      unit: ing.unit ?? undefined,
-      originalUnit: ing.originalUnit ?? undefined,
-      preparation: ing.preparation ?? undefined,
-      isOptional: ing.isOptional ?? false,
-      substitutionNotes: ing.substitutionNotes ?? undefined,
-      parseConfidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
-    }));
+    return ingredients.map((ing) => {
+      const parsed = backfillParsedIngredient({
+        rawText: ing.rawText,
+        quantityMin: ing.quantityMin ? Number(ing.quantityMin) : null,
+        quantityMax: ing.quantityMax ? Number(ing.quantityMax) : null,
+        unit: ing.unit ?? null,
+      });
+      return {
+        ...ing,
+        createdAt: ing.createdAt.toISOString(),
+        updatedAt: ing.updatedAt.toISOString(),
+        deletedAt: ing.deletedAt?.toISOString() ?? undefined,
+        groupId: ing.groupId ?? undefined,
+        ingredientId: ing.ingredientId ?? undefined,
+        rawText: ing.rawText,
+        name: parsed.name,
+        quantityMin: parsed.quantityMin ?? undefined,
+        quantityMax: parsed.quantityMax ?? undefined,
+        unit: parsed.unit ?? undefined,
+        originalUnit: ing.originalUnit ?? undefined,
+        preparation: ing.preparation ?? undefined,
+        isOptional: ing.isOptional ?? false,
+        substitutionNotes: ing.substitutionNotes ?? undefined,
+        parseConfidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
+      };
+    });
   }
 
   async getRecipeTitle(recipeId: string): Promise<string | null> {

@@ -52,6 +52,7 @@ export const recipeIngredientSchema = baseEntitySchema.extend({
   groupId: uuidSchema.nullable().optional(),
   order: z.number().int().nonnegative(),
   rawText: z.string().min(1),
+  name: z.string().min(1).optional(),
   quantityMin: z.number().nonnegative().nullable().optional(),
   quantityMax: z.number().positive().nullable().optional(),
   unit: z.string().max(100).nullable().optional(),
