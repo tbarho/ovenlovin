@@ -12,10 +12,7 @@
     "https://natashaskitchen.com/wp-content/uploads/2019/04/Beef-Stroganoff-6-500x375.jpg",
     "https://natashaskitchen.com/wp-content/uploads/2019/04/Beef-Stroganoff-6-480x270.jpg"
   ],
-  "recipeYield": [
-    "4",
-    "4 as a main course"
-  ],
+  "recipeYield": ["4", "4 as a main course"],
   "prepTime": "PT15M",
   "cookTime": "PT15M",
   "totalTime": "PT30M",
@@ -81,13 +78,8 @@
     "ratingCount": "1991",
     "reviewCount": "6"
   },
-  "recipeCategory": [
-    "Main Course"
-  ],
-  "recipeCuisine": [
-    "American",
-    "Russian"
-  ],
+  "recipeCategory": ["Main Course"],
+  "recipeCuisine": ["American", "Russian"],
   "keywords": "beef stroganoff",
   "nutrition": {
     "@type": "NutritionInformation",

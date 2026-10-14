@@ -12,10 +12,7 @@
     "https://www.budgetbytes.com/wp-content/uploads/2014/02/One-Pot-Beef-and-Mushroom-Stroganoff-done-500x375.jpg",
     "https://www.budgetbytes.com/wp-content/uploads/2014/02/One-Pot-Beef-and-Mushroom-Stroganoff-done-480x270.jpg"
   ],
-  "recipeYield": [
-    "4",
-    "4 about 1.5 cups each"
-  ],
+  "recipeYield": ["4", "4 about 1.5 cups each"],
   "prepTime": "PT10M",
   "cookTime": "PT20M",
   "totalTime": "PT30M",
@@ -76,14 +73,8 @@
     "ratingCount": "245",
     "reviewCount": "14"
   },
-  "recipeCategory": [
-    "Dinner",
-    "Lunch",
-    "Main Course"
-  ],
-  "recipeCuisine": [
-    "American"
-  ],
+  "recipeCategory": ["Dinner", "Lunch", "Main Course"],
+  "recipeCuisine": ["American"],
   "keywords": "Comfort Food, Dinner, easy, One Pot, Pasta",
   "nutrition": {
     "@type": "NutritionInformation",

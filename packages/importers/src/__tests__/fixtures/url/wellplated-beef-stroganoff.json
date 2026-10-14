@@ -12,10 +12,7 @@
     "https://www.wellplated.com/wp-content/uploads/2023/02/Best-Beef-Stroganoff-500x375.jpg",
     "https://www.wellplated.com/wp-content/uploads/2023/02/Best-Beef-Stroganoff-480x270.jpg"
   ],
-  "recipeYield": [
-    "5",
-    "5 servings"
-  ],
+  "recipeYield": ["5", "5 servings"],
   "prepTime": "PT10M",
   "cookTime": "PT30M",
   "totalTime": "PT40M",
@@ -101,12 +98,8 @@
     "ratingCount": "68",
     "reviewCount": "9"
   },
-  "recipeCategory": [
-    "Main Course"
-  ],
-  "recipeCuisine": [
-    "American"
-  ],
+  "recipeCategory": ["Main Course"],
+  "recipeCuisine": ["American"],
   "keywords": "beef stroganoff from scratch, creamy beef stroganoff, easy beef stroganoff, traditional beef stroganoff recipe",
   "nutrition": {
     "@type": "NutritionInformation",

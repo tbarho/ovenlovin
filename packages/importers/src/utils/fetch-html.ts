@@ -130,7 +130,7 @@ async function readResponse(
  * Layered recipe-page fetch:
  * 1. Direct HTTP with a full browser header set
  * 2. Optional headless Chromium (injected renderer)
- * 3. Public Wayback Machine copy
+ * 3. Public copies: Wayback Machine, then Jina Reader HTML
  */
 export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Promise<FetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
