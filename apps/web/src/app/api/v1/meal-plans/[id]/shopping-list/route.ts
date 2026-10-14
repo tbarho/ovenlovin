@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleApiError, NotFoundError, BadRequestError } from "@/lib/api/errors";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
-import { PlanService, ShoppingListService } from "@ovenlovin/core";
+import {
+  PlanService,
+  RecipeService,
+  ShoppingListService,
+  collectShoppingListEntries,
+  type ShoppingListGroupBy,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+
+const FORMATS = ["json", "csv", "markdown", "text"] as const;
+const GROUP_BY = ["aisle", "recipe", "category"] as const;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -12,13 +21,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const url = new URL(request.url);
     const format = url.searchParams.get("format") || "json";
+    const groupBy = (url.searchParams.get("groupBy") || "aisle") as ShoppingListGroupBy;
+    const includePantryItems = url.searchParams.get("includePantryItems") === "true";
 
-    if (!["json", "csv", "markdown", "text"].includes(format)) {
+    if (!FORMATS.includes(format as (typeof FORMATS)[number])) {
       throw new BadRequestError("Invalid format. Must be one of: json, csv, markdown, text");
+    }
+    if (!GROUP_BY.includes(groupBy)) {
+      throw new BadRequestError("Invalid groupBy. Must be one of: aisle, recipe, category");
     }
 
     const db = getDatabase();
     const planService = new PlanService(db);
+    const recipeService = new RecipeService(db);
     const shoppingListService = new ShoppingListService();
 
     const plan = await planService.getMealPlan(id);
@@ -27,67 +42,40 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const entries = await planService.getMealPlanEntries(id);
-
-    const entriesWithIngredients = await Promise.all(
-      entries.map(async (entry) => {
-        if (!entry.recipeId) {
-          return {
-            entry,
-            recipeTitle: entry.freeformMeal ?? undefined,
-            ingredients: [],
-          };
-        }
-
-        const ingredientRows = await planService.getRecipeIngredientsForEntry(entry.recipeId);
-        const recipeTitle = await planService.getRecipeTitle(entry.recipeId);
-
-        const ingredients = ingredientRows.map((ing) => ({
-          name: ing.rawText,
+    const sources = await collectShoppingListEntries(entries, {
+      getRecipe: (recipeId) => recipeService.getRecipe(recipeId),
+      getIngredients: async (recipeId) => {
+        const rows = await planService.getRecipeIngredientsForEntry(recipeId);
+        return rows.map((ing) => ({
           rawText: ing.rawText,
-          quantity: ing.quantityMin ?? undefined,
-          unit: ing.unit ?? undefined,
-          ingredientId: ing.ingredientId ?? undefined,
+          name: ing.name,
+          quantityMin: ing.quantityMin,
+          unit: ing.unit,
+          ingredientId: ing.ingredientId,
         }));
+      },
+    });
 
-        return {
-          entry,
-          recipeTitle: recipeTitle ?? undefined,
-          ingredients,
-        };
-      })
-    );
-
-    const aggregatedIngredients = shoppingListService.aggregateIngredients(entriesWithIngredients);
-
-    const shoppingListData = {
+    const shoppingList = shoppingListService.build({
       mealPlanId: plan.id,
       weekStart: plan.weekStart,
-      ingredients: aggregatedIngredients,
-      generatedAt: new Date().toISOString(),
-    };
+      entries: sources,
+      groupBy,
+      includePantryItems,
+    });
 
-    let output: string;
-    let contentType: string;
-
-    switch (format) {
-      case "csv":
-        output = shoppingListService.exportAsCSV(shoppingListData);
-        contentType = "text/csv";
-        break;
-      case "markdown":
-        output = shoppingListService.exportAsMarkdown(shoppingListData);
-        contentType = "text/markdown";
-        break;
-      case "text":
-        output = shoppingListService.exportAsText(shoppingListData);
-        contentType = "text/plain";
-        break;
-      case "json":
-      default:
-        output = shoppingListService.exportAsJSON(shoppingListData);
-        contentType = "application/json";
-        break;
-    }
+    const output = shoppingListService.format(
+      shoppingList,
+      format as "json" | "csv" | "markdown" | "text"
+    );
+    const contentType =
+      format === "csv"
+        ? "text/csv"
+        : format === "markdown"
+          ? "text/markdown"
+          : format === "text"
+            ? "text/plain"
+            : "application/json";
 
     return new NextResponse(output, {
       status: 200,

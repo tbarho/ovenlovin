@@ -658,7 +658,11 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     summary: "Export a shopping list for a meal plan",
     request: {
       params: z.object({ id: z.string().uuid() }),
-      query: z.object({ format: z.enum(["json", "csv", "markdown", "text"]).optional() }),
+      query: z.object({
+        format: z.enum(["json", "csv", "markdown", "text"]).optional(),
+        groupBy: z.enum(["aisle", "recipe", "category"]).optional(),
+        includePantryItems: z.coerce.boolean().optional(),
+      }),
     },
     responses: { 200: { description: "Shopping list" } },
   });

@@ -1,0 +1,283 @@
+import { describe, expect, it } from "vitest";
+import type { MealPlanEntry } from "../schemas/plans";
+import { ShoppingListService, servingsScale } from "./shopping-list";
+
+const service = new ShoppingListService();
+
+function entry(overrides: Partial<MealPlanEntry> = {}): MealPlanEntry {
+  return {
+    id: overrides.id ?? "entry-1",
+    createdAt: "2026-10-12T00:00:00.000Z",
+    updatedAt: "2026-10-12T00:00:00.000Z",
+    deletedAt: null,
+    mealPlanId: "plan-1",
+    date: "2026-10-12",
+    mealSlot: "dinner",
+    recipeId: overrides.recipeId ?? "recipe-a",
+    freeformMeal: null,
+    servings: overrides.servings ?? 4,
+    attendees: [],
+    scaleFactor: overrides.scaleFactor ?? 1,
+    prepAheadNotes: null,
+    leftoverSourceId: null,
+    ...overrides,
+  };
+}
+
+function build(
+  entries: Parameters<ShoppingListService["build"]>[0]["entries"],
+  options: Partial<Parameters<ShoppingListService["build"]>[0]> = {}
+) {
+  return service.build({
+    mealPlanId: "plan-1",
+    weekStart: "2026-10-12",
+    generatedAt: "2026-10-14T00:00:00.000Z",
+    entries,
+    ...options,
+  });
+}
+
+describe("servingsScale", () => {
+  it("scales plan entry servings relative to recipe servings", () => {
+    expect(servingsScale(6, 4, 1)).toBe(1.5);
+    expect(servingsScale(6, 6, 1)).toBe(1);
+  });
+
+  it("falls back to scaleFactor when recipe servings are missing", () => {
+    expect(servingsScale(6, null, 2)).toBe(2);
+    expect(servingsScale(null, 4, 1)).toBe(1);
+  });
+});
+
+describe("ShoppingListService", () => {
+  it("S1/S5: merges identical items across recipes using the parsed name", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "pesto", servings: 4 }),
+          recipeTitle: "Weeknight pesto pasta",
+          recipeServings: 4,
+          ingredients: [{ rawText: "2 tbsp olive oil" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "salmon", servings: 4 }),
+          recipeTitle: "Sheet-pan salmon",
+          recipeServings: 4,
+          ingredients: [{ rawText: "3 tbsp olive oil" }],
+        },
+      ],
+      { includePantryItems: true }
+    );
+
+    const oil = list.ingredients.find((item) => item.name === "olive oil");
+    expect(oil).toMatchObject({ quantity: 5, unit: "tbsp" });
+    expect(oil?.recipes.map((recipe) => recipe.recipeTitle)).toEqual([
+      "Weeknight pesto pasta",
+      "Sheet-pan salmon",
+    ]);
+    expect(list.itemCount).toBe(1);
+  });
+
+  it("S3: does not double a single-recipe quantity", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "tacos", servings: 4 }),
+        recipeTitle: "Veggie tacos",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 acorn squash" }],
+      },
+    ]);
+
+    expect(list.ingredients).toEqual([
+      expect.objectContaining({
+        name: "acorn squash",
+        quantity: 1,
+        recipes: [expect.objectContaining({ recipeTitle: "Veggie tacos", quantity: 1 })],
+      }),
+    ]);
+  });
+
+  it("S3: two 1 tsp salt lines become 2 tsp, not 3", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "salmon", servings: 4 }),
+          recipeTitle: "Sheet-pan salmon",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tsp salt" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "ziti", servings: 4 }),
+          recipeTitle: "Baked ziti",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tsp salt" }],
+        },
+      ],
+      { includePantryItems: true }
+    );
+
+    expect(list.ingredients[0]).toMatchObject({ name: "salt", quantity: 2, unit: "tsp" });
+  });
+
+  it("S4: scales quantities by plan entry servings over recipe servings", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "ziti", servings: 6 }),
+        recipeTitle: "Baked ziti",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 lb ziti" }],
+      },
+    ]);
+
+    expect(list.ingredients[0]).toMatchObject({ name: "ziti", quantity: 1.5, unit: "lb" });
+  });
+
+  it("merges convertible units (tsp + tbsp)", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "a", servings: 4 }),
+          recipeTitle: "A",
+          recipeServings: 4,
+          ingredients: [{ rawText: "2 tsp olive oil" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "b", servings: 4 }),
+          recipeTitle: "B",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tbsp olive oil" }],
+        },
+      ],
+      { includePantryItems: true }
+    );
+
+    expect(list.ingredients[0]).toMatchObject({ name: "olive oil", quantity: 1.6667, unit: "tbsp" });
+  });
+
+  it("S2: groupBy aisle and category produce real sections from the aisle map", () => {
+    const entries = [
+      {
+        entry: entry({ recipeId: "a", servings: 4 }),
+        recipeTitle: "A",
+        recipeServings: 4,
+        ingredients: [
+          { rawText: "1 yellow onion" },
+          { rawText: "2 cups shredded mozzarella" },
+          { rawText: "1 lb ziti" },
+        ],
+      },
+    ];
+
+    const byAisle = build(entries, { groupBy: "aisle" });
+    expect(byAisle.sections.map((section) => section.name).sort()).toEqual([
+      "Dairy",
+      "Grains",
+      "Produce",
+    ]);
+    expect(byAisle.sections.find((section) => section.name === "Produce")?.items[0]?.name).toBe(
+      "yellow onion"
+    );
+
+    const byCategory = build(entries, { groupBy: "category" });
+    expect(byCategory.sections.map((section) => section.name).sort()).toEqual([
+      "Dairy",
+      "Grains",
+      "Produce",
+    ]);
+  });
+
+  it("S2: groupBy recipe keeps per-recipe sections", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "pesto", servings: 4 }),
+          recipeTitle: "Weeknight pesto pasta",
+          recipeServings: 4,
+          ingredients: [{ rawText: "12 oz pasta" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "ziti", servings: 4 }),
+          recipeTitle: "Baked ziti",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 lb ziti" }],
+        },
+      ],
+      { groupBy: "recipe" }
+    );
+
+    expect(list.sections.map((section) => section.name)).toEqual([
+      "Baked ziti",
+      "Weeknight pesto pasta",
+    ]);
+  });
+
+  it("S6: includePantryItems excludes salt and oil by default and separates them when true", () => {
+    const entries = [
+      {
+        entry: entry({ recipeId: "a", servings: 4 }),
+        recipeTitle: "A",
+        recipeServings: 4,
+        ingredients: [
+          { rawText: "1 yellow onion" },
+          { rawText: "2 tbsp olive oil" },
+          { rawText: "1 tsp salt" },
+        ],
+      },
+    ];
+
+    const withoutPantry = build(entries);
+    expect(withoutPantry.includePantryItems).toBe(false);
+    expect(withoutPantry.ingredients.map((item) => item.name)).toEqual(["yellow onion"]);
+    expect(withoutPantry.itemCount).toBe(1);
+
+    const withPantry = build(entries, { includePantryItems: true });
+    expect(withPantry.itemCount).toBe(3);
+    expect(withPantry.sections.map((section) => section.name).sort()).toEqual([
+      "Pantry staples",
+      "Produce",
+    ]);
+    expect(
+      withPantry.sections
+        .find((section) => section.name === "Pantry staples")
+        ?.items.map((item) => item.name)
+    ).toEqual(["olive oil", "salt"]);
+  });
+
+  it("S7: JSON export is the shared core shape used by MCP and REST", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "tacos", servings: 4 }),
+        recipeTitle: "Veggie tacos",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 acorn squash" }],
+      },
+    ]);
+
+    const parsed = JSON.parse(service.exportAsJSON(list)) as typeof list;
+    expect(parsed).toMatchObject({
+      mealPlanId: "plan-1",
+      weekStart: "2026-10-12",
+      groupBy: "aisle",
+      includePantryItems: false,
+      itemCount: 1,
+      ingredients: [{ name: "acorn squash", quantity: 1 }],
+      sections: [{ name: "Produce", items: [{ name: "acorn squash" }] }],
+    });
+    expect(service.format(list, "json")).toBe(service.exportAsJSON(list));
+  });
+
+  it("markdown lists aisle headings instead of a flat Ingredients section", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "a", servings: 4 }),
+        recipeTitle: "A",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 yellow onion" }],
+      },
+    ]);
+    const markdown = service.exportAsMarkdown(list);
+    expect(markdown).toContain("## Produce");
+    expect(markdown).toContain("1 yellow onion");
+    expect(markdown).not.toContain("## Ingredients");
+  });
+});

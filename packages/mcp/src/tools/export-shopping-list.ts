@@ -6,9 +6,14 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { PlanService, RecipeService, PeopleService } from "@ovenlovin/core";
-import { createDbClient, recipeIngredient } from "@ovenlovin/db";
-import { eq, and, isNull } from "drizzle-orm";
+import {
+  PlanService,
+  RecipeService,
+  PeopleService,
+  ShoppingListService,
+  collectShoppingListEntries,
+} from "@ovenlovin/core";
+import { createDbClient } from "@ovenlovin/db";
 import {
   checkIngredientsAgainstRules,
   type RuleCheckContext,
@@ -44,68 +49,39 @@ async function handler(
   const planService = new PlanService(db);
   const recipeService = new RecipeService(db);
   const peopleService = new PeopleService(db);
+  const shoppingListService = new ShoppingListService();
 
-  // Load meal plan
   const plan = await planService.getMealPlan(input.planId);
   if (!plan) {
     throw new Error(`Meal plan not found: ${input.planId}`);
   }
 
-  // Verify plan belongs to the household
   if (plan.householdId !== context.householdId) {
     throw new Error("Unauthorized access to meal plan");
   }
 
-  // Load entries
   const entries = await planService.getMealPlanEntries(plan.id);
+  const sources = await collectShoppingListEntries(entries, {
+    getRecipe: (id) => recipeService.getRecipe(id),
+    getIngredients: async (id) => {
+      const rows = await planService.getRecipeIngredientsForEntry(id);
+      return rows.map((ing) => ({
+        rawText: ing.rawText,
+        name: ing.name,
+        quantityMin: ing.quantityMin,
+        unit: ing.unit,
+        ingredientId: ing.ingredientId,
+      }));
+    },
+  });
 
-  // Collect all ingredients with their recipes
-  interface IngredientWithContext {
-    text: string;
-    quantity?: number;
-    unit?: string;
-    recipeTitle: string;
-    confidence?: number;
-    ingredientId?: string;
-  }
-
-  const allIngredients: IngredientWithContext[] = [];
-  const allAttendeeIds = new Set<string>();
-
-  for (const entry of entries) {
-    if (!entry.recipeId) continue;
-
-    const recipe = await recipeService.getRecipe(entry.recipeId);
-    if (!recipe) continue;
-
-    // Collect attendees
-    entry.attendees.forEach((id) => allAttendeeIds.add(id));
-
-    // Load ingredients
-    const ingredientRows = await db
-      .select()
-      .from(recipeIngredient)
-      .where(
-        and(eq(recipeIngredient.recipeId, entry.recipeId), isNull(recipeIngredient.deletedAt))
-      );
-
-    for (const ing of ingredientRows) {
-      allIngredients.push({
-        text: ing.rawText,
-        quantity: ing.quantityMin ? Number(ing.quantityMin) : undefined,
-        unit: ing.unit ?? undefined,
-        recipeTitle: recipe.title,
-        confidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
-        ingredientId: ing.ingredientId ?? undefined,
-      });
-    }
-  }
-
-  // Check warnings if requested
   const warnings: ExportShoppingListOutput["warnings"] = [];
+  const allAttendeeIds = new Set<string>();
+  for (const entry of entries) {
+    entry.attendees.forEach((id) => allAttendeeIds.add(id));
+  }
 
   if (input.includeRuleWarnings && allAttendeeIds.size > 0) {
-    // Load rules for all attendees
     const contexts: RuleCheckContext[] = [];
     for (const personId of allAttendeeIds) {
       const person = await peopleService.getPerson(personId);
@@ -121,17 +97,15 @@ async function handler(
       }
     }
 
-    // Check all ingredients
-    const ingredientsToCheck: IngredientCheckInput[] = allIngredients.map((ing) => ({
-      name: ing.text,
-      ingredientId: ing.ingredientId,
-      confidence: ing.confidence,
-    }));
+    const ingredientsToCheck: IngredientCheckInput[] = sources.flatMap((source) =>
+      source.ingredients.map((ing) => ({
+        name: ing.name || ing.rawText,
+        ingredientId: ing.ingredientId ?? undefined,
+      }))
+    );
 
     if (contexts.length > 0 && ingredientsToCheck.length > 0) {
       const checkResult = checkIngredientsAgainstRules(ingredientsToCheck, contexts);
-
-      // Collect all findings
       for (const finding of [
         ...checkResult.findings.block,
         ...checkResult.findings.warn,
@@ -146,74 +120,19 @@ async function handler(
     }
   }
 
-  // Format output based on requested format
-  let content: string;
-  if (input.format === "json") {
-    content = JSON.stringify(
-      {
-        ingredients: allIngredients,
-        warnings,
-      },
-      null,
-      2
-    );
-  } else if (input.format === "csv") {
-    const lines = ["Ingredient,Quantity,Unit,Recipe"];
-    for (const ing of allIngredients) {
-      lines.push(`"${ing.text}",${ing.quantity ?? ""},${ing.unit ?? ""},"${ing.recipeTitle}"`);
-    }
-    content = lines.join("\n");
-  } else if (input.format === "text") {
-    const lines = allIngredients.map((ing) => `- ${ing.text} (${ing.recipeTitle})`);
-    if (warnings.length > 0) {
-      lines.push("\n\nWARNINGS:");
-      for (const warning of warnings) {
-        lines.push(`⚠️  ${warning.personName}: ${warning.ingredient} - ${warning.note}`);
-      }
-    }
-    content = lines.join("\n");
-  } else {
-    // markdown format (default)
-    const lines = ["# Shopping List\n"];
-
-    if (input.groupBy === "recipe") {
-      const byRecipe = new Map<string, IngredientWithContext[]>();
-      for (const ing of allIngredients) {
-        if (!byRecipe.has(ing.recipeTitle)) {
-          byRecipe.set(ing.recipeTitle, []);
-        }
-        byRecipe.get(ing.recipeTitle)!.push(ing);
-      }
-
-      for (const [recipe, ings] of byRecipe) {
-        lines.push(`## ${recipe}\n`);
-        for (const ing of ings) {
-          lines.push(`- ${ing.text}`);
-        }
-        lines.push("");
-      }
-    } else {
-      // Default: simple list
-      lines.push("## Ingredients\n");
-      for (const ing of allIngredients) {
-        lines.push(`- ${ing.text} (${ing.recipeTitle})`);
-      }
-    }
-
-    if (warnings.length > 0) {
-      lines.push("\n## ⚠️ Warnings\n");
-      for (const warning of warnings) {
-        lines.push(`- **${warning.personName}**: ${warning.ingredient} - ${warning.note}`);
-      }
-    }
-
-    content = lines.join("\n");
-  }
+  const shoppingList = shoppingListService.build({
+    mealPlanId: plan.id,
+    weekStart: plan.weekStart,
+    entries: sources,
+    groupBy: input.groupBy,
+    includePantryItems: input.includePantryItems,
+    warnings,
+  });
 
   return {
     format: input.format,
-    content,
-    itemCount: allIngredients.length,
+    content: shoppingListService.format(shoppingList, input.format),
+    itemCount: shoppingList.itemCount,
     warnings,
   };
 }
