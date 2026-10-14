@@ -15,6 +15,7 @@ export function LandingPage({
   signedIn,
   clerkEnabled,
   deploy,
+  demoUrl,
 }: {
   instanceName: string;
   origin: string;
@@ -22,13 +23,14 @@ export function LandingPage({
   signedIn: boolean;
   clerkEnabled: boolean;
   deploy: DeployInfo;
+  demoUrl?: string | null;
 }) {
   const deployed = deploy.deployedAt ? formatDeployedAt(deploy.deployedAt) : null;
   const pillLabel = deploy.live ? "Live" : deploy.environmentLabel;
 
   return (
     <div className="shell">
-      <SiteHeader signedIn={signedIn} clerkEnabled={clerkEnabled} />
+      <SiteHeader signedIn={signedIn} clerkEnabled={clerkEnabled} demoUrl={demoUrl} />
       <main>
         <section className="hero" id="live">
           <div className="wrap">
@@ -86,6 +88,11 @@ export function LandingPage({
                   Finish setup to sign in
                 </a>
               )}
+              {demoUrl ? (
+                <a className="btn primary" href={demoUrl}>
+                  Try the demo
+                </a>
+              ) : null}
               <a
                 className="btn"
                 href="https://tbarho.github.io/ovenlovin/"

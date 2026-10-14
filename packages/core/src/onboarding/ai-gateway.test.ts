@@ -18,4 +18,14 @@ describe("isAiGatewayConfigured", () => {
     expect(isAiGatewayConfigured({})).toBe(false);
     expect(isAiGatewayConfigured({ VERCEL: "0" })).toBe(false);
   });
+
+  it("is false in demo mode even on Vercel with a gateway key", () => {
+    expect(
+      isAiGatewayConfigured({
+        OVENLOVIN_DEMO_MODE: "1",
+        VERCEL: "1",
+        AI_GATEWAY_API_KEY: "key_123",
+      })
+    ).toBe(false);
+  });
 });

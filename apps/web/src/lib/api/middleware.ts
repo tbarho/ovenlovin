@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDatabase } from "@ovenlovin/db";
 import { ApiKeyService } from "@ovenlovin/core";
+import { enforceDemoRequestGuards } from "@/lib/demo/enforce";
 import { getSessionContext } from "@/lib/session";
 import { ForbiddenError, UnauthorizedError } from "./errors";
 import { restAuthFromHeader } from "./request-auth";
@@ -16,10 +17,9 @@ export type RequestContext = {
 
 export async function getRequestContext(request: NextRequest): Promise<RequestContext> {
   const auth = restAuthFromHeader(request.headers.get("Authorization"));
-  if (auth.kind === "apiKey") {
-    return parseApiKey(auth.token);
-  }
-  return parseClerkAuth();
+  const context = auth.kind === "apiKey" ? await parseApiKey(auth.token) : await parseClerkAuth();
+  await enforceDemoRequestGuards(request, context);
+  return context;
 }
 
 async function parseClerkAuth(): Promise<RequestContext> {

@@ -28,6 +28,7 @@ First tagged kitchen. Agents can sign in with a household API key.
 - `/docs`, `/docs/connect-your-agent`, `/llms.txt`, OpenAPI with the instance URL and API key auth
 - Signed-in kitchen e2e harness (test-only `E2E_AUTH_BYPASS`, never on Vercel production)
 - AI SDK 5 for `import_recipe`
+- Public no-signup demo sandboxes (separate Vercel project; blocked on product production)
 
 ### Security
 

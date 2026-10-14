@@ -5,9 +5,11 @@ import { brandPublicPath } from "@ovenlovin/brand";
 export function SiteHeader({
   signedIn,
   clerkEnabled,
+  demoUrl,
 }: {
   signedIn: boolean;
   clerkEnabled: boolean;
+  demoUrl?: string | null;
 }) {
   return (
     <header className="nav">
@@ -33,6 +35,11 @@ export function SiteHeader({
           </li>
         </ul>
         <div className="nav-cta">
+          {demoUrl ? (
+            <a className="btn" href={demoUrl}>
+              Try the demo
+            </a>
+          ) : null}
           {signedIn ? (
             <Link className="btn primary" href="/recipes">
               Open kitchen

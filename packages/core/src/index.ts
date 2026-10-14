@@ -3,6 +3,7 @@ export const VERSION = "0.1.0";
 export * from "./schemas";
 export * from "./services";
 export * from "./parsing/ingredient-line";
+export * from "./parsing/plain-import";
 export * from "./scaling/servings";
 export * from "./media/recipe-images";
 export * from "./onboarding/instance";
