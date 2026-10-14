@@ -26,6 +26,17 @@ describe("kitchen recipe layout", () => {
     expect(screen.getByRole("heading", { name: "Who can eat this" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Ingredients" })).toBeVisible();
   });
+
+  it("shows recipe notes on the detail page", () => {
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ notes: "Toast the pine nuts first." })}
+        cookbooks={[testCookbook()]}
+      />
+    );
+    expect(screen.getByRole("heading", { name: "Notes" })).toBeVisible();
+    expect(screen.getByText("Toast the pine nuts first.")).toBeVisible();
+  });
 });
 
 describe("kitchen sheet-hosted forms", () => {
@@ -34,6 +45,7 @@ describe("kitchen sheet-hosted forms", () => {
     render(<RecipeDetail recipe={testRecipeDetails()} cookbooks={[testCookbook()]} />);
     await user.click(screen.getByRole("button", { name: "Edit details" }));
     await typeFullWordAndKeepFocus(user, screen.getByLabelText("Title"), "Garlic");
+    await typeFullWordAndKeepFocus(user, screen.getByLabelText("Notes"), "ahead");
   });
 
   it("keeps focus while typing recipe photo URL, ingredients, and steps", async () => {

@@ -11,7 +11,14 @@
   "prepTime": "PT15M",
   "cookTime": "PT12M",
   "totalTime": "PT27M",
-  "recipeYield": "24",
+  "recipeYield": ["24 servings"],
+  "nutrition": {
+    "@type": "NutritionInformation",
+    "calories": "186 calories",
+    "proteinContent": "2 g",
+    "carbohydrateContent": "25 g",
+    "fatContent": "9 g"
+  },
   "recipeIngredient": [
     "2 1/4 cups all-purpose flour",
     "1 tsp baking soda",

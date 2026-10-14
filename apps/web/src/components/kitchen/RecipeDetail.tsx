@@ -167,6 +167,13 @@ export function RecipeDetail({
 
           {recipe.description ? <p className="recipe-lede">{recipe.description}</p> : null}
 
+          {recipe.notes ? (
+            <section>
+              <h2>Notes</h2>
+              <p className="recipe-lede">{recipe.notes}</p>
+            </section>
+          ) : null}
+
           <div className="recipe-view">
             <section>
               <h2>Ingredients</h2>
