@@ -226,6 +226,7 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
     Array<{
       id: string;
       rawText: string;
+      name?: string;
       substitutionNotes?: string | null;
       quantity?: number;
       unit?: string;
@@ -244,6 +245,7 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
         ingredientRows.map((row) => ({
           id: row.id,
           rawText: row.rawText,
+          name: row.name,
           substitutionNotes: row.substitutionNotes,
           quantity: row.quantityMin ?? undefined,
           unit: row.unit ?? undefined,
@@ -281,8 +283,9 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
       return {
         entry,
         recipeTitle: recipe?.title ?? entry.freeformMeal ?? undefined,
+        recipeServings: recipe?.servings ?? null,
         ingredients: ingredientRows.map((row) => ({
-          name: row.rawText,
+          name: row.name ?? row.rawText,
           rawText: row.rawText,
           quantity: row.quantity,
           unit: row.unit,
