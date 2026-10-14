@@ -56,7 +56,7 @@ function parseSourceValue(value: string): { sourceUrl?: string; sourceName?: str
   const trimmed = value.trim();
   if (!trimmed) return {};
   try {
-    const url = new URL(trimmed);
+    const url = new globalThis.URL(trimmed);
     if (url.protocol === "http:" || url.protocol === "https:") {
       return { sourceUrl: url.toString() };
     }
