@@ -1,0 +1,74 @@
+---
+title: Connect your agent
+description: Point Claude, ChatGPT, or Grok at your OvenLovin instance
+---
+
+# Connect your agent
+
+OvenLovin speaks **MCP** (Streamable HTTP at `/mcp`) and **REST** (`/api/v1`, OpenAPI at `/api/v1/openapi.json`).
+
+Auth:
+
+```
+Authorization: ApiKey rkapi_…
+```
+
+`Bearer rkapi_…` is accepted too. Create a key under Settings.
+
+This is not medical advice. Always check ingredient labels before serving.
+
+## Claude Code
+
+```bash
+claude mcp add --transport http ovenlovin https://YOUR_INSTANCE/mcp \
+  --header "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY"
+```
+
+## Claude Desktop
+
+macOS/Linux: `~/Library/Application Support/Claude/claude_desktop_config.json`  
+Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "ovenlovin": {
+      "url": "https://YOUR_INSTANCE/mcp",
+      "headers": {
+        "Authorization": "ApiKey YOUR_OVENLOVIN_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Restart Claude, then ask it to call `whoami` and `get_household_context`.
+
+## ChatGPT (Custom GPT Actions)
+
+1. GPT builder → Actions → Import from URL: `https://YOUR_INSTANCE/api/v1/openapi.json`
+2. Authentication: API Key
+3. Header name: `Authorization`
+4. Value: `ApiKey YOUR_OVENLOVIN_API_KEY` (include the `ApiKey` prefix)
+
+## Grok
+
+```json
+{
+  "mcpServers": {
+    "ovenlovin": {
+      "transport": "http",
+      "url": "https://YOUR_INSTANCE/mcp",
+      "headers": {
+        "Authorization": "ApiKey YOUR_OVENLOVIN_API_KEY"
+      }
+    }
+  }
+}
+```
+
+## First prompts
+
+- “Call whoami, then get_household_context.”
+- “What can everyone eat from my weeknight cookbook?”
+- “Draft dinners for this week, then check_meal_plan before you save.”

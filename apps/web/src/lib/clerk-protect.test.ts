@@ -24,6 +24,9 @@ describe("isClerkProtectExempt", () => {
     expect(isClerkProtectExempt("/sign-in")).toBe(true);
     expect(isClerkProtectExempt("/sign-up/verify")).toBe(true);
     expect(isClerkProtectExempt("/mcp")).toBe(true);
+    expect(isClerkProtectExempt("/docs")).toBe(true);
+    expect(isClerkProtectExempt("/docs/connect-your-agent")).toBe(true);
+    expect(isClerkProtectExempt("/llms.txt")).toBe(true);
     expect(isClerkProtectExempt("/brand/og.png")).toBe(true);
   });
 });
