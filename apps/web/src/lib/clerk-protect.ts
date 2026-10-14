@@ -13,6 +13,8 @@ export function isClerkProtectExempt(pathname: string): boolean {
     "/sign-up",
     "/api/v1",
     "/mcp",
+    "/docs",
+    "/llms.txt",
     "/brand",
     "/prototype",
     "/dev/people-preview",
