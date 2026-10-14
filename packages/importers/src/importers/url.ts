@@ -15,6 +15,12 @@ import {
   extractPageImages,
   pickImportRecipeImage,
 } from "../utils/url";
+import {
+  parseRecipeNotes,
+  parseRecipeNutrition,
+  parseRecipeServings,
+  stripTrailingRecipeWord,
+} from "../utils/recipe-ld";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 
 const IMPORTER_VERSION = "0.1.0";
@@ -66,15 +72,12 @@ export function createUrlImporter(): Importer<UrlImportInput> {
     async toDraft(raw: RawExtraction): Promise<RecipeDraft> {
       const recipe = raw.rawData;
 
-      const title = typeof recipe.name === "string" ? recipe.name : "";
+      const title = typeof recipe.name === "string" ? stripTrailingRecipeWord(recipe.name) : "";
       const description = typeof recipe.description === "string" ? recipe.description : undefined;
 
-      const servings =
-        typeof recipe.recipeYield === "number"
-          ? recipe.recipeYield
-          : typeof recipe.recipeYield === "string"
-            ? parseInt(recipe.recipeYield)
-            : undefined;
+      const servings = parseRecipeServings(recipe);
+      const nutrition = parseRecipeNutrition(recipe);
+      const notes = parseRecipeNotes(recipe);
 
       const prepTime = parseDuration(recipe.prepTime as string);
       const cookTime = parseDuration(recipe.cookTime as string);
@@ -109,6 +112,8 @@ export function createUrlImporter(): Importer<UrlImportInput> {
         title,
         description,
         servings,
+        notes,
+        nutrition,
         prepTimeMinutes: prepTime,
         cookTimeMinutes: cookTime,
         totalTimeMinutes: totalTime,

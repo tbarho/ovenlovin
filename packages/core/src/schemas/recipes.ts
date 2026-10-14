@@ -132,11 +132,23 @@ export type RecipeNutrition = z.infer<typeof recipeNutritionSchema>;
 export type RecipeSourceType = z.infer<typeof recipeSourceTypeSchema>;
 export type RecipeSource = z.infer<typeof recipeSourceSchema>;
 
+export type RecipeNutritionFacts = {
+  perServing: boolean;
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+};
+
 export type RecipeDetails = Recipe & {
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
   source: RecipeSource | null;
   cookbooks: Array<{ id: string; name: string; slug: string }>;
+  nutrition: RecipeNutritionFacts | null;
 };
 
 export type RecipeContentUpdate = {
@@ -178,6 +190,7 @@ export type RecipeImportDraft = {
   difficulty?: string;
   equipment?: string[];
   images?: string[];
+  nutrition?: RecipeNutritionFacts;
   ingredients: Array<{
     rawText: string;
     quantity?: { min: number; max?: number };

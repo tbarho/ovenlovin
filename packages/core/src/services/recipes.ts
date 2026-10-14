@@ -1,11 +1,12 @@
 import { eq, and, isNull, desc, like, sql, asc, inArray } from "drizzle-orm";
-import { recipe, recipeIngredient, recipeStep, recipeSource } from "@ovenlovin/db";
+import { recipe, recipeIngredient, recipeNutrition, recipeStep, recipeSource } from "@ovenlovin/db";
 import type {
   Recipe,
   RecipeContentUpdate,
   RecipeDetails,
   RecipeImportDraft,
   RecipeMethodTag,
+  RecipeNutritionFacts,
 } from "../schemas/recipes";
 import { recipeMethodTagSchema, slugifyTitle } from "../schemas/recipes";
 import { parseIngredientLine } from "../parsing/ingredient-line";
@@ -251,7 +252,7 @@ export class RecipeService extends BaseService {
     const found = await this.getRecipe(id);
     if (!found) return null;
 
-    const [ingredients, steps, sources] = await Promise.all([
+    const [ingredients, steps, sources, nutritionRows] = await Promise.all([
       this._db
         .select()
         .from(recipeIngredient)
@@ -267,13 +268,33 @@ export class RecipeService extends BaseService {
         .from(recipeSource)
         .where(and(eq(recipeSource.recipeId, id), isNull(recipeSource.deletedAt)))
         .limit(1),
+      this._db
+        .select()
+        .from(recipeNutrition)
+        .where(and(eq(recipeNutrition.recipeId, id), isNull(recipeNutrition.deletedAt)))
+        .limit(1),
     ]);
 
     const cookbooks = await new CookbookService(this._db).listCookbooksForRecipe(id);
+    const nutritionRow = nutritionRows[0];
+    const nutrition: RecipeNutritionFacts | null = nutritionRow
+      ? {
+          perServing: nutritionRow.perServing,
+          calories: nutritionRow.calories != null ? Number(nutritionRow.calories) : undefined,
+          protein: nutritionRow.protein != null ? Number(nutritionRow.protein) : undefined,
+          carbohydrates:
+            nutritionRow.carbohydrates != null ? Number(nutritionRow.carbohydrates) : undefined,
+          fat: nutritionRow.fat != null ? Number(nutritionRow.fat) : undefined,
+          fiber: nutritionRow.fiber != null ? Number(nutritionRow.fiber) : undefined,
+          sugar: nutritionRow.sugar != null ? Number(nutritionRow.sugar) : undefined,
+          sodium: nutritionRow.sodium != null ? Number(nutritionRow.sodium) : undefined,
+        }
+      : null;
 
     return {
       ...found,
       cookbooks,
+      nutrition,
       ingredients: ingredients.map((row) => ({
         id: row.id,
         createdAt: row.createdAt.toISOString(),
@@ -423,6 +444,24 @@ export class RecipeService extends BaseService {
       rawExtractionJson: draft.source.rawExtractionJson,
       licenseNote: draft.source.licenseNote ?? null,
     });
+
+    if (draft.nutrition) {
+      await this._db.insert(recipeNutrition).values({
+        recipeId: created.id,
+        perServing: draft.nutrition.perServing ?? true,
+        calories: draft.nutrition.calories != null ? String(draft.nutrition.calories) : null,
+        protein: draft.nutrition.protein != null ? String(draft.nutrition.protein) : null,
+        carbohydrates:
+          draft.nutrition.carbohydrates != null ? String(draft.nutrition.carbohydrates) : null,
+        fat: draft.nutrition.fat != null ? String(draft.nutrition.fat) : null,
+        fiber: draft.nutrition.fiber != null ? String(draft.nutrition.fiber) : null,
+        sugar: draft.nutrition.sugar != null ? String(draft.nutrition.sugar) : null,
+        sodium: draft.nutrition.sodium != null ? String(draft.nutrition.sodium) : null,
+        isComputed: false,
+        computationMethod: "schema.org NutritionInformation",
+        confidence: "1.00",
+      });
+    }
 
     const details = await this.getRecipeDetails(created.id);
     if (!details) throw new Error("Failed to load imported recipe");
