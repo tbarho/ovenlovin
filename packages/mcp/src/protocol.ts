@@ -1,0 +1,143 @@
+import type { AuthContext } from "./auth/index";
+import { listResources, readResource } from "./resources/index";
+import {
+  JsonRpcErrorCode,
+  type JsonRpcId,
+  type JsonRpcRequest,
+  type JsonRpcResponse,
+  isJsonRpcNotification,
+  jsonRpcError,
+  jsonRpcResult,
+  requestId,
+} from "./json-rpc";
+import { zodToMcpInputSchema } from "./json-schema";
+import { MCP_TOOLS } from "./tools/registry";
+
+export const MCP_PROTOCOL_VERSION = "2025-03-26";
+
+export type ProtocolServerInfo = {
+  name: string;
+  version: string;
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function requireAuth(authContext: AuthContext | undefined, id: JsonRpcId): AuthContext {
+  if (!authContext?.householdId) {
+    throw jsonRpcError(
+      id,
+      JsonRpcErrorCode.unauthorized,
+      "Authentication required. Send Authorization: ApiKey <key> or Bearer <key>."
+    );
+  }
+  return authContext;
+}
+
+function listedTools() {
+  return MCP_TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: zodToMcpInputSchema(tool.inputSchema),
+  }));
+}
+
+async function callTool(params: Record<string, unknown>, authContext: AuthContext, id: JsonRpcId) {
+  const name = typeof params.name === "string" ? params.name : "";
+  const args = asRecord(params.arguments);
+  const tool = MCP_TOOLS.find((item) => item.name === name);
+  if (!tool) {
+    throw jsonRpcError(id, JsonRpcErrorCode.methodNotFound, `Unknown tool: ${name}`);
+  }
+
+  const parsed = tool.inputSchema.safeParse(args);
+  if (!parsed.success) {
+    throw jsonRpcError(
+      id,
+      JsonRpcErrorCode.invalidParams,
+      "Invalid tool arguments",
+      parsed.error.issues
+    );
+  }
+
+  const result = await tool.handler(parsed.data as never, authContext);
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+  };
+}
+
+/**
+ * Stateless JSON-RPC dispatcher. One request in, one envelope out.
+ * Does not hold an MCP SDK transport, so it cannot throw
+ * "Already connected to a transport".
+ */
+export async function dispatchMcpRequest(
+  message: JsonRpcRequest,
+  authContext: AuthContext | undefined,
+  serverInfo: ProtocolServerInfo
+): Promise<JsonRpcResponse | null> {
+  const id = requestId(message);
+
+  if (message.jsonrpc && message.jsonrpc !== "2.0") {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidRequest, 'jsonrpc must be "2.0"');
+  }
+
+  if (!message.method || typeof message.method !== "string") {
+    if (isJsonRpcNotification(message)) return null;
+    return jsonRpcError(id, JsonRpcErrorCode.invalidRequest, "Missing method");
+  }
+
+  try {
+    switch (message.method) {
+      case "initialize":
+        return jsonRpcResult(id, {
+          protocolVersion: MCP_PROTOCOL_VERSION,
+          capabilities: { tools: {}, resources: {} },
+          serverInfo,
+          instructions:
+            "OvenLovin household MCP. Not medical advice — always check ingredient labels before serving.",
+        });
+      case "notifications/initialized":
+      case "notifications/cancelled":
+        return null;
+      case "ping":
+        return jsonRpcResult(id, {});
+      case "tools/list":
+        return jsonRpcResult(id, { tools: listedTools() });
+      case "tools/call": {
+        const auth = requireAuth(authContext, id);
+        return jsonRpcResult(id, await callTool(asRecord(message.params), auth, id));
+      }
+      case "resources/list": {
+        const auth = requireAuth(authContext, id);
+        return jsonRpcResult(id, { resources: await listResources(auth) });
+      }
+      case "resources/read": {
+        const auth = requireAuth(authContext, id);
+        const uri = String(asRecord(message.params).uri ?? "");
+        const content = await readResource(uri, auth);
+        return jsonRpcResult(id, {
+          contents: [{ uri, mimeType: "application/json", text: JSON.stringify(content, null, 2) }],
+        });
+      }
+      default:
+        if (isJsonRpcNotification(message)) return null;
+        return jsonRpcError(
+          id,
+          JsonRpcErrorCode.methodNotFound,
+          `Method not found: ${message.method}`
+        );
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && "error" in error && "jsonrpc" in error) {
+      return error as JsonRpcResponse;
+    }
+    const messageText = error instanceof Error ? error.message : "Internal error";
+    return jsonRpcError(id, JsonRpcErrorCode.internal, messageText);
+  }
+}
+
+export { listedTools };

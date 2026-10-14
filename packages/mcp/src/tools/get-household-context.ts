@@ -154,7 +154,7 @@ async function handler(
 export const getHouseholdContextTool = {
   name: "get_household_context",
   description:
-    "Get household context including schedule, attendees, rule summaries, preferences, and recent meal history. Essential for meal planning.",
+    "Get household context including schedule, attendees, rule summaries, preferences, and recent meal history. Essential for meal planning. Not medical advice — always check ingredient labels before serving.",
   inputSchema: getHouseholdContextSchema,
   handler,
 } as const;
