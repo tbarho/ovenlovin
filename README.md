@@ -3,116 +3,105 @@
 </h1>
 
 <p align="center">
-  <strong>LLM-optimized recipe and family meal-planning platform</strong>
+  <strong>The family recipe box your AI can actually use, and it knows who can't eat what.</strong>
 </p>
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=USDA%20key%20and%20optional%20instance%20name.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=NEXT_PUBLIC_INSTANCE_NAME&envDescription=Optional%20instance%20name.%20USDA%20is%20optional%20and%20not%20required%20to%20deploy.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=The%20family%20recipe%20box%20your%20AI%20can%20actually%20use&demo-url=https://ovenlovin.vercel.app)
 
-An open-source Next.js template for Vercel that provides a bot-first backend for recipe management, meal planning, and grocery lists. Built for AI agents (Grok Bot, ChatGPT, Claude) to help families manage weekly meal planning with per-person dietary rules and allergy checking.
+Open-source recipe box and meal planner for families and their agents. Per-person allergen checks (US Big 9 + EU 14). MIT license.
 
-## Status
+> Not medical advice. Always read ingredient labels before serving.
 
-🚧 **Pre-alpha** · Under active development
+<p align="center">
+  <img src="docs/assets/kitchen-recipes.png" width="720" alt="OvenLovin recipes shelf" />
+</p>
 
-This is the foundation PR. See [GitHub issue #1](https://github.com/tbarho/ovenlovin/issues/1) for the full spec.
+## Shipped
 
-## Features (Planned)
+- **Recipes & cookbooks** — import a URL or paste, file dishes in cookbooks, cook from a photo-first shelf
+- **People & rules** — Can't eat / Doesn't like / Loves, set by the household. Loves never hide a recipe
+- **Who can eat this** — named per-person findings on every dish (`block` / `warn` / `prefer-avoid`)
+- **Agents** — REST `/api/v1` (API key or Clerk), MCP Streamable HTTP at `/mcp`, OpenAPI, `/llms.txt`
+- **Auth & data** — Clerk organizations as households, Neon Postgres + Drizzle, Vercel Blob, Vercel AI Gateway
 
-- 📖 **Recipe management** with exhaustive import support (URL, photo/OCR, voice, paste, app exports)
-- 👨‍👩‍👧‍👦 **Households & people** with per-person dietary rules (allergies, restrictions) and severities (block/warn/prefer-avoid)
-- 📅 **Meal planning** with rule checking and schedule constraints
-- 🛒 **Shopping lists** with aggregated ingredients and rule warnings
-- 🤖 **Bot interfaces**: REST + OpenAPI, remote MCP server, CLI
-- 🏥 **USDA FoodData Central** integration for nutrition data
-- 🔐 **Clerk auth** with organizations (households)
-- 🗄️ **Neon Postgres + Drizzle ORM**
-- ☁️ **Vercel AI Gateway + eve** for all AI operations
+<p align="center">
+  <img src="docs/assets/kitchen-recipe.png" width="340" alt="Recipe with who-can-eat" />
+  &nbsp;
+  <img src="docs/assets/kitchen-people.png" width="340" alt="Household people" />
+</p>
+<p align="center">
+  <img src="docs/assets/kitchen-person.png" width="340" alt="Jake's peanut and tree nut blocks" />
+  &nbsp;
+  <img src="docs/assets/kitchen-settings.png" width="340" alt="API keys for agents" />
+</p>
+
+## Roadmap
+
+- Meal plan week view and shopping list UI (API + MCP already exist)
+- Public no-signup demo kitchen
+- CLI, published SDK, voice import, and third-party app export
+- USDA FoodData Central nutrition (optional `USDA_FDC_API_KEY` — not required to deploy)
+- Native apps
+
+## Connect your agent
+
+1. Deploy (button above) or use [ovenlovin.vercel.app](https://ovenlovin.vercel.app)
+2. Sign in, open **Settings**, create an API key (`rkapi_…`)
+3. Point the agent at this instance:
+
+```
+MCP:     https://<your-app>/mcp
+REST:    https://<your-app>/api/v1
+OpenAPI: https://<your-app>/api/v1/openapi.json
+Docs:    https://<your-app>/docs/connect-your-agent
+llms.txt https://<your-app>/llms.txt
+```
+
+Authorization: `ApiKey rkapi_…` or `Bearer rkapi_…`.
+
+## Deploy
+
+The button provisions Neon, Blob, and Clerk. You may set an optional instance name. USDA is **not** required.
+
+If Clerk is not offered as a store, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel.
+
+On Vercel, AI Gateway uses OIDC — no `AI_GATEWAY_API_KEY`. See [DEPLOYMENT.md](./DEPLOYMENT.md) and [self-hosting](https://tbarho.github.io/ovenlovin/docs/self-hosting).
+
+## Local development
+
+```bash
+pnpm install
+pnpm dev
+pnpm test
+```
+
+Signed-in kitchen (no production Clerk):
+
+```bash
+./scripts/e2e-kitchen-up.sh
+E2E_AUTH_BYPASS=1 DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin \
+  pnpm --filter @ovenlovin/web dev
+```
+
+See [`AGENTS.md`](./AGENTS.md) for agent/LLM guidelines.
 
 ## Architecture
 
-**Monorepo** (pnpm + Turborepo):
-
 ```
 ovenlovin/
-├── apps/
-│   └── web/          # Next.js App Router
+├── apps/web/              # Next.js 15 kitchen + REST + MCP
+├── apps/docs/             # Public docs site
 └── packages/
-    ├── core/         # Business logic, zod schemas, services
-    ├── db/           # Drizzle schema & migrations
-    ├── mcp/          # MCP server
-    ├── cli/          # CLI tool
-    ├── importers/    # Recipe importers
-    ├── allergens/    # Allergen taxonomy & checker
-    └── ui/           # Shared UI components
+    ├── core/              # Zod schemas and services
+    ├── db/                # Drizzle + Postgres
+    ├── mcp/               # MCP tools (thin adapters over core)
+    ├── importers/         # URL / paste / HTML import
+    ├── allergens/         # Taxonomy + per-person rule checker
+    └── brand/             # Wordmark, deploy URL, tokens
 ```
 
-## Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=USDA_FDC_API_KEY,NEXT_PUBLIC_INSTANCE_NAME&envDescription=USDA%20key%20and%20optional%20instance%20name.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20%E2%80%94%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=AI-powered%20family%20meal%20planning%20platform&demo-url=https://ovenlovin.vercel.app)
-
-The one-click deploy will:
-- Clone this repository to your GitHub account
-- Create a new Vercel project
-- Provision Neon Postgres, Vercel Blob, and Clerk via the stores step
-- Prompt for USDA and an optional instance name (AI Gateway uses OIDC on Vercel)
-- Run database migrations during the Vercel build (safe if the schema was previously created with `drizzle-kit push`)
-- Deploy the Next.js app
-
-If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the Vercel project.
-
-### Environment Variables
-
-Provisioned by the stores step (you should not need to paste these):
-
-- `DATABASE_URL` — Neon Postgres
-- `BLOB_READ_WRITE_TOKEN` — Vercel Blob
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` — Clerk
-
-You will be prompted for:
-
-- `USDA_FDC_API_KEY` — USDA FoodData Central ([get one](https://fdc.nal.usda.gov/api-key-signup.html))
-- `NEXT_PUBLIC_INSTANCE_NAME` — optional name shown on the landing page (defaults to "Your OvenLovin")
-
-On Vercel, AI Gateway authenticates with OIDC (`VERCEL_OIDC_TOKEN`) — no `AI_GATEWAY_API_KEY` is required. Set that key only for local or non-Vercel hosts.
-
-Optional, so the landing page can link the Vercel project (not the GitHub owner):
-
-- `OVENLOVIN_VERCEL_TEAM_SLUG` — Vercel team/account slug (example: `ty-barho`)
-- `OVENLOVIN_VERCEL_PROJECT_SLUG` — Vercel project slug if it differs from the git repo name
-- `VERCEL_TOKEN` or `OVENLOVIN_VERCEL_TOKEN` — if slugs are unset, the server resolves them from `VERCEL_PROJECT_ID` via the Vercel API (cached)
-
-Do not treat `VERCEL_GIT_REPO_OWNER` as the Vercel scope. If the slug cannot be determined, links fall back to [vercel.com/dashboard](https://vercel.com/dashboard).
-
-See the [self-hosting documentation](https://tbarho.github.io/ovenlovin/docs/self-hosting) for detailed configuration instructions.
-
-## Quick Start (Local Development)
-
-### Local Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run dev server
-pnpm dev
-
-# Run tests
-pnpm test
-
-# Lint & format
-pnpm lint
-pnpm format
-```
-
-## Development
-
-See [`AGENTS.md`](./AGENTS.md) for agent/LLM development guidelines.
+CLI and shared UI packages are not shipped.
 
 ## License
 
 [MIT](./LICENSE)
-
-## Related
-
-- Spec: [GitHub issue #1](https://github.com/tbarho/ovenlovin/issues/1)
-- Inspired by: [ReciMe](https://recime.app), [Mealie](https://mealie.io)
