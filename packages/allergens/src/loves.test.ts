@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { loveScore, loveTag, lovesForRecipe, rankRecipesByLoves, recipeMatchesLove } from "./loves";
+import {
+  loveLabel,
+  loveScore,
+  loveTag,
+  lovesForRecipe,
+  rankRecipesByLoves,
+  recipeMatchesLove,
+} from "./loves";
 
 const ty = {
   personId: "ty",
@@ -39,6 +46,12 @@ describe("loves ranking", () => {
         "salmon"
       )
     ).toBe(true);
+  });
+
+  it("uses the Loves catalog name when a dislike shares the code", () => {
+    expect(loveLabel("spicy")).toBe("Spicy");
+    expect(loveLabel("mexican")).toBe("Mexican");
+    expect(loveLabel("durian")).toBe("Durian");
   });
 
   it("builds a small tag and scores by weight", () => {

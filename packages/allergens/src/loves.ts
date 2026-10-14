@@ -4,7 +4,7 @@
  */
 
 import type { Preference } from "@ovenlovin/core";
-import { displayNameForTarget, matchPhrasesForTarget } from "./catalog";
+import { displayNameForTarget, findCatalogEntry, matchPhrasesForTarget } from "./catalog";
 import { phraseMatchesAny, phraseMatchesLine } from "./phrase-match";
 
 export const LOVE_PREFERENCE_TYPE = "love";
@@ -41,7 +41,12 @@ export function isLovePreference(preference: { type: string }): boolean {
 }
 
 export function loveLabel(value: string): string {
-  return displayNameForTarget(value);
+  return (
+    findCatalogEntry(value, "style")?.name ??
+    findCatalogEntry(value, "cuisine")?.name ??
+    findCatalogEntry(value, "ingredient")?.name ??
+    displayNameForTarget(value)
+  );
 }
 
 export function loveTag(personName: string): string {
