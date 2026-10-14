@@ -1,5 +1,32 @@
 import { parseIngredientLine } from "../parsing/ingredient-line";
 
+/**
+ * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
+ * entry's servings still produce a stored `scaleFactor`.
+ */
+export const DEFAULT_RECIPE_SERVINGS = 4;
+
+/**
+ * Persistable scale for a meal-plan entry: entry servings / recipe servings.
+ * Matches shopping-list scaling so the stored value and the list agree.
+ */
+export function scaleFactorForPlanEntry(
+  entryServings?: number | null,
+  recipeServings?: number | null,
+  scaleFactor?: number | null
+): number {
+  if (entryServings && entryServings > 0) {
+    const base = recipeServings && recipeServings > 0 ? recipeServings : DEFAULT_RECIPE_SERVINGS;
+    return roundScaleFactor(entryServings / base);
+  }
+  if (scaleFactor && scaleFactor > 0) return roundScaleFactor(scaleFactor);
+  return 1;
+}
+
+function roundScaleFactor(value: number): number {
+  return Math.round(value * 10000) / 10000;
+}
+
 const COOKING_FRACTIONS: Array<[number, number]> = [
   [1, 8],
   [1, 6],

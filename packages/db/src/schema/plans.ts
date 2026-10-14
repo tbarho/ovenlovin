@@ -9,6 +9,7 @@ import {
   date,
   timestamp,
   boolean,
+  decimal,
 } from "drizzle-orm/pg-core";
 import { commonFields, createdByField } from "./common";
 import { apiKey, household } from "./households";
@@ -92,7 +93,7 @@ export const mealPlanEntry = pgTable("meal_plan_entry", {
   freeformMeal: varchar("freeform_meal", { length: 255 }),
   servings: integer("servings"),
   attendees: jsonb("attendees").$type<string[]>().default([]),
-  scaleFactor: integer("scale_factor").default(1),
+  scaleFactor: decimal("scale_factor", { precision: 10, scale: 4 }).default("1"),
   prepAheadNotes: text("prep_ahead_notes"),
   leftoverSourceId: uuid("leftover_source_id"),
 });

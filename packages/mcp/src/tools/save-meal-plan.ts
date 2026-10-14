@@ -71,7 +71,6 @@ async function handler(
       servings: entry.servings,
       attendees: entry.attendees,
       prepAheadNotes: entry.prepAheadNotes ?? null,
-      scaleFactor: 1,
     });
   }
 

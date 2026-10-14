@@ -4,6 +4,7 @@ import type { MealPlan, MealPlanEntry, MealPlanEntryWrite } from "../schemas/pla
 import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
+import { scaleFactorForPlanEntry } from "../scaling/servings";
 import { BaseService } from "./base";
 
 export class PlanService extends BaseService {
@@ -138,7 +139,6 @@ export class PlanService extends BaseService {
           freeformMeal: null,
           servings: entry.servings ?? null,
           attendees: entry.attendees ?? [],
-          scaleFactor: 1,
           prepAheadNotes: entry.prepAheadNotes ?? null,
           leftoverSourceId: null,
         })
@@ -163,8 +163,12 @@ export class PlanService extends BaseService {
   }
 
   async createMealPlanEntry(
-    data: Omit<MealPlanEntry, "id" | "createdAt" | "updatedAt" | "deletedAt">
+    data: Omit<MealPlanEntry, "id" | "createdAt" | "updatedAt" | "deletedAt" | "scaleFactor"> & {
+      scaleFactor?: number;
+    }
   ): Promise<MealPlanEntry> {
+    const recipeServings = data.recipeId ? await this.getRecipeServings(data.recipeId) : null;
+    const scaleFactor = scaleFactorForPlanEntry(data.servings, recipeServings, data.scaleFactor);
     const [created] = await this._db
       .insert(mealPlanEntry)
       .values({
@@ -175,7 +179,7 @@ export class PlanService extends BaseService {
         freeformMeal: data.freeformMeal ?? null,
         servings: data.servings ?? null,
         attendees: data.attendees ?? [],
-        scaleFactor: data.scaleFactor ?? 1,
+        scaleFactor: String(scaleFactor),
         prepAheadNotes: data.prepAheadNotes ?? null,
         leftoverSourceId: data.leftoverSourceId ?? null,
       })
@@ -230,6 +234,16 @@ export class PlanService extends BaseService {
     return result?.title ?? null;
   }
 
+  async getRecipeServings(recipeId: string): Promise<number | null> {
+    const [result] = await this._db
+      .select({ servings: recipe.servings })
+      .from(recipe)
+      .where(and(eq(recipe.id, recipeId), isNull(recipe.deletedAt)))
+      .limit(1);
+
+    return result?.servings ?? null;
+  }
+
   private mapMealPlan(row: typeof mealPlan.$inferSelect): MealPlan {
     return {
       id: row.id,
@@ -265,7 +279,7 @@ export class PlanService extends BaseService {
       freeformMeal: row.freeformMeal ?? null,
       servings: row.servings ?? null,
       attendees: (row.attendees as string[]) ?? [],
-      scaleFactor: row.scaleFactor ?? 1,
+      scaleFactor: row.scaleFactor != null ? Number(row.scaleFactor) : 1,
       prepAheadNotes: row.prepAheadNotes ?? null,
       leftoverSourceId: row.leftoverSourceId ?? null,
     };

@@ -3,9 +3,30 @@ import {
   clampServings,
   formatDurationMinutes,
   formatQuantity,
+  scaleFactorForPlanEntry,
   scaleIngredientDisplay,
   scaleQuantity,
 } from "./servings";
+
+describe("scaleFactorForPlanEntry", () => {
+  it("stores entry servings divided by recipe servings", () => {
+    expect(scaleFactorForPlanEntry(8, 4, 1)).toBe(2);
+    expect(scaleFactorForPlanEntry(6, 4, 1)).toBe(1.5);
+    expect(scaleFactorForPlanEntry(6, 6, 1)).toBe(1);
+    expect(scaleFactorForPlanEntry(4, 4)).toBe(1);
+  });
+
+  it("uses a 4-serving default when the recipe card has no yield", () => {
+    expect(scaleFactorForPlanEntry(8, null, 1)).toBe(2);
+    expect(scaleFactorForPlanEntry(6, undefined, 1)).toBe(1.5);
+  });
+
+  it("falls back to an explicit scaleFactor only when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 4, 2)).toBe(2);
+    expect(scaleFactorForPlanEntry(undefined, null, 1)).toBe(1);
+    expect(scaleFactorForPlanEntry()).toBe(1);
+  });
+});
 
 describe("scaleQuantity", () => {
   it("scales proportionally", () => {
