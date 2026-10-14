@@ -40,6 +40,19 @@ describe("schedule time-budget check", () => {
     ]);
   });
 
+  it("does not report a time-budget overrun on a night with no cooking planned", () => {
+    const issues = scheduleIssuesForNight({
+      date: "2026-10-30",
+      recipeTitle: "Beef chili",
+      recipeTotalMinutes: 60,
+      night: nightForDate(defaultWeeklySchedule(), "2026-10-30"),
+    });
+    expect(nightForDate(defaultWeeklySchedule(), "2026-10-30")?.cooking).toBe(false);
+    expect(issues.map((issue) => issue.type)).toEqual(["method_mismatch"]);
+    expect(issues[0]?.message).toMatch(/not a cooking night/);
+    expect(issues.some((issue) => issue.type === "time_budget")).toBe(false);
+  });
+
   it("does not warn when the recipe fits the budget", () => {
     const issues = scheduleIssuesForNight({
       date: "2026-10-28",
