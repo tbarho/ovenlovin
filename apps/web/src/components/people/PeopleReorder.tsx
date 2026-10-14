@@ -108,11 +108,13 @@ function SortablePerson({
   disabled,
   renderPerson,
   lockHeight,
+  onMeasure,
 }: {
   person: Person;
   disabled?: boolean;
   renderPerson: (person: Person, handle: ReactNode) => ReactNode;
   lockHeight?: number;
+  onMeasure?: (el: HTMLElement) => void;
 }) {
   const reduce = useReducedMotion();
   const ownHeight = useRef<number>();
@@ -120,7 +122,7 @@ function SortablePerson({
     id: person.id,
     disabled,
   });
-  const dropHeight = lockHeight ?? (isDragging ? ownHeight.current : undefined);
+  const dropHeight = (isDragging ? ownHeight.current : undefined) ?? lockHeight;
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -159,6 +161,7 @@ function SortablePerson({
                 const slot = el.closest(".olp-person-slot");
                 const height = slot?.getBoundingClientRect().height;
                 if (height) ownHeight.current = height;
+                onMeasure?.(el);
               }}
             />
           }
@@ -183,6 +186,7 @@ export function PeopleReorder({
   const [order, setOrder] = useState(people.map((person) => person.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overlaySize, setOverlaySize] = useState<{ width?: number; height?: number }>({});
+  const dragHeightRef = useRef<number>(undefined);
   const [liveMessage, setLiveMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -264,7 +268,12 @@ export function PeopleReorder({
               person={person}
               disabled={disabled}
               renderPerson={renderPerson}
-              lockHeight={activeId ? overlaySize.height : undefined}
+              lockHeight={activeId ? dragHeightRef.current : undefined}
+              onMeasure={(el) => {
+                const slot = el.closest(".olp-person-slot");
+                const height = slot?.getBoundingClientRect().height;
+                if (height) dragHeightRef.current = height;
+              }}
             />
           ))}
         </div>
