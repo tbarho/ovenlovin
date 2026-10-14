@@ -29,7 +29,7 @@ export interface ImportRecipeOutput {
   recipeId: string;
   status: "draft" | "needs_review" | "published";
   title: string;
-  notes?: string;
+  notes: string | null;
   servings?: number;
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
@@ -110,7 +110,7 @@ async function handler(
     recipeId: recipe.id,
     status: recipe.status,
     title: recipe.title,
-    notes: recipe.notes ?? undefined,
+    notes: recipe.notes ?? null,
     servings: recipe.servings ?? undefined,
     prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,

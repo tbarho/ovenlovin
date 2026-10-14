@@ -22,6 +22,7 @@ const recipeSchema = z.object({
   prepTimeMinutes: z.number().int().nonnegative().optional().describe("Prep time in minutes"),
   cookTimeMinutes: z.number().int().nonnegative().optional().describe("Cook time in minutes"),
   totalTimeMinutes: z.number().int().nonnegative().optional().describe("Total time in minutes"),
+  notes: z.string().optional().describe("Cook notes, tips, or make-ahead instructions"),
   cuisine: z.string().optional().describe("Cuisine type (e.g., Italian, Mexican)"),
   course: z.string().optional().describe("Course type (e.g., Dessert, Main Course)"),
   ingredients: z
@@ -97,6 +98,8 @@ ${input.text}`,
         typeof recipe.totalTimeMinutes === "number" ? recipe.totalTimeMinutes : undefined;
       const cuisine = typeof recipe.cuisine === "string" ? recipe.cuisine : undefined;
       const course = typeof recipe.course === "string" ? recipe.course : undefined;
+      const notes =
+        typeof recipe.notes === "string" && recipe.notes.trim() ? recipe.notes.trim() : undefined;
 
       const ingredients = parseIngredients(recipe.ingredients);
       const steps = parseSteps(recipe.steps);
@@ -115,6 +118,7 @@ ${input.text}`,
         totalTimeMinutes: totalTime,
         cuisine,
         course,
+        notes,
         methodTags,
         ingredients,
         steps,
