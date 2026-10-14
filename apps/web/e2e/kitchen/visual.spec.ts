@@ -149,7 +149,8 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByTestId("bucket-loves")).toBeVisible();
   await shot(page, width, "person-jake");
   await page.getByTestId("bucket-cant_eat").getByPlaceholder("Add…").click();
-  await expect(page.getByTestId("tile-peanut")).toBeVisible();
+  await expect(page.getByRole("listbox", { name: /can't eat suggestions/i })).toBeVisible();
+  await expect(page.getByTestId("tile-milk")).toBeVisible();
   await shot(page, width, "inline-add-rule");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: /edit jake/i }).click();
