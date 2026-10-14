@@ -16,3 +16,4 @@ export * from "./tools/list-cookbooks";
 export * from "./tools/get-cookbook";
 export * from "./tools/manage-cookbook";
 export * from "./tools/manage-person-loves";
+export * from "./tools/reorder-people";

@@ -50,6 +50,28 @@ describe("PeopleHome", () => {
     expect(screen.getByTestId(`person-card-loves-${person.id}`)).toHaveTextContent("None");
   });
 
+  it("reorders people with the keyboard fallback", async () => {
+    const user = userEvent.setup();
+    const ty = testPerson({
+      id: "00000000-0000-4000-8000-000000000010",
+      displayName: "Ty",
+      sortOrder: 0,
+    });
+    const jake = testPerson({
+      id: "00000000-0000-4000-8000-000000000011",
+      displayName: "Jake",
+      sortOrder: 1,
+    });
+    mockedApi.mockResolvedValue({ items: [jake, ty] });
+    render(<PeopleHome householdName="Household 1" people={[ty, jake]} rules={[]} loves={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "Move Ty down" }));
+    expect(mockedApi).toHaveBeenCalledWith("/api/v1/people/reorder", {
+      method: "POST",
+      body: JSON.stringify({ personIds: [jake.id, ty.id] }),
+    });
+  });
+
   it("adds a person with a chosen emoji", async () => {
     const user = userEvent.setup();
     mockedApi.mockResolvedValue(testPerson({ displayName: "Child B" }));

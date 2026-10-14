@@ -16,6 +16,7 @@ export function testPerson(overrides: Partial<Person> = {}): Person {
     id: "00000000-0000-4000-8000-000000000010",
     householdId: HOUSEHOLD_ID,
     displayName: "Parent A",
+    sortOrder: 0,
     createdAt: NOW,
     updatedAt: NOW,
     createdBy: USER_ID,

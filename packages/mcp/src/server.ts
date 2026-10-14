@@ -30,6 +30,7 @@ import { listCookbooksTool } from "./tools/list-cookbooks";
 import { getCookbookTool } from "./tools/get-cookbook";
 import { manageCookbookTool } from "./tools/manage-cookbook";
 import { managePersonLovesTool } from "./tools/manage-person-loves";
+import { reorderPeopleTool } from "./tools/reorder-people";
 
 // Resource implementations (will be implemented)
 import { listResources, readResource } from "./resources/index";
@@ -54,6 +55,7 @@ const TOOLS = [
   getCookbookTool,
   manageCookbookTool,
   managePersonLovesTool,
+  reorderPeopleTool,
 ] as const;
 
 /**

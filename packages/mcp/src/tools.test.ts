@@ -17,6 +17,7 @@ import {
   getCookbookTool,
   manageCookbookTool,
   managePersonLovesTool,
+  reorderPeopleTool,
 } from "./index.js";
 
 describe("MCP Tool Schemas", () => {
@@ -224,6 +225,18 @@ describe("MCP Tool Schemas", () => {
           id: "550e8400-e29b-41d4-a716-446655440000",
         }).success
       ).toBe(true);
+    });
+
+    it("validates reorder_people ids", () => {
+      expect(
+        reorderPeopleTool.inputSchema.safeParse({
+          personIds: [
+            "550e8400-e29b-41d4-a716-446655440000",
+            "550e8400-e29b-41d4-a716-446655440001",
+          ],
+        }).success
+      ).toBe(true);
+      expect(reorderPeopleTool.inputSchema.safeParse({ personIds: [] }).success).toBe(false);
     });
 
     it("validates manage_person_loves actions", () => {

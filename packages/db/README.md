@@ -20,7 +20,7 @@ The database is organized into logical domains:
 
 ### People & Rules
 
-- `person` - Household members (may or may not be users)
+- `person` - Household members (may or may not be users). `sort_order` is the persistent household display order.
 - `person_rule` - Per-person dietary rules with severities (block/warn/prefer-avoid)
 - `person_label_note` - Shopping/label reminders per person
 - `preference` - Likes, cuisines, textures, etc.

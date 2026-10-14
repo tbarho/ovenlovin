@@ -77,6 +77,16 @@ Get household schedule, people, rules, preferences, and recent meals.
 }
 ```
 
+### `reorder_people`
+
+Persist the household people order used by lists, who-can-eat, and household context.
+
+```json
+{
+  "personIds": ["person-id-1", "person-id-2"]
+}
+```
+
 ### `get_person_rules`
 
 Get detailed per-person rules (Can't eat / Doesn't like) and Loves.

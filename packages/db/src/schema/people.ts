@@ -28,6 +28,7 @@ export const person = pgTable("person", {
   sex: sexEnum("sex"),
   activityProfile: text("activity_profile"),
   notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 export const ruleKindEnum = pgEnum("rule_kind", [

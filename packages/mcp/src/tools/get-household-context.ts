@@ -42,6 +42,7 @@ export interface GetHouseholdContextOutput {
   people?: Array<{
     id: string;
     displayName: string;
+    sortOrder: number;
     age?: number;
     activityProfile?: string;
     rulesSummary: {
@@ -110,6 +111,7 @@ async function handler(
         return {
           id: person.id,
           displayName: person.displayName,
+          sortOrder: person.sortOrder,
           age,
           activityProfile: person.activityProfile ?? undefined,
           rulesSummary,
