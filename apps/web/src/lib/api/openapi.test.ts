@@ -18,6 +18,7 @@ describe("generateOpenApiDocument", () => {
       expect.arrayContaining([
         "/recipes",
         "/recipes/{id}",
+        "/recipes/import/photo",
         "/meal-plans",
         "/meal-plans/{id}",
         "/meal-plans/{id}/check",
@@ -36,6 +37,12 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hiddenCount");
     expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hidden");
     expect(spec.paths?.["/recipes"]?.post).toBeTruthy();
+    expect(spec.paths?.["/recipes/import/photo"]?.post).toBeTruthy();
+    const photoPreview = spec.components?.schemas?.PhotoImportPreview as {
+      properties?: Record<string, unknown>;
+    };
+    expect(photoPreview?.properties).toHaveProperty("uncertainFields");
+    expect(photoPreview?.properties).toHaveProperty("allergenClassifications");
     expect(spec.paths?.["/recipes/{id}"]?.delete).toBeTruthy();
     const recipe = spec.components?.schemas?.Recipe as { properties?: Record<string, unknown> };
     expect(recipe?.properties).toHaveProperty("notes");

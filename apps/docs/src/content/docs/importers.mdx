@@ -124,64 +124,49 @@ Extract recipes from photos of recipe cards, cookbook pages, or handwritten note
 
 The photo importer:
 
-1. Accepts image file (JPEG, PNG, WebP)
-2. Uploads to Vercel Blob storage
-3. Sends to vision model (default: `spacexai/grok-4.7`) for OCR
-4. Parses extracted text into structured recipe format
-5. Returns draft with confidence scores
+1. Accepts one or more images (JPEG, PNG, WebP, GIF, AVIF) as a file upload, Blob URL, or base64
+2. Stores the first photo in Vercel Blob as the recipe's single main image
+3. Sends all pages to a vision-capable AI Gateway model (default: `RK_MODEL_VISION` or `spacexai/grok-4.7`)
+4. Extracts title, servings, times, ingredients (name, quantity, unit), steps, notes, and a visible source
+5. Classifies ingredients with the existing allergen catalog and lists `uncertainFields` when the photo is hard to read
+6. Returns a draft for review (`save` omitted) or persists when `save=true`
 
 ### Usage
 
-#### Via MCP Tool
-
-```typescript
-{
-  "tool": "import_recipe",
-  "input": {
-    "type": "photo",
-    "imageUrl": "https://blob.vercel-storage.com/recipe-card-abc123.jpg"
-  }
-}
-```
-
 #### Via REST API
 
-```bash
-# First, upload image to get URL
-curl -X POST https://your-app.vercel.app/api/v1/upload \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -F "file=@recipe-card.jpg"
+Preview (default — review before save):
 
-# Then import from the returned URL
-curl -X POST https://your-app.vercel.app/api/v1/recipes/import \
+```bash
+curl -X POST https://your-app.vercel.app/api/v1/recipes/import/photo \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "image=@recipe-card.jpg"
+```
+
+Or send a Blob URL / base64:
+
+```bash
+curl -X POST https://your-app.vercel.app/api/v1/recipes/import/photo \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "photo",
-    "imageUrl": "https://blob.vercel-storage.com/..."
+    "imageUrl": "https://blob.vercel-storage.com/recipe-card.jpg",
+    "save": false
   }'
 ```
+
+Set `save: true` to persist immediately. The first photo is stored in Vercel Blob and is the recipe's only main image. The response lists `uncertainFields` when the photo is hard to read.
 
 #### Programmatic (TypeScript)
 
 ```typescript
-import { createPhotoImporter } from "@ovenlovin/importers";
+import { runPhotoImport } from "@ovenlovin/importers";
 
-const importer = createPhotoImporter({
-  blobToken: process.env.BLOB_READ_WRITE_TOKEN,
-  aiGatewayKey: process.env.AI_GATEWAY_API_KEY,
-  visionModel: process.env.RK_MODEL_VISION || "spacexai/grok-4.7",
+const { draft, uncertainFields, allergenClassifications } = await runPhotoImport({
+  images: [{ blob: "https://blob.vercel-storage.com/recipe.jpg" }],
 });
 
-// Import from uploaded image URL
-if (importer.canHandle({ imageUrl: "https://..." })) {
-  const extraction = await importer.extract({
-    imageUrl: "https://blob.vercel-storage.com/recipe.jpg",
-  });
-
-  const draft = await importer.toDraft(extraction);
-  console.log(draft.title);
-}
+console.log(draft.title, uncertainFields, allergenClassifications);
 ```
 
 ### Supported Image Types

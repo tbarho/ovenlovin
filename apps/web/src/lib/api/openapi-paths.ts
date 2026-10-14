@@ -210,6 +210,99 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     },
   });
 
+  const photoImportPreview = z
+    .object({
+      title: z.string(),
+      notes: z.string().optional(),
+      servings: z.number().int().positive().optional(),
+      prepTimeMinutes: z.number().int().nonnegative().optional(),
+      cookTimeMinutes: z.number().int().nonnegative().optional(),
+      totalTimeMinutes: z.number().int().nonnegative().optional(),
+      ingredients: z.array(
+        z.object({
+          rawText: z.string(),
+          name: z.string().optional(),
+          quantityMin: z.number().nullable().optional(),
+          quantityMax: z.number().nullable().optional(),
+          unit: z.string().nullable().optional(),
+        })
+      ),
+      steps: z.array(z.object({ text: z.string() })),
+      images: z.array(z.string()),
+      overallConfidence: z.number(),
+      needsReview: z.boolean(),
+      uncertainFields: z.array(z.string()),
+      allergenClassifications: z.array(
+        z.object({
+          ingredientText: z.string(),
+          allergenCode: z.string(),
+          allergenName: z.string(),
+          relation: z.string(),
+        })
+      ),
+    })
+    .openapi("PhotoImportPreview");
+
+  registry.registerPath({
+    method: "post",
+    path: "/recipes/import/photo",
+    tags: ["recipes"],
+    summary:
+      "Extract a recipe from one or more photos (review by default). Multipart upload or a Blob/image URL. Saves only the first photo as the main image.",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              imageUrl: z.string().optional(),
+              imageUrls: z.array(z.string()).optional(),
+              imageBase64: z.string().optional(),
+              mimeType: z.string().optional(),
+              images: z
+                .array(
+                  z.object({
+                    url: z.string().optional(),
+                    base64: z.string().optional(),
+                    mimeType: z.string().optional(),
+                  })
+                )
+                .optional(),
+              isHandwritten: z.boolean().optional(),
+              save: z.boolean().optional(),
+              cookbookId: z.string().uuid().optional(),
+            }),
+          },
+          "multipart/form-data": {
+            schema: z.object({
+              image: z
+                .string()
+                .optional()
+                .describe("Recipe photo file (repeatable as images/file)"),
+              imageUrl: z.string().optional(),
+              isHandwritten: z.string().optional(),
+              save: z.string().optional(),
+              cookbookId: z.string().uuid().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Extracted draft for review (save omitted or false)",
+        content: { "application/json": { schema: photoImportPreview } },
+      },
+      201: {
+        description: "Saved recipe when save=true",
+        content: {
+          "application/json": {
+            schema: photoImportPreview.extend({ recipe: recipeSchema }),
+          },
+        },
+      },
+    },
+  });
+
   registry.registerPath({
     method: "get",
     path: "/cookbooks",
