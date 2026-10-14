@@ -3,6 +3,7 @@ import {
   copyRemoteImages,
   imageExtensionFromUrl,
   isStoredBlobUrl,
+  keepMainRecipeImages,
   recipeGalleryImages,
   recipeMainImage,
 } from "./recipe-images";
@@ -11,6 +12,8 @@ describe("recipe images", () => {
   it("picks the first non-empty image as the main photo", () => {
     expect(recipeMainImage(["", "https://example.com/a.jpg"])).toBe("https://example.com/a.jpg");
     expect(recipeGalleryImages(["https://a", "", "https://b"])).toEqual(["https://a", "https://b"]);
+    expect(keepMainRecipeImages(["", "https://a", "https://b"])).toEqual(["https://a"]);
+    expect(keepMainRecipeImages([])).toEqual([]);
   });
 
   it("recognizes Vercel Blob URLs", () => {
