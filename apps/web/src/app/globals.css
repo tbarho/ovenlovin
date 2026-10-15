@@ -2671,10 +2671,29 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   list-style: none;
 }
 
+.shop-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .shop-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   border: 1px solid #eaeaea;
   border-radius: 12px;
   background: #ffffff;
+}
+
+.shop-item-remove {
+  margin: 8px 10px 0 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .shop-item label {

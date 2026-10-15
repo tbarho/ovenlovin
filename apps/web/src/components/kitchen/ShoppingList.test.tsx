@@ -163,4 +163,28 @@ describe("ShoppingList", () => {
       })
     );
   });
+
+  it("removes a manual item and can clear checked extras", async () => {
+    const user = userEvent.setup();
+    render(
+      <ShoppingList
+        planId="plan-1"
+        extras={[{ key: "extra:test-item-1:1", name: "Test item 1" }]}
+        items={[{ key: "pasta", name: "12 oz pasta", recipes: ["Pasta"], warnings: [] }]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Remove Test item 1" }));
+    expect(screen.queryByText("Test item 1")).not.toBeInTheDocument();
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1/shopping-list/state", {
+      method: "PATCH",
+      body: JSON.stringify({ checkedKeys: [], extras: [] }),
+    });
+
+    await user.type(screen.getByPlaceholderText("Milk, paper towels…"), "Milk");
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    await user.click(screen.getByRole("checkbox", { name: /milk/i }));
+    await user.click(screen.getByRole("button", { name: "Clear checked" }));
+    expect(screen.queryByText("Milk")).not.toBeInTheDocument();
+  });
 });
