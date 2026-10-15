@@ -18,6 +18,7 @@ export function importInputError(source: "url" | "paste", content: string): stri
 }
 
 export function importGuessedNotice(title: string, servings: number | null): string {
-  const yieldText = servings && servings > 0 ? `${servings} servings (guessed)` : "servings unknown";
+  const yieldText =
+    servings && servings > 0 ? `${servings} servings (guessed)` : "servings unknown";
   return `Imported ${title} · ${yieldText}`;
 }

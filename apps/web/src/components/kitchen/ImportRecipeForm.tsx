@@ -261,8 +261,7 @@ export function ImportRecipeForm() {
         {error ? <p className="muted import-error">{error}</p> : null}
         {imported ? (
           <p className="muted" data-testid="import-review">
-            {imported.notice} ·{" "}
-            <a href={`/recipes/${imported.id}`}>Add to cookbook</a>
+            {imported.notice} · <a href={`/recipes/${imported.id}`}>Add to cookbook</a>
           </p>
         ) : null}
       </form>
