@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
 import type { CookbookCard, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
@@ -10,8 +10,10 @@ import { api } from "@/lib/browser-api";
 import { filterRecipesByQuery } from "@/lib/cookbook-recipes";
 import { recipeCardMeta } from "@/lib/recipe-card-meta";
 import { EMPTY_RECIPE_SAFETY, type RecipeSafetySummary } from "@/lib/recipe-card-safety";
+import { readRecipeDeleteToast, type RecipeDeleteToast } from "@/lib/recipe-delete";
 import { ImportRecipeForm } from "./ImportRecipeForm";
 import { BottomSheet } from "./BottomSheet";
+import { KitchenToast } from "./KitchenToast";
 import { KitchenTour } from "./KitchenTour";
 import { RecipeCardSafety } from "./RecipeCardSafety";
 
@@ -100,10 +102,26 @@ export function RecipesKitchen({
   lovePeople?: PersonLove[];
   safetyByRecipe?: Record<string, RecipeSafetySummary>;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<"unfiled" | "all">(cookbooks.length > 0 ? "unfiled" : "all");
+  const [deleted, setDeleted] = useState<RecipeDeleteToast | null>(null);
   const close = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    setDeleted(readRecipeDeleteToast());
+  }, []);
+
+  async function undoDelete(recipe: RecipeDeleteToast) {
+    setDeleted(null);
+    try {
+      await api(`/api/v1/recipes/${recipe.id}/restore`, { method: "POST" });
+      router.refresh();
+    } catch {
+      setDeleted(recipe);
+    }
+  }
 
   const pool = scope === "all" || query.trim() || cookbooks.length === 0 ? recipes : uncategorized;
   const listed = useMemo(() => filterRecipesByQuery(pool, query), [pool, query]);
@@ -217,6 +235,11 @@ export function RecipesKitchen({
       )}
 
       <NewCookbookSheet open={open} onClose={close} />
+      <KitchenToast
+        message={deleted ? `Deleted ${deleted.title}` : null}
+        onUndo={deleted ? () => void undoDelete(deleted) : undefined}
+        onDismiss={() => setDeleted(null)}
+      />
     </>
   );
 }
