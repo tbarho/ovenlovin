@@ -19,6 +19,7 @@ export {
   type FetchResult,
   type RecipePageRenderer,
 } from "./fetch-html";
+export { extractHtmlRecipe, htmlLooksLikeRecipe } from "./html-recipe";
 
 function isRecipeType(value: unknown): boolean {
   if (value === "Recipe") return true;
