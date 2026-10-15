@@ -96,7 +96,9 @@ export function ShoppingList({
   }
 
   function clearChecked() {
-    const checkedExtraKeys = new Set(added.filter((item) => checkedSet.has(item.key)).map((item) => item.key));
+    const checkedExtraKeys = new Set(
+      added.filter((item) => checkedSet.has(item.key)).map((item) => item.key)
+    );
     const nextExtras = added.filter((item) => !checkedExtraKeys.has(item.key));
     setAdded(nextExtras);
     setChecked([]);
