@@ -4,11 +4,15 @@ import {
   PlanService,
   RecipeService,
   ShoppingListService,
+  emptyShoppingTripState,
+  parseShoppingTripState,
+  shopItemKey,
   type MealPlan,
   type MealPlanEntry,
   type Person,
   type PersonRule,
   type Recipe,
+  type ShoppingTripState,
 } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { getDatabase } from "@ovenlovin/db";
@@ -43,6 +47,8 @@ export type {
   PlanRecipePick,
   ShopItem,
   ShopWarning,
+  ShoppingExtra,
+  ShoppingTripState,
   WeekDay,
   WeekFinding,
   WeekMeal,
@@ -54,6 +60,7 @@ export type WeekKitchen = {
   weekLabel: string;
   days: WeekDay[];
   shopping: ShopItem[];
+  shoppingState: ShoppingTripState;
   entries: PlanEntryDraft[];
   recipes: PlanRecipePick[];
   defaultServings: number;
@@ -172,6 +179,7 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
       weekLabel: formatWeekRange(weekStart),
       days: groupMealsByDate(weekStart, []),
       shopping: [],
+      shoppingState: emptyShoppingTripState(),
       entries: [],
       recipes: recipePicks,
       defaultServings: people.length || 4,
@@ -265,7 +273,7 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
       ingredients: [{ id: `shop-${index}`, name: item.name }],
     });
     return {
-      key: `${item.name}-${index}`,
+      key: shopItemKey(item.name) || `item-${index}`,
       name: item.name,
       quantity: item.quantity,
       unit: item.unit,
@@ -286,6 +294,7 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
     weekLabel: formatWeekRange(weekStart),
     days: groupMealsByDate(weekStart, meals),
     shopping: shopItems,
+    shoppingState: parseShoppingTripState(plan.shoppingState),
     entries: entries.map((entry) => ({
       id: entry.id,
       date: entry.date,
