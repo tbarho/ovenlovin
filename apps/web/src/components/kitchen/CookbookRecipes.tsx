@@ -204,7 +204,7 @@ export function CookbookRecipes({
             const image = recipeMainImage(recipe.images);
             return (
               <article className="recipe-card cookbook-member-card" key={recipe.id}>
-                <Link href={`/recipes/${recipe.id}`}>
+                <Link href={`/recipes/${recipe.id}?fromCookbook=${cookbook.id}`}>
                   {image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={image} alt="" />

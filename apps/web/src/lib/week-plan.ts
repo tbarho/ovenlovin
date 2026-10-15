@@ -154,7 +154,10 @@ function storeIngredients(
   );
 }
 
-export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen> {
+export async function loadWeekKitchen(
+  householdId: string,
+  requestedWeek?: string | null
+): Promise<WeekKitchen> {
   const db = getDatabase();
   const plans = new PlanService(db);
   const recipes = new RecipeService(db);
@@ -162,10 +165,13 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
   const shopping = new ShoppingListService();
 
   const thisMonday = startOfWeekMonday();
+  const requestedMonday =
+    requestedWeek && startOfWeekMonday(requestedWeek) === requestedWeek ? requestedWeek : null;
   const listed = await plans.listMealPlans(householdId, { pagination: { limit: 20 } });
-  const plan =
-    listed.items.find((item) => item.weekStart === thisMonday) ?? listed.items[0] ?? null;
-  const weekStart = plan?.weekStart || thisMonday;
+  const plan = requestedMonday
+    ? (listed.items.find((item) => item.weekStart === requestedMonday) ?? null)
+    : (listed.items.find((item) => item.weekStart === thisMonday) ?? listed.items[0] ?? null);
+  const weekStart = requestedMonday ?? plan?.weekStart ?? thisMonday;
 
   const householdPeople = await peopleService.listPeopleByHousehold(householdId, { limit: 40 });
   const people = householdPeople.items;

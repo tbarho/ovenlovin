@@ -10,7 +10,8 @@ import {
   formatDurationMinutes,
   scaleIngredientDisplay,
 } from "@ovenlovin/core/scaling";
-import { loveHitsForRecipe } from "@/lib/household-loves";
+import { loveHitsForRecipe, qualifyLoveHits } from "@/lib/household-loves";
+import { whoCanEat } from "@/lib/who-can-eat";
 import { LoveTags } from "./LoveTags";
 import {
   CookbooksSheet,
@@ -37,12 +38,14 @@ export function RecipeDetail({
   people = [],
   rules = [],
   lovePeople = EMPTY_LOVE_PEOPLE,
+  fromCookbookId = null,
 }: {
   recipe: RecipeDetails;
   cookbooks: Cookbook[];
   people?: Person[];
   rules?: PersonRule[];
   lovePeople?: PersonLove[];
+  fromCookbookId?: string | null;
 }) {
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
   const [servings, setServings] = useState(storedServings);
@@ -53,6 +56,28 @@ export function RecipeDetail({
 
   const mainImage = recipeMainImage(recipe.images);
   const sourceUrl = recipe.source?.canonicalUrl || recipe.source?.url || null;
+
+  const checkIngredients = useMemo(
+    () =>
+      recipe.ingredients.map((ingredient) => ({
+        id: ingredient.id,
+        name: ingredient.rawText,
+        substitutionNotes: ingredient.substitutionNotes,
+      })),
+    [recipe.ingredients]
+  );
+  const conflictIds = useMemo(
+    () =>
+      whoCanEat({ people, rules, ingredients: checkIngredients })
+        .people.filter((person) => person.mark !== "ok")
+        .map((person) => person.personId),
+    [checkIngredients, people, rules]
+  );
+  const fromCookbook =
+    fromCookbookId
+      ? recipe.cookbooks.find((book) => book.id === fromCookbookId) ??
+        cookbooks.find((book) => book.id === fromCookbookId)
+      : undefined;
 
   const scaledIngredients = useMemo(
     () =>
@@ -69,21 +94,27 @@ export function RecipeDetail({
         <div className="recipe-layout-media">
           <div className="kitchen-head">
             <div>
-              <Link href="/recipes" className="back-link">
-                ← Recipes
+              <Link
+                href={fromCookbook ? `/recipes?cookbook=${fromCookbook.id}` : "/recipes"}
+                className="back-link"
+              >
+                {fromCookbook ? `← ${fromCookbook.name}` : "← Recipes"}
               </Link>
               <h1>{recipe.title}</h1>
               <LoveTags
-                hits={loveHitsForRecipe(
-                  {
-                    title: recipe.title,
-                    description: recipe.description,
-                    cuisine: recipe.cuisine,
-                    course: recipe.course,
-                    methodTags: recipe.methodTags,
-                    ingredients: recipe.ingredients,
-                  },
-                  lovePeople
+                hits={qualifyLoveHits(
+                  loveHitsForRecipe(
+                    {
+                      title: recipe.title,
+                      description: recipe.description,
+                      cuisine: recipe.cuisine,
+                      course: recipe.course,
+                      methodTags: recipe.methodTags,
+                      ingredients: recipe.ingredients,
+                    },
+                    lovePeople
+                  ),
+                  conflictIds
                 )}
               />
               <div className="recipe-meta">

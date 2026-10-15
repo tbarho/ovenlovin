@@ -25,6 +25,18 @@ export function loveHitsForRecipe(recipe: RecipeLoveFields, people: PersonLove[]
   return lovesForRecipe(recipe, people);
 }
 
+export function qualifyLoveHits(
+  hits: LoveHit[],
+  conflictPersonIds: Iterable<string>
+): LoveHit[] {
+  const conflicts = new Set(conflictPersonIds);
+  return hits.map((hit) =>
+    conflicts.has(hit.personId)
+      ? { ...hit, tag: `${hit.tag}, but check first` }
+      : hit
+  );
+}
+
 export function sortRecipesByLoves<T extends Recipe>(recipes: T[], people: PersonLove[]): T[] {
   return rankRecipesByLoves(recipes, people);
 }

@@ -76,7 +76,7 @@ function NewCookbookSheet({ open, onClose }: { open: boolean; onClose: () => voi
           required
         />
         {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending}>
+        <button className="btn primary" type="submit" disabled={pending || !name.trim()}>
           {pending ? "Creating…" : "Create cookbook"}
         </button>
       </form>

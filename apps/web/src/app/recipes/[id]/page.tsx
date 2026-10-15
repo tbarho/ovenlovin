@@ -5,11 +5,18 @@ import { RecipeDetail } from "@/components/kitchen/RecipeDetail";
 import { householdLovePeople } from "@/lib/household-loves";
 import { getSessionContext } from "@/lib/session";
 
-export default async function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function RecipeDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ fromCookbook?: string }>;
+}) {
   const context = await getSessionContext().catch(() => null);
   if (!context?.householdId) redirect("/sign-in");
 
   const { id } = await params;
+  const { fromCookbook } = await searchParams;
   const db = getDatabase();
   const recipe = await new RecipeService(db).getRecipeDetails(id);
   if (!recipe || recipe.householdId !== context.householdId) notFound();
@@ -30,6 +37,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
       people={people.items}
       rules={rules}
       lovePeople={householdLovePeople(people.items, preferences)}
+      fromCookbookId={fromCookbook ?? null}
     />
   );
 }
