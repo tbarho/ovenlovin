@@ -9,7 +9,7 @@ The product production project must never enter demo mode.
 1. `OVENLOVIN_DEMO_MODE=1` turns demo mode on.
 2. On Vercel production, the dedicated demo project must also set `OVENLOVIN_DEMO_PROJECT=1`. If the product production project has `OVENLOVIN_DEMO_MODE` set, **the build fails**.
 3. An uncookied kitchen visit redirects to `GET /api/demo/enter`, which copies the sample household into a private sandbox and sets the `ol_demo_sandbox` cookie (httpOnly, 24 hours): 5 people (rules + loves), ~20 recipes with images, two cookbooks, a meal plan, a shopping list, and one API key.
-4. Writes are allowed but rate-limited (60/hour). Recipe imports are capped at 5. Image uploads are off. AI calls are off (`isAiGatewayConfigured` is forced false). MCP paste import uses the same deterministic parser as REST.
+4. Writes are allowed but rate-limited (60/hour). Recipe imports are capped at 5. Image uploads are off. Photo import uses the same AI Gateway check as `/api/v1/status` (`AI_GATEWAY_API_KEY`, `VERCEL_OIDC_TOKEN`, or the Vercel runtime). If those are missing, both surfaces say so. URL import still works; paste import uses the local parser when the gateway is off.
 5. Settings shows this sandbox's MCP URL (`/mcp`) and API key. MCP is **stateless HTTP**: each POST authenticates with the key and tools see the **key-derived household**. There is no MCP session id.
 6. Nightly cron `GET /api/cron/demo-cleanup` (`0 8 * * *` UTC) wipes expired sandboxes. Production cron requests must send `Authorization: Bearer $CRON_SECRET` (Vercel injects this automatically when `CRON_SECRET` is set).
 

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { CookbookService, RecipeService } from "@ovenlovin/core";
-import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
+import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
@@ -20,9 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isAiGatewayConfigured(process.env)) {
-      throw new BadRequestError(
-        "Photo import needs AI Gateway. On Vercel it uses OIDC; locally set AI_GATEWAY_API_KEY."
-      );
+      throw new BadRequestError(AI_GATEWAY_MISSING_MESSAGE);
     }
 
     const input = await readPhotoImportRequest(request);

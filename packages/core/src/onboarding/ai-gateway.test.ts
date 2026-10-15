@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAiGatewayConfigured } from "./ai-gateway";
+import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured, isDemoModeEnv } from "./ai-gateway";
 
 describe("isAiGatewayConfigured", () => {
   it("is true when an explicit gateway key is set", () => {
@@ -17,15 +17,38 @@ describe("isAiGatewayConfigured", () => {
   it("is false when neither a key, OIDC token, nor Vercel runtime is present", () => {
     expect(isAiGatewayConfigured({})).toBe(false);
     expect(isAiGatewayConfigured({ VERCEL: "0" })).toBe(false);
+    expect(isAiGatewayConfigured({ AI_GATEWAY_API_KEY: "  " })).toBe(false);
   });
 
-  it("is false in demo mode even on Vercel with a gateway key", () => {
+  it("does not treat demo mode as missing credentials when a key or OIDC is present", () => {
     expect(
       isAiGatewayConfigured({
         OVENLOVIN_DEMO_MODE: "1",
         VERCEL: "1",
         AI_GATEWAY_API_KEY: "key_123",
       })
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      isAiGatewayConfigured({
+        OVENLOVIN_DEMO_MODE: "1",
+        VERCEL_OIDC_TOKEN: "oidc.token",
+      })
+    ).toBe(true);
+    expect(isAiGatewayConfigured({ OVENLOVIN_DEMO_MODE: "1" })).toBe(false);
+  });
+});
+
+describe("isDemoModeEnv", () => {
+  it("reads the demo flag independently of gateway credentials", () => {
+    expect(isDemoModeEnv({ OVENLOVIN_DEMO_MODE: "1" })).toBe(true);
+    expect(isDemoModeEnv({ OVENLOVIN_DEMO_MODE: "true" })).toBe(true);
+    expect(isDemoModeEnv({})).toBe(false);
+  });
+});
+
+describe("AI_GATEWAY_MISSING_MESSAGE", () => {
+  it("names both env vars an operator can set", () => {
+    expect(AI_GATEWAY_MISSING_MESSAGE).toContain("AI_GATEWAY_API_KEY");
+    expect(AI_GATEWAY_MISSING_MESSAGE).toContain("VERCEL_OIDC_TOKEN");
   });
 });
