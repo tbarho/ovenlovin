@@ -37,6 +37,11 @@ describe("ImportRecipeForm photo import", () => {
         json: async () => preview,
       })
     );
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi.fn(() => "blob:preview"),
+      revokeObjectURL: vi.fn(),
+    });
     vi.mocked(api).mockReset();
   });
 
@@ -75,6 +80,7 @@ describe("ImportRecipeForm photo import", () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
     await user.click(screen.getByRole("tab", { name: "Photo" }));
+    expect(screen.getByRole("button", { name: "Read recipe" })).toBeDisabled();
     expect(screen.getByText(/Drop a recipe card/i)).toBeVisible();
     expect(screen.getByText("Take photo")).toBeVisible();
     expect(screen.getByText("Choose photos")).toBeVisible();
@@ -83,6 +89,8 @@ describe("ImportRecipeForm photo import", () => {
     const inputs = document.querySelectorAll('input[type="file"]');
     const library = inputs[1] as HTMLInputElement;
     await user.upload(library, file);
+    expect(screen.getByRole("button", { name: "Read recipe" })).toBeEnabled();
+    expect(document.querySelector('.photo-thumbs img[src="blob:preview"]')).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Read recipe" }));
 
     const dialog = await screen.findByRole("dialog");

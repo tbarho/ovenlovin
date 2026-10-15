@@ -72,11 +72,13 @@ export function CookbookRecipes({
   cookbook,
   recipes,
   catalog = EMPTY_RECIPES,
+  booksByRecipe = {},
   lovePeople = EMPTY_LOVE_PEOPLE,
 }: {
   cookbook: Cookbook;
   recipes: Recipe[];
   catalog?: Recipe[];
+  booksByRecipe?: Record<string, string[]>;
   lovePeople?: PersonLove[];
 }) {
   const router = useRouter();
@@ -214,6 +216,8 @@ export function CookbookRecipes({
         open={addOpen}
         recipes={catalog}
         memberIds={memberIds}
+        booksByRecipe={booksByRecipe}
+        cookbookName={cookbook.name}
         pending={pending}
         error={error}
         onClose={closeAdd}
