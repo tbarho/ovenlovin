@@ -19,6 +19,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import {
   LOVE_PREFERENCE_TYPE,
   checkIngredientsAgainstRules,
+  personIdsForPlanCheck,
   lovesForRecipe,
   type PersonLove,
   type RuleCheckContext,
@@ -94,9 +95,17 @@ async function handler(
   const peopleService = new PeopleService(db);
   const schedule = await new ScheduleService(db).getSchedule(context.householdId);
 
-  const attendeeIds = [...new Set(input.plan.entries.flatMap((entry) => entry.attendees))];
+  const householdPeople = await peopleService.listPeopleByHousehold(context.householdId, {
+    limit: 40,
+  });
+  const attendeeIds = personIdsForPlanCheck(
+    input.plan.entries.flatMap((entry) => entry.attendees),
+    householdPeople.items.map((person) => person.id)
+  );
   const attendeePeople = await Promise.all(
     attendeeIds.map(async (personId) => {
+      const fromHousehold = householdPeople.items.find((person) => person.id === personId);
+      if (fromHousehold) return fromHousehold;
       const person = await peopleService.getPerson(personId);
       if (!person || person.householdId !== context.householdId) return null;
       return person;
@@ -178,8 +187,14 @@ async function handler(
 
       const contexts: RuleCheckContext[] = [];
       const missingAttendees: string[] = [];
-      for (const personId of entry.attendees) {
-        const person = await peopleService.getPerson(personId);
+      const nightAttendeeIds =
+        entry.attendees.length > 0
+          ? entry.attendees
+          : householdPeople.items.map((person) => person.id);
+      for (const personId of nightAttendeeIds) {
+        const person =
+          householdPeople.items.find((item) => item.id === personId) ??
+          (await peopleService.getPerson(personId));
         if (!person) {
           missingAttendees.push(personId);
           continue;
@@ -207,9 +222,7 @@ async function handler(
         ...(ingredients.length === 0
           ? [`Recipe "${recipe.title}" has no ingredients to check`]
           : []),
-        ...(entry.attendees.length === 0
-          ? [`No attendees listed for "${recipe.title}" — cannot finish a safety check`]
-          : []),
+        ...(nightAttendeeIds.length === 0 ? [`No people to check "${recipe.title}" against`] : []),
         ...missingAttendees.map((personId) => `Could not load attendee ${personId}`),
       ];
 
