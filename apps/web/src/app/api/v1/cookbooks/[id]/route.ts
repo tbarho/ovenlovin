@@ -4,6 +4,7 @@ import { getDatabase } from "@ovenlovin/db";
 import { ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
 
 async function loadOwnedCookbook(id: string, householdId: string) {
   const cookbook = await new CookbookService(getDatabase()).getCookbook(id);
@@ -26,7 +27,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       pagination: { limit: 100 },
     });
 
-    return jsonResponse({ ...cookbook, recipes: recipes.items });
+    return jsonResponse({
+      ...cookbook,
+      recipes: recipes.items.map((item) => presentListedRecipe(item, requestApiOrigin(request))),
+    });
   } catch (error) {
     return handleApiError(error, request.url);
   }

@@ -88,6 +88,8 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/recipes",
     tags: ["recipes"],
     summary: "List recipes",
+    description:
+      "`images` is a thumbnail URL only. Photo imports never inline `data:` bytes here; fetch `GET /recipes/{id}/image` when Blob is not configured.",
     request: {
       query: z.object({
         limit: z.coerce.number().int().positive().max(100).optional(),
@@ -210,6 +212,21 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         description: "Updated recipe",
         content: { "application/json": { schema: recipeSchema } },
       },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/recipes/{id}/image",
+    tags: ["recipes"],
+    summary: "Main recipe photo (thumbnail URL from list/search)",
+    description:
+      "Returns the stored main photo. List and search never inline image bytes: they expose this URL (or a Blob URL) instead of data: URLs. Requires the same household auth as GET /recipes/{id}.",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: { description: "Image bytes" },
+      302: { description: "Redirect to a Blob or remote URL" },
+      404: { description: "Recipe or image not found" },
     },
   });
 
@@ -707,6 +724,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       date: z.string(),
       mealSlot: z.string(),
       recipeId: z.string().uuid().nullable().optional(),
+      freeformMeal: z.string().nullable().optional(),
       servings: z.number().int().positive().nullable().optional(),
       attendees: z.array(z.string().uuid()),
       prepAheadNotes: z.string().nullable().optional(),
@@ -726,6 +744,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   const mealPlanDetailSchema = mealPlanSchema
     .extend({
       entries: z.array(mealPlanEntrySchema),
+      previousEntries: z
+        .array(mealPlanEntrySchema)
+        .optional()
+        .describe("Nights this PATCH changed, as they were before the edit. Use to revert."),
     })
     .openapi("MealPlanDetail");
 
@@ -790,6 +812,8 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/meal-plans/{id}",
     tags: ["meal-plans"],
     summary: "Update a meal plan",
+    description:
+      "`entries` default to **merge** by date+meal: send one night to set, swap, or `{ clear: true }` to remove it. Other nights are left alone. Pass `entriesMode: replace` to rewrite the whole week. The response includes `previousEntries` for the nights this request changed.",
     request: {
       params: z.object({ id: z.string().uuid() }),
       body: {
@@ -834,8 +858,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "post",
     path: "/meal-plans/{id}/check",
     tags: ["meal-plans"],
-    summary:
-      "Check a meal plan against per-person rules and schedule time budgets. Same as GET; POST is kept for existing clients.",
+    summary: "Recheck a meal plan, store the report, and clear needsRecheck. GET is a dry run.",
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: {
       200: { description: "Check report" },

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { CookbookService } from "@ovenlovin/core";
+import { CookbookService, withPublicOrigin } from "@ovenlovin/core";
+import { mcpOrigin } from "../media";
 import { createDbClient } from "@ovenlovin/db";
 
 export const listCookbooksSchema = z.object({
@@ -20,7 +21,7 @@ async function handler(input: ListCookbooksInput, context: AuthContext) {
         slug: card.slug,
         description: card.description ?? undefined,
         recipeCount: card.recipeCount,
-        previewImages: card.previewImages,
+        previewImages: card.previewImages.map((image) => withPublicOrigin(image, mcpOrigin())),
       })
     ),
   };

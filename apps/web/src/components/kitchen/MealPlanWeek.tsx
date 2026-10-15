@@ -253,29 +253,34 @@ export function MealPlanWeek({
   const selectedDay = daysView.find((day) => day.date === selectedDate);
   const dismissToast = useCallback(() => setToast(null), []);
 
-  async function persist(nextEntries: PlanEntryDraft[]): Promise<boolean> {
+  function toEntryWrite(entry: PlanEntryDraft) {
+    return {
+      date: entry.date,
+      meal: entry.mealSlot,
+      ...(entry.recipeId ? { recipeId: entry.recipeId } : {}),
+      ...(entry.freeformMeal ? { freeformMeal: entry.freeformMeal } : {}),
+      ...(entry.servings ? { servings: entry.servings } : {}),
+      attendees: entry.attendees,
+    };
+  }
+
+  async function persist(
+    nextEntries: PlanEntryDraft[],
+    patch?: { entries: Array<Record<string, unknown>> }
+  ): Promise<boolean> {
     setPending(true);
     setError(null);
-    const payload = {
-      entries: nextEntries.map((entry) => ({
-        date: entry.date,
-        meal: entry.mealSlot,
-        ...(entry.recipeId ? { recipeId: entry.recipeId } : {}),
-        ...(entry.freeformMeal ? { freeformMeal: entry.freeformMeal } : {}),
-        ...(entry.servings ? { servings: entry.servings } : {}),
-        attendees: entry.attendees,
-      })),
-    };
+    const writes = nextEntries.map(toEntryWrite);
     try {
       if (!planId) {
         await api<MealPlanWrite>("/api/v1/meal-plans", {
           method: "POST",
-          body: JSON.stringify({ weekStart: resolvedWeekStart, status: "draft", ...payload }),
+          body: JSON.stringify({ weekStart: resolvedWeekStart, status: "draft", entries: writes }),
         });
       } else {
         await api(`/api/v1/meal-plans/${planId}`, {
           method: "PATCH",
-          body: JSON.stringify(payload),
+          body: JSON.stringify(patch ?? { entries: writes }),
         });
       }
       router.refresh();
@@ -299,15 +304,21 @@ export function MealPlanWeek({
       ...next,
       servings: next.servings ?? dinnerEntryForDate(entriesView, date)?.servings ?? servings,
     });
+    const nextDinner = dinnerEntryForDate(nextEntries, date);
+    const nightPatch = cleared
+      ? [{ date, meal: "dinner" as const, clear: true }]
+      : nextDinner
+        ? [toEntryWrite(nextDinner)]
+        : [];
     setDaysView(applyDinnerToDays(daysView, date, next, recipes));
     setEntriesView(nextEntries);
-    const ok = await persist(nextEntries);
+    const ok = await persist(nextEntries, planId ? { entries: nightPatch } : undefined);
     if (!ok) {
       setDaysView(previousDays);
       setEntriesView(previous);
       return;
     }
-    if (ok && cleared && previous.length > 0) {
+    if (cleared && previous.length > 0) {
       const weekday = daysView.find((day) => day.date === date)?.weekday ?? "that night";
       setToast({ message: `Cleared ${weekday} dinner`, undoEntries: previous });
     }

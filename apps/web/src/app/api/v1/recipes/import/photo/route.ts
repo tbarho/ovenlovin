@@ -9,6 +9,7 @@ import { createVercelImagePut } from "@/lib/blob-store";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { readPhotoImportRequest } from "@/lib/photo-import-request";
 import { draftFromPhotoPreview, extractPhotoPreview } from "@/lib/photo-import";
+import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,7 +52,10 @@ export async function POST(request: NextRequest) {
 
     await recordSuccessfulDemoImport(householdId);
 
-    return createdResponse({ ...preview, recipe }, `/api/v1/recipes/${recipe.id}`);
+    return createdResponse(
+      { ...preview, recipe: presentRecipeDetailsForApi(recipe, requestApiOrigin(request)) },
+      `/api/v1/recipes/${recipe.id}`
+    );
   } catch (error) {
     return handleApiError(error, request.url);
   }

@@ -3,7 +3,7 @@ import { collection, collectionRecipe, recipe } from "@ovenlovin/db";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import type { Cookbook, CookbookCard, CookbookSummary } from "../schemas/cookbooks";
 import { slugifyCookbookName } from "../schemas/cookbooks";
-import { recipeMainImage } from "../media/recipe-images";
+import { publicRecipeImages } from "../media/recipe-images";
 import { BaseService } from "./base";
 
 type CookbookRow = typeof collection.$inferSelect;
@@ -78,7 +78,10 @@ export class CookbookService extends BaseService {
     for (const membership of memberships) {
       const current = byCookbook.get(membership.cookbookId) ?? { count: 0, images: [] };
       current.count += 1;
-      const image = recipeMainImage((membership.images as string[] | null) ?? []);
+      const image = publicRecipeImages(
+        membership.recipeId,
+        (membership.images as string[] | null) ?? []
+      )[0];
       if (image && current.images.length < 4) current.images.push(image);
       byCookbook.set(membership.cookbookId, current);
     }
