@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/browser-api";
 import { testCookbook, testPerson, testPersonRule, testRecipeDetails } from "@/test/fixtures";
 import { typeFullWordAndKeepFocus } from "@/test/sheet-focus";
 import { CookbookRecipes } from "./CookbookRecipes";
@@ -84,5 +85,42 @@ describe("kitchen sheet-hosted forms", () => {
     render(<CookbookRecipes cookbook={testCookbook()} recipes={[]} />);
     await user.click(screen.getByRole("button", { name: "Rename" }));
     await typeFullWordAndKeepFocus(user, screen.getByRole("textbox"), "Batch cook");
+  });
+});
+
+describe("recipe delete", () => {
+  beforeEach(() => {
+    vi.mocked(api).mockReset();
+    vi.mocked(api).mockResolvedValue(undefined);
+  });
+
+  it("confirms, warns when planned, and can undo", async () => {
+    const user = userEvent.setup();
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Weeknight pesto pasta" })}
+        cookbooks={[testCookbook()]}
+        plannedDates={["2026-10-12"]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Delete recipe" }));
+    const dialog = screen.getByRole("dialog", { name: /delete weeknight pesto pasta/i });
+    expect(within(dialog).getByText(/monday, oct 12/i)).toBeVisible();
+
+    await user.click(within(dialog).getByRole("button", { name: "Delete recipe" }));
+    expect(api).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/v1\/recipes\/.+/),
+      expect.objectContaining({ method: "DELETE" })
+    );
+    expect(screen.getByTestId("recipe-deleted")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(api).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/v1\/recipes\/.+\/restore/),
+      expect.objectContaining({ method: "POST" })
+    );
+    expect(screen.queryByTestId("recipe-deleted")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeVisible();
   });
 });

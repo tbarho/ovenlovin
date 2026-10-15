@@ -421,6 +421,24 @@ export class PlanService extends BaseService {
     return byId;
   }
 
+  async listPlannedDatesForRecipe(householdId: string, recipeId: string): Promise<string[]> {
+    const rows = await this._db
+      .select({ date: mealPlanEntry.date })
+      .from(mealPlanEntry)
+      .innerJoin(mealPlan, eq(mealPlan.id, mealPlanEntry.mealPlanId))
+      .where(
+        and(
+          eq(mealPlan.householdId, householdId),
+          eq(mealPlanEntry.recipeId, recipeId),
+          isNull(mealPlan.deletedAt),
+          isNull(mealPlanEntry.deletedAt)
+        )
+      )
+      .orderBy(mealPlanEntry.date);
+
+    return [...new Set(rows.map((row) => row.date).filter((date): date is string => Boolean(date)))];
+  }
+
   private mapMealPlan(row: typeof mealPlan.$inferSelect): MealPlan {
     return {
       id: row.id,

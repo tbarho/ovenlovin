@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { CookbookService, PeopleService, RecipeService } from "@ovenlovin/core";
+import { CookbookService, PeopleService, PlanService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { RecipeDetail } from "@/components/kitchen/RecipeDetail";
 import { householdLovePeople } from "@/lib/household-loves";
@@ -22,6 +22,10 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
     people.items.map((person) => person.id),
     "love"
   );
+  const plannedDates = await new PlanService(db).listPlannedDatesForRecipe(
+    context.householdId,
+    id
+  );
 
   return (
     <RecipeDetail
@@ -30,6 +34,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
       people={people.items}
       rules={rules}
       lovePeople={householdLovePeople(people.items, preferences)}
+      plannedDates={plannedDates}
     />
   );
 }

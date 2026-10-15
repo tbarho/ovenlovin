@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
 import type { Cookbook, Person, PersonRule, RecipeDetails } from "@ovenlovin/core";
@@ -10,7 +11,11 @@ import {
   formatDurationMinutes,
   scaleIngredientDisplay,
 } from "@ovenlovin/core/scaling";
+import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
+import { recipeDeleteConfirmCopy } from "@/lib/recipe-delete";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { KitchenToast } from "./KitchenToast";
 import { LoveTags } from "./LoveTags";
 import {
   CookbooksSheet,
@@ -37,19 +42,55 @@ export function RecipeDetail({
   people = [],
   rules = [],
   lovePeople = EMPTY_LOVE_PEOPLE,
+  plannedDates = [],
 }: {
   recipe: RecipeDetails;
   cookbooks: Cookbook[];
   people?: Person[];
   rules?: PersonRule[];
   lovePeople?: PersonLove[];
+  plannedDates?: string[];
 }) {
+  const router = useRouter();
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
   const [servings, setServings] = useState(storedServings);
   const [sheet, setSheet] = useState<
     null | "details" | "image" | "ingredients" | "steps" | "cookbook"
   >(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
+  const deleteCopy = recipeDeleteConfirmCopy(recipe.title, plannedDates);
+
+  async function deleteRecipe() {
+    setPendingDelete(true);
+    setDeleteError(null);
+    try {
+      await api(`/api/v1/recipes/${recipe.id}`, { method: "DELETE" });
+      setConfirmDelete(false);
+      setDeleted(true);
+      setToast(`Deleted ${recipe.title}`);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not delete recipe");
+    } finally {
+      setPendingDelete(false);
+    }
+  }
+
+  async function undoDelete() {
+    setToast(null);
+    setDeleteError(null);
+    try {
+      await api(`/api/v1/recipes/${recipe.id}/restore`, { method: "POST" });
+      setDeleted(false);
+      router.refresh();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not undo");
+    }
+  }
 
   const mainImage = recipeMainImage(recipe.images);
   const sourceUrl = recipe.source?.canonicalUrl || recipe.source?.url || null;
@@ -62,6 +103,30 @@ export function RecipeDetail({
       })),
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );
+
+  if (deleted) {
+    return (
+      <>
+        <div className="kitchen-head">
+          <div>
+            <Link href="/recipes" className="back-link">
+              ← Recipes
+            </Link>
+            <h1>{recipe.title}</h1>
+            <p className="muted" data-testid="recipe-deleted">
+              This recipe was deleted. Undo if that was a mistake.
+            </p>
+            {deleteError ? <p className="muted">{deleteError}</p> : null}
+          </div>
+        </div>
+        <KitchenToast
+          message={toast}
+          onUndo={toast ? () => void undoDelete() : undefined}
+          onDismiss={() => setToast(null)}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -132,6 +197,14 @@ export function RecipeDetail({
             </button>
             <button className="btn" type="button" onClick={() => setSheet("cookbook")}>
               Cookbooks
+            </button>
+            <button
+              className="btn danger"
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleted}
+            >
+              Delete recipe
             </button>
           </div>
         </div>
@@ -217,6 +290,30 @@ export function RecipeDetail({
         cookbooks={cookbooks}
         open={sheet === "cookbook"}
         onClose={closeSheet}
+      />
+      <ConfirmDialog
+        open={confirmDelete}
+        title={deleteCopy.title}
+        body={deleteCopy.body}
+        confirmLabel="Delete recipe"
+        pending={pendingDelete}
+        danger
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => void deleteRecipe()}
+      />
+      {deleted ? (
+        <p className="muted" data-testid="recipe-deleted">
+          {recipe.title} was deleted.{" "}
+          <Link href="/recipes" className="back-link">
+            Back to recipes
+          </Link>
+        </p>
+      ) : null}
+      {deleteError ? <p className="muted">{deleteError}</p> : null}
+      <KitchenToast
+        message={toast}
+        onUndo={toast ? () => void undoDelete() : undefined}
+        onDismiss={() => setToast(null)}
       />
     </>
   );

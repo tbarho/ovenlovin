@@ -241,6 +241,20 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
 
   registry.registerPath({
     method: "post",
+    path: "/recipes/{id}/restore",
+    tags: ["recipes"],
+    summary: "Restore a soft-deleted recipe",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: {
+        description: "Restored recipe",
+        content: { "application/json": { schema: recipeSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
     path: "/recipes/import",
     tags: ["recipes"],
     summary: "Import a recipe from a URL or pasted text, copying the main image into Vercel Blob",
