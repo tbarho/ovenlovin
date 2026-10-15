@@ -54,7 +54,9 @@ export {
 export { collapseRuleFindings, uniqueWarningCopy } from "./collapse-findings";
 
 export {
+  attendingPeopleForEntry,
   checkMealPlan,
+  personIdsForPlanCheck,
   type MealPlanCheckInput,
   type MealPlanEntryInput,
   type PersonWithRules,
