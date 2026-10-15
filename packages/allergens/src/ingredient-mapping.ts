@@ -1042,12 +1042,10 @@ function defaultIngredientMap(): Map<string, IngredientAllergenMapping[]> {
  * "Almond-free pesto" is a seed or swap pesto, not a pine-nut finding.
  * Still flag explicit pine nuts on the same line.
  */
-function skipPestoPineNutHeuristic(
-  line: string,
-  mapping: IngredientAllergenMapping
-): boolean {
+function skipPestoPineNutHeuristic(line: string, mapping: IngredientAllergenMapping): boolean {
   if (mapping.allergenCode !== "pine_nut") return false;
-  const pestoName = mapping.name === "pesto" || mapping.aliases.some((alias) => /\bpesto\b/i.test(alias));
+  const pestoName =
+    mapping.name === "pesto" || mapping.aliases.some((alias) => /\bpesto\b/i.test(alias));
   if (!pestoName) return false;
   if (/\bpine\s*nuts?\b/i.test(line)) return false;
   return /\b(almond|cashew|walnut|pecan|hazelnut|pistachio|macadamia|nut)s?-free\b/i.test(line);
