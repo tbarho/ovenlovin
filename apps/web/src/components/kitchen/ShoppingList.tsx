@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { shopItemKey, type ShoppingExtra, type ShoppingTripState } from "@ovenlovin/core";
+import { normalizeIngredientName } from "@ovenlovin/core/parsing";
 import { api } from "@/lib/browser-api";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
-import type { ShopItem } from "@/lib/week-plan-view";
+import type { ShopItem, ShoppingExtra, ShoppingTripState } from "@/lib/week-plan-view";
 
 function extraShopItem(extra: ShoppingExtra): ShopItem {
   return {
@@ -16,7 +16,7 @@ function extraShopItem(extra: ShoppingExtra): ShopItem {
 }
 
 function extraKey(name: string): string {
-  const slug = shopItemKey(name);
+  const slug = normalizeIngredientName(name) || name.trim().toLowerCase() || "item";
   const nonce =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
