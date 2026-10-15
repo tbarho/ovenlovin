@@ -5,6 +5,9 @@
   "functions": {
     "src/app/api/demo/enter/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/v1/recipes/import/photo/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [

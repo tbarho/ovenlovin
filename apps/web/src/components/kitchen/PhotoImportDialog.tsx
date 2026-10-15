@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/browser-api";
-import type { PhotoImportPreview } from "@/lib/photo-import";
+import {
+  PHOTO_IMPORT_STEPS,
+  extractPhotoPreviewFromFiles,
+  photoImportErrorMessage,
+  photoImportStepReached,
+  type PhotoImportPhase,
+} from "@/lib/photo-import-client";
 import {
   recipeCreateBodyFromReview,
   reviewDraftFromPreview,
@@ -20,24 +26,28 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-async function extractFromFiles(files: File[]): Promise<PhotoImportPreview> {
-  const data = new FormData();
-  for (const file of files) {
-    data.append("image", file);
-  }
-  const response = await fetch("/api/v1/recipes/import/photo", {
-    method: "POST",
-    credentials: "include",
-    body: data,
-  });
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => ({ title: response.statusText }))) as {
-      detail?: string;
-      title?: string;
-    };
-    throw new Error(problem.detail || problem.title || "Could not read that photo");
-  }
-  return (await response.json()) as PhotoImportPreview;
+function PhotoImportProgress({
+  phase,
+}: {
+  phase: Extract<PhotoImportPhase, "uploading" | "reading">;
+}) {
+  return (
+    <div className="sheet-stack">
+      <ol className="sheet-steps">
+        {PHOTO_IMPORT_STEPS.map((step) => (
+          <li
+            key={step.id}
+            className={photoImportStepReached(step.id, phase) ? "is-current" : undefined}
+          >
+            {step.label}
+          </li>
+        ))}
+      </ol>
+      <p className="sheet-lead" role="status">
+        {phase === "uploading" ? "Uploading…" : "Reading the recipe…"}
+      </p>
+    </div>
+  );
 }
 
 function PhotoReviewForm({
@@ -57,13 +67,20 @@ function PhotoReviewForm({
 }) {
   return (
     <form className="form-card photo-review-form" style={{ margin: 0 }} onSubmit={onSave}>
+      <ol className="sheet-steps">
+        {PHOTO_IMPORT_STEPS.map((step) => (
+          <li key={step.id} className="is-current">
+            {step.label}
+          </li>
+        ))}
+      </ol>
       {draft.uncertainFields.length > 0 ? (
         <p className="import-warn" role="status">
-          This photo was hard to read. Check {draft.uncertainFields.join(", ")}.
+          Ready to review. This photo was hard to read. Check {draft.uncertainFields.join(", ")}.
         </p>
       ) : (
-        <p className="sheet-lead">
-          Fix anything that looks off, then save. One main photo is kept.
+        <p className="sheet-lead" role="status">
+          Ready to review. Fix anything that looks off, then save. One main photo is kept.
         </p>
       )}
       {heroSrc ? (
@@ -159,12 +176,13 @@ export function PhotoImportDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<"reading" | "review" | "error">("reading");
+  const [phase, setPhase] = useState<PhotoImportPhase>("uploading");
   const [draft, setDraft] = useState<PhotoReviewDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [localHero, setLocalHero] = useState<string | null>(null);
   const extractedKey = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const file = files[0];
@@ -177,11 +195,37 @@ export function PhotoImportDialog({
     return () => URL.revokeObjectURL(url);
   }, [open, files]);
 
+  function startExtract(nextFiles: File[]) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setPhase("uploading");
+    setError(null);
+    void extractPhotoPreviewFromFiles(nextFiles, {
+      signal: controller.signal,
+      onPhase: (next) => {
+        if (!controller.signal.aborted) setPhase(next);
+      },
+    })
+      .then((preview) => {
+        if (controller.signal.aborted) return;
+        setDraft(reviewDraftFromPreview(preview));
+        setPhase("review");
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(photoImportErrorMessage(err));
+        setPhase("error");
+      });
+  }
+
   useEffect(() => {
     if (!open) {
+      abortRef.current?.abort();
+      abortRef.current = null;
       extractedKey.current = null;
       setDraft(null);
-      setPhase("reading");
+      setPhase("uploading");
       setError(null);
       setPending(false);
       return;
@@ -190,26 +234,23 @@ export function PhotoImportDialog({
     const key = files.map((file) => `${file.name}:${file.size}:${file.lastModified}`).join("|");
     if (!key || extractedKey.current === key) return;
     extractedKey.current = key;
-
-    let cancelled = false;
-    setPhase("reading");
-    setError(null);
-    void extractFromFiles(files)
-      .then((preview) => {
-        if (cancelled) return;
-        setDraft(reviewDraftFromPreview(preview));
-        setPhase("review");
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Could not read that photo");
-        setPhase("error");
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    startExtract(files);
   }, [open, files]);
+
+  function cancelImport() {
+    abortRef.current?.abort();
+    onClose();
+  }
+
+  function retryImport() {
+    extractedKey.current = null;
+    if (files.length > 0) {
+      extractedKey.current = files
+        .map((file) => `${file.name}:${file.size}:${file.lastModified}`)
+        .join("|");
+      startExtract(files);
+    }
+  }
 
   async function saveReview(event: React.FormEvent) {
     event.preventDefault();
@@ -235,13 +276,32 @@ export function PhotoImportDialog({
   }
 
   return (
-    <BottomSheet open={open} title="Import from photo" onClose={onClose}>
-      {phase === "reading" ? (
-        <p className="sheet-lead" role="status">
-          Reading the recipe…
-        </p>
+    <BottomSheet open={open} title="Import from photo" onClose={cancelImport}>
+      {phase === "uploading" || phase === "reading" ? (
+        <>
+          <PhotoImportProgress phase={phase} />
+          <div className="sheet-actions">
+            <button type="button" className="btn compact" onClick={cancelImport}>
+              Cancel
+            </button>
+          </div>
+        </>
       ) : null}
-      {phase === "error" ? <p className="import-warn">{error}</p> : null}
+      {phase === "error" ? (
+        <div className="sheet-stack">
+          <p className="import-warn" role="status">
+            {error}
+          </p>
+          <div className="sheet-actions">
+            <button type="button" className="btn compact" onClick={cancelImport}>
+              Cancel
+            </button>
+            <button type="button" className="btn primary compact" onClick={retryImport}>
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : null}
       {phase === "review" && draft ? (
         <PhotoReviewForm
           draft={draft}

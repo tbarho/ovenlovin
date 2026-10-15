@@ -91,6 +91,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
         model: gateway(visionModelId) as any,
+        abortSignal: AbortSignal.timeout(55_000),
         messages: [
           {
             role: "user",

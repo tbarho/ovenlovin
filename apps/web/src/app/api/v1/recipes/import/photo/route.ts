@@ -15,6 +15,9 @@ import {
 } from "@/lib/photo-import";
 import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);

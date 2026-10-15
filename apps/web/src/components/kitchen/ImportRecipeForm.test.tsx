@@ -52,7 +52,7 @@ describe("ImportRecipeForm photo import", () => {
     expect(screen.getByRole("tab", { name: "Photo" })).toBeVisible();
   });
 
-  it("shows a progress state while the photo is being read", async () => {
+  it("starts reading as soon as a photo is chosen", async () => {
     let resolveExtract:
       ((value: { ok: boolean; json: () => Promise<typeof preview> }) => void) | undefined;
     vi.stubGlobal(
@@ -70,17 +70,20 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
-    await user.click(screen.getByRole("button", { name: "Read recipe" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Reading the recipe…");
+    expect(screen.queryByRole("button", { name: "Read recipe" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Uploading")).toBeVisible();
+    expect(await screen.findByRole("status")).toHaveTextContent(/Uploading|Reading the recipe/);
+    expect(await screen.findByRole("button", { name: "Cancel" })).toBeVisible();
     resolveExtract?.({ ok: true, json: async () => preview });
     await waitFor(() => expect(screen.getByLabelText("Title")).toBeVisible());
+    expect(screen.getByRole("status")).toHaveTextContent(/Ready to review/);
   });
 
   it("opens a review dialog after reading a photo, with a low-confidence warning", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
     await user.click(screen.getByRole("tab", { name: "Photo" }));
-    expect(screen.getByRole("button", { name: "Read recipe" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Read recipe" })).not.toBeInTheDocument();
     expect(screen.getByText(/Drop a recipe card/i)).toBeVisible();
     expect(screen.getByText("Take photo")).toBeVisible();
     expect(screen.getByText("Choose photos")).toBeVisible();
@@ -89,18 +92,41 @@ describe("ImportRecipeForm photo import", () => {
     const inputs = document.querySelectorAll('input[type="file"]');
     const library = inputs[1] as HTMLInputElement;
     await user.upload(library, file);
-    expect(screen.getByRole("button", { name: "Read recipe" })).toBeEnabled();
     expect(document.querySelector('.photo-thumbs img[src="blob:preview"]')).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Read recipe" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Import from photo");
     await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
     expect(within(dialog).getByRole("status")).toHaveTextContent(
-      "This photo was hard to read. Check title, ingredient: pasta."
+      "Ready to review. This photo was hard to read. Check title, ingredient: pasta."
     );
     expect(fetch).toHaveBeenCalled();
     await typeFullWordAndKeepFocus(user, within(dialog).getByLabelText("Title"), "Garlic");
+  });
+
+  it("shows a timeout error with Retry and Cancel", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(
+        Object.assign(
+          new Error("That photo took too long to read. Check your connection and try again."),
+          {
+            name: "TimeoutError",
+          }
+        )
+      )
+    );
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    await user.upload(library, file);
+    expect(await screen.findByText(/took too long to read/i)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Cancel" }).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
 

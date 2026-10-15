@@ -37,12 +37,10 @@ function PhotoPick({
   files,
   onAdd,
   onRemove,
-  onRead,
 }: {
   files: File[];
   onAdd: (next: File[]) => void;
   onRemove: (index: number) => void;
-  onRead: () => void;
 }) {
   const cameraId = useId();
   const libraryId = useId();
@@ -115,14 +113,6 @@ function PhotoPick({
           ))}
         </ul>
       ) : null}
-      <button
-        className="btn primary import-submit"
-        type="button"
-        onClick={onRead}
-        disabled={files.length === 0}
-      >
-        Read recipe
-      </button>
     </div>
   );
 }
@@ -145,6 +135,7 @@ export function ImportRecipeForm() {
     if (next.length === 0) return;
     setPhotoFiles((current) => [...current, ...next]);
     setError(null);
+    setPhotoOpen(true);
   }, []);
 
   const closePhoto = useCallback(() => setPhotoOpen(false), []);
@@ -230,7 +221,6 @@ export function ImportRecipeForm() {
             onRemove={(index) =>
               setPhotoFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))
             }
-            onRead={() => setPhotoOpen(true)}
           />
         ) : (
           <div className="import-row">
