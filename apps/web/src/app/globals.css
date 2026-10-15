@@ -2472,6 +2472,42 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   border-color: #f0c9a0;
 }
 
+.kitchen-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #161310;
+  color: #fff8ee;
+  box-shadow: 0 16px 48px rgba(22, 19, 16, 0.18);
+}
+
+.kitchen-toast button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #ffd7b0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .kitchen-toast {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: min(420px, calc(100vw - 48px));
+  }
+}
+
 .week-day-head {
   display: flex;
   justify-content: space-between;

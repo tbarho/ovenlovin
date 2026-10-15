@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/browser-api";
 import { dinnerEntryForDate, filterPlanRecipes, saferPicks } from "@/lib/plan-recipes";
+import { KitchenToast } from "./KitchenToast";
 import {
   NO_COOK_LABEL,
   slotLabel,
@@ -226,11 +227,14 @@ export function MealPlanWeek({
   const [servings, setServings] = useState(defaultServings);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; undoEntries: PlanEntryDraft[] } | null>(
+    null
+  );
   const resolvedWeekStart = weekStart ?? days[0]?.date ?? "";
 
   const selectedDay = days.find((day) => day.date === selectedDate);
 
-  async function persist(nextEntries: PlanEntryDraft[]) {
+  async function persist(nextEntries: PlanEntryDraft[]): Promise<boolean> {
     setPending(true);
     setError(null);
     const payload = {
@@ -256,34 +260,41 @@ export function MealPlanWeek({
         });
       }
       router.refresh();
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update the plan");
+      return false;
     } finally {
       setPending(false);
     }
   }
 
-  function withDinner(
+  async function withDinner(
     date: string,
     next: { recipeId?: string | null; freeformMeal?: string | null; servings?: number | null }
   ) {
+    const previous = entries;
     const rest = entries.filter((entry) => !(entry.date === date && entry.mealSlot === "dinner"));
-    if (next.recipeId === null && next.freeformMeal === null) {
-      return persist(rest);
+    const cleared = next.recipeId === null && next.freeformMeal === null;
+    const nextEntries = cleared
+      ? rest
+      : [
+          ...rest,
+          {
+            id: dinnerEntryForDate(entries, date)?.id,
+            date,
+            mealSlot: "dinner",
+            recipeId: next.recipeId ?? null,
+            freeformMeal: next.freeformMeal ?? null,
+            servings: next.servings ?? dinnerEntryForDate(entries, date)?.servings ?? servings,
+            attendees: dinnerEntryForDate(entries, date)?.attendees ?? [],
+          },
+        ];
+    const ok = await persist(nextEntries);
+    if (ok && cleared && previous.length > 0) {
+      const weekday = days.find((day) => day.date === date)?.weekday ?? "that night";
+      setToast({ message: `Cleared ${weekday} dinner`, undoEntries: previous });
     }
-    const current = dinnerEntryForDate(entries, date);
-    return persist([
-      ...rest,
-      {
-        id: current?.id,
-        date,
-        mealSlot: "dinner",
-        recipeId: next.recipeId ?? null,
-        freeformMeal: next.freeformMeal ?? null,
-        servings: next.servings ?? current?.servings ?? servings,
-        attendees: current?.attendees ?? [],
-      },
-    ]);
   }
 
   function applyServings(nextServings: number) {
@@ -375,6 +386,19 @@ export function MealPlanWeek({
           }
         />
       ) : null}
+      <KitchenToast
+        message={toast?.message ?? null}
+        onUndo={
+          toast
+            ? () => {
+                const restore = toast.undoEntries;
+                setToast(null);
+                void persist(restore);
+              }
+            : undefined
+        }
+        onDismiss={() => setToast(null)}
+      />
     </div>
   );
 }
