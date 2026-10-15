@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AllergenDisclaimer } from "@/components/kitchen/AllergenDisclaimer";
 import { ShoppingList } from "@/components/kitchen/ShoppingList";
 import { getSessionContext } from "@/lib/session";
 import { loadWeekKitchen } from "@/lib/week-plan";
@@ -30,7 +29,6 @@ export default async function ShoppingListPage() {
           </Link>
         </div>
       </div>
-      <AllergenDisclaimer />
       <ShoppingList items={kitchen.shopping} />
     </>
   );
