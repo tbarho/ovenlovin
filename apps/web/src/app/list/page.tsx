@@ -25,7 +25,7 @@ export default async function ShoppingListPage() {
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
           <Link className="btn" href="/plans">
-            This week
+            ← Plan
           </Link>
         </div>
       </div>

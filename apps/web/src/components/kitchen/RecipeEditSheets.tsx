@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
-import { keepMainRecipeImages } from "@ovenlovin/core/media";
+import { keepMainRecipeImages, recipeMainImage } from "@ovenlovin/core/media";
 import { clampServings } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
@@ -55,6 +55,7 @@ export function DetailsSheet({
   const [prep, setPrep] = useState(recipe.prepTimeMinutes?.toString() ?? "");
   const [cook, setCook] = useState(recipe.cookTimeMinutes?.toString() ?? "");
   const [baseServings, setBaseServings] = useState(storedServings.toString());
+  const [cuisine, setCuisine] = useState(recipe.cuisine ?? "");
   const { pending, error, patch } = useRecipePatch(recipe.id, onClose);
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export function DetailsSheet({
     setPrep(recipe.prepTimeMinutes?.toString() ?? "");
     setCook(recipe.cookTimeMinutes?.toString() ?? "");
     setBaseServings((recipe.servings && recipe.servings > 0 ? recipe.servings : 4).toString());
+    setCuisine(recipe.cuisine ?? "");
   }, [open, recipe]);
 
   async function saveDetails(event: React.FormEvent) {
@@ -73,6 +75,7 @@ export function DetailsSheet({
       title,
       notes: notes.trim() ? notes.trim() : null,
       servings: nextServings,
+      cuisine: cuisine.trim() ? cuisine.trim() : null,
       prepTimeMinutes: prep ? Number(prep) : null,
       cookTimeMinutes: cook ? Number(cook) : null,
     });
@@ -103,6 +106,14 @@ export function DetailsSheet({
             max={24}
             value={baseServings}
             onChange={(event) => setBaseServings(event.target.value)}
+          />
+        </label>
+        <label>
+          Cuisine
+          <input
+            value={cuisine}
+            onChange={(event) => setCuisine(event.target.value)}
+            placeholder="Italian, Mexican…"
           />
         </label>
         <label>
@@ -143,10 +154,16 @@ export function PhotosSheet({
 }) {
   const [imageUrl, setImageUrl] = useState("");
   const { pending, error, setError, setPending, patch } = useRecipePatch(recipe.id, onClose);
+  const currentImage = recipeMainImage(recipe.images);
+  const preview = imageUrl.trim() || currentImage;
 
   useEffect(() => {
     if (open) setImageUrl("");
   }, [open]);
+
+  async function removePhoto() {
+    await patch({ images: [] });
+  }
 
   async function addImageFromUrl(event: React.FormEvent) {
     event.preventDefault();
@@ -196,23 +213,49 @@ export function PhotosSheet({
   return (
     <BottomSheet open={open} title="Recipe photo" onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={addImageFromUrl}>
-        <p className="muted">This replaces the main photo on cards and this page.</p>
-        <input
-          value={imageUrl}
-          onChange={(event) => setImageUrl(event.target.value)}
-          placeholder="https://example.com/pasta.jpg"
-        />
+        <p className="muted">
+          JPEG, PNG, or WebP · about 8 MB. This replaces the main photo on cards and this page.
+        </p>
+        {preview ? (
+          <div className="photo-preview">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={preview} alt="" />
+          </div>
+        ) : (
+          <p className="muted">No photo yet.</p>
+        )}
+        <label>
+          Photo URL
+          <input
+            value={imageUrl}
+            onChange={(event) => setImageUrl(event.target.value)}
+            placeholder="https://example.com/pasta.jpg"
+          />
+        </label>
         <button className="btn primary" type="submit" disabled={pending || !imageUrl}>
           {pending ? "Saving…" : "Use this URL"}
         </button>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) void addImageFile(file);
-          }}
-        />
+        <label>
+          Choose file
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/*"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void addImageFile(file);
+            }}
+          />
+        </label>
+        {currentImage ? (
+          <button
+            className="btn"
+            type="button"
+            disabled={pending}
+            onClick={() => void removePhoto()}
+          >
+            Remove photo
+          </button>
+        ) : null}
         {error ? <p className="muted">{error}</p> : null}
       </form>
     </BottomSheet>
@@ -252,12 +295,17 @@ export function IngredientsSheet({
   return (
     <BottomSheet open={open} title="Edit ingredients" onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={saveIngredients}>
-        <p className="muted">One ingredient per line. Quantities scale when you move servings.</p>
-        <textarea
-          value={ingredientText}
-          onChange={(event) => setIngredientText(event.target.value)}
-          required
-        />
+        <label>
+          Ingredients
+          <span className="muted">
+            One ingredient per line. Quantities scale when you move servings.
+          </span>
+          <textarea
+            value={ingredientText}
+            onChange={(event) => setIngredientText(event.target.value)}
+            required
+          />
+        </label>
         {error ? <p className="muted">{error}</p> : null}
         <button className="btn primary" type="submit" disabled={pending}>
           {pending ? "Saving…" : "Save ingredients"}
@@ -298,8 +346,15 @@ export function StepsSheet({
   return (
     <BottomSheet open={open} title="Edit steps" onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={saveSteps}>
-        <p className="muted">One step per line.</p>
-        <textarea value={stepText} onChange={(event) => setStepText(event.target.value)} required />
+        <label>
+          Steps
+          <span className="muted">One step per line.</span>
+          <textarea
+            value={stepText}
+            onChange={(event) => setStepText(event.target.value)}
+            required
+          />
+        </label>
         {error ? <p className="muted">{error}</p> : null}
         <button className="btn primary" type="submit" disabled={pending}>
           {pending ? "Saving…" : "Save steps"}
