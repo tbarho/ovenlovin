@@ -25,4 +25,22 @@ describe("RecheckBanner", () => {
       "These dinners need a fresh check: Monday, Wednesday."
     );
   });
+
+  it("says why when a can't-eat dinner is still on the plan", () => {
+    render(
+      <RecheckBanner
+        planId="plan-1"
+        nights={["Saturday"]}
+        blockNights={[
+          {
+            weekday: "Saturday",
+            message: "Contains pine nuts, so Child C can't eat this.",
+          },
+        ]}
+      />
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "These dinners need a fresh check: Saturday. Saturday still has a can't-eat dinner."
+    );
+  });
 });

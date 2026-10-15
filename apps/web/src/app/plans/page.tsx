@@ -5,6 +5,7 @@ import { MealPlanWeek } from "@/components/kitchen/MealPlanWeek";
 import { PlanStatusActions } from "@/components/kitchen/PlanStatusActions";
 import { RecheckBanner } from "@/components/kitchen/RecheckBanner";
 import { WeekPager } from "@/components/kitchen/WeekPager";
+import { blockNightsFromDays, recheckNightsFromDays } from "@/lib/plan-final";
 import { getSessionContext } from "@/lib/session";
 import { loadWeekKitchen } from "@/lib/week-plan";
 import { startOfWeekMonday } from "@/lib/week-plan-view";
@@ -29,9 +30,8 @@ export default async function PlansPage({
   const kitchen = await loadWeekKitchen(context.householdId, weekStart);
   const status = kitchen.plan?.status ?? "empty";
   const thisWeek = kitchen.weekStart === startOfWeekMonday();
-  const nights = kitchen.days
-    .filter((day) => day.meals.some((meal) => !meal.isNoCook))
-    .map((day) => day.weekday);
+  const nights = recheckNightsFromDays(kitchen.days);
+  const blockNights = blockNightsFromDays(kitchen.days);
 
   return (
     <>
@@ -49,7 +49,12 @@ export default async function PlansPage({
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
           {kitchen.plan ? (
-            <PlanStatusActions planId={kitchen.plan.id} status={kitchen.plan.status} />
+            <PlanStatusActions
+              planId={kitchen.plan.id}
+              status={kitchen.plan.status}
+              needsRecheck={kitchen.plan.needsRecheck}
+              blockNights={blockNights}
+            />
           ) : null}
           <Link className="btn" href="/list">
             Shopping list
@@ -59,7 +64,7 @@ export default async function PlansPage({
       <WeekPager weekStart={kitchen.weekStart} />
       <AllergenDisclaimer />
       {kitchen.plan?.needsRecheck ? (
-        <RecheckBanner planId={kitchen.plan.id} nights={nights} />
+        <RecheckBanner planId={kitchen.plan.id} nights={nights} blockNights={blockNights} />
       ) : null}
       <MealPlanWeek
         days={kitchen.days}
