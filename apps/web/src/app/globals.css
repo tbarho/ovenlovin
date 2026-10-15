@@ -2347,6 +2347,11 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   gap: 14px;
 }
 
+.week-plan.is-pending {
+  opacity: 0.72;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+
 .week-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -2403,6 +2408,11 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.week-day-meals {
+  display: grid;
+  gap: 12px;
 }
 
 .week-meal-open {

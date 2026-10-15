@@ -37,6 +37,34 @@ describe("ShoppingList", () => {
     expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
   });
 
+  it("shows one warning when the same person message is repeated", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "cheese",
+            name: "mozzarella",
+            recipes: ["Baked ziti"],
+            warnings: [
+              {
+                personName: "Parent A",
+                severity: "warn",
+                message: "Contains dairy, so check with Parent A first",
+              },
+              {
+                personName: "Parent A",
+                severity: "warn",
+                message: "Contains dairy, so check with Parent A first",
+              },
+            ],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getAllByText("Contains dairy, so check with Parent A first")).toHaveLength(1);
+  });
+
   it("shows friendly fractions instead of long decimals", () => {
     render(
       <ShoppingList

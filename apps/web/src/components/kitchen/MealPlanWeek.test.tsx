@@ -62,11 +62,31 @@ describe("MealPlanWeek", () => {
     expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
     expect(screen.getByText("Contains pine nuts, so Child B can't eat this")).toBeInTheDocument();
     expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /view recipe/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /view weeknight pesto pasta/i })).toHaveAttribute(
       "href",
       "/recipes/pesto"
     );
     expect(screen.getAllByText("Add dinner")).toHaveLength(6);
+  });
+
+  it("shows every meal on a day so a hidden dinner cannot vanish from the plan", () => {
+    const pancakes: WeekMeal = {
+      ...pesto,
+      entryId: "entry-breakfast",
+      date: "2026-10-17",
+      mealSlot: "breakfast",
+      recipeId: "recipe-pancakes",
+      title: "Saturday pancakes",
+      href: "/recipes/pancakes",
+      findings: [],
+    };
+    const saturdayPesto: WeekMeal = { ...pesto, entryId: "entry-dinner", date: "2026-10-17" };
+    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [pancakes, saturdayPesto])} />);
+
+    expect(screen.getByRole("heading", { name: "Saturday pancakes" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view saturday pancakes/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view weeknight pesto pasta/i })).toBeInTheDocument();
   });
 
   it("still shows an empty week so a night can be filled", () => {
@@ -105,6 +125,7 @@ describe("MealPlanWeek", () => {
     expect(within(editor).getByRole("button", { name: /weeknight pesto pasta/i })).toBeVisible();
 
     await user.click(within(editor).getByRole("button", { name: /veggie tacos/i }));
+    expect(screen.getByRole("heading", { name: "Veggie tacos" })).toBeInTheDocument();
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({
@@ -198,7 +219,7 @@ describe("MealPlanWeek", () => {
           {
             date: "2026-10-12",
             meal: "dinner",
-            recipeId: "recipe-pesto",
+            freeformMeal: "No-cook night",
             servings: 4,
             attendees: [],
           },

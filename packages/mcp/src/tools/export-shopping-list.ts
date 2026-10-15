@@ -12,12 +12,14 @@ import {
   PeopleService,
   ShoppingListService,
   collectShoppingListEntries,
+  planEntriesForWeek,
   resolveIncludeStaples,
   type ShoppingListData,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import {
   checkIngredientsAgainstRules,
+  collapseRuleFindings,
   type RuleCheckContext,
   type IngredientCheckInput,
 } from "@ovenlovin/allergens";
@@ -71,7 +73,7 @@ async function handler(
     throw new Error("Unauthorized access to meal plan");
   }
 
-  const entries = await planService.getMealPlanEntries(plan.id);
+  const entries = planEntriesForWeek(await planService.getMealPlanEntries(plan.id), plan.weekStart);
   const sources = await collectShoppingListEntries(entries, {
     getRecipe: (id) => recipeService.getRecipe(id),
     getIngredients: async (id) => {
@@ -117,11 +119,15 @@ async function handler(
 
     if (contexts.length > 0 && ingredientsToCheck.length > 0) {
       const checkResult = checkIngredientsAgainstRules(ingredientsToCheck, contexts);
-      for (const finding of [
+      const seen = new Set<string>();
+      for (const finding of collapseRuleFindings([
         ...checkResult.findings.block,
         ...checkResult.findings.warn,
         ...checkResult.findings.prefer_avoid,
-      ]) {
+      ])) {
+        const key = `${finding.personName}\0${finding.message}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
         warnings.push({
           ingredient: finding.ingredientName,
           personName: finding.personName,

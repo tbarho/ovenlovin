@@ -7,6 +7,7 @@ import {
   PeopleService,
   RecipeService,
   ScheduleService,
+  planEntriesForWeek,
   nightForDate,
   recipeTotalTimeMinutes,
   scheduleIssuesForNight,
@@ -39,7 +40,7 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
     throw new NotFoundError("MealPlan", id);
   }
 
-  const entries = await planService.getMealPlanEntries(id);
+  const entries = planEntriesForWeek(await planService.getMealPlanEntries(id), plan.weekStart);
 
   const entryInputs: MealPlanEntryInput[] = await Promise.all(
     entries.map(async (entry) => {

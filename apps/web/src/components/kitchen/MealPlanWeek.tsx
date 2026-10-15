@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/browser-api";
-import { dinnerEntryForDate, filterPlanRecipes, saferPicks } from "@/lib/plan-recipes";
+import {
+  applyDinnerToDays,
+  applyDinnerToEntries,
+  dinnerEntryForDate,
+  filterPlanRecipes,
+  saferPicks,
+} from "@/lib/plan-recipes";
 import { KitchenToast } from "./KitchenToast";
 import {
   NO_COOK_LABEL,
@@ -16,6 +22,23 @@ import {
 } from "@/lib/week-plan-view";
 
 type MealPlanWrite = { id: string };
+
+const EMPTY_ENTRIES: PlanEntryDraft[] = [];
+const EMPTY_RECIPES: PlanRecipePick[] = [];
+
+function dinnerMeal(day: WeekDay): WeekMeal | undefined {
+  return day.meals.find((meal) => meal.mealSlot === "dinner") ?? day.meals[0];
+}
+
+function uniqueFindings(findings: WeekMeal["findings"]) {
+  const seen = new Set<string>();
+  return findings.filter((finding) => {
+    const key = `${finding.personName}\0${finding.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 function mealThumb(title: string, image: string | null) {
   if (image) {
@@ -35,12 +58,12 @@ function MealCopy({ meal }: { meal: WeekMeal }) {
       <p className="week-slot">{meal.isNoCook ? "Night off" : slotLabel(meal.mealSlot)}</p>
       <h3>{meal.title}</h3>
       {meal.servings && !meal.isNoCook ? <p className="muted">{meal.servings} servings</p> : null}
-      {meal.checkStatus === "incomplete" ? (
+      {meal.checkStatus === "incomplete" && meal.findings.length === 0 ? (
         <p className="week-finding" data-severity="warn">
-          This check is incomplete — not a clean bill.
+          We couldn&apos;t finish checking this dinner.
         </p>
       ) : null}
-      {meal.findings.map((finding) => (
+      {uniqueFindings(meal.findings).map((finding) => (
         <p
           className="week-finding"
           data-severity={finding.severity}
@@ -210,8 +233,8 @@ export function MealPlanWeek({
   days,
   planId = null,
   weekStart,
-  entries = [],
-  recipes = [],
+  entries = EMPTY_ENTRIES,
+  recipes = EMPTY_RECIPES,
   defaultServings = 4,
 }: {
   days: WeekDay[];
@@ -227,12 +250,21 @@ export function MealPlanWeek({
   const [servings, setServings] = useState(defaultServings);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [daysView, setDaysView] = useState(days);
+  const [entriesView, setEntriesView] = useState(entries);
   const [toast, setToast] = useState<{ message: string; undoEntries: PlanEntryDraft[] } | null>(
     null
   );
   const resolvedWeekStart = weekStart ?? days[0]?.date ?? "";
 
-  const selectedDay = days.find((day) => day.date === selectedDate);
+  useEffect(() => {
+    setDaysView(days);
+  }, [days]);
+  useEffect(() => {
+    setEntriesView(entries);
+  }, [entries]);
+
+  const selectedDay = daysView.find((day) => day.date === selectedDate);
   const dismissToast = useCallback(() => setToast(null), []);
 
   function toEntryWrite(entry: PlanEntryDraft) {
@@ -279,44 +311,50 @@ export function MealPlanWeek({
     date: string,
     next: { recipeId?: string | null; freeformMeal?: string | null; servings?: number | null }
   ) {
-    const previous = entries;
-    const rest = entries.filter((entry) => !(entry.date === date && entry.mealSlot === "dinner"));
+    const previousDays = daysView;
+    const previous = entriesView;
     const cleared = next.recipeId === null && next.freeformMeal === null;
-    const nextEntry: PlanEntryDraft = {
-      id: dinnerEntryForDate(entries, date)?.id,
-      date,
-      mealSlot: "dinner",
-      recipeId: next.recipeId ?? null,
-      freeformMeal: next.freeformMeal ?? null,
-      servings: next.servings ?? dinnerEntryForDate(entries, date)?.servings ?? servings,
-      attendees: dinnerEntryForDate(entries, date)?.attendees ?? [],
-    };
-    const nextEntries = cleared ? rest : [...rest, nextEntry];
+    const nextEntries = applyDinnerToEntries(entriesView, date, {
+      ...next,
+      servings: next.servings ?? dinnerEntryForDate(entriesView, date)?.servings ?? servings,
+    });
+    const nextDinner = dinnerEntryForDate(nextEntries, date);
     const nightPatch = cleared
       ? [{ date, meal: "dinner" as const, clear: true }]
-      : [toEntryWrite(nextEntry)];
+      : nextDinner
+        ? [toEntryWrite(nextDinner)]
+        : [];
+    setDaysView(applyDinnerToDays(daysView, date, next, recipes));
+    setEntriesView(nextEntries);
     const ok = await persist(nextEntries, planId ? { entries: nightPatch } : undefined);
-    if (ok) {
-      const weekday = days.find((day) => day.date === date)?.weekday ?? "that night";
-      const message = cleared
-        ? `Cleared ${weekday} dinner`
-        : next.freeformMeal
-          ? `Marked ${weekday} as no-cook`
-          : `Updated ${weekday} dinner`;
-      setToast({ message, undoEntries: previous });
+    if (!ok) {
+      setDaysView(previousDays);
+      setEntriesView(previous);
+      return;
     }
+    const weekday = daysView.find((day) => day.date === date)?.weekday ?? "that night";
+    const message = cleared
+      ? `Cleared ${weekday} dinner`
+      : next.freeformMeal
+        ? `Marked ${weekday} as no-cook`
+        : `Updated ${weekday} dinner`;
+    setToast({ message, undoEntries: previous });
   }
 
   function applyServings(nextServings: number) {
     setServings(nextServings);
-    if (entries.length === 0) return;
+    if (entriesView.length === 0) return;
     void persist(
-      entries.map((entry) => (entry.recipeId ? { ...entry, servings: nextServings } : entry))
+      entriesView.map((entry) => (entry.recipeId ? { ...entry, servings: nextServings } : entry))
     );
   }
 
   return (
-    <div className="week-plan" data-testid="meal-plan-week">
+    <div
+      className={`week-plan${pending ? " is-pending" : ""}`}
+      data-testid="meal-plan-week"
+      aria-busy={pending}
+    >
       <div className="week-toolbar">
         <label className="week-servings">
           <span>This week we cook for</span>
@@ -336,8 +374,7 @@ export function MealPlanWeek({
       </div>
 
       <div className="week-grid">
-        {days.map((day) => {
-          const meal = day.meals[0];
+        {daysView.map((day) => {
           const selected = selectedDate === day.date;
           return (
             <section
@@ -360,20 +397,30 @@ export function MealPlanWeek({
                   <h2 id={`day-${day.date}`}>{day.weekday}</h2>
                   <p className="muted">{day.label}</p>
                 </header>
-                {meal ? (
-                  <div className="week-meal-link">
-                    {mealThumb(meal.title, meal.image)}
-                    <MealCopy meal={meal} />
-                  </div>
-                ) : (
+                {day.meals.length === 0 ? (
                   <p className="week-empty muted">Add dinner</p>
+                ) : (
+                  <div className="week-day-meals">
+                    {day.meals.map((meal) => (
+                      <div className="week-meal-link" key={meal.entryId}>
+                        {mealThumb(meal.title, meal.image)}
+                        <MealCopy meal={meal} />
+                      </div>
+                    ))}
+                  </div>
                 )}
               </button>
-              {meal?.href ? (
-                <Link className="week-meal-open" href={meal.href}>
-                  View recipe
-                </Link>
-              ) : null}
+              {day.meals
+                .filter((meal) => meal.href)
+                .map((meal) => (
+                  <Link
+                    className="week-meal-open"
+                    href={meal.href ?? "/recipes"}
+                    key={meal.entryId}
+                  >
+                    View {meal.title}
+                  </Link>
+                ))}
             </section>
           );
         })}
@@ -383,7 +430,7 @@ export function MealPlanWeek({
         <DayEditor
           open
           day={selectedDay}
-          current={selectedDay.meals[0]}
+          current={dinnerMeal(selectedDay)}
           recipes={recipes}
           query={query}
           pending={pending}
