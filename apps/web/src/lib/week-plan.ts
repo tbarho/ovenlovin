@@ -70,11 +70,14 @@ export type WeekKitchen = {
 export function findingsFromCheck(check: WhoCanEatResult): WeekFinding[] {
   return check.people
     .filter((person) => person.mark !== "ok")
-    .map((person) => ({
-      personName: person.personName,
-      severity: person.mark === "block" ? ("block" as const) : ("warn" as const),
-      message: sanitizeWarningCopy(person.reasons[0] ?? person.title),
-    }));
+    .flatMap((person) => {
+      const reasons = person.reasons.length > 0 ? person.reasons : [person.title];
+      return reasons.map((message) => ({
+        personName: person.personName,
+        severity: person.mark === "block" ? ("block" as const) : ("warn" as const),
+        message: sanitizeWarningCopy(message),
+      }));
+    });
 }
 
 function ingredientsForCheck(
@@ -92,7 +95,10 @@ function checkMeal(
   rules: PersonRule[],
   ingredients: CheckableIngredient[]
 ): { findings: WeekFinding[]; checkStatus: WhoCanEatResult["status"] } {
-  if (people.length === 0 || ingredients.length === 0) {
+  if (people.length === 0) {
+    return { findings: [], checkStatus: "incomplete" };
+  }
+  if (ingredients.length === 0) {
     return { findings: [], checkStatus: "complete" };
   }
   const check = whoCanEat({ people, rules, ingredients });
@@ -230,12 +236,14 @@ export async function loadWeekKitchen(
     const recipe = entry.recipeId ? recipeById.get(entry.recipeId) : undefined;
     const attendees = peopleForEntry(people, entry);
     const ingredientRows = entry.recipeId ? (ingredientsByRecipe.get(entry.recipeId) ?? []) : [];
-    const { findings, checkStatus } = checkMeal(
-      attendees,
-      rules.filter((rule) => attendees.some((person) => person.id === rule.personId)),
-      ingredientsForCheck(ingredientRows)
-    );
     const isNoCook = !entry.recipeId && Boolean(entry.freeformMeal);
+    const { findings, checkStatus } = isNoCook
+      ? { findings: [] as WeekFinding[], checkStatus: "complete" as const }
+      : checkMeal(
+          attendees,
+          rules.filter((rule) => attendees.some((person) => person.id === rule.personId)),
+          ingredientsForCheck(ingredientRows)
+        );
     return {
       entryId: entry.id,
       date: entry.date,
@@ -356,7 +364,7 @@ async function recipePicksForCatalog(
 }
 
 function peopleForEntry(people: Person[], entry: MealPlanEntry): Person[] {
-  if (entry.attendees.length === 0) return people;
+  if (entry.attendees.length === 0) return [];
   const selected = people.filter((person) => entry.attendees.includes(person.id));
-  return selected.length > 0 ? selected : people;
+  return selected.length > 0 ? selected : [];
 }

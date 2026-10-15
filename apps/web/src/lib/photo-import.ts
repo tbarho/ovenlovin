@@ -1,8 +1,10 @@
 import {
   copyRemoteImages,
+  fingerprintImageBlob,
   keepMainRecipeImages,
   omitInlineImagePayloads,
   persistRecipeImageUrl,
+  presentPhotoImportImages,
   type RecipeImportDraft,
   type StoredImagePut,
 } from "@ovenlovin/core";
@@ -163,6 +165,17 @@ export function previewFromDraft(draft: RecipeDraft, images: string[]): PhotoImp
   };
 }
 
+export function presentPhotoImportPreview(preview: PhotoImportPreview): PhotoImportPreview {
+  return {
+    ...preview,
+    images: presentPhotoImportImages(preview.images),
+    source: {
+      ...preview.source,
+      blobRefs: omitInlineImagePayloads(preview.source.blobRefs),
+    },
+  };
+}
+
 export function draftFromPhotoPreview(preview: PhotoImportPreview): RecipeImportDraft {
   return {
     title: preview.title || "Untitled recipe",
@@ -207,5 +220,15 @@ export async function extractPhotoPreview(
   const storedImages = await persistMainPhoto(images, options.householdId, options.put);
   const extracted = await runPhotoImport({ images, isHandwritten: options.isHandwritten }, {});
   extracted.draft.images = storedImages;
+  const first = images[0]?.blob;
+  if (first) {
+    extracted.draft.source = {
+      ...extracted.draft.source,
+      rawExtractionJson: {
+        ...(extracted.draft.source.rawExtractionJson ?? {}),
+        photoFingerprint: fingerprintImageBlob(first),
+      },
+    };
+  }
   return previewFromDraft(extracted.draft, storedImages);
 }

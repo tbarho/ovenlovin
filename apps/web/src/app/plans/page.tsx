@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AllergenDisclaimer } from "@/components/kitchen/AllergenDisclaimer";
 import { MealPlanWeek } from "@/components/kitchen/MealPlanWeek";
 import { PlanStatusActions } from "@/components/kitchen/PlanStatusActions";
 import { RecheckBanner } from "@/components/kitchen/RecheckBanner";
 import { WeekPager } from "@/components/kitchen/WeekPager";
+import { requireKitchenContext } from "@/lib/kitchen-session";
 import { blockNightsFromDays, recheckNightsFromDays } from "@/lib/plan-final";
-import { getSessionContext } from "@/lib/session";
 import { loadWeekKitchen } from "@/lib/week-plan";
 import { startOfWeekMonday } from "@/lib/week-plan-view";
 
@@ -22,8 +21,7 @@ export default async function PlansPage({
 }: {
   searchParams: Promise<{ week?: string }>;
 }) {
-  const context = await getSessionContext().catch(() => null);
-  if (!context?.householdId) redirect("/sign-in");
+  const context = await requireKitchenContext();
 
   const { week } = await searchParams;
   const weekStart = startOfWeekMonday(week);

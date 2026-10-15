@@ -233,7 +233,7 @@ describe("checkMealPlan", () => {
     expect(result.summary.peopleWithWarnings).toBe(1);
   });
 
-  it("handles entries with no attendees", () => {
+  it("treats a recipe night with no attendees as incomplete, not all-clear", () => {
     const childA: PersonWithRules = {
       id: "child-a",
       name: "Child A",
@@ -256,8 +256,29 @@ describe("checkMealPlan", () => {
 
     const result = checkMealPlan(input);
 
-    expect(result.status).toBe("complete");
-    expect(result.byEntry).toHaveLength(0);
+    expect(result.status).toBe("incomplete");
+    expect(result.incompleteReasons?.join(" ")).toMatch(/no attendees/i);
+    expect(result.byEntry).toHaveLength(1);
+    expect(result.byEntry[0]?.findings.block).toHaveLength(0);
+  });
+
+  it("treats a plan with no people as incomplete", () => {
+    const result = checkMealPlan({
+      entries: [
+        {
+          id: "entry-1",
+          date: "2026-10-13",
+          mealSlot: "dinner",
+          recipeTitle: "Pasta",
+          attendees: [],
+          ingredients: [{ name: "pasta" }],
+        },
+      ],
+      people: [],
+    });
+    expect(result.status).toBe("incomplete");
+    expect(result.summary.totalPeople).toBe(0);
+    expect(result.incompleteReasons?.join(" ")).toMatch(/no people/i);
   });
 
   it("reports incomplete when entry has no ingredients", () => {
@@ -496,6 +517,8 @@ describe("checkMealPlan", () => {
     expect(dairy).toHaveLength(1);
     expect(dairy[0]?.personName).toBe("Parent A");
     expect(dairy[0]?.message).toMatch(/dairy/i);
+    expect(dairy[0]?.message).toMatch(/mozzarella/i);
+    expect(dairy[0]?.message).toMatch(/parmesan/i);
     expect(result.byPerson[0]?.findings.warn).toHaveLength(1);
   });
 });

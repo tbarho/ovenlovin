@@ -1,12 +1,10 @@
-import { redirect } from "next/navigation";
 import { HouseholdService, PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { PeopleHome } from "@/components/people/PeopleHome";
-import { getSessionContext } from "@/lib/session";
+import { requireKitchenContext } from "@/lib/kitchen-session";
 
 export default async function PeoplePage() {
-  const context = await getSessionContext().catch(() => null);
-  if (!context?.householdId) redirect("/sign-in");
+  const context = await requireKitchenContext();
 
   const db = getDatabase();
   const service = new PeopleService(db);
