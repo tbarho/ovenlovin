@@ -136,7 +136,9 @@ describe("MealPlanWeek", () => {
 
     await user.click(within(editor).getByRole("button", { name: /veggie tacos/i }));
     expect(screen.getByRole("heading", { name: "Veggie tacos" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Weeknight pesto pasta" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Weeknight pesto pasta" })
+    ).not.toBeInTheDocument();
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({
@@ -267,7 +269,9 @@ describe("MealPlanWeek", () => {
     await user.click(screen.getByRole("button", { name: /monday/i }));
     await user.click(screen.getByRole("button", { name: "Clear night" }));
     expect(screen.getByText("Cleared Monday dinner")).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "Weeknight pesto pasta" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Weeknight pesto pasta" })
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Undo" }));
     expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
@@ -350,7 +354,9 @@ describe("MealPlanWeek", () => {
     const editor = screen.getByTestId("plan-editor-2026-10-18");
     expect(within(editor).getByText("Safer picks")).toBeVisible();
     expect(within(editor).getByRole("button", { name: /veggie tacos/i })).toBeVisible();
-    expect(within(editor).queryByRole("button", { name: /kung pao chicken/i })).not.toBeInTheDocument();
+    expect(
+      within(editor).queryByRole("button", { name: /kung pao chicken/i })
+    ).not.toBeInTheDocument();
 
     await user.click(within(editor).getByRole("button", { name: /not safe for everyone/i }));
     await user.click(within(editor).getByRole("button", { name: /kung pao chicken/i }));
