@@ -65,7 +65,10 @@ describe("KitchenNav", () => {
 
     await user.click(screen.getByRole("link", { name: "Plan" }));
     expect(screen.getByRole("status")).toHaveTextContent("Loading…");
-    expect(screen.getByRole("navigation", { name: "Kitchen" })).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("navigation", { name: "Kitchen" })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
     expect(screen.getByRole("link", { name: "Plan" })).toHaveAttribute("aria-busy", "true");
   });
 });

@@ -31,9 +31,7 @@ describe("CopyBox", () => {
     const user = userEvent.setup();
     const key = "rkapi_sandbox_secret";
     const json = JSON.stringify({ headers: { Authorization: `ApiKey ${key}` } }, null, 2);
-    render(
-      <CopyBox label="Grok MCP config" content={json} secret secretValue={key} />
-    );
+    render(<CopyBox label="Grok MCP config" content={json} secret secretValue={key} />);
 
     const boxed = document.querySelector(".copy-box pre")?.textContent ?? "";
     expect(boxed).toContain(maskSecret(key));
