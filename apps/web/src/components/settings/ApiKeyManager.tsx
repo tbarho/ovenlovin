@@ -106,7 +106,7 @@ export function ApiKeyManager({ onCreated }: { onCreated?: (plaintext: string) =
       {plaintext ? (
         <div className="key-secret">
           <p>Copy this secret now. It will not be shown again.</p>
-          <CopyBox label="New API key" content={plaintext} />
+          <CopyBox label="New API key" content={plaintext} secret />
         </div>
       ) : null}
 

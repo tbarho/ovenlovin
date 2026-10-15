@@ -5,6 +5,7 @@ import { brandPublicPath } from "@ovenlovin/brand";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { KitchenNav } from "./KitchenNav";
+import { KitchenPageTitle } from "./KitchenPageTitle";
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -36,6 +37,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <header className="nav kitchen-topbar">
         <div className="wrap nav-inner">
           <Brand />
+          <KitchenPageTitle />
           <KitchenNav />
           <Account />
         </div>

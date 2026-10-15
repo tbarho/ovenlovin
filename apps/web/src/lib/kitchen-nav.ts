@@ -10,3 +10,8 @@ export function isKitchenNavActive(pathname: string, match: string | null): bool
   if (!match) return false;
   return pathname === match || pathname.startsWith(`${match}/`);
 }
+
+export function kitchenPageTitle(pathname: string): string {
+  const current = kitchenNavLinks.find((link) => isKitchenNavActive(pathname, link.match));
+  return current?.label ?? "Kitchen";
+}

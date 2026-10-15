@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isKitchenNavActive } from "./kitchen-nav";
+import { isKitchenNavActive, kitchenPageTitle } from "./kitchen-nav";
 
 describe("isKitchenNavActive", () => {
   it("marks People as current on the list and a person page", () => {
@@ -27,5 +27,17 @@ describe("isKitchenNavActive", () => {
     expect(isKitchenNavActive("/list", "/list")).toBe(true);
     expect(isKitchenNavActive("/plans", "/list")).toBe(false);
     expect(isKitchenNavActive("/list", "/plans")).toBe(false);
+  });
+});
+
+describe("kitchenPageTitle", () => {
+  it("names the current kitchen page, including nested routes", () => {
+    expect(kitchenPageTitle("/recipes")).toBe("Recipes");
+    expect(kitchenPageTitle("/recipes/abc")).toBe("Recipes");
+    expect(kitchenPageTitle("/plans")).toBe("Plan");
+    expect(kitchenPageTitle("/list")).toBe("List");
+    expect(kitchenPageTitle("/people/abc")).toBe("People");
+    expect(kitchenPageTitle("/settings")).toBe("Settings");
+    expect(kitchenPageTitle("/unknown")).toBe("Kitchen");
   });
 });
