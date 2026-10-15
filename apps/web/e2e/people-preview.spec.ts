@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { gotoDevPreview } from "./dev-routes";
+import { expectPeopleCardsStretchInRows, expectSnugFilledLanes } from "./people-card-layout";
 
 test("unsigned people preview shows the production people cards", async ({ page }, testInfo) => {
   test.skip(
@@ -48,6 +49,8 @@ test("unsigned people preview shows the production people cards", async ({ page 
     expect(handleBox.height).toBeGreaterThanOrEqual(44);
     expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(handleBox.x + 1);
   }
+  await expectPeopleCardsStretchInRows(page);
+  await expectSnugFilledLanes(page);
   await page.screenshot({
     path: `../../e2e-artifacts/people-preview-list-${testInfo.project.name}.png`,
     fullPage: true,

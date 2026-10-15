@@ -82,13 +82,13 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .kitchen-people .olp-person-slot {
   display: flex;
   min-width: 0;
-  height: auto;
+  align-self: stretch;
 }
 
 .kitchen-people .olp-person-slot.is-locked {
@@ -101,11 +101,13 @@
   --olp-card-pad: var(--space-1, 8px);
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   gap: 10px;
   position: relative;
   min-width: 0;
   width: 100%;
-  height: auto;
+  flex: 1 1 auto;
+  height: 100%;
   padding: var(--olp-card-pad) 12px 12px;
   overflow: hidden;
   border: 1px solid #ece7e0;
@@ -236,7 +238,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-height: calc(16px + 2 * var(--chip-row) + 4px);
 }
 
 .kitchen-people .olp-person-card-lane-cant_eat:not(.is-empty),
@@ -284,7 +285,6 @@
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 4px;
-  min-height: calc(2 * var(--chip-row) + 4px);
   max-height: calc(2 * var(--chip-row) + 4px);
   overflow: hidden;
 }
@@ -293,7 +293,6 @@
 .olp-person-ghost .olp-person-card-lane small {
   display: flex;
   align-items: center;
-  min-height: calc(2 * var(--chip-row) + 4px);
   color: #9a9a9a;
 }
 
