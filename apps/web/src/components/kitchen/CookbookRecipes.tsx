@@ -18,6 +18,39 @@ import { LoveTags } from "./LoveTags";
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 const EMPTY_RECIPES: Recipe[] = [];
 
+function RecipeCardMenu({ pending, onRemove }: { pending: boolean; onRemove: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="recipe-card-menu">
+      <button
+        type="button"
+        className="recipe-card-more"
+        aria-label="Recipe actions"
+        aria-expanded={open}
+        title="More actions"
+        onClick={() => setOpen((value) => !value)}
+      >
+        ⋯
+      </button>
+      {open ? (
+        <div className="recipe-card-menu-list" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            disabled={pending}
+            onClick={() => {
+              setOpen(false);
+              onRemove();
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function RenameCookbookSheet({
   cookbook,
   open,
@@ -218,14 +251,7 @@ export function CookbookRecipes({
                     <p className="muted">{recipeCardMeta(recipe)}</p>
                   </div>
                 </Link>
-                <button
-                  type="button"
-                  className="recipe-card-remove"
-                  disabled={pending}
-                  onClick={() => void removeRecipe(recipe.id)}
-                >
-                  Remove
-                </button>
+                <RecipeCardMenu pending={pending} onRemove={() => void removeRecipe(recipe.id)} />
               </article>
             );
           })}
