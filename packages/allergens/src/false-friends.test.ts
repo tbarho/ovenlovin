@@ -91,6 +91,15 @@ describe("negated allergen wording", () => {
     expect(
       checkIngredientAgainstRule({ name: "2 tbsp nut-free pesto" }, contextFor(treeNut))
     ).toEqual([]);
+    expect(
+      checkIngredientAgainstRule({ name: "almond-free pesto" }, contextFor(treeNut))
+    ).toEqual([]);
+    expect(
+      checkIngredientAgainstRule(
+        { name: "almond-free pesto with pine nuts" },
+        contextFor(treeNut)
+      ).length
+    ).toBeGreaterThan(0);
     expect(checkIngredientAgainstRule({ name: "egg-free mayonnaise" }, contextFor(egg))).toEqual(
       []
     );

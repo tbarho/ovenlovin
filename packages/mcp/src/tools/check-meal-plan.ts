@@ -182,6 +182,9 @@ async function handler(
         ...(ingredients.length === 0
           ? [`Recipe "${recipe.title}" has no ingredients to check`]
           : []),
+        ...(entry.attendees.length === 0
+          ? [`No attendees listed for "${recipe.title}" — cannot finish a safety check`]
+          : []),
         ...missingAttendees.map((personId) => `Could not load attendee ${personId}`),
       ];
 

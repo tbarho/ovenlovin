@@ -44,7 +44,7 @@ describe("WhoCanEat", () => {
 
     await user.click(screen.getByTestId(`mark-${child.id}`));
     expect(screen.getByRole("dialog", { name: /can't eat this/i })).toBeVisible();
-    expect(screen.getByText(/Contains pine nuts, so Child B can't eat this/)).toBeInTheDocument();
+    expect(screen.getByText(/Contains pine nuts.*Child B can't eat this/)).toBeInTheDocument();
     expect(screen.getByText(/no stored swap/i)).toBeInTheDocument();
   });
 
