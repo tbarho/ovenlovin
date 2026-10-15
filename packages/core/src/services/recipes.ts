@@ -256,6 +256,21 @@ export class RecipeService extends BaseService {
     return !!deleted;
   }
 
+  async getRecipeIncludingDeleted(id: string): Promise<Recipe | null> {
+    const [result] = await this._db.select().from(recipe).where(eq(recipe.id, id)).limit(1);
+    return result ? this.mapRecipe(result) : null;
+  }
+
+  async restoreRecipe(id: string): Promise<boolean> {
+    const [restored] = await this._db
+      .update(recipe)
+      .set({ deletedAt: null })
+      .where(eq(recipe.id, id))
+      .returning();
+
+    return !!restored;
+  }
+
   async getRecipeDetails(id: string): Promise<RecipeDetails | null> {
     const found = await this.getRecipe(id);
     if (!found) return null;
