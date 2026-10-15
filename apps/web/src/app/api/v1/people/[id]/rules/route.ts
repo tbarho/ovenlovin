@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { handleApiError, NotFoundError } from "@/lib/api/errors";
+import { BadRequestError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, createdResponse } from "@/lib/api/response";
 import {
   getRequestContext,
@@ -8,6 +8,11 @@ import {
   getIdempotencyKey,
 } from "@/lib/api/middleware";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
+import {
+  canonicalizePersonRuleTarget,
+  unknownRuleTargetMessage,
+  type PersonRuleKind,
+} from "@ovenlovin/allergens";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -57,9 +62,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       apiKeyCreatedBy: context.apiKeyCreatedBy,
     });
 
+    const confirmUnknown = Boolean(body.confirmUnknown);
+    const kind = (body.kind ?? "allergen") as PersonRuleKind;
+    const target = String(body.target ?? "");
+    const canonical = canonicalizePersonRuleTarget(kind, target);
+    if (!canonical.resolved && !confirmUnknown) {
+      throw new BadRequestError(unknownRuleTargetMessage(target));
+    }
+
+    const rest = { ...body };
+    delete rest.confirmUnknown;
     const rule = await service.createRule({
-      ...body,
+      ...rest,
       personId,
+      kind: canonical.kind,
+      target: canonical.target,
       setBy: actor.setBy,
       createdBy: actor.createdBy,
       createdByApiKeyId: actor.createdByApiKeyId,

@@ -1,27 +1,13 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
-import { resolveCatalogTarget, ruleKindForCatalogGroup } from "@ovenlovin/allergens";
+import {
+  canonicalizePersonRuleTarget,
+  unknownRuleTargetMessage,
+} from "@ovenlovin/allergens";
 import { createDbClient } from "@ovenlovin/db";
 
-export function canonicalizePersonRuleTarget(
-  kind: "allergen" | "ingredient" | "ingredient_category" | "diet" | "tag" | "custom",
-  target: string
-): { kind: typeof kind; target: string; canonicalized: boolean } {
-  const resolved = resolveCatalogTarget(target, { kind });
-  if (!resolved) {
-    return { kind, target: target.trim(), canonicalized: false };
-  }
-  const nextKind =
-    kind === "custom" || kind === "tag" || kind === "ingredient_category"
-      ? kind
-      : ruleKindForCatalogGroup(resolved.group);
-  return {
-    kind: nextKind,
-    target: resolved.code,
-    canonicalized: resolved.code !== target.trim() || nextKind !== kind,
-  };
-}
+export { canonicalizePersonRuleTarget } from "@ovenlovin/allergens";
 
 export const managePersonRulesSchema = z.object({
   action: z.enum(["list", "add", "remove"]),
@@ -42,6 +28,10 @@ export const managePersonRulesSchema = z.object({
     .boolean()
     .optional()
     .describe("For tree_nut rules. Defaults to false - coconut is not a tree nut unless set."),
+  confirmUnknown: z
+    .boolean()
+    .optional()
+    .describe("Required to save a target that is not in the allergen catalog, such as xyzzy."),
 });
 
 async function handler(input: z.infer<typeof managePersonRulesSchema>, context: AuthContext) {
@@ -79,6 +69,9 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
       throw new Error("kind, target, and severity are required to add a rule");
     }
     const canonical = canonicalizePersonRuleTarget(input.kind, input.target);
+    if (!canonical.resolved && !input.confirmUnknown) {
+      throw new Error(unknownRuleTargetMessage(input.target));
+    }
     const created = await people.createRule({
       personId: person.id,
       kind: canonical.kind,

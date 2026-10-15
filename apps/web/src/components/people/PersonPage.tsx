@@ -8,6 +8,7 @@ import {
   LOVE_PREFERENCE_TYPE,
   RULE_UI_BUCKETS,
   buildRuleWrite,
+  findCatalogEntry,
   defaultSharedFacilityPrompt,
   displayNameForTarget,
   intentAndSeverityForBucket,
@@ -126,7 +127,10 @@ export function PersonPage({
     }
     return api<PersonRule>(`/api/v1/people/${person.id}/rules`, {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        confirmUnknown: !findCatalogEntry(entry.code),
+      }),
     });
   }
 
