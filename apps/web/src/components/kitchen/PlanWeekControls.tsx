@@ -48,7 +48,12 @@ export function PlanWeekControls({
           Next week
         </Link>
         {planId && status === "draft" ? (
-          <button type="button" className="btn primary" disabled={pending} onClick={() => void markFinal()}>
+          <button
+            type="button"
+            className="btn primary"
+            disabled={pending}
+            onClick={() => void markFinal()}
+          >
             Mark as final
           </button>
         ) : null}

@@ -18,7 +18,13 @@ export default async function PlansPage({
   const kitchen = await loadWeekKitchen(context.householdId, week);
   const status = kitchen.plan?.status ?? "empty";
   const statusLabel =
-    status === "empty" ? "No plan" : status === "approved" ? "Final" : status === "draft" ? "Draft" : status;
+    status === "empty"
+      ? "No plan"
+      : status === "approved"
+        ? "Final"
+        : status === "draft"
+          ? "Draft"
+          : status;
 
   return (
     <>

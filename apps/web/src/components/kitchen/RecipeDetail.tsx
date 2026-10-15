@@ -73,11 +73,10 @@ export function RecipeDetail({
         .map((person) => person.personId),
     [checkIngredients, people, rules]
   );
-  const fromCookbook =
-    fromCookbookId
-      ? recipe.cookbooks.find((book) => book.id === fromCookbookId) ??
-        cookbooks.find((book) => book.id === fromCookbookId)
-      : undefined;
+  const fromCookbook = fromCookbookId
+    ? (recipe.cookbooks.find((book) => book.id === fromCookbookId) ??
+      cookbooks.find((book) => book.id === fromCookbookId))
+    : undefined;
 
   const scaledIngredients = useMemo(
     () =>
