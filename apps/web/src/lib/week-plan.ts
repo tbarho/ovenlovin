@@ -328,12 +328,12 @@ async function recipePicksForCatalog(
   >
 ): Promise<PlanRecipePick[]> {
   const missing = catalog.filter((item) => !ingredientsByRecipe.has(item.id));
-  await Promise.all(
-    missing.map(async (item) => {
-      const rows = await plans.getRecipeIngredientsForEntry(item.id);
-      storeIngredients(ingredientsByRecipe, item.id, rows);
-    })
-  );
+  if (missing.length > 0) {
+    const grouped = await plans.getRecipeIngredientsForRecipes(missing.map((item) => item.id));
+    for (const item of missing) {
+      storeIngredients(ingredientsByRecipe, item.id, grouped.get(item.id) ?? []);
+    }
+  }
 
   return catalog.map((item) => {
     const rows = ingredientsByRecipe.get(item.id) ?? [];

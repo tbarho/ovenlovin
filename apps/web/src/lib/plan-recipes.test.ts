@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { filterPlanRecipes, saferPicks } from "./plan-recipes";
+import { applyDinnerToDays, filterPlanRecipes, saferPicks } from "./plan-recipes";
+import { groupMealsByDate } from "./week-plan-view";
 import type { PlanRecipePick } from "./week-plan-view";
 
 function pick(
@@ -56,5 +57,29 @@ describe("saferPicks", () => {
   it("does not invent swaps when nothing is blocked", () => {
     const tacos = pick({ id: "tacos", title: "Veggie tacos", safety: "ok" });
     expect(saferPicks([tacos], "tacos", [])).toEqual([]);
+  });
+});
+
+describe("applyDinnerToDays", () => {
+  it("swaps Monday dinner immediately so the cook sees the new title", () => {
+    const days = groupMealsByDate("2026-10-12", [
+      {
+        entryId: "entry-1",
+        date: "2026-10-12",
+        mealSlot: "dinner",
+        recipeId: "pesto",
+        title: "Weeknight pesto pasta",
+        href: "/recipes/pesto",
+        image: null,
+        servings: 4,
+        isNoCook: false,
+        findings: [],
+        checkStatus: "complete",
+      },
+    ]);
+    const next = applyDinnerToDays(days, "2026-10-12", { recipeId: "tacos", freeformMeal: null }, [
+      pick({ id: "tacos", title: "Veggie tacos" }),
+    ]);
+    expect(next[0]?.meals[0]?.title).toBe("Veggie tacos");
   });
 });
