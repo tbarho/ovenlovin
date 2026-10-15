@@ -7,6 +7,7 @@ export {
   isProductVercelProduction,
   type EnvLike,
 } from "./mode";
+export { resetDemoSandbox } from "./sandbox";
 export { getDemoAgentCredentials, getDemoSessionContext } from "./session";
 export { DEMO_COOKIE_NAME, DEMO_HOUSEHOLD_NAME, DEMO_PEOPLE, DEMO_RECIPES } from "./fixture";
 export { DEMO_ENTER_PATH, safeDemoEnterNext } from "./enter";
