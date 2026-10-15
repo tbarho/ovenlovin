@@ -4,6 +4,7 @@ import {
   formatDurationMinutes,
   formatMeasureText,
   formatQuantity,
+  pluralizeUnit,
   scaleFactorForPlanEntry,
   scaleIngredientDisplay,
   scaleQuantity,
@@ -53,6 +54,9 @@ describe("toFriendlyMeasure", () => {
       displayUnit: "tsp",
     });
     expect(formatMeasureText(1.8333, "tbsp")).toBe("5 1/2 tsp");
+    expect(formatMeasureText(2, "clove")).toBe("2 cloves");
+    expect(pluralizeUnit("2", "clove")).toBe("2 cloves");
+    expect(pluralizeUnit("1", "clove")).toBe("1 clove");
   });
 
   it("keeps a third-cup instead of 0.33 cup", () => {

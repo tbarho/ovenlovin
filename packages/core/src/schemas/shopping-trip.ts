@@ -18,8 +18,11 @@ export function emptyShoppingTripState(): ShoppingTripState {
   return { checkedKeys: [], extras: [] };
 }
 
-export function shopItemKey(name: string): string {
-  return normalizeIngredientName(name) || name.trim().toLowerCase() || "item";
+export function shopItemKey(name: string, unit?: string | null): string {
+  const base = normalizeIngredientName(name) || name.trim().toLowerCase() || "item";
+  const unitPart = unit?.trim().toLowerCase();
+  if (!unitPart) return base;
+  return `${base}::${unitPart}`;
 }
 
 export function parseShoppingTripState(value: unknown): ShoppingTripState {

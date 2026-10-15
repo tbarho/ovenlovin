@@ -456,4 +456,20 @@ describe("ShoppingListService", () => {
     expect(markdown).toContain("1 yellow onion");
     expect(markdown).not.toContain("## Ingredients");
   });
+
+  it("stamps a stable check-off key and pluralizes count units on export", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "pesto", servings: 4 }),
+        recipeTitle: "Weeknight pesto pasta",
+        recipeServings: 4,
+        ingredients: [{ rawText: "2 cloves garlic" }],
+      },
+    ]);
+    const garlic = list.ingredients.find((item) => item.name === "garlic");
+    expect(garlic?.key).toBe("garlic::clove");
+    expect(garlic?.displayUnit).toBe("clove");
+    expect(service.exportAsMarkdown(list)).toContain("2 cloves garlic");
+    expect(JSON.parse(service.exportAsJSON(list)).ingredients[0].key).toBe("garlic::clove");
+  });
 });

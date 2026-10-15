@@ -278,14 +278,14 @@ export async function loadWeekKitchen(
     })
   );
 
-  const shopItems: ShopItem[] = aggregated.map((item, index) => {
+  const shopItems: ShopItem[] = aggregated.map((item) => {
     const check = whoCanEat({
       people,
       rules,
-      ingredients: [{ id: `shop-${index}`, name: item.name }],
+      ingredients: [{ id: item.key || `shop-${item.name}`, name: item.name }],
     });
     return {
-      key: shopItemKey(item.name) || `item-${index}`,
+      key: item.key || shopItemKey(item.name, item.displayUnit ?? item.unit),
       name: item.name,
       quantity: item.quantity,
       unit: item.unit,
