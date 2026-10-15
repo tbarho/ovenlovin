@@ -32,8 +32,14 @@ export const checkMealPlanSchema = z.object({
       z.object({
         date: z.string().date(),
         meal: z.string(),
-        recipeId: z.string().uuid(),
-        servings: z.number().int().positive(),
+        recipeId: z.string().uuid().optional(),
+        freeformMeal: z
+          .string()
+          .min(1)
+          .max(255)
+          .optional()
+          .describe("Leftovers, eat-out, or an empty night with no recipe"),
+        servings: z.number().int().positive().optional(),
         attendees: z.array(z.string()),
       })
     ),
@@ -114,6 +120,25 @@ async function handler(
 
   const entriesResults = await Promise.all(
     input.plan.entries.map(async (entry) => {
+      if (!entry.recipeId) {
+        const recipeTitle = entry.freeformMeal?.trim() || "No recipe";
+        const scheduleIssues = scheduleIssuesForNight({
+          date: entry.date,
+          recipeTitle,
+          recipeTotalMinutes: null,
+          night: nightForDate(schedule.weeklyTemplate, entry.date),
+          plannedCooking: false,
+        });
+        return {
+          date: entry.date,
+          meal: entry.meal,
+          recipeTitle,
+          findings: [],
+          scheduleIssues: scheduleIssues.length > 0 ? scheduleIssues : undefined,
+          incompleteReasons: [] as string[],
+        };
+      }
+
       // Load recipe
       const recipe = await recipeService.getRecipe(entry.recipeId);
       if (!recipe) {
@@ -325,7 +350,7 @@ async function handler(
 export const checkMealPlanTool = {
   name: "check_meal_plan",
   description:
-    "Check a meal plan against per-person rules and schedule constraints. Returns per-entry, per-person findings by severity, plus informational loveTags (never a filter). MUST be called before saving a plan. Not medical advice — always check ingredient labels before serving.",
+    "Check a meal plan against per-person rules and schedule constraints. Nights may omit recipeId (leftovers, eat-out, empty). Returns per-entry, per-person findings by severity, plus informational loveTags (never a filter). MUST be called before saving a plan. Not medical advice — always check ingredient labels before serving.",
   inputSchema: checkMealPlanSchema,
   handler,
 } as const;
