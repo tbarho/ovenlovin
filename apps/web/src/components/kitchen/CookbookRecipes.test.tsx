@@ -57,7 +57,8 @@ describe("CookbookRecipes add and remove", () => {
     vi.mocked(api).mockResolvedValueOnce(undefined);
     const pesto = testRecipe({ id: "r1", title: "Weeknight pesto pasta" });
     render(<CookbookRecipes cookbook={testCookbook()} recipes={[pesto]} catalog={[pesto]} />);
-    await user.click(screen.getByRole("button", { name: "Remove" }));
+    await user.click(screen.getByRole("button", { name: "Recipe actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Remove" }));
     expect(api).toHaveBeenCalledWith(
       "/api/v1/cookbooks/00000000-0000-4000-8000-000000000020/recipes?recipeId=r1",
       { method: "DELETE" }
