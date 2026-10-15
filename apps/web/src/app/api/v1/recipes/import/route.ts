@@ -10,6 +10,7 @@ import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
+import { looksLikeHttpUrl } from "@/lib/import-input";
 import { draftFromPlainText } from "@/lib/plain-import";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
 
     let draft;
     if (body.source === "url") {
+      if (!looksLikeHttpUrl(body.content)) {
+        throw new BadRequestError("That doesn't look like a web address");
+      }
       const importer = createUrlImporter();
       const raw = await importer.extract({ url: body.content.trim() });
       draft = await importer.toDraft(raw);

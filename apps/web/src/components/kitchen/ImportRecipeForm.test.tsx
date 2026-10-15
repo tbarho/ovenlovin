@@ -103,3 +103,46 @@ describe("ImportRecipeForm photo import", () => {
     await typeFullWordAndKeepFocus(user, within(dialog).getByLabelText("Title"), "Garlic");
   });
 });
+
+describe("ImportRecipeForm url and paste validation", () => {
+  beforeEach(() => {
+    vi.mocked(api).mockReset();
+  });
+
+  it("keeps Paste import disabled until there is text", async () => {
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    expect(screen.getByRole("button", { name: "Import" })).toBeDisabled();
+    await user.type(
+      screen.getByPlaceholderText(/weeknight tomato pasta/i),
+      "Parent A pasta{enter}{enter}Ingredients{enter}- pasta"
+    );
+    expect(screen.getByRole("button", { name: "Import" })).toBeEnabled();
+  });
+
+  it("validates a bad URL before calling the importer", async () => {
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.type(screen.getByPlaceholderText(/example.com/i), "not a url");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(screen.getByText("That doesn't look like a web address")).toBeVisible();
+    expect(api).not.toHaveBeenCalled();
+  });
+
+  it("shows guessed servings after a paste import", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValue({
+      id: "00000000-0000-4000-8000-000000000099",
+      title: "Test Recipe 1",
+      servings: 4,
+    });
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Test Recipe 1");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByTestId("import-review")).toHaveTextContent(
+      "Imported Test Recipe 1 · 4 servings (guessed)"
+    );
+  });
+});
