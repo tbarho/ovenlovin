@@ -304,9 +304,9 @@ describe("MealPlanWeek", () => {
     const editor = screen.getByTestId("plan-editor-2026-10-14");
     const wednesdayHeading = screen.getByRole("heading", { name: "Wednesday" });
     const thursdayHeading = screen.getByRole("heading", { name: "Thursday" });
-    expect(wednesdayHeading.compareDocumentPosition(editor) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
+    expect(
+      wednesdayHeading.compareDocumentPosition(editor) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(editor.compareDocumentPosition(thursdayHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
@@ -324,7 +324,11 @@ describe("MealPlanWeek", () => {
   it("keeps only one day editor open", async () => {
     const user = userEvent.setup();
     render(
-      <MealPlanWeek days={groupMealsByDate("2026-10-12", [pesto])} weekStart="2026-10-12" recipes={recipes} />
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [pesto])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
     );
 
     await user.click(screen.getByRole("button", { name: /monday/i }));
