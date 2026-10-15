@@ -202,9 +202,9 @@ describe("ImportRecipeForm photo import", () => {
         expect.objectContaining({ method: "POST" })
       )
     );
-    const imageCall = vi.mocked(api).mock.calls.find(
-      (call) => call[0] === "/api/v1/recipes/rec-1/image"
-    );
+    const imageCall = vi
+      .mocked(api)
+      .mock.calls.find((call) => call[0] === "/api/v1/recipes/rec-1/image");
     const imageBody = JSON.parse(String(imageCall?.[1]?.body));
     expect(imageBody.image).toMatch(/^data:image\/jpeg;base64,/);
     expect(imageBody.image.length).toBeLessThan(50_000);
