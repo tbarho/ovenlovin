@@ -16,6 +16,7 @@ export function RecheckBanner({
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [cleared, setCleared] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function recheck() {
@@ -23,6 +24,7 @@ export function RecheckBanner({
     setError(null);
     try {
       await api(`/api/v1/meal-plans/${planId}/check`, { method: "POST" });
+      setCleared(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not recheck the plan");
@@ -32,6 +34,7 @@ export function RecheckBanner({
   }
 
   const detail = recheckBannerDetail({ nights, blockNights });
+  if (cleared) return null;
 
   return (
     <div className="week-recheck" role="status">
