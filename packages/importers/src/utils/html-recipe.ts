@@ -33,7 +33,10 @@ function listItemsAfter($: cheerio.CheerioAPI, heading: ReturnType<cheerio.Cheer
   return items;
 }
 
-function firstHeading($: cheerio.CheerioAPI, pattern: RegExp): ReturnType<cheerio.CheerioAPI> | null {
+function firstHeading(
+  $: cheerio.CheerioAPI,
+  pattern: RegExp
+): ReturnType<cheerio.CheerioAPI> | null {
   const headings = $("h1, h2, h3, h4");
   for (let i = 0; i < headings.length; i++) {
     const el = headings.eq(i);
@@ -52,7 +55,12 @@ export function extractHtmlRecipe(html: string): Record<string, unknown> | null 
 
   const title =
     $("h1").first().text().replace(/\s+/g, " ").trim() ||
-    $("title").first().text().replace(/\s+/g, " ").replace(/\s*[—|].*$/, "").trim();
+    $("title")
+      .first()
+      .text()
+      .replace(/\s+/g, " ")
+      .replace(/\s*[—|].*$/, "")
+      .trim();
 
   const ingredientHeading = firstHeading($, INGREDIENT_HEADING);
   const stepHeading = firstHeading($, STEP_HEADING);
