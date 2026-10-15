@@ -2380,10 +2380,12 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
 .week-grid {
   display: grid;
   gap: 12px;
+  align-items: start;
 }
 
 .week-day {
   min-width: 0;
+  height: fit-content;
   padding: 14px;
   border: 1px solid #eaeaea;
   border-radius: 12px;
@@ -2421,6 +2423,22 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   color: var(--orange-deep);
   font-size: 13px;
   font-weight: 650;
+}
+
+.week-editor-slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 0;
+  transition: grid-template-rows var(--motion-base) var(--motion-ease);
+}
+
+.week-editor-slot.is-open {
+  grid-template-rows: 1fr;
+}
+
+.week-editor-clip {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .week-editor {
@@ -2739,6 +2757,12 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   .week-grid {
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 10px;
+    align-items: start;
+  }
+
+  .week-editor-slot {
+    grid-column: 1 / -1;
+    order: 8;
   }
 
   .week-day {

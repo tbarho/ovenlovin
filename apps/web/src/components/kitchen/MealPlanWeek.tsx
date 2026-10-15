@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -88,6 +88,7 @@ function DayEditor({
   onPick,
   onClear,
   onNoCook,
+  onClose,
 }: {
   open: boolean;
   day: WeekDay;
@@ -100,9 +101,11 @@ function DayEditor({
   onPick: (recipeId: string) => void;
   onClear: () => void;
   onNoCook: () => void;
+  onClose: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [expanded, setExpanded] = useState(false);
   const blocked = current?.findings.some((finding) => finding.severity === "block") ?? false;
   const swaps = useMemo(
     () => saferPicks(recipes, current?.recipeId ?? null, current?.findings ?? []),
@@ -116,6 +119,15 @@ function DayEditor({
   }, [query, recipes, swaps]);
 
   useEffect(() => {
+    if (!open) {
+      setExpanded(false);
+      return;
+    }
+    const frame = requestAnimationFrame(() => setExpanded(true));
+    return () => cancelAnimationFrame(frame);
+  }, [open, day.date]);
+
+  useEffect(() => {
     if (!open) return;
     searchRef.current?.focus();
     rootRef.current?.scrollIntoView?.({ block: "nearest" });
@@ -125,106 +137,113 @@ function DayEditor({
 
   return (
     <div
-      className="week-editor"
+      className={`week-editor-slot${expanded ? " is-open" : ""}`}
       id={`plan-editor-${day.date}`}
       data-testid={`plan-editor-${day.date}`}
       ref={rootRef}
     >
-      <div className="week-editor-head">
-        <div>
-          <p className="week-slot">{day.weekday} dinner</p>
-          <p className="muted">
-            {current
-              ? current.isNoCook
-                ? "Marked as no-cook. Pick a recipe if plans change."
-                : `Now: ${current.title}`
-              : "Nothing planned. Pick a dinner, or take the night off."}
-          </p>
-        </div>
-        <div className="week-editor-actions">
-          {current ? (
-            <button type="button" className="btn compact" disabled={pending} onClick={onClear}>
-              Clear night
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="btn compact"
-            disabled={pending || current?.isNoCook}
-            onClick={onNoCook}
-          >
-            No-cook night
-          </button>
-        </div>
-      </div>
-
-      {blocked && swaps.length > 0 ? (
-        <div className="week-swaps">
-          <p className="section-label">Safer picks</p>
-          <ul className="week-pick-list">
-            {swaps.slice(0, 3).map((recipe) => (
-              <li key={`swap-${recipe.id}`}>
-                <button
-                  type="button"
-                  className="week-pick"
-                  data-safety={recipe.safety}
-                  disabled={pending}
-                  onClick={() => onPick(recipe.id)}
-                >
-                  {mealThumb(recipe.title, recipe.image)}
-                  <span>
-                    <strong>{recipe.title}</strong>
-                    <em>Works for everyone on the plan</em>
-                  </span>
+      <div className="week-editor-clip">
+        <div className="week-editor">
+          <div className="week-editor-head">
+            <div>
+              <p className="week-slot">{day.weekday} dinner</p>
+              <p className="muted">
+                {current
+                  ? current.isNoCook
+                    ? "Marked as no-cook. Pick a recipe if plans change."
+                    : `Now: ${current.title}`
+                  : "Nothing planned. Pick a dinner, or take the night off."}
+              </p>
+            </div>
+            <div className="week-editor-actions">
+              {current ? (
+                <button type="button" className="btn compact" disabled={pending} onClick={onClear}>
+                  Clear night
                 </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <label className="field">
-        <span className="field-label">Search recipes</span>
-        <input
-          ref={searchRef}
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Pasta, tacos, soup…"
-        />
-      </label>
-
-      {listed.length === 0 ? (
-        <p className="muted">No recipes match that search.</p>
-      ) : (
-        <ul className="week-pick-list">
-          {listed.map((recipe) => (
-            <li key={recipe.id}>
+              ) : null}
               <button
                 type="button"
-                className="week-pick"
-                data-safety={recipe.safety}
-                data-current={recipe.id === current?.recipeId ? "true" : "false"}
-                disabled={pending}
-                onClick={() => onPick(recipe.id)}
+                className="btn compact"
+                disabled={pending || current?.isNoCook}
+                onClick={onNoCook}
               >
-                {mealThumb(recipe.title, recipe.image)}
-                <span>
-                  <strong>{recipe.title}</strong>
-                  {recipe.id === current?.recipeId ? <em>On the plan</em> : null}
-                  {recipe.warning ? (
-                    <em className="week-finding" data-severity={recipe.safety}>
-                      {recipe.warning}
-                    </em>
-                  ) : recipe.safety === "ok" ? (
-                    <em>Looks clear for everyone</em>
-                  ) : null}
-                </span>
+                No-cook night
               </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {error ? <p className="muted">{error}</p> : null}
+              <button type="button" className="btn compact" onClick={onClose}>
+                Close
+              </button>
+            </div>
+          </div>
+
+          {blocked && swaps.length > 0 ? (
+            <div className="week-swaps">
+              <p className="section-label">Safer picks</p>
+              <ul className="week-pick-list">
+                {swaps.slice(0, 3).map((recipe) => (
+                  <li key={`swap-${recipe.id}`}>
+                    <button
+                      type="button"
+                      className="week-pick"
+                      data-safety={recipe.safety}
+                      disabled={pending}
+                      onClick={() => onPick(recipe.id)}
+                    >
+                      {mealThumb(recipe.title, recipe.image)}
+                      <span>
+                        <strong>{recipe.title}</strong>
+                        <em>Works for everyone on the plan</em>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <label className="field">
+            <span className="field-label">Search recipes</span>
+            <input
+              ref={searchRef}
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Pasta, tacos, soup…"
+            />
+          </label>
+
+          {listed.length === 0 ? (
+            <p className="muted">No recipes match that search.</p>
+          ) : (
+            <ul className="week-pick-list">
+              {listed.map((recipe) => (
+                <li key={recipe.id}>
+                  <button
+                    type="button"
+                    className="week-pick"
+                    data-safety={recipe.safety}
+                    data-current={recipe.id === current?.recipeId ? "true" : "false"}
+                    disabled={pending}
+                    onClick={() => onPick(recipe.id)}
+                  >
+                    {mealThumb(recipe.title, recipe.image)}
+                    <span>
+                      <strong>{recipe.title}</strong>
+                      {recipe.id === current?.recipeId ? <em>On the plan</em> : null}
+                      {recipe.warning ? (
+                        <em className="week-finding" data-severity={recipe.safety}>
+                          {recipe.warning}
+                        </em>
+                      ) : recipe.safety === "ok" ? (
+                        <em>Looks clear for everyone</em>
+                      ) : null}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {error ? <p className="muted">{error}</p> : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -266,6 +285,11 @@ export function MealPlanWeek({
 
   const selectedDay = daysView.find((day) => day.date === selectedDate);
   const dismissToast = useCallback(() => setToast(null), []);
+  const closeEditor = useCallback(() => {
+    setSelectedDate(null);
+    setQuery("");
+    setError(null);
+  }, []);
 
   function toEntryWrite(entry: PlanEntryDraft) {
     return {
@@ -377,72 +401,80 @@ export function MealPlanWeek({
         {daysView.map((day) => {
           const selected = selectedDate === day.date;
           return (
-            <section
-              className={`week-day${selected ? " is-selected" : ""}`}
-              key={day.date}
-              aria-labelledby={`day-${day.date}`}
-            >
-              <button
-                type="button"
-                className="week-day-hit"
-                aria-expanded={selected}
-                aria-controls={selected ? `plan-editor-${day.date}` : undefined}
-                onClick={() => {
-                  setSelectedDate((current) => (current === day.date ? null : day.date));
-                  setQuery("");
-                  setError(null);
-                }}
+            <Fragment key={day.date}>
+              <section
+                className={`week-day${selected ? " is-selected" : ""}`}
+                aria-labelledby={`day-${day.date}`}
               >
-                <header className="week-day-head">
-                  <h2 id={`day-${day.date}`}>{day.weekday}</h2>
-                  <p className="muted">{day.label}</p>
-                </header>
-                {day.meals.length === 0 ? (
-                  <p className="week-empty muted">Add dinner</p>
-                ) : (
-                  <div className="week-day-meals">
-                    {day.meals.map((meal) => (
-                      <div className="week-meal-link" key={meal.entryId}>
-                        {mealThumb(meal.title, meal.image)}
-                        <MealCopy meal={meal} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </button>
-              {day.meals
-                .filter((meal) => meal.href)
-                .map((meal) => (
-                  <Link
-                    className="week-meal-open"
-                    href={meal.href ?? "/recipes"}
-                    key={meal.entryId}
-                  >
-                    View {meal.title}
-                  </Link>
-                ))}
-            </section>
+                <button
+                  type="button"
+                  className="week-day-hit"
+                  aria-expanded={selected}
+                  aria-controls={selected ? `plan-editor-${day.date}` : undefined}
+                  onClick={() => {
+                    setSelectedDate((current) => (current === day.date ? null : day.date));
+                    setQuery("");
+                    setError(null);
+                  }}
+                >
+                  <header className="week-day-head">
+                    <h2 id={`day-${day.date}`}>{day.weekday}</h2>
+                    <p className="muted">{day.label}</p>
+                  </header>
+                  {day.meals.length === 0 ? (
+                    <p className="week-empty muted">Add dinner</p>
+                  ) : (
+                    <div className="week-day-meals">
+                      {day.meals.map((meal) => (
+                        <div className="week-meal-link" key={meal.entryId}>
+                          {mealThumb(meal.title, meal.image)}
+                          <MealCopy meal={meal} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </button>
+                {day.meals
+                  .filter((meal) => meal.href)
+                  .map((meal) => (
+                    <Link
+                      className="week-meal-open"
+                      href={meal.href ?? "/recipes"}
+                      key={meal.entryId}
+                    >
+                      View {meal.title}
+                    </Link>
+                  ))}
+              </section>
+              {selected && selectedDay ? (
+                <DayEditor
+                  open
+                  day={selectedDay}
+                  current={dinnerMeal(selectedDay)}
+                  recipes={recipes}
+                  query={query}
+                  pending={pending}
+                  error={error}
+                  onQueryChange={setQuery}
+                  onPick={(recipeId) =>
+                    void withDinner(selectedDay.date, { recipeId, freeformMeal: null })
+                  }
+                  onClear={() =>
+                    void withDinner(selectedDay.date, { recipeId: null, freeformMeal: null })
+                  }
+                  onNoCook={() =>
+                    void withDinner(selectedDay.date, {
+                      recipeId: null,
+                      freeformMeal: NO_COOK_LABEL,
+                    })
+                  }
+                  onClose={closeEditor}
+                />
+              ) : null}
+            </Fragment>
           );
         })}
       </div>
-
-      {selectedDay ? (
-        <DayEditor
-          open
-          day={selectedDay}
-          current={dinnerMeal(selectedDay)}
-          recipes={recipes}
-          query={query}
-          pending={pending}
-          error={error}
-          onQueryChange={setQuery}
-          onPick={(recipeId) => void withDinner(selectedDay.date, { recipeId, freeformMeal: null })}
-          onClear={() => void withDinner(selectedDay.date, { recipeId: null, freeformMeal: null })}
-          onNoCook={() =>
-            void withDinner(selectedDay.date, { recipeId: null, freeformMeal: NO_COOK_LABEL })
-          }
-        />
-      ) : null}
       <KitchenToast
         message={toast?.message ?? null}
         onUndo={

@@ -289,6 +289,55 @@ describe("MealPlanWeek", () => {
     });
   });
 
+  it("opens the editor under the tapped day and Close collapses it", async () => {
+    const user = userEvent.setup();
+    const wednesday: WeekMeal = { ...pesto, date: "2026-10-14", entryId: "entry-wed" };
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [wednesday])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    const editor = screen.getByTestId("plan-editor-2026-10-14");
+    const wednesdayHeading = screen.getByRole("heading", { name: "Wednesday" });
+    const thursdayHeading = screen.getByRole("heading", { name: "Thursday" });
+    expect(
+      wednesdayHeading.compareDocumentPosition(editor) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(editor.compareDocumentPosition(thursdayHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(screen.queryByTestId("plan-editor-2026-10-12")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByTestId("plan-editor-2026-10-14")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    expect(screen.getByTestId("plan-editor-2026-10-14")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    expect(screen.queryByTestId("plan-editor-2026-10-14")).not.toBeInTheDocument();
+  });
+
+  it("keeps only one day editor open", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [pesto])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /monday/i }));
+    expect(screen.getByTestId("plan-editor-2026-10-12")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /tuesday/i }));
+    expect(screen.queryByTestId("plan-editor-2026-10-12")).not.toBeInTheDocument();
+    expect(screen.getByTestId("plan-editor-2026-10-13")).toBeInTheDocument();
+  });
+
   it("creates a plan when Sunday is still empty", async () => {
     const user = userEvent.setup();
     render(
