@@ -3,6 +3,12 @@
   gap: 8px;
 }
 
+@media (max-width: 860px) {
+  .kitchen-people.olp {
+    padding-bottom: 24px;
+  }
+}
+
 .kitchen-people.olp {
   display: block;
   min-height: 0;
@@ -109,7 +115,7 @@
   flex: 1 1 auto;
   height: 100%;
   padding: var(--olp-card-pad) 12px 12px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #ece7e0;
   border-radius: 16px;
   background: #ffffff;
