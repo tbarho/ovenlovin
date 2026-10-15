@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
+import { importGuessedNotice, importInputError } from "@/lib/import-input";
 import { isImageFile } from "@/lib/photo-import-review";
 import { PhotoImportDialog } from "./PhotoImportDialog";
 
@@ -134,6 +135,11 @@ export function ImportRecipeForm() {
   const [pending, setPending] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [imported, setImported] = useState<{
+    id: string;
+    notice: string;
+  } | null>(null);
+  const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(content.trim());
 
   const addPhotos = useCallback((next: File[]) => {
     if (next.length === 0) return;
@@ -153,12 +159,21 @@ export function ImportRecipeForm() {
       setPhotoOpen(true);
       return;
     }
+    const inputError = importInputError(source, content);
+    if (inputError) {
+      setError(inputError);
+      return;
+    }
     setPending(true);
     setError(null);
     try {
       const recipe = await api<RecipeDetails>("/api/v1/recipes/import", {
         method: "POST",
         body: JSON.stringify({ source, content }),
+      });
+      setImported({
+        id: recipe.id,
+        notice: importGuessedNotice(recipe.title, recipe.servings ?? null),
       });
       router.push(`/recipes/${recipe.id}`);
       router.refresh();
@@ -234,12 +249,22 @@ export function ImportRecipeForm() {
                 />
               )}
             </div>
-            <button className="btn primary import-submit" type="submit" disabled={pending}>
+            <button
+              className="btn primary import-submit"
+              type="submit"
+              disabled={pending || !canSubmit}
+            >
               {pending ? "Importing…" : "Import"}
             </button>
           </div>
         )}
         {error ? <p className="muted import-error">{error}</p> : null}
+        {imported ? (
+          <p className="muted" data-testid="import-review">
+            {imported.notice} ·{" "}
+            <a href={`/recipes/${imported.id}`}>Add to cookbook</a>
+          </p>
+        ) : null}
       </form>
       <PhotoImportDialog open={photoOpen} files={photoFiles} onClose={closePhoto} />
     </>

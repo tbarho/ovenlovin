@@ -63,8 +63,8 @@ export function shouldRetryFetchWithBrowserHeaders(status: number): boolean {
   return BLOCKED_STATUSES.has(status);
 }
 
-export function importBlockedMessage(status: number, statusText = "Forbidden"): string {
-  return `This site blocked the importer (${status} ${statusText}). Try importing by pasting the recipe text instead.`;
+export function importBlockedMessage(_status?: number, _statusText?: string): string {
+  return "This site blocked the importer. Try importing by pasting the recipe text instead.";
 }
 
 export function looksLikeBotChallenge(html: string): boolean {
