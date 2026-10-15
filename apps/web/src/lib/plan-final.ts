@@ -75,10 +75,19 @@ export function blockNightsFromDays(
 export function recheckNightsFromDays(
   days: Array<{
     weekday: string;
-    meals: Array<{ isNoCook: boolean; recipeId?: string | null }>;
+    meals: Array<{
+      isNoCook: boolean;
+      recipeId?: string | null;
+      checkStatus?: "complete" | "incomplete";
+    }>;
   }>
 ): string[] {
   return days
-    .filter((day) => day.meals.some((meal) => !meal.isNoCook && Boolean(meal.recipeId)))
+    .filter((day) =>
+      day.meals.some(
+        (meal) =>
+          !meal.isNoCook && Boolean(meal.recipeId) && meal.checkStatus === "incomplete"
+      )
+    )
     .map((day) => day.weekday);
 }

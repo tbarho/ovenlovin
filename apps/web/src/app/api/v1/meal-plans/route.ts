@@ -4,6 +4,7 @@ import { jsonResponse, paginatedResponse, createdResponse } from "@/lib/api/resp
 import { getRequestContext, requireHouseholdId, getIdempotencyKey } from "@/lib/api/middleware";
 import { createMealPlanBodySchema, PlanService, resolveWriteActor } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,6 +63,11 @@ export async function POST(request: NextRequest) {
 
     if (body.entries) {
       await service.replaceMealPlanEntries(plan.id, body.entries, { recordHistory: false });
+      try {
+        await persistMealPlanCheck(plan.id, householdId);
+      } catch {
+        // Dinner is saved. The recheck banner stays if this check cannot finish.
+      }
     }
 
     const detail = await service.getMealPlanWithEntries(plan.id);
