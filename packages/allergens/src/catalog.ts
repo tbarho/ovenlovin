@@ -471,12 +471,7 @@ export function resolveCatalogTarget(
 }
 
 export type PersonRuleKind =
-  | "allergen"
-  | "ingredient"
-  | "ingredient_category"
-  | "diet"
-  | "tag"
-  | "custom";
+  "allergen" | "ingredient" | "ingredient_category" | "diet" | "tag" | "custom";
 
 export function canonicalizePersonRuleTarget(
   kind: PersonRuleKind,

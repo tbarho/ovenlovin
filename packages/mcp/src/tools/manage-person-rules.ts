@@ -1,10 +1,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
-import {
-  canonicalizePersonRuleTarget,
-  unknownRuleTargetMessage,
-} from "@ovenlovin/allergens";
+import { canonicalizePersonRuleTarget, unknownRuleTargetMessage } from "@ovenlovin/allergens";
 import { createDbClient } from "@ovenlovin/db";
 
 export { canonicalizePersonRuleTarget } from "@ovenlovin/allergens";
