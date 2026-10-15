@@ -80,7 +80,7 @@ describe("MealPlanWeek", () => {
       "/recipes/pesto"
     );
     expect(screen.getAllByText("Add dinner")).toHaveLength(6);
-    expect(screen.queryByText(/wasn't fully checked/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/couldn't finish checking this dinner/i)).not.toBeInTheDocument();
   });
 
   it("does not treat a finished household check as an unfinished dinner", () => {
@@ -100,7 +100,7 @@ describe("MealPlanWeek", () => {
     const monday: WeekMeal = { ...pesto, ...checked };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [monday])} />);
     expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
-    expect(screen.queryByText(/wasn't fully checked/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/couldn't finish checking this dinner/i)).not.toBeInTheDocument();
   });
 
   it("names an unfinished dinner check instead of calling it all-clear", () => {
@@ -110,7 +110,7 @@ describe("MealPlanWeek", () => {
     expect(unfinished).toEqual({ findings: [], checkStatus: "incomplete" });
     const monday: WeekMeal = { ...pesto, ...unfinished };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [monday])} />);
-    expect(screen.getByText(/wasn't fully checked/i)).toBeVisible();
+    expect(screen.getByText(/couldn't finish checking this dinner/i)).toBeVisible();
   });
 
   it("shows every meal on a day so a hidden dinner cannot vanish from the plan", () => {
