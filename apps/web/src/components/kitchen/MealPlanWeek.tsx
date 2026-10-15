@@ -112,7 +112,7 @@ function MealCopy({ meal, cookFor }: { meal: WeekMeal; cookFor: number }) {
       {servings ? <p className="muted">{servings}</p> : null}
       {meal.checkStatus === "incomplete" && meal.findings.length === 0 ? (
         <p className="week-finding" data-severity="warn">
-          This dinner wasn&apos;t fully checked. Add who is eating, then we&apos;ll try again.
+          We couldn&apos;t finish checking this dinner.
         </p>
       ) : null}
       {uniqueFindings(meal.findings).map((finding) => (

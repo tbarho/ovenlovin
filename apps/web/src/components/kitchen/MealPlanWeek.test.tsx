@@ -1,8 +1,11 @@
+import { attendingPeopleForEntry } from "@ovenlovin/allergens";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
+import { checkMeal } from "@/lib/week-plan";
 import { groupMealsByDate, type PlanRecipePick, type WeekMeal } from "@/lib/week-plan-view";
+import { testPerson, testPersonRule } from "@/test/fixtures";
 import { MealPlanWeek } from "./MealPlanWeek";
 
 const pesto: WeekMeal = {
@@ -81,14 +84,31 @@ describe("MealPlanWeek", () => {
   });
 
   it("does not treat a finished household check as an unfinished dinner", () => {
-    const monday: WeekMeal = { ...pesto, findings: [], checkStatus: "complete" };
+    const parentA = testPerson({ displayName: "Parent A" });
+    const childB = testPerson({
+      id: "00000000-0000-4000-8000-000000000012",
+      displayName: "Child B",
+    });
+    const attendees = attendingPeopleForEntry([parentA, childB], []);
+    const checked = checkMeal(
+      attendees,
+      [testPersonRule({ personId: childB.id, target: "peanut", severity: "block" })],
+      [{ id: "ing-pasta", name: "pasta" }]
+    );
+    expect(attendees).toEqual([parentA, childB]);
+    expect(checked.checkStatus).toBe("complete");
+    const monday: WeekMeal = { ...pesto, ...checked };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [monday])} />);
     expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
     expect(screen.queryByText(/couldn't finish checking this dinner/i)).not.toBeInTheDocument();
   });
 
   it("names an unfinished dinner check instead of calling it all-clear", () => {
-    const monday: WeekMeal = { ...pesto, findings: [], checkStatus: "incomplete" };
+    const attendees = attendingPeopleForEntry([], []);
+    const unfinished = checkMeal(attendees, [], [{ id: "ing-pesto", name: "basil pesto" }]);
+    expect(attendees).toEqual([]);
+    expect(unfinished).toEqual({ findings: [], checkStatus: "incomplete" });
+    const monday: WeekMeal = { ...pesto, ...unfinished };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [monday])} />);
     expect(screen.getByText(/couldn't finish checking this dinner/i)).toBeVisible();
   });
