@@ -12,7 +12,7 @@ import {
   RecipeService,
   type ImagePutInput,
 } from "@ovenlovin/core";
-import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
+import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
 import { runPhotoImport } from "@ovenlovin/importers";
 
@@ -101,9 +101,7 @@ async function persistMainPhoto(blob: string, householdId: string): Promise<stri
 
 async function handler(input: ImportRecipeFromImageInput, context: AuthContext) {
   if (!isAiGatewayConfigured(process.env)) {
-    throw new Error(
-      "Photo import needs AI Gateway. On Vercel it uses OIDC; locally set AI_GATEWAY_API_KEY."
-    );
+    throw new Error(AI_GATEWAY_MISSING_MESSAGE);
   }
 
   const images = collectImages(input);

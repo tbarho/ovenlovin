@@ -83,6 +83,108 @@ export function formatQuantity(value: number): string {
   return whole > 0 ? `${sign}${whole} ${label}` : `${sign}${label}`;
 }
 
+type UnitFamily = Array<{ unit: string; toBase: number }>;
+
+const UNIT_FAMILIES: UnitFamily[] = [
+  [
+    { unit: "tsp", toBase: 1 },
+    { unit: "tbsp", toBase: 3 },
+    { unit: "cup", toBase: 48 },
+  ],
+  [
+    { unit: "ml", toBase: 1 },
+    { unit: "l", toBase: 1000 },
+  ],
+  [
+    { unit: "g", toBase: 1 },
+    { unit: "kg", toBase: 1000 },
+  ],
+  [
+    { unit: "oz", toBase: 1 },
+    { unit: "lb", toBase: 16 },
+  ],
+];
+
+function cookingFractionDelta(value: number): number {
+  const abs = Math.abs(value);
+  const whole = Math.floor(abs + 1e-9);
+  const frac = abs - whole;
+  if (frac < 0.02 || frac > 0.98) return 0;
+  let best = 1;
+  for (const [num, den] of COOKING_FRACTIONS) {
+    best = Math.min(best, Math.abs(frac - num / den));
+  }
+  return best;
+}
+
+function familyFor(unit: string): UnitFamily | undefined {
+  return UNIT_FAMILIES.find((family) => family.some((item) => item.unit === unit));
+}
+
+function candidateScore(
+  quantity: number,
+  unit: string,
+  originalUnit: string,
+  originalQuantity: number,
+  toBase: number
+): number {
+  const delta = cookingFractionDelta(quantity);
+  let score = delta;
+  if (delta > 0.04) score += 8;
+  if (quantity < 0.125) score += 4;
+  if (quantity > 24) score += (quantity - 24) * 0.05;
+  if (quantity < 1 && unit !== originalUnit) {
+    const niceCup = unit === "cup" && delta <= 0.04 && quantity >= 0.125;
+    if (!niceCup) score += 1.5;
+  }
+  if (cookingFractionDelta(originalQuantity) <= 0.02 && unit !== originalUnit && delta > 0.01) {
+    score += 6;
+  }
+  score -= Math.log(toBase) * 0.02;
+  if (unit === originalUnit) score -= 0.015;
+  return score;
+}
+
+export type FriendlyMeasure = {
+  displayQuantity: string;
+  displayUnit?: string;
+};
+
+/**
+ * Pick a shoppable unit and cooking-fraction label. Raw `quantity`/`unit`
+ * stay unchanged; this is display-only.
+ */
+export function toFriendlyMeasure(quantity: number, unit?: string | null): FriendlyMeasure {
+  if (!Number.isFinite(quantity)) {
+    return { displayQuantity: "", displayUnit: unit?.trim() || undefined };
+  }
+  const normalized = unit?.trim() || undefined;
+  if (!normalized) return { displayQuantity: formatQuantity(quantity) };
+
+  const family = familyFor(normalized);
+  const from = family?.find((item) => item.unit === normalized);
+  if (!family || !from) {
+    return { displayQuantity: formatQuantity(quantity), displayUnit: normalized };
+  }
+
+  const base = quantity * from.toBase;
+  let best = { unit: normalized, quantity, score: Number.POSITIVE_INFINITY };
+  for (const candidate of family) {
+    const q = base / candidate.toBase;
+    const score = candidateScore(q, candidate.unit, normalized, quantity, candidate.toBase);
+    if (score < best.score - 1e-9) {
+      best = { unit: candidate.unit, quantity: q, score };
+    }
+  }
+
+  return { displayQuantity: formatQuantity(best.quantity), displayUnit: best.unit };
+}
+
+export function formatMeasureText(quantity: number, unit?: string | null): string {
+  const { displayQuantity, displayUnit } = toFriendlyMeasure(quantity, unit);
+  return displayUnit ? `${displayQuantity} ${displayUnit}` : displayQuantity;
+}
+
 export function formatDurationMinutes(minutes: number | null | undefined): string | null {
   if (minutes == null || !Number.isFinite(minutes) || minutes < 0) return null;
   const total = Math.round(minutes);

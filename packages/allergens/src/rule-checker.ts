@@ -7,9 +7,10 @@
 
 import type { PersonRule, Severity, AllergenRelation } from "@ovenlovin/core";
 import { hintPhrasesForTarget } from "./allergen-hints";
-import { matchPhrasesForTarget } from "./catalog";
+import { humanizeTarget, matchPhrasesForTarget } from "./catalog";
 import { matchIngredient, type IngredientAllergenMapping } from "./ingredient-mapping";
 import { lineNegatesAllergen, lineNegatesPhrase } from "./negation";
+import { formatPlainFinding, formatUnmappedPlainFinding } from "./plain-language";
 import { phraseMatchesLine } from "./phrase-match";
 import { getDescendants } from "./taxonomy";
 
@@ -167,13 +168,14 @@ function formatPhraseFindingMessage(
   rule: PersonRule,
   ingredientName: string
 ): string {
-  const severityIcon = {
-    block: "⛔",
-    warn: "⚠️",
-    prefer_avoid: "ℹ️",
-  }[rule.severity];
-  const label = rule.label?.trim() || rule.target;
-  return `${severityIcon} ${personName} (${rule.severity}: ${label}). "${ingredientName}" matches ${label}.`;
+  return formatPlainFinding({
+    personName,
+    severity: rule.severity,
+    allergenCode: rule.target,
+    allergenName: rule.label?.trim() || humanizeTarget(rule.target),
+    ingredientName,
+    relation: "contains",
+  });
 }
 
 /**
@@ -295,7 +297,7 @@ function ambiguousMatchReason(
   const hinted = hints.find((hint) => phraseMatchesLine(hint, ingredient.name));
   if (!hinted) return undefined;
 
-  return `Could not classify "${ingredient.name}" against ${personName}'s ${rule.target} rule`;
+  return `Could not classify "${ingredient.name}" against ${personName}'s ${humanizeTarget(rule.target)} rule`;
 }
 
 /**
@@ -307,31 +309,15 @@ function formatFindingMessage(
   ingredientName: string,
   mapping: IngredientAllergenMapping
 ): string {
-  const severityIcon = {
-    block: "⛔",
-    warn: "⚠️",
-    prefer_avoid: "ℹ️",
-  }[rule.severity];
-
-  const relationText = {
-    contains: "contains",
-    may_contain: "may contain",
-    derived_from: "is derived from",
-    commonly_cross_contact: "may have cross-contact with",
-  }[mapping.relation];
-
-  let message = `${severityIcon} ${personName} (${rule.severity}: ${rule.target}). `;
-  message += `"${ingredientName}" ${relationText} ${mapping.name}.`;
-
-  if (mapping.notes) {
-    message += ` ${mapping.notes}`;
-  }
-
-  if (rule.label) {
-    message += ` [${rule.label}]`;
-  }
-
-  return message;
+  return formatPlainFinding({
+    personName,
+    severity: rule.severity,
+    allergenCode: mapping.allergenCode || rule.target,
+    allergenName: mapping.name,
+    ingredientName,
+    relation: mapping.relation,
+    note: rule.label,
+  });
 }
 
 /**
@@ -339,14 +325,8 @@ function formatFindingMessage(
  */
 function formatUnmappedMessage(
   personName: string,
-  rule: PersonRule,
+  _rule: PersonRule,
   ingredientName: string
 ): string {
-  const severityIcon = {
-    block: "⛔",
-    warn: "⚠️",
-    prefer_avoid: "ℹ️",
-  }[rule.severity];
-
-  return `${severityIcon} ${personName} (${rule.severity}: ${rule.target}). "${ingredientName}" is not mapped in the allergen database. Please verify this ingredient manually.`;
+  return formatUnmappedPlainFinding({ personName, ingredientName });
 }

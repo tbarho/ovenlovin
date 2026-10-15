@@ -222,6 +222,8 @@ describe("ShoppingListService", () => {
       name: "olive oil",
       quantity: 1.6667,
       unit: "tbsp",
+      displayQuantity: "1 2/3",
+      displayUnit: "tbsp",
     });
   });
 
@@ -291,7 +293,49 @@ describe("ShoppingListService", () => {
     );
 
     expect(list.ingredients).toHaveLength(1);
-    expect(list.ingredients[0]).toMatchObject({ name: "salt", quantity: 1.6667, unit: "tbsp" });
+    expect(list.ingredients[0]).toMatchObject({
+      name: "salt",
+      quantity: 1.6667,
+      unit: "tbsp",
+      displayQuantity: "1 2/3",
+      displayUnit: "tbsp",
+    });
+  });
+
+  it("exposes friendly display fields for ugly merged spoon amounts", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "ziti", servings: 4 }),
+          recipeTitle: "Baked ziti",
+          recipeServings: 4,
+          ingredients: [{ rawText: "2 tsp salt" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "salmon", servings: 4 }),
+          recipeTitle: "Sheet-pan salmon",
+          recipeServings: 4,
+          ingredients: [{ rawText: "0.5 tsp salt" }],
+        },
+        {
+          entry: entry({ id: "entry-3", recipeId: "roast", servings: 4 }),
+          recipeTitle: "Sunday roast",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tbsp salt" }],
+        },
+      ],
+      { includeStaples: true }
+    );
+
+    expect(list.ingredients[0]).toMatchObject({
+      name: "salt",
+      quantity: 1.8333,
+      unit: "tbsp",
+      displayQuantity: "5 1/2",
+      displayUnit: "tsp",
+    });
+    expect(service.exportAsMarkdown(list)).toContain("5 1/2 tsp salt");
+    expect(service.exportAsMarkdown(list)).not.toContain("1.8333");
   });
 
   it("S2: groupBy recipe keeps per-recipe sections", () => {

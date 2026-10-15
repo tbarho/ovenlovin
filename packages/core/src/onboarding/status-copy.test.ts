@@ -56,7 +56,12 @@ describe("describeConfigStatus", () => {
     expect(status.ready).toBe(true);
     expect(status.mode).toBe("demo");
     expect(status.checks.find((c) => c.id === "clerk")?.detail).toMatch(/not required/);
-    expect(status.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/URL import works/);
+    expect(status.checks.find((c) => c.id === "aiGateway")?.configured).toBe(false);
+    expect(status.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/AI_GATEWAY_API_KEY/);
+    expect(status.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/VERCEL_OIDC_TOKEN/);
+    expect(status.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(
+      /URL and paste import still work/
+    );
     expect(status.checks.find((c) => c.id === "blob")?.configured).toBe(false);
     expect(status.checks.find((c) => c.id === "blob")?.required).toBe(false);
     expect(status.checks.find((c) => c.id === "blob")?.detail).toMatch(/BLOB_READ_WRITE_TOKEN/);
@@ -72,6 +77,19 @@ describe("describeConfigStatus", () => {
     });
     expect(status.checks.find((c) => c.id === "blob")?.configured).toBe(true);
     expect(status.checks.find((c) => c.id === "blob")?.detail).toMatch(/copied to Vercel Blob/);
+  });
+
+  it("reports AI Gateway from the shared configured flag, including on the demo", () => {
+    const demoReady = describeConfigStatus({
+      databaseConfigured: true,
+      databaseReachable: true,
+      clerkConfigured: false,
+      aiGatewayConfigured: true,
+      demoMode: true,
+    });
+    expect(demoReady.checks.find((c) => c.id === "aiGateway")?.configured).toBe(true);
+    expect(demoReady.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/OIDC/);
+    expect(demoReady.ready).toBe(true);
   });
 
   it("exposes the Vercel git commit SHA when provided", () => {

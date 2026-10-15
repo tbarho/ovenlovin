@@ -14,9 +14,9 @@ describe("ShoppingList", () => {
             recipes: ["Weeknight pesto pasta"],
             warnings: [
               {
-                personName: "Jake",
+                personName: "Child B",
                 severity: "block",
-                message: "Jake: pesto matches a tree nut block.",
+                message: "Contains tree nuts, so Child B can't eat this",
               },
             ],
           },
@@ -26,7 +26,30 @@ describe("ShoppingList", () => {
 
     expect(screen.getByTestId("shopping-list")).toBeInTheDocument();
     expect(screen.getByText("1/3 cup basil pesto")).toBeInTheDocument();
-    expect(screen.getByText("Jake: pesto matches a tree nut block.")).toBeInTheDocument();
+    expect(screen.getByText("Contains tree nuts, so Child B can't eat this")).toBeInTheDocument();
+    expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
+  });
+
+  it("shows friendly fractions instead of long decimals", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "salt",
+            name: "salt",
+            quantity: 1.8333,
+            unit: "tbsp",
+            displayQuantity: "5 1/2",
+            displayUnit: "tsp",
+            recipes: ["Baked ziti"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText(/5 1\/2 tsp/)).toBeInTheDocument();
+    expect(screen.queryByText(/1\.83/)).not.toBeInTheDocument();
   });
 
   it("lets a shopper check an item off without removing the warning", async () => {

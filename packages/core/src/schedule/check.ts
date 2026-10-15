@@ -1,6 +1,6 @@
 import type { WeeklyNight } from "./week";
 
-export type ScheduleIssueType = "time_budget" | "method_mismatch" | "attendance";
+export type ScheduleIssueType = "time_budget" | "not_cooking_night" | "attendance";
 
 export type ScheduleIssue = {
   type: ScheduleIssueType;
@@ -49,7 +49,7 @@ export function scheduleIssuesForNight(input: {
 
   if (!night.cooking) {
     issues.push({
-      type: "method_mismatch",
+      type: "not_cooking_night",
       message: `"${input.recipeTitle}" is planned on ${night.day}, which is marked as not a cooking night.`,
     });
     return issues;

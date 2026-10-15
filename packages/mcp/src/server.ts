@@ -18,7 +18,7 @@ import {
 
 import type { AuthContext } from "./auth/index";
 import { listResources, readResource } from "./resources/index";
-import { listedTools } from "./protocol";
+import { listedTools, wrapToolResult } from "./protocol";
 import { MCP_TOOLS } from "./tools/registry";
 
 export interface ServerConfig {
@@ -72,15 +72,7 @@ export function createServer(config: ServerConfig = {}) {
 
     const validated = tool.inputSchema.parse(args || {});
     const result = await tool.handler(validated as never, authContext);
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(result, null, 2),
-        },
-      ],
-    };
+    return wrapToolResult(result);
   });
 
   server.setRequestHandler(ListResourcesRequestSchema, async () => {

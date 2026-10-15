@@ -79,9 +79,14 @@ describe("draftFromPlainText", () => {
         "Steps",
         "1. Sear the beef.",
         "2) Stir in sour cream.",
+        "Step 3: Stir gently.",
       ].join("\n")
     );
-    expect(draft.steps.map((item) => item.text)).toEqual(["Sear the beef.", "Stir in sour cream."]);
+    expect(draft.steps.map((item) => item.text)).toEqual([
+      "Sear the beef.",
+      "Stir in sour cream.",
+      "Stir gently.",
+    ]);
     expect(draft.source.url).toBe("https://natashaskitchen.com/beef-stroganoff/");
     expect(draft.ingredients.map((item) => item.rawText)).toEqual(["1 lb beef"]);
   });
@@ -96,10 +101,15 @@ describe("draftFromPlainText", () => {
 });
 
 describe("stripLeadingStepNumber", () => {
-  it("removes 1. and 2) prefixes but leaves ingredient-like text", () => {
+  it("removes 1., 2), and Step N: prefixes but leaves ingredient-like text", () => {
     expect(stripLeadingStepNumber("1. Sear the beef.")).toBe("Sear the beef.");
     expect(stripLeadingStepNumber("2) Mix well.")).toBe("Mix well.");
+    expect(stripLeadingStepNumber("Step 3: Stir gently.")).toBe("Stir gently.");
+    expect(stripLeadingStepNumber("Step 3. Fold in the whites.")).toBe("Fold in the whites.");
+    expect(stripLeadingStepNumber("STEP 4: Rest.")).toBe("Rest.");
     expect(stripLeadingStepNumber("1 cup flour")).toBe("1 cup flour");
+    expect(stripLeadingStepNumber("1.5 cups milk")).toBe("1.5 cups milk");
+    expect(stripLeadingStepNumber("Step into the pan.")).toBe("Step into the pan.");
   });
 });
 
