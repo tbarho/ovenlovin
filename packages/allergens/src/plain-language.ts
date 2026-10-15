@@ -48,13 +48,20 @@ export function formatPlainFinding(input: {
       : fromName || humanFoodName(input.allergenCode || input.allergenName);
   const person = input.personName.trim() || "This person";
   const lead = containsLead(food, input.relation);
+  const ingredients = (input.ingredientName ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part && part.toLowerCase() !== food.toLowerCase());
+  const uniqueIngredients = [...new Set(ingredients)];
+  const withIngredients =
+    uniqueIngredients.length > 0 ? `${lead} (${uniqueIngredients.join(", ")})` : lead;
 
   let message =
     input.severity === "block"
-      ? `${lead}, so ${person} can't eat this`
+      ? `${withIngredients}, so ${person} can't eat this`
       : input.severity === "warn"
-        ? `${lead}, so check with ${person} first`
-        : `${lead}, and ${person} usually skips this`;
+        ? `${withIngredients}, so check with ${person} first`
+        : `${withIngredients}, and ${person} usually skips this`;
 
   const note = input.note?.trim();
   if (note && !MACHINE_SEVERITY.test(note) && !note.includes("_")) {

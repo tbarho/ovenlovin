@@ -7,6 +7,17 @@ import {
 } from "./plain-language";
 
 describe("plain-language findings", () => {
+  it("lists the offending ingredients next to the allergen", () => {
+    expect(
+      formatPlainFinding({
+        personName: "Parent A",
+        severity: "warn",
+        allergenCode: "milk",
+        ingredientName: "mozzarella, parmesan",
+      })
+    ).toBe("Contains dairy (mozzarella, parmesan), so check with Parent A first");
+  });
+
   it("names the person and the food, never a severity or allergen code", () => {
     const message = formatPlainFinding({
       personName: "Child B",

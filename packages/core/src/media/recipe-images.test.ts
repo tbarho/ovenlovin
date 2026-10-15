@@ -11,6 +11,8 @@ import {
   keepMainRecipeImages,
   omitInlineImagePayloads,
   parseImageDataUrl,
+  presentPhotoImportImages,
+  fingerprintImageBlob,
   persistRecipeImageUrl,
   presentRecipeImages,
   publicRecipeImages,
@@ -111,6 +113,19 @@ describe("recipe images", () => {
     expect(publicRecipeImages(recipeId, ["https://blob.example/main.jpg"])).toEqual([
       "https://blob.example/main.jpg",
     ]);
+  });
+
+  it("fingerprints photo imports without returning base64 in preview JSON", () => {
+    expect(fingerprintImageBlob("https://cdn.example/card.jpg")).toBe(
+      "url:https://cdn.example/card.jpg"
+    );
+    expect(fingerprintImageBlob(dataUrl)).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(fingerprintImageBlob(dataUrl)).toBe(fingerprintImageBlob(dataUrl));
+    expect(presentPhotoImportImages([dataUrl, "https://blob.example/main.jpg"])).toEqual([
+      "https://blob.example/main.jpg",
+    ]);
+    expect(presentPhotoImportImages([dataUrl])).toEqual([]);
+    expect(JSON.stringify(presentPhotoImportImages([dataUrl]))).not.toContain("base64");
   });
 
   it("uploads inline data URLs when a blob put is available", async () => {
