@@ -85,8 +85,7 @@ export function recheckNightsFromDays(
   return days
     .filter((day) =>
       day.meals.some(
-        (meal) =>
-          !meal.isNoCook && Boolean(meal.recipeId) && meal.checkStatus === "incomplete"
+        (meal) => !meal.isNoCook && Boolean(meal.recipeId) && meal.checkStatus === "incomplete"
       )
     )
     .map((day) => day.weekday);
