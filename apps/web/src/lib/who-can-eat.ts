@@ -1,5 +1,6 @@
 import {
   checkIngredientsAgainstRules,
+  collapseRuleFindings,
   formatPlainFinding,
   sanitizeWarningCopy,
   type IngredientCheckInput,
@@ -102,7 +103,7 @@ export function whoCanEat(opts: {
     status: result.status,
     incompleteReasons: result.incompleteReasons ?? [],
     people: opts.people.map((person) => {
-      const findings = findingsByPerson.get(person.id) ?? [];
+      const findings = collapseRuleFindings(findingsByPerson.get(person.id) ?? []);
       const mark = worstMark(findings);
       const reasons =
         findings.length > 0

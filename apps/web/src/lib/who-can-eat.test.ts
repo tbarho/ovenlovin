@@ -92,6 +92,8 @@ describe("whoCanEat", () => {
     const reasons = result.people[0]?.reasons ?? [];
     const dairy = reasons.filter((reason) => /dairy/i.test(reason));
     expect(dairy).toHaveLength(1);
+    expect(dairy[0]).toMatch(/mozzarella/i);
+    expect(dairy[0]).toMatch(/parmesan/i);
   });
 
   it("does not report a clean bill when the check is incomplete", () => {

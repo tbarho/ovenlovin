@@ -15,8 +15,14 @@ export const saveMealPlanSchema = z.object({
     z.object({
       date: z.string().date(),
       meal: z.string(),
-      recipeId: z.string().uuid(),
-      servings: z.number().int().positive(),
+      recipeId: z.string().uuid().optional(),
+      freeformMeal: z
+        .string()
+        .min(1)
+        .max(255)
+        .optional()
+        .describe("Leftovers, eat-out, or an empty night with no recipe"),
+      servings: z.number().int().positive().optional(),
       attendees: z.array(z.string()),
       prepAheadNotes: z.string().optional(),
     })
@@ -67,8 +73,9 @@ async function handler(
       mealPlanId: plan.id,
       date: entry.date,
       mealSlot: entry.meal,
-      recipeId: entry.recipeId,
-      servings: entry.servings,
+      recipeId: entry.recipeId ?? null,
+      freeformMeal: entry.freeformMeal ?? null,
+      servings: entry.servings ?? null,
       attendees: entry.attendees,
       prepAheadNotes: entry.prepAheadNotes ?? null,
     });
@@ -86,7 +93,7 @@ async function handler(
 export const saveMealPlanTool = {
   name: "save_meal_plan",
   description:
-    "Save a meal plan to the database with the check report. Must include the latest check_meal_plan result.",
+    "Save a meal plan to the database with the check report. Nights may omit recipeId (leftovers, eat-out, empty). Must include the latest check_meal_plan result.",
   inputSchema: saveMealPlanSchema,
   handler,
 } as const;

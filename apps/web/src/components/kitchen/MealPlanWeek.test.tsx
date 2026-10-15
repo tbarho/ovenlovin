@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
@@ -172,6 +172,52 @@ describe("MealPlanWeek", () => {
         ],
       }),
     });
+  });
+
+  it("finishes an in-flight swap before persisting a clear", async () => {
+    const user = userEvent.setup();
+    let releaseFirst: () => void = () => undefined;
+    const firstHold = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let started = 0;
+    vi.mocked(api).mockImplementation(async () => {
+      started += 1;
+      if (started === 1) await firstHold;
+      return { id: "plan-1" };
+    });
+
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [pesto])}
+        planId="plan-1"
+        weekStart="2026-10-12"
+        recipes={recipes}
+        entries={[
+          {
+            id: "entry-1",
+            date: "2026-10-12",
+            mealSlot: "dinner",
+            recipeId: "recipe-pesto",
+            freeformMeal: null,
+            servings: 4,
+            attendees: [],
+          },
+        ]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /monday/i }));
+    const editor = screen.getByTestId("plan-editor-2026-10-12");
+    await user.click(within(editor).getByRole("button", { name: /veggie tacos/i }));
+    await waitFor(() => expect(started).toBe(1));
+    await user.click(within(editor).getByRole("button", { name: "Clear night" }));
+    expect(started).toBe(1);
+    releaseFirst();
+    await waitFor(() => expect(started).toBe(2));
+    const bodies = vi.mocked(api).mock.calls.map((call) => JSON.parse(String(call[1]?.body)));
+    expect(bodies[0]?.entries?.[0]?.recipeId).toBe("recipe-tacos");
+    expect(bodies[1]?.entries?.[0]?.clear).toBe(true);
   });
 
   it("marks a night as no-cook and can clear a planned dinner", async () => {

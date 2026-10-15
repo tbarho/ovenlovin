@@ -168,6 +168,26 @@ describe("fetchHtml layers", () => {
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
   });
 
+  it("returns Wikibooks HTML that has no JSON-LD instead of calling it blocked", async () => {
+    const html = fixture("wikibooks-pancakes.html");
+    expect(isUsableRecipeHtml(html)).toBe(true);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://en.wikibooks.org/wiki/Cookbook:Pancakes",
+      text: async () => html,
+    });
+
+    const result = await fetchHtml("https://en.wikibooks.org/wiki/Cookbook:Pancakes", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+    });
+    expect(result.via).toBe("direct");
+    expect(result.html).toMatch(/Ingredients/);
+    expect(extractJsonLd(result.html)).toBeNull();
+  });
+
   it("throws a paste-text fallback when every layer fails", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,

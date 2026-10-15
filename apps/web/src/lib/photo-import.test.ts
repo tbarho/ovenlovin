@@ -5,6 +5,7 @@ import {
   draftFromPhotoPreview,
   parseDataUrl,
   persistMainPhoto,
+  presentPhotoImportPreview,
   previewFromDraft,
 } from "./photo-import";
 import type { RecipeDraft } from "@ovenlovin/importers";
@@ -129,6 +130,9 @@ describe("preview and save draft", () => {
     );
     expect(preview.images).toEqual([data]);
     expect(preview.source.blobRefs ?? []).toEqual([]);
+    const presented = presentPhotoImportPreview(preview);
+    expect(presented.images).toEqual([]);
+    expect(JSON.stringify(presented)).not.toContain("base64");
   });
 
   it("marks needsReview when uncertain fields are listed", () => {

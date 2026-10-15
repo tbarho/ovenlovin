@@ -27,6 +27,7 @@ import {
   managePeopleTool,
   managePersonRulesTool,
   manageHouseholdScheduleTool,
+  canonicalizePersonRuleTarget,
 } from "./index.js";
 
 describe("MCP Tool Schemas", () => {
@@ -109,6 +110,28 @@ describe("MCP Tool Schemas", () => {
       const result = checkMealPlanTool.inputSchema.safeParse({});
       expect(result.success).toBe(false);
     });
+
+    it("allows leftovers, eat-out, and empty nights without a recipeId", () => {
+      const result = checkMealPlanTool.inputSchema.safeParse({
+        plan: {
+          weekStart: "2026-10-13",
+          entries: [
+            {
+              date: "2026-10-13",
+              meal: "dinner",
+              freeformMeal: "Leftovers",
+              attendees: ["person-1"],
+            },
+            {
+              date: "2026-10-14",
+              meal: "dinner",
+              attendees: [],
+            },
+          ],
+        },
+      });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe("get_person_rules", () => {
@@ -148,6 +171,22 @@ describe("MCP Tool Schemas", () => {
             recipeId: "550e8400-e29b-41d4-a716-446655440000",
             servings: 4,
             attendees: ["person-1"],
+          },
+        ],
+        checkReportJson: { status: "complete" },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("allows a freeform night without a recipeId", () => {
+      const result = saveMealPlanTool.inputSchema.safeParse({
+        weekStart: "2026-10-13",
+        entries: [
+          {
+            date: "2026-10-13",
+            meal: "dinner",
+            freeformMeal: "Leftovers",
+            attendees: [],
           },
         ],
         checkReportJson: { status: "complete" },
@@ -335,6 +374,13 @@ describe("MCP Tool Schemas", () => {
           id: "550e8400-e29b-41d4-a716-446655440000",
         }).success
       ).toBe(true);
+    });
+
+    it("canonicalizes allergen typos like the People UI", () => {
+      const resolved = canonicalizePersonRuleTarget("allergen", "pean");
+      expect(resolved.target).toBe("peanut");
+      expect(resolved.kind).toBe("allergen");
+      expect(resolved.canonicalized).toBe(true);
     });
 
     it("validates manage_people and manage_person_rules", () => {

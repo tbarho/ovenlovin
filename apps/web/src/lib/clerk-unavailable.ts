@@ -1,3 +1,5 @@
+import { demoKitchenEnterHref } from "@/lib/kitchen-session";
+
 export function clerkUnavailableCopy(demo: boolean): {
   title: string;
   body: string;
@@ -8,7 +10,7 @@ export function clerkUnavailableCopy(demo: boolean): {
     return {
       title: "Sign-in isn't available in the demo",
       body: "This sandbox is already open. You can go back to the kitchen without creating an account.",
-      href: "/recipes",
+      href: demoKitchenEnterHref("/recipes"),
       linkLabel: "Back to recipes",
     };
   }
