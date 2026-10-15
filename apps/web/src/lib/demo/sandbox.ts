@@ -161,6 +161,23 @@ export async function findDemoSandboxByHousehold(
   };
 }
 
+export async function resetDemoSandbox(
+  cookieId: string | undefined,
+  db: DbClient = getDatabase()
+): Promise<DemoSandboxRecord> {
+  if (cookieId) {
+    const existing = await findDemoSandboxById(cookieId, db);
+    if (existing) {
+      await wipeSandboxHousehold(db, {
+        id: existing.id,
+        householdId: existing.householdId,
+        userId: existing.userId,
+      });
+    }
+  }
+  return getOrCreateDemoSandbox(undefined, db);
+}
+
 export async function wipeExpiredDemoSandboxes(
   db: DbClient = getDatabase(),
   now = new Date()

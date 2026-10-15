@@ -35,6 +35,17 @@ describe("buildAgentGuides", () => {
     expect(prompt).toContain("De-duplicate by source URL");
   });
 
+  it("hides the sign-in step when a sandbox key is already shown", () => {
+    const [grok] = buildAgentGuides({
+      origin: "https://ovenlovin-demo.vercel.app",
+      apiKey: "rkapi_demo",
+    });
+    expect(grok?.steps.some((step) => /sign in here/i.test(step))).toBe(false);
+    expect(buildAgentGuides({ origin: "https://ovenlovin.vercel.app" })[0]?.steps[0]).toMatch(
+      /sign in here/i
+    );
+  });
+
   it("substitutes a generated API key when provided", () => {
     const [grok] = buildAgentGuides({
       origin: "https://kitchen.example",
