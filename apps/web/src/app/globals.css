@@ -1173,6 +1173,133 @@ select {
   accent-color: var(--orange);
 }
 
+.servings-stepper {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.section-head h1,
+.section-head h2 {
+  margin: 0;
+}
+
+.section-edit {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--orange-deep);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.recipe-hero-edit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.recipe-browse {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 var(--space-3);
+}
+
+.recipe-scope {
+  justify-content: flex-start;
+}
+
+.kitchen-tour {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: 0 0 var(--space-3);
+  padding: 14px 16px;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #fffaf4;
+}
+
+.kitchen-tour h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.kitchen-tour ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.kitchen-tour a {
+  color: var(--orange-deep);
+  font-weight: 650;
+}
+
+.who-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.who-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.who-chip-ok {
+  background: #e7f6ec;
+  color: #1f7a3d;
+}
+
+.who-chip-warn {
+  background: #fff3dc;
+  color: #8a5a12;
+}
+
+.who-chip-block {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
+.photo-preview {
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.photo-preview img {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+}
+
 .recipe-actions {
   display: flex;
   flex-wrap: wrap;
