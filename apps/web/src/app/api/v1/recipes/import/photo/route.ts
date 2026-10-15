@@ -9,11 +9,15 @@ import { createVercelImagePut } from "@/lib/blob-store";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { readPhotoImportRequest } from "@/lib/photo-import-request";
 import {
+  classifyPhotoImportPreview,
   draftFromPhotoPreview,
   extractPhotoPreview,
   presentPhotoImportPreview,
 } from "@/lib/photo-import";
 import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +50,20 @@ export async function POST(request: NextRequest) {
       householdId,
       isHandwritten: input.isHandwritten,
       put: createVercelImagePut(),
+      abortSignal: request.signal,
     });
+    const failure = classifyPhotoImportPreview(preview);
+    if (failure === "blurry") {
+      throw new BadRequestError(
+        "This photo is too blurry to read. Try a sharper shot, or type or paste it.",
+        { code: "PHOTO_BLURRY" }
+      );
+    }
+    if (failure === "not_recipe") {
+      throw new BadRequestError("That does not look like a recipe. Type or paste it instead.", {
+        code: "PHOTO_NOT_RECIPE",
+      });
+    }
 
     if (!input.save) {
       return jsonResponse(presentPhotoImportPreview(preview));

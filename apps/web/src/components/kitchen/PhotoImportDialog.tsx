@@ -1,10 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/browser-api";
-import type { PhotoImportPreview } from "@/lib/photo-import";
 import {
+  PHOTO_IMPORT_ESTIMATE,
+  PHOTO_IMPORT_STEPS,
+  photoImportAnnouncement,
+  photoImportStepReached,
+  uploadingStepLabel,
+  type PhotoImportPhase,
+} from "@/lib/photo-import-client";
+import {
+  cancelPhotoImportJob,
+  retryPhotoImportJob,
+  subscribePhotoImportJob,
+  type PhotoImportJobSnapshot,
+} from "@/lib/photo-import-job";
+import {
+  isUncertainReviewField,
   recipeCreateBodyFromReview,
   reviewDraftFromPreview,
   type PhotoReviewDraft,
@@ -20,24 +34,53 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-async function extractFromFiles(files: File[]): Promise<PhotoImportPreview> {
-  const data = new FormData();
-  for (const file of files) {
-    data.append("image", file);
-  }
-  const response = await fetch("/api/v1/recipes/import/photo", {
-    method: "POST",
-    credentials: "include",
-    body: data,
-  });
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => ({ title: response.statusText }))) as {
-      detail?: string;
-      title?: string;
-    };
-    throw new Error(problem.detail || problem.title || "Could not read that photo");
-  }
-  return (await response.json()) as PhotoImportPreview;
+function stepLabel(stepId: (typeof PHOTO_IMPORT_STEPS)[number]["id"], percent: number): string {
+  if (stepId === "uploading") return uploadingStepLabel(percent);
+  return PHOTO_IMPORT_STEPS.find((step) => step.id === stepId)?.label ?? stepId;
+}
+
+function PhotoImportProgress({
+  phase,
+  percent,
+  previewUrl,
+}: {
+  phase: Extract<PhotoImportPhase, "uploading" | "reading">;
+  percent: number;
+  previewUrl: string | null;
+}) {
+  const announcement = photoImportAnnouncement(phase, percent);
+  return (
+    <div className="sheet-stack">
+      {previewUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="photo-review-hero" src={previewUrl} alt="Selected recipe photo" />
+      ) : null}
+      <ol className="sheet-steps">
+        {PHOTO_IMPORT_STEPS.map((step) => (
+          <li
+            key={step.id}
+            className={photoImportStepReached(step.id, phase) ? "is-current" : undefined}
+          >
+            {stepLabel(step.id, percent)}
+          </li>
+        ))}
+      </ol>
+      <div
+        className="photo-import-meter"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={phase === "uploading" ? percent : 100}
+        aria-label={phase === "uploading" ? "Upload" : "Reading"}
+      >
+        <span style={{ width: `${phase === "uploading" ? percent : 100}%` }} />
+      </div>
+      <p className="sheet-lead">{PHOTO_IMPORT_ESTIMATE}.</p>
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
+    </div>
+  );
 }
 
 function PhotoReviewForm({
@@ -55,22 +98,30 @@ function PhotoReviewForm({
   onChange: (next: PhotoReviewDraft) => void;
   onSave: (event: React.FormEvent) => void;
 }) {
+  const uncertain = draft.uncertainFields;
   return (
     <form className="form-card photo-review-form" style={{ margin: 0 }} onSubmit={onSave}>
-      {draft.uncertainFields.length > 0 ? (
-        <p className="import-warn" role="status">
-          This photo was hard to read. Check {draft.uncertainFields.join(", ")}.
+      <ol className="sheet-steps">
+        {PHOTO_IMPORT_STEPS.map((step) => (
+          <li key={step.id} className="is-current">
+            {step.label}
+          </li>
+        ))}
+      </ol>
+      {uncertain.length > 0 ? (
+        <p className="import-warn" role="status" aria-live="polite">
+          Ready to review. This photo was hard to read. Check {uncertain.join(", ")}.
         </p>
       ) : (
-        <p className="sheet-lead">
-          Fix anything that looks off, then save. One main photo is kept.
+        <p className="sheet-lead" role="status" aria-live="polite">
+          Ready to review. Fix anything that looks off, then save. One main photo is kept.
         </p>
       )}
       {heroSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="photo-review-hero" src={heroSrc} alt="" />
+        <img className="photo-review-hero" src={heroSrc} alt="Selected recipe photo" />
       ) : null}
-      <label>
+      <label className={isUncertainReviewField(uncertain, "title") ? "is-uncertain" : undefined}>
         Title
         <input
           value={draft.title}
@@ -79,7 +130,9 @@ function PhotoReviewForm({
         />
       </label>
       <div className="photo-review-meta">
-        <label>
+        <label
+          className={isUncertainReviewField(uncertain, "servings") ? "is-uncertain" : undefined}
+        >
           Servings
           <input
             type="number"
@@ -88,7 +141,7 @@ function PhotoReviewForm({
             onChange={(event) => onChange({ ...draft, servings: event.target.value })}
           />
         </label>
-        <label>
+        <label className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}>
           Prep (min)
           <input
             type="number"
@@ -97,7 +150,7 @@ function PhotoReviewForm({
             onChange={(event) => onChange({ ...draft, prepTimeMinutes: event.target.value })}
           />
         </label>
-        <label>
+        <label className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}>
           Cook (min)
           <input
             type="number"
@@ -123,7 +176,9 @@ function PhotoReviewForm({
           placeholder="Cookbook, author, or URL if you saw one"
         />
       </label>
-      <label>
+      <label
+        className={isUncertainReviewField(uncertain, "ingredients") ? "is-uncertain" : undefined}
+      >
         Ingredients
         <textarea
           rows={6}
@@ -132,7 +187,7 @@ function PhotoReviewForm({
           required
         />
       </label>
-      <label>
+      <label className={isUncertainReviewField(uncertain, "steps") ? "is-uncertain" : undefined}>
         Steps
         <textarea
           rows={6}
@@ -151,103 +206,108 @@ function PhotoReviewForm({
 
 export function PhotoImportDialog({
   open,
-  files,
   onClose,
+  onTypeOrPaste,
 }: {
   open: boolean;
-  files: File[];
   onClose: () => void;
+  onTypeOrPaste: () => void;
 }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<"reading" | "review" | "error">("reading");
+  const [job, setJob] = useState<PhotoImportJobSnapshot | null>(null);
   const [draft, setDraft] = useState<PhotoReviewDraft | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [localHero, setLocalHero] = useState<string | null>(null);
-  const extractedKey = useRef<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => subscribePhotoImportJob(setJob), []);
 
   useEffect(() => {
-    const file = files[0];
-    if (!open || !file) {
-      setLocalHero(null);
-      return;
+    if (job?.phase === "review" && job.preview) {
+      setDraft(reviewDraftFromPreview(job.preview));
+      setSaveError(null);
     }
-    const url = URL.createObjectURL(file);
-    setLocalHero(url);
-    return () => URL.revokeObjectURL(url);
-  }, [open, files]);
+    if (job?.phase !== "review") setDraft(null);
+  }, [job]);
 
-  useEffect(() => {
-    if (!open) {
-      extractedKey.current = null;
-      setDraft(null);
-      setPhase("reading");
-      setError(null);
-      setPending(false);
-      return;
-    }
-
-    const key = files.map((file) => `${file.name}:${file.size}:${file.lastModified}`).join("|");
-    if (!key || extractedKey.current === key) return;
-    extractedKey.current = key;
-
-    let cancelled = false;
-    setPhase("reading");
-    setError(null);
-    void extractFromFiles(files)
-      .then((preview) => {
-        if (cancelled) return;
-        setDraft(reviewDraftFromPreview(preview));
-        setPhase("review");
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Could not read that photo");
-        setPhase("error");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, files]);
+  function cancelImport() {
+    cancelPhotoImportJob();
+    onClose();
+  }
 
   async function saveReview(event: React.FormEvent) {
     event.preventDefault();
-    if (!draft) return;
+    if (!draft || !job) return;
     setPending(true);
-    setError(null);
+    setSaveError(null);
     try {
       const body = recipeCreateBodyFromReview(draft);
-      if ((!body.images || body.images.length === 0) && files[0]) {
-        body.images = [await fileToDataUrl(files[0])];
+      if ((!body.images || body.images.length === 0) && job.files[0]) {
+        body.images = [await fileToDataUrl(job.files[0])];
       }
       const recipe = await api<{ id: string }>("/api/v1/recipes", {
         method: "POST",
         body: JSON.stringify(body),
       });
+      cancelPhotoImportJob();
       onClose();
       router.push(`/recipes/${recipe.id}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save recipe");
+      setSaveError(err instanceof Error ? err.message : "Could not save recipe");
       setPending(false);
     }
   }
 
+  const phase = job?.phase ?? "uploading";
+
   return (
     <BottomSheet open={open} title="Import from photo" onClose={onClose}>
-      {phase === "reading" ? (
-        <p className="sheet-lead" role="status">
-          Reading the recipe…
-        </p>
+      {phase === "uploading" || phase === "reading" ? (
+        <>
+          <PhotoImportProgress
+            phase={phase}
+            percent={job?.percent ?? 0}
+            previewUrl={job?.previewUrl ?? null}
+          />
+          <div className="sheet-actions">
+            <button type="button" className="btn compact" onClick={cancelImport}>
+              Cancel
+            </button>
+          </div>
+        </>
       ) : null}
-      {phase === "error" ? <p className="import-warn">{error}</p> : null}
+      {phase === "error" ? (
+        <div className="sheet-stack">
+          {job?.previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="photo-review-hero" src={job.previewUrl} alt="Selected recipe photo" />
+          ) : null}
+          <p className="import-warn" role="status" aria-live="polite">
+            {job?.errorMessage}
+          </p>
+          <div className="sheet-actions photo-import-error-actions">
+            <button type="button" className="btn compact" onClick={onTypeOrPaste}>
+              Type or paste instead
+            </button>
+            <button type="button" className="btn compact" onClick={cancelImport}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn primary compact"
+              onClick={() => retryPhotoImportJob()}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : null}
       {phase === "review" && draft ? (
         <PhotoReviewForm
           draft={draft}
-          heroSrc={draft.images[0] || localHero}
+          heroSrc={job?.previewUrl || draft.images[0] || null}
           pending={pending}
-          error={error}
+          error={saveError}
           onChange={setDraft}
           onSave={saveReview}
         />

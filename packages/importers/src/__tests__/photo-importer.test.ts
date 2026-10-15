@@ -101,6 +101,26 @@ describe("Photo Importer", () => {
 
       expect(generateObject).toHaveBeenCalled();
     });
+
+    it("passes a combined abort signal so Cancel can stop the vision job", async () => {
+      const { generateObject } = await import("ai");
+      const controller = new AbortController();
+      (generateObject as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        object: printedFixture,
+      });
+      const cancellable = createPhotoImporter({
+        visionModelId: "spacexai/grok-4.7",
+        abortSignal: controller.signal,
+      });
+      await cancellable.extract({
+        images: [{ blob: imageDataUrl("printed-tomato-pasta.png") }],
+      });
+      expect(generateObject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          abortSignal: expect.any(AbortSignal),
+        })
+      );
+    });
   });
 
   describe("toDraft", () => {
