@@ -10,6 +10,8 @@ export type ConfigFlag = {
 export type ConfigStatus = {
   ready: boolean;
   mode: "demo" | "product";
+  /** Vercel deploy SHA (`VERCEL_GIT_COMMIT_SHA`), or null locally. */
+  commitSha: string | null;
   checks: ConfigFlag[];
 };
 
@@ -20,6 +22,7 @@ export function describeConfigStatus(input: {
   aiGatewayConfigured: boolean;
   blobConfigured?: boolean;
   demoMode?: boolean;
+  commitSha?: string | null;
 }): ConfigStatus {
   const demo = input.demoMode === true;
   const checks: ConfigFlag[] = [
@@ -49,13 +52,9 @@ export function describeConfigStatus(input: {
     {
       id: "aiGateway",
       label: "AI Gateway",
-      configured: demo ? true : input.aiGatewayConfigured,
+      configured: input.aiGatewayConfigured,
       required: !demo,
-      detail: demo
-        ? "URL import works without AI Gateway. Paste import uses the local parser."
-        : input.aiGatewayConfigured
-          ? "Recipe paste import can use the gateway via OIDC or an API key."
-          : "On Vercel, AI Gateway authenticates with OIDC — no API key needed. For local or non-Vercel hosts, set AI_GATEWAY_API_KEY. URL import still works without it.",
+      detail: aiGatewayStatusDetail(input.aiGatewayConfigured, demo),
     },
     {
       id: "blob",
@@ -71,9 +70,22 @@ export function describeConfigStatus(input: {
 
   return {
     mode: demo ? "demo" : "product",
+    commitSha: input.commitSha?.trim() || null,
     ready: checks
       .filter((check) => check.required)
       .every((check) => check.configured && check.reachable !== false),
     checks,
   };
+}
+
+/** Same credential story as `isAiGatewayConfigured` — demo does not fake configured:true. */
+export function aiGatewayStatusDetail(configured: boolean, demoMode: boolean): string {
+  if (configured) {
+    return demoMode
+      ? "Photo import can use AI Gateway via OIDC or AI_GATEWAY_API_KEY. URL and paste import still work without vision."
+      : "Recipe paste and photo import can use the gateway via OIDC or an API key.";
+  }
+  return demoMode
+    ? "Photo import needs AI_GATEWAY_API_KEY or VERCEL_OIDC_TOKEN. URL and paste import still work without it."
+    : "On Vercel, AI Gateway authenticates with OIDC (VERCEL_OIDC_TOKEN) — no API key needed. For local or non-Vercel hosts, set AI_GATEWAY_API_KEY. URL import still works without it.";
 }

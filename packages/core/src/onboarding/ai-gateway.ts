@@ -10,7 +10,19 @@ export function isDemoModeEnv(env: EnvLike): boolean {
   return flag === "1" || flag === "true";
 }
 
-export function isAiGatewayConfigured(env: EnvLike): boolean {
-  if (isDemoModeEnv(env)) return false;
-  return Boolean(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN || env.VERCEL === "1");
+function present(value: string | undefined): boolean {
+  return Boolean(value?.trim());
 }
+
+/**
+ * Shared source of truth for photo import and `/api/v1/status`.
+ * Demo mode is not a substitute for credentials: if the gateway is
+ * actually available (key, OIDC token, or Vercel runtime), report it.
+ */
+export function isAiGatewayConfigured(env: EnvLike): boolean {
+  return present(env.AI_GATEWAY_API_KEY) || present(env.VERCEL_OIDC_TOKEN) || env.VERCEL === "1";
+}
+
+/** Name the env vars an operator must set when the shared check is false. */
+export const AI_GATEWAY_MISSING_MESSAGE =
+  "Photo import needs AI Gateway. Set AI_GATEWAY_API_KEY, or on Vercel enable OIDC so VERCEL_OIDC_TOKEN is available.";

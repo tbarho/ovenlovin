@@ -84,6 +84,8 @@ export type ShopItem = {
   name: string;
   quantity?: number;
   unit?: string;
+  displayQuantity?: string;
+  displayUnit?: string;
   recipes: string[];
   warnings: ShopWarning[];
 };

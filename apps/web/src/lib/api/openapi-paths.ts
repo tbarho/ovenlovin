@@ -46,6 +46,43 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     })
     .openapi("CookbookCard");
 
+  const configStatusSchema = z
+    .object({
+      ready: z.boolean(),
+      mode: z.enum(["demo", "product"]),
+      commitSha: z
+        .string()
+        .nullable()
+        .describe("VERCEL_GIT_COMMIT_SHA for this deploy, or null when not on Vercel."),
+      checks: z.array(
+        z.object({
+          id: z.enum(["database", "clerk", "aiGateway", "blob"]),
+          label: z.string(),
+          configured: z.boolean(),
+          required: z.boolean(),
+          reachable: z.boolean().optional(),
+          detail: z.string(),
+        })
+      ),
+    })
+    .openapi("ConfigStatus");
+
+  registry.registerPath({
+    method: "get",
+    path: "/status",
+    tags: ["health"],
+    summary: "Instance configuration and deploy SHA",
+    description:
+      "Reports integration readiness and the Vercel git commit SHA (`VERCEL_GIT_COMMIT_SHA`). Unauthenticated.",
+    security: [],
+    responses: {
+      200: {
+        description: "Config status",
+        content: { "application/json": { schema: configStatusSchema } },
+      },
+    },
+  });
+
   registry.registerPath({
     method: "get",
     path: "/recipes",

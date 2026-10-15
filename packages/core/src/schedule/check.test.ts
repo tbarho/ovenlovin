@@ -48,7 +48,7 @@ describe("schedule time-budget check", () => {
       night: nightForDate(defaultWeeklySchedule(), "2026-10-30"),
     });
     expect(nightForDate(defaultWeeklySchedule(), "2026-10-30")?.cooking).toBe(false);
-    expect(issues.map((issue) => issue.type)).toEqual(["method_mismatch"]);
+    expect(issues.map((issue) => issue.type)).toEqual(["not_cooking_night"]);
     expect(issues[0]?.message).toMatch(/not a cooking night/);
     expect(issues.some((issue) => issue.type === "time_budget")).toBe(false);
   });

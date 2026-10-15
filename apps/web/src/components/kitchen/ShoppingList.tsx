@@ -19,11 +19,13 @@ export function ShoppingList({ items }: { items: ShopItem[] }) {
       {items.map((item) => {
         const done = Boolean(checked[item.key]);
         const qty =
-          item.quantity != null
-            ? `${Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)}${
-                item.unit ? ` ${item.unit}` : ""
-              }`
-            : null;
+          item.displayQuantity != null
+            ? `${item.displayQuantity}${item.displayUnit ? ` ${item.displayUnit}` : ""}`
+            : item.quantity != null
+              ? `${Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)}${
+                  item.unit ? ` ${item.unit}` : ""
+                }`
+              : null;
         return (
           <li className={`shop-item${done ? " is-done" : ""}`} key={item.key}>
             <label>
