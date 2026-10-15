@@ -21,12 +21,20 @@ describe("CookbookRecipes add and remove", () => {
     const user = userEvent.setup();
     const pesto = testRecipe({ id: "r1", title: "Weeknight pesto pasta" });
     const kung = testRecipe({ id: "r2", title: "Kung pao chicken" });
-    render(<CookbookRecipes cookbook={testCookbook()} recipes={[pesto]} catalog={[pesto, kung]} />);
+    render(
+      <CookbookRecipes
+        cookbook={testCookbook()}
+        recipes={[pesto]}
+        catalog={[pesto, kung]}
+        booksByRecipe={{ r2: ["Weekend treats"] }}
+      />
+    );
 
     await user.click(screen.getByRole("button", { name: "Add recipes" }));
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAccessibleName("Add recipes");
     expect(within(dialog).getByText("Already in this book")).toBeVisible();
+    expect(within(dialog).getByText("In Weekend treats")).toBeVisible();
     expect(within(dialog).getByRole("checkbox", { name: /Weeknight pesto pasta/i })).toBeDisabled();
 
     await typeFullWordAndKeepFocus(user, within(dialog).getByLabelText("Search recipes"), "kung");

@@ -1,11 +1,36 @@
 "use client";
 
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
 import { isImageFile } from "@/lib/photo-import-review";
 import { PhotoImportDialog } from "./PhotoImportDialog";
+
+function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    const url = URL.createObjectURL(file);
+    setSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  return (
+    <li>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" />
+      ) : (
+        <span className="photo-thumb-fallback" aria-hidden="true" />
+      )}
+      <span>{file.name}</span>
+      <button type="button" className="btn" onClick={onRemove}>
+        Remove
+      </button>
+    </li>
+  );
+}
 
 function PhotoPick({
   files,
@@ -81,12 +106,11 @@ function PhotoPick({
       {files.length > 0 ? (
         <ul className="photo-thumbs">
           {files.map((file, index) => (
-            <li key={`${file.name}-${file.size}-${file.lastModified}`}>
-              <span>{file.name}</span>
-              <button type="button" className="btn" onClick={() => onRemove(index)}>
-                Remove
-              </button>
-            </li>
+            <PhotoThumb
+              key={`${file.name}-${file.size}-${file.lastModified}`}
+              file={file}
+              onRemove={() => onRemove(index)}
+            />
           ))}
         </ul>
       ) : null}

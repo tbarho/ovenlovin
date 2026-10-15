@@ -72,7 +72,7 @@ function NewCookbookSheet({ open, onClose }: { open: boolean; onClose: () => voi
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Weeknight dinners"
+          placeholder="Sunday soup, snacks…"
           required
         />
         {error ? <p className="muted">{error}</p> : null}
@@ -106,7 +106,7 @@ export function RecipesKitchen({
         <div>
           <h1>Recipes</h1>
           <p className="muted">
-            Import a dish, file it in a cookbook, and cook from a photo-first shelf.
+            Import a recipe. Add it to a cookbook later if you want it on a shelf.
           </p>
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>

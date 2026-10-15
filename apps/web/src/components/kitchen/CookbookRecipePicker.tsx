@@ -3,21 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
-import { filterRecipesByQuery } from "@/lib/cookbook-recipes";
+import { filterRecipesByQuery, pickerBookNote } from "@/lib/cookbook-recipes";
 import { BottomSheet } from "./BottomSheet";
 
 function RecipePickRow({
   recipe,
   inBook,
+  otherBooks,
   selected,
   onToggle,
 }: {
   recipe: Recipe;
   inBook: boolean;
+  otherBooks: string[];
   selected: boolean;
   onToggle: () => void;
 }) {
   const image = recipeMainImage(recipe.images);
+  const note = pickerBookNote(inBook, otherBooks);
   return (
     <label className={`recipe-pick-row${inBook ? " is-in-book" : ""}`}>
       <input type="checkbox" checked={inBook || selected} disabled={inBook} onChange={onToggle} />
@@ -31,7 +34,7 @@ function RecipePickRow({
       )}
       <span className="recipe-pick-copy">
         <strong>{recipe.title}</strong>
-        {inBook ? <em>Already in this book</em> : null}
+        {note ? <em>{note}</em> : null}
       </span>
     </label>
   );
@@ -41,6 +44,8 @@ export function CookbookRecipePicker({
   open,
   recipes,
   memberIds,
+  booksByRecipe = {},
+  cookbookName,
   pending,
   error,
   onClose,
@@ -49,6 +54,8 @@ export function CookbookRecipePicker({
   open: boolean;
   recipes: Recipe[];
   memberIds: Set<string>;
+  booksByRecipe?: Record<string, string[]>;
+  cookbookName?: string;
   pending: boolean;
   error: string | null;
   onClose: () => void;
@@ -82,11 +89,15 @@ export function CookbookRecipePicker({
           <ul className="recipe-pick-list">
             {visible.map((recipe) => {
               const inBook = memberIds.has(recipe.id);
+              const otherBooks = (booksByRecipe[recipe.id] ?? []).filter(
+                (name) => name !== cookbookName
+              );
               return (
                 <li key={recipe.id}>
                   <RecipePickRow
                     recipe={recipe}
                     inBook={inBook}
+                    otherBooks={otherBooks}
                     selected={selected.includes(recipe.id)}
                     onToggle={() =>
                       setSelected((current) =>

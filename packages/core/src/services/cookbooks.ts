@@ -275,6 +275,38 @@ export class CookbookService extends BaseService {
     return this.listCookbooksForRecipe(recipeId);
   }
 
+  async listRecipeCookbookNames(householdId: string): Promise<Record<string, string[]>> {
+    const cookbooks = await this.listCookbooks(householdId, { limit: 100 });
+    if (cookbooks.items.length === 0) return {};
+
+    const nameById = new Map(cookbooks.items.map((item) => [item.id, item.name]));
+    const rows = await this._db
+      .select({
+        cookbookId: collectionRecipe.collectionId,
+        recipeId: collectionRecipe.recipeId,
+      })
+      .from(collectionRecipe)
+      .where(
+        and(
+          inArray(
+            collectionRecipe.collectionId,
+            cookbooks.items.map((item) => item.id)
+          ),
+          isNull(collectionRecipe.deletedAt)
+        )
+      );
+
+    const byRecipe: Record<string, string[]> = {};
+    for (const row of rows) {
+      const name = nameById.get(row.cookbookId);
+      if (!name) continue;
+      const list = byRecipe[row.recipeId] ?? [];
+      if (!list.includes(name)) list.push(name);
+      byRecipe[row.recipeId] = list;
+    }
+    return byRecipe;
+  }
+
   async listUncategorizedRecipeIds(householdId: string): Promise<string[]> {
     const [recipes, memberships] = await Promise.all([
       this._db

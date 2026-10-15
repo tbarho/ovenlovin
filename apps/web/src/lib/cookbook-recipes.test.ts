@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { testRecipe } from "@/test/fixtures";
-import { filterRecipesByQuery } from "./cookbook-recipes";
+import { filterRecipesByQuery, pickerBookNote } from "./cookbook-recipes";
+
+describe("pickerBookNote", () => {
+  it("names the other books a recipe already lives in", () => {
+    expect(pickerBookNote(true, [])).toBe("Already in this book");
+    expect(pickerBookNote(true, ["Weekend treats"])).toBe(
+      "Already in this book · also Weekend treats"
+    );
+    expect(pickerBookNote(false, ["Weekend treats"])).toBe("In Weekend treats");
+    expect(pickerBookNote(false, [])).toBeNull();
+  });
+});
 
 describe("filterRecipesByQuery", () => {
   const recipes = [

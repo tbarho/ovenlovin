@@ -74,7 +74,7 @@ describe("kitchen sheet-hosted forms", () => {
     await user.click(screen.getByRole("button", { name: "New cookbook" }));
     await typeFullWordAndKeepFocus(
       user,
-      screen.getByPlaceholderText("Weeknight dinners"),
+      screen.getByPlaceholderText("Sunday soup, snacks…"),
       "Sunday"
     );
   });
