@@ -13,9 +13,16 @@ export function demoKitchenEnterHref(next = "/recipes"): string {
  * `/api/demo/enter`. Catching that redirect used to dump visitors on
  * `/sign-in` and mint a fresh sandbox on the next enter.
  */
-export async function requireKitchenContext(): Promise<RequestContext> {
+export async function requireKitchenContext(): Promise<RequestContext & { householdId: string }> {
   try {
-    return await getSessionContext();
+    const context = await getSessionContext();
+    if (!context.householdId) {
+      if (isDemoModeEnabled()) {
+        redirect(demoKitchenEnterHref("/recipes"));
+      }
+      redirect("/sign-in");
+    }
+    return { ...context, householdId: context.householdId };
   } catch (error) {
     unstable_rethrow(error);
     if (isDemoModeEnabled()) {
