@@ -8,9 +8,11 @@ import {
   applyDinnerToDays,
   applyDinnerToEntries,
   dinnerEntryForDate,
-  filterPlanRecipes,
-  saferPicks,
+  partitionPlanRecipes,
+  planRiskConfirmCopy,
+  recipeNeedsPlanConfirm,
 } from "@/lib/plan-recipes";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { KitchenToast } from "./KitchenToast";
 import {
   NO_COOK_LABEL,
@@ -28,6 +30,42 @@ const EMPTY_RECIPES: PlanRecipePick[] = [];
 
 function dinnerMeal(day: WeekDay): WeekMeal | undefined {
   return day.meals.find((meal) => meal.mealSlot === "dinner") ?? day.meals[0];
+}
+
+function RecipePickButton({
+  recipe,
+  currentRecipeId,
+  pending,
+  onPick,
+}: {
+  recipe: PlanRecipePick;
+  currentRecipeId: string | null;
+  pending: boolean;
+  onPick: (recipeId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="week-pick"
+      data-safety={recipe.safety}
+      data-current={recipe.id === currentRecipeId ? "true" : "false"}
+      disabled={pending}
+      onClick={() => onPick(recipe.id)}
+    >
+      {mealThumb(recipe.title, recipe.image)}
+      <span>
+        <strong>{recipe.title}</strong>
+        {recipe.id === currentRecipeId ? <em>On the plan</em> : null}
+        {recipe.warning ? (
+          <em className="week-finding" data-severity={recipe.safety}>
+            {recipe.warning}
+          </em>
+        ) : recipe.safety === "ok" ? (
+          <em>Looks clear for everyone</em>
+        ) : null}
+      </span>
+    </button>
+  );
 }
 
 function uniqueFindings(findings: WeekMeal["findings"]) {
@@ -118,21 +156,16 @@ function DayEditor({
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
-  const blocked = current?.findings.some((finding) => finding.severity === "block") ?? false;
-  const swaps = useMemo(
-    () => saferPicks(recipes, current?.recipeId ?? null, current?.findings ?? []),
-    [recipes, current]
+  const [unsafeOpen, setUnsafeOpen] = useState(false);
+  const groups = useMemo(
+    () => partitionPlanRecipes(recipes, query, current?.recipeId ?? null),
+    [recipes, query, current]
   );
-  const listed = useMemo(() => {
-    const filtered = filterPlanRecipes(recipes, query);
-    if (query.trim()) return filtered;
-    const swapIds = new Set(swaps.slice(0, 3).map((recipe) => recipe.id));
-    return filtered.filter((recipe) => !swapIds.has(recipe.id));
-  }, [query, recipes, swaps]);
 
   useEffect(() => {
     if (!open) {
       setExpanded(false);
+      setUnsafeOpen(false);
       return;
     }
     const frame = requestAnimationFrame(() => setExpanded(true));
@@ -187,11 +220,11 @@ function DayEditor({
             </div>
           </div>
 
-          {blocked && swaps.length > 0 ? (
+          {groups.safer.length > 0 ? (
             <div className="week-swaps">
               <p className="section-label">Safer picks</p>
               <ul className="week-pick-list">
-                {swaps.slice(0, 3).map((recipe) => (
+                {groups.safer.map((recipe) => (
                   <li key={`swap-${recipe.id}`}>
                     <button
                       type="button"
@@ -222,36 +255,51 @@ function DayEditor({
             />
           </label>
 
-          {listed.length === 0 ? (
+          {groups.safe.length === 0 && groups.unsafe.length === 0 ? (
             <p className="muted">No recipes match that search.</p>
           ) : (
-            <ul className="week-pick-list">
-              {listed.map((recipe) => (
-                <li key={recipe.id}>
+            <>
+              {groups.safe.length > 0 ? (
+                <ul className="week-pick-list">
+                  {groups.safe.map((recipe) => (
+                    <li key={recipe.id}>
+                      <RecipePickButton
+                        recipe={recipe}
+                        currentRecipeId={current?.recipeId ?? null}
+                        pending={pending}
+                        onPick={onPick}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {groups.unsafe.length > 0 ? (
+                <div className="week-unsafe">
                   <button
                     type="button"
-                    className="week-pick"
-                    data-safety={recipe.safety}
-                    data-current={recipe.id === current?.recipeId ? "true" : "false"}
-                    disabled={pending}
-                    onClick={() => onPick(recipe.id)}
+                    className="week-unsafe-toggle"
+                    aria-expanded={unsafeOpen}
+                    onClick={() => setUnsafeOpen((open) => !open)}
                   >
-                    {mealThumb(recipe.title, recipe.image)}
-                    <span>
-                      <strong>{recipe.title}</strong>
-                      {recipe.id === current?.recipeId ? <em>On the plan</em> : null}
-                      {recipe.warning ? (
-                        <em className="week-finding" data-severity={recipe.safety}>
-                          {recipe.warning}
-                        </em>
-                      ) : recipe.safety === "ok" ? (
-                        <em>Looks clear for everyone</em>
-                      ) : null}
-                    </span>
+                    Not safe for everyone ({groups.unsafe.length})
                   </button>
-                </li>
-              ))}
-            </ul>
+                  {unsafeOpen ? (
+                    <ul className="week-pick-list">
+                      {groups.unsafe.map((recipe) => (
+                        <li key={recipe.id}>
+                          <RecipePickButton
+                            recipe={recipe}
+                            currentRecipeId={current?.recipeId ?? null}
+                            pending={pending}
+                            onPick={onPick}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
           )}
           {error ? <p className="muted">{error}</p> : null}
         </div>
@@ -283,9 +331,12 @@ export function MealPlanWeek({
   const [error, setError] = useState<string | null>(null);
   const [daysView, setDaysView] = useState(days);
   const [entriesView, setEntriesView] = useState(entries);
-  const [toast, setToast] = useState<{ message: string; undoEntries: PlanEntryDraft[] } | null>(
-    null
-  );
+  const [pendingPick, setPendingPick] = useState<PlanRecipePick | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    undoEntries: PlanEntryDraft[];
+    undoDays: WeekDay[];
+  } | null>(null);
   const resolvedWeekStart = weekStart ?? days[0]?.date ?? "";
 
   useEffect(() => {
@@ -301,6 +352,7 @@ export function MealPlanWeek({
     setSelectedDate(null);
     setQuery("");
     setError(null);
+    setPendingPick(null);
   }, []);
 
   function toEntryWrite(entry: PlanEntryDraft) {
@@ -374,7 +426,24 @@ export function MealPlanWeek({
       : next.freeformMeal
         ? `Marked ${weekday} as no-cook`
         : `Updated ${weekday} dinner`;
-    setToast({ message, undoEntries: previous });
+    setToast({ message, undoEntries: previous, undoDays: previousDays });
+  }
+
+  function requestPick(recipeId: string) {
+    if (!selectedDay) return;
+    const recipe = recipes.find((item) => item.id === recipeId);
+    if (recipe && recipeNeedsPlanConfirm(recipe)) {
+      setPendingPick(recipe);
+      return;
+    }
+    void withDinner(selectedDay.date, { recipeId, freeformMeal: null });
+  }
+
+  function confirmPendingPick() {
+    if (!selectedDay || !pendingPick) return;
+    const recipeId = pendingPick.id;
+    setPendingPick(null);
+    void withDinner(selectedDay.date, { recipeId, freeformMeal: null });
   }
 
   function applyServings(nextServings: number) {
@@ -428,6 +497,7 @@ export function MealPlanWeek({
                     setSelectedDate((current) => (current === day.date ? null : day.date));
                     setQuery("");
                     setError(null);
+                    setPendingPick(null);
                   }}
                 >
                   <header className="week-day-head">
@@ -469,9 +539,7 @@ export function MealPlanWeek({
                   pending={pending}
                   error={error}
                   onQueryChange={setQuery}
-                  onPick={(recipeId) =>
-                    void withDinner(selectedDay.date, { recipeId, freeformMeal: null })
-                  }
+                  onPick={requestPick}
                   onClear={() =>
                     void withDinner(selectedDay.date, { recipeId: null, freeformMeal: null })
                   }
@@ -488,13 +556,34 @@ export function MealPlanWeek({
           );
         })}
       </div>
+      <ConfirmDialog
+        open={Boolean(pendingPick && selectedDay)}
+        title={
+          pendingPick && selectedDay
+            ? planRiskConfirmCopy(pendingPick, selectedDay.weekday).title
+            : "Add this recipe?"
+        }
+        body={
+          pendingPick && selectedDay
+            ? planRiskConfirmCopy(pendingPick, selectedDay.weekday).body
+            : ""
+        }
+        confirmLabel="Add anyway"
+        pending={pending}
+        danger
+        onCancel={() => setPendingPick(null)}
+        onConfirm={confirmPendingPick}
+      />
       <KitchenToast
         message={toast?.message ?? null}
         onUndo={
           toast
             ? () => {
                 const restore = toast.undoEntries;
+                const restoreDays = toast.undoDays;
                 setToast(null);
+                setEntriesView(restore);
+                setDaysView(restoreDays);
                 void persist(restore);
               }
             : undefined

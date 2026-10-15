@@ -46,6 +46,16 @@ const recipes: PlanRecipePick[] = [
     safety: "ok",
     warning: null,
   },
+  {
+    id: "recipe-kung-pao",
+    title: "Kung pao chicken",
+    image: null,
+    servings: 4,
+    cookTimeMinutes: 25,
+    prepTimeMinutes: 15,
+    safety: "block",
+    warning: "Contains peanuts, so Child B can't eat this. Anaphylaxis risk",
+  },
 ];
 
 describe("MealPlanWeek", () => {
@@ -126,6 +136,9 @@ describe("MealPlanWeek", () => {
 
     await user.click(within(editor).getByRole("button", { name: /veggie tacos/i }));
     expect(screen.getByRole("heading", { name: "Veggie tacos" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Weeknight pesto pasta" })
+    ).not.toBeInTheDocument();
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({
@@ -144,6 +157,7 @@ describe("MealPlanWeek", () => {
 
     vi.mocked(api).mockClear();
     await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({
@@ -209,9 +223,11 @@ describe("MealPlanWeek", () => {
       }),
     });
     expect(screen.getByText("Cleared Monday dinner")).toBeVisible();
+    expect(screen.getAllByText("Add dinner")).toHaveLength(7);
 
     vi.mocked(api).mockClear();
     await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("heading", { name: "No-cook night" })).toBeInTheDocument();
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({
@@ -226,6 +242,39 @@ describe("MealPlanWeek", () => {
         ],
       }),
     });
+  });
+
+  it("restores the dinner on the plan immediately after Undo", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [pesto])}
+        planId="plan-1"
+        weekStart="2026-10-12"
+        recipes={recipes}
+        entries={[
+          {
+            id: "entry-1",
+            date: "2026-10-12",
+            mealSlot: "dinner",
+            recipeId: "recipe-pesto",
+            freeformMeal: null,
+            servings: 4,
+            attendees: [],
+          },
+        ]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /monday/i }));
+    await user.click(screen.getByRole("button", { name: "Clear night" }));
+    expect(screen.getByText("Cleared Monday dinner")).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Weeknight pesto pasta" })
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
   });
 
   it("lets a cook clear a no-cook night and undo it", async () => {
@@ -270,9 +319,11 @@ describe("MealPlanWeek", () => {
       }),
     });
     expect(screen.getByText("Cleared Monday dinner")).toBeVisible();
+    expect(screen.getAllByText("Add dinner")).toHaveLength(7);
 
     vi.mocked(api).mockClear();
     await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("heading", { name: "No-cook night" })).toBeInTheDocument();
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({
@@ -281,6 +332,55 @@ describe("MealPlanWeek", () => {
             date: "2026-10-12",
             meal: "dinner",
             freeformMeal: "No-cook night",
+            servings: 4,
+            attendees: [],
+          },
+        ],
+      }),
+    });
+  });
+
+  it("asks before adding a blocked recipe and names who cannot eat it", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /sunday/i }));
+    const editor = screen.getByTestId("plan-editor-2026-10-18");
+    expect(within(editor).getByText("Safer picks")).toBeVisible();
+    expect(within(editor).getByRole("button", { name: /veggie tacos/i })).toBeVisible();
+    expect(
+      within(editor).queryByRole("button", { name: /kung pao chicken/i })
+    ).not.toBeInTheDocument();
+
+    await user.click(within(editor).getByRole("button", { name: /not safe for everyone/i }));
+    await user.click(within(editor).getByRole("button", { name: /kung pao chicken/i }));
+    expect(api).not.toHaveBeenCalled();
+    const confirm = screen.getByRole("dialog", { name: /add kung pao chicken to sunday/i });
+    expect(confirm).toBeVisible();
+    expect(within(confirm).getByText(/child b/i)).toBeVisible();
+    expect(within(confirm).getByText(/peanuts/i)).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(api).not.toHaveBeenCalled();
+
+    await user.click(within(editor).getByRole("button", { name: /kung pao chicken/i }));
+    await user.click(screen.getByRole("button", { name: "Add anyway" }));
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans", {
+      method: "POST",
+      body: JSON.stringify({
+        weekStart: "2026-10-12",
+        status: "draft",
+        entries: [
+          {
+            date: "2026-10-18",
+            meal: "dinner",
+            recipeId: "recipe-kung-pao",
             servings: 4,
             attendees: [],
           },
