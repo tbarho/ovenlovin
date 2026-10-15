@@ -1,6 +1,8 @@
 import {
   copyRemoteImages,
   keepMainRecipeImages,
+  omitInlineImagePayloads,
+  persistRecipeImageUrl,
   type RecipeImportDraft,
   type StoredImagePut,
 } from "@ovenlovin/core";
@@ -117,16 +119,8 @@ export async function persistMainPhoto(
   if (!first) return [];
 
   if (first.startsWith("data:")) {
-    if (!put) return keepMainRecipeImages([first]);
-    const { contentType, body } = parseDataUrl(first);
-    const extension =
-      contentType.split("/")[1] === "jpeg" ? "jpg" : (contentType.split("/")[1] ?? "jpg");
-    const stored = await put({
-      pathname: `recipes/${householdId}/photo-import/1.${extension}`,
-      body,
-      contentType,
-    });
-    return keepMainRecipeImages([stored ?? first]);
+    const stored = await persistRecipeImageUrl(first, put, `recipes/${householdId}/photo-import/1`);
+    return keepMainRecipeImages([stored]);
   }
 
   return copyRemoteImages(keepMainRecipeImages([first]), put, `recipes/${householdId}`);
@@ -153,7 +147,13 @@ export function previewFromDraft(draft: RecipeDraft, images: string[]): PhotoImp
     })),
     steps: draft.steps.map((step) => ({ text: step.text })),
     images: keepMainRecipeImages(images),
-    source: draft.source,
+    source: {
+      ...draft.source,
+      blobRefs: omitInlineImagePayloads([
+        ...(draft.source.blobRefs ?? []),
+        ...keepMainRecipeImages(images),
+      ]),
+    },
     overallConfidence: draft.overallConfidence,
     needsReview: draft.needsReview,
     reviewReasons: draft.reviewReasons,

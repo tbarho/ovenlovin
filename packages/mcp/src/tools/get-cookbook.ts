@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { mcpRecipeImages } from "../media";
 import { createDbClient } from "@ovenlovin/db";
 
 export const getCookbookSchema = z.object({
@@ -32,7 +33,7 @@ async function handler(input: GetCookbookInput, context: AuthContext) {
       servings: item.servings ?? undefined,
       prepTimeMinutes: item.prepTimeMinutes ?? undefined,
       cookTimeMinutes: item.cookTimeMinutes ?? undefined,
-      images: item.images,
+      images: mcpRecipeImages(item.id, item.images),
     })),
   };
 }
