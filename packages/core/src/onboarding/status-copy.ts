@@ -10,6 +10,8 @@ export type ConfigFlag = {
 export type ConfigStatus = {
   ready: boolean;
   mode: "demo" | "product";
+  /** Vercel deploy SHA (`VERCEL_GIT_COMMIT_SHA`), or null locally. */
+  commitSha: string | null;
   checks: ConfigFlag[];
 };
 
@@ -20,6 +22,7 @@ export function describeConfigStatus(input: {
   aiGatewayConfigured: boolean;
   blobConfigured?: boolean;
   demoMode?: boolean;
+  commitSha?: string | null;
 }): ConfigStatus {
   const demo = input.demoMode === true;
   const checks: ConfigFlag[] = [
@@ -71,6 +74,7 @@ export function describeConfigStatus(input: {
 
   return {
     mode: demo ? "demo" : "product",
+    commitSha: input.commitSha?.trim() || null,
     ready: checks
       .filter((check) => check.required)
       .every((check) => check.configured && check.reachable !== false),
