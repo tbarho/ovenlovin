@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   asImageDataUrl,
+  classifyPhotoImportPreview,
   collectPhotoImages,
   draftFromPhotoPreview,
   parseDataUrl,
@@ -141,6 +142,30 @@ describe("preview and save draft", () => {
       []
     );
     expect(draftFromPhotoPreview(preview).needsReview).toBe(true);
+  });
+});
+
+describe("classifyPhotoImportPreview", () => {
+  it("treats a poor empty extract as blurry and a non-recipe flag as not a recipe", () => {
+    const empty = previewFromDraft(draft({ title: "", ingredients: [], steps: [] }), []);
+    expect(
+      classifyPhotoImportPreview({
+        ...empty,
+        source: {
+          ...empty.source,
+          rawExtractionJson: { ocrQuality: "poor", looksLikeRecipe: true },
+        },
+      })
+    ).toBe("blurry");
+    expect(
+      classifyPhotoImportPreview({
+        ...empty,
+        source: {
+          ...empty.source,
+          rawExtractionJson: { looksLikeRecipe: false },
+        },
+      })
+    ).toBe("not_recipe");
   });
 });
 

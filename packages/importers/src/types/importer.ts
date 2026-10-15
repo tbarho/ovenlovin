@@ -162,6 +162,7 @@ export interface ImporterConfig {
   modelId?: string;
   visionModelId?: string;
   confidenceThreshold?: number;
+  abortSignal?: AbortSignal;
 }
 
 /**

@@ -68,3 +68,19 @@ export function recipeCreateBodyFromReview(draft: PhotoReviewDraft) {
 export function isImageFile(file: File): boolean {
   return file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|avif)$/i.test(file.name);
 }
+
+export function isUncertainReviewField(fields: string[], key: string): boolean {
+  if (fields.includes(key)) return true;
+  if (key === "times") {
+    return fields.some(
+      (field) => field === "times" || field.includes("prep") || field.includes("cook")
+    );
+  }
+  if (key === "ingredients") {
+    return fields.some((field) => field === "ingredients" || field.startsWith("ingredient"));
+  }
+  if (key === "steps") {
+    return fields.some((field) => field === "steps" || field.startsWith("step"));
+  }
+  return false;
+}

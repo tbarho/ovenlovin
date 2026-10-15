@@ -213,12 +213,35 @@ export function draftFromPhotoPreview(preview: PhotoImportPreview): RecipeImport
   };
 }
 
+export function classifyPhotoImportPreview(
+  preview: PhotoImportPreview
+): "blurry" | "not_recipe" | null {
+  const raw = preview.source.rawExtractionJson ?? {};
+  const quality = typeof raw.ocrQuality === "string" ? raw.ocrQuality : "";
+  const looksLike = raw.looksLikeRecipe;
+  const empty = preview.ingredients.length === 0 && preview.steps.length === 0;
+  if (looksLike === false) return "not_recipe";
+  if (quality === "poor" && empty) return "blurry";
+  if (empty && !preview.title.trim()) return "not_recipe";
+  return null;
+}
+
 export async function extractPhotoPreview(
   images: PhotoImageInput[],
-  options: { householdId: string; isHandwritten?: boolean; put?: StoredImagePut }
+  options: {
+    householdId: string;
+    isHandwritten?: boolean;
+    put?: StoredImagePut;
+    abortSignal?: AbortSignal;
+  }
 ): Promise<PhotoImportPreview> {
   const storedImages = await persistMainPhoto(images, options.householdId, options.put);
-  const extracted = await runPhotoImport({ images, isHandwritten: options.isHandwritten }, {});
+  const extracted = await runPhotoImport(
+    { images, isHandwritten: options.isHandwritten },
+    {
+      abortSignal: options.abortSignal,
+    }
+  );
   extracted.draft.images = storedImages;
   const first = images[0]?.blob;
   if (first) {

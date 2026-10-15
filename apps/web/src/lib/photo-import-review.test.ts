@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { PhotoImportPreview } from "./photo-import";
-import { recipeCreateBodyFromReview, reviewDraftFromPreview } from "./photo-import-review";
+import {
+  isUncertainReviewField,
+  recipeCreateBodyFromReview,
+  reviewDraftFromPreview,
+} from "./photo-import-review";
 
 const preview: PhotoImportPreview = {
   title: "Weeknight Tomato Pasta",
@@ -42,5 +46,12 @@ describe("photo import review draft", () => {
     expect(body.status).toBe("needs_review");
     expect(body.source.type).toBe("photo");
     expect(body.ingredients).toHaveLength(2);
+  });
+
+  it("highlights title, times, and ingredient fields that were uncertain", () => {
+    expect(isUncertainReviewField(["title", "ingredient: pasta"], "title")).toBe(true);
+    expect(isUncertainReviewField(["title", "ingredient: pasta"], "ingredients")).toBe(true);
+    expect(isUncertainReviewField(["times"], "times")).toBe(true);
+    expect(isUncertainReviewField(["title"], "steps")).toBe(false);
   });
 });

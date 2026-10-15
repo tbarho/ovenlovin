@@ -2,25 +2,41 @@ import type { PhotoImportPreview } from "./photo-import";
 
 export const PHOTO_IMPORT_TIMEOUT_MS = 60_000;
 export const PHOTO_IMPORT_MAX_EDGE = 1600;
+export const PHOTO_IMPORT_ESTIMATE = "Usually about 15 seconds";
+export const PHOTO_IMPORT_IN_PROGRESS = "Import in progress";
 export const PHOTO_IMPORT_TIMEOUT_MESSAGE =
-  "That photo took too long to read. Check your connection and try again.";
+  "That photo took too long to read. Try again, or type or paste it.";
+export const PHOTO_IMPORT_BLURRY_MESSAGE =
+  "This photo is too blurry to read. Try a sharper shot, or type or paste it.";
+export const PHOTO_IMPORT_NOT_RECIPE_MESSAGE =
+  "That does not look like a recipe. Type or paste it instead.";
+export const PHOTO_IMPORT_NETWORK_MESSAGE = "Connection lost. Check your network and try again.";
+export const PHOTO_IMPORT_CANCELLED_MESSAGE = "Photo import cancelled";
 
 export type PhotoImportPhase = "uploading" | "reading" | "review" | "error";
+export type PhotoImportErrorKind =
+  "timeout" | "network" | "blurry" | "not_recipe" | "cancelled" | "generic";
 
 export const PHOTO_IMPORT_STEPS: Array<{
   id: Exclude<PhotoImportPhase, "error">;
   label: string;
 }> = [
   { id: "uploading", label: "Uploading" },
-  { id: "reading", label: "Reading the recipe" },
+  { id: "reading", label: "Reading" },
   { id: "review", label: "Ready to review" },
 ];
 
-function abortError(name: "timeout" | "cancelled"): Error {
+export type PhotoImportProblem = {
+  detail?: string;
+  title?: string;
+  code?: string;
+};
+
+function abortError(kind: "timeout" | "cancelled"): Error {
   const error = new Error(
-    name === "timeout" ? PHOTO_IMPORT_TIMEOUT_MESSAGE : "Photo import cancelled"
+    kind === "timeout" ? PHOTO_IMPORT_TIMEOUT_MESSAGE : PHOTO_IMPORT_CANCELLED_MESSAGE
   );
-  error.name = name === "timeout" ? "TimeoutError" : "AbortError";
+  error.name = kind === "timeout" ? "TimeoutError" : "AbortError";
   return error;
 }
 
@@ -37,13 +53,61 @@ export function photoImportStepReached(
   return order.indexOf(step) <= order.indexOf(current);
 }
 
+export function classifyPhotoImportProblem(problem: PhotoImportProblem): PhotoImportErrorKind {
+  const code = (problem.code ?? "").toLowerCase();
+  const text = `${problem.detail ?? ""} ${problem.title ?? ""}`.toLowerCase();
+  if (code === "photo_blurry" || text.includes("blurry")) return "blurry";
+  if (code === "photo_not_recipe" || text.includes("not look like a recipe")) return "not_recipe";
+  if (code === "photo_timeout" || text.includes("took too long")) return "timeout";
+  return "generic";
+}
+
+export function photoImportMessageForKind(kind: PhotoImportErrorKind, fallback?: string): string {
+  if (kind === "timeout") return PHOTO_IMPORT_TIMEOUT_MESSAGE;
+  if (kind === "network") return PHOTO_IMPORT_NETWORK_MESSAGE;
+  if (kind === "blurry") return PHOTO_IMPORT_BLURRY_MESSAGE;
+  if (kind === "not_recipe") return PHOTO_IMPORT_NOT_RECIPE_MESSAGE;
+  if (kind === "cancelled") return PHOTO_IMPORT_CANCELLED_MESSAGE;
+  return fallback?.trim() || "Could not read that photo";
+}
+
+export function photoImportErrorKind(error: unknown): PhotoImportErrorKind {
+  if (error instanceof Error) {
+    if (error.name === "AbortError") return "cancelled";
+    if (error.name === "TimeoutError") return "timeout";
+    if (
+      error.name === "TypeError" ||
+      /failed to fetch|networkerror|load failed/i.test(error.message)
+    ) {
+      return "network";
+    }
+    return classifyPhotoImportProblem({ detail: error.message });
+  }
+  return "generic";
+}
+
 export function photoImportErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    if (error.name === "AbortError") return "Photo import cancelled";
-    if (error.name === "TimeoutError") return PHOTO_IMPORT_TIMEOUT_MESSAGE;
-    return error.message;
+    return photoImportMessageForKind(photoImportErrorKind(error), error.message);
   }
   return "Could not read that photo";
+}
+
+export function photoImportAnnouncement(
+  phase: PhotoImportPhase,
+  percent: number,
+  errorMessage?: string | null
+): string {
+  if (phase === "uploading") {
+    return `Uploading ${Math.max(0, Math.min(100, percent))}%. ${PHOTO_IMPORT_ESTIMATE}.`;
+  }
+  if (phase === "reading") return `Reading. ${PHOTO_IMPORT_ESTIMATE}.`;
+  if (phase === "review") return "Ready to review.";
+  return errorMessage?.trim() || "Could not read that photo";
+}
+
+export function uploadingStepLabel(percent: number): string {
+  return `Uploading ${Math.max(0, Math.min(100, Math.round(percent)))}%`;
 }
 
 export async function preparePhotoFile(file: File): Promise<File> {
@@ -81,53 +145,116 @@ export async function preparePhotoFile(file: File): Promise<File> {
   }
 }
 
+export function postPhotoImportForm(
+  data: FormData,
+  options: {
+    signal?: AbortSignal;
+    timeoutMs?: number;
+    onUploadProgress?: (percent: number) => void;
+    onReading?: () => void;
+  } = {}
+): Promise<PhotoImportPreview> {
+  const timeoutMs = options.timeoutMs ?? PHOTO_IMPORT_TIMEOUT_MS;
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      options.signal?.removeEventListener("abort", onAbort);
+      fn();
+    };
+
+    const onAbort = () => {
+      xhr.abort();
+    };
+
+    xhr.open("POST", "/api/v1/recipes/import/photo");
+    xhr.withCredentials = true;
+    xhr.timeout = timeoutMs;
+    xhr.responseType = "text";
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      options.onUploadProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    xhr.upload.onload = () => {
+      options.onUploadProgress?.(100);
+      options.onReading?.();
+    };
+
+    xhr.onload = () => {
+      let body: PhotoImportPreview | PhotoImportProblem = {};
+      try {
+        body = JSON.parse(xhr.responseText || "{}") as PhotoImportPreview | PhotoImportProblem;
+      } catch {
+        body = { title: xhr.statusText };
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        finish(() => resolve(body as PhotoImportPreview));
+        return;
+      }
+      const problem = body as PhotoImportProblem;
+      const kind = classifyPhotoImportProblem(problem);
+      const error = new Error(
+        photoImportMessageForKind(
+          kind,
+          problem.detail || problem.title || "Could not read that photo"
+        )
+      );
+      if (kind === "timeout") error.name = "TimeoutError";
+      finish(() => reject(error));
+    };
+
+    xhr.onerror = () => {
+      const error = new Error(PHOTO_IMPORT_NETWORK_MESSAGE);
+      error.name = "TypeError";
+      finish(() => reject(error));
+    };
+
+    xhr.ontimeout = () => {
+      finish(() => reject(abortError("timeout")));
+    };
+
+    xhr.onabort = () => {
+      finish(() =>
+        reject(options.signal?.aborted ? abortError("cancelled") : abortError("timeout"))
+      );
+    };
+
+    if (options.signal?.aborted) {
+      finish(() => reject(abortError("cancelled")));
+      return;
+    }
+    options.signal?.addEventListener("abort", onAbort);
+    xhr.send(data);
+  });
+}
+
 export async function extractPhotoPreviewFromFiles(
   files: File[],
   options: {
     signal?: AbortSignal;
     timeoutMs?: number;
     onPhase?: (phase: Extract<PhotoImportPhase, "uploading" | "reading">) => void;
+    onUploadProgress?: (percent: number) => void;
   } = {}
 ): Promise<PhotoImportPreview> {
-  const timeoutMs = options.timeoutMs ?? PHOTO_IMPORT_TIMEOUT_MS;
-  const controller = new AbortController();
-  const onAbort = () => controller.abort();
-  options.signal?.addEventListener("abort", onAbort);
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  if (options.signal?.aborted) throw abortError("cancelled");
+  options.onPhase?.("uploading");
+  options.onUploadProgress?.(0);
 
-  try {
+  const data = new FormData();
+  for (const file of await Promise.all(files.map(preparePhotoFile))) {
     if (options.signal?.aborted) throw abortError("cancelled");
-    options.onPhase?.("uploading");
-    const data = new FormData();
-    for (const file of await Promise.all(files.map(preparePhotoFile))) {
-      if (controller.signal.aborted) {
-        throw options.signal?.aborted ? abortError("cancelled") : abortError("timeout");
-      }
-      data.append("image", file);
-    }
-
-    options.onPhase?.("reading");
-    const response = await fetch("/api/v1/recipes/import/photo", {
-      method: "POST",
-      credentials: "include",
-      body: data,
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      const problem = (await response.json().catch(() => ({ title: response.statusText }))) as {
-        detail?: string;
-        title?: string;
-      };
-      throw new Error(problem.detail || problem.title || "Could not read that photo");
-    }
-    return (await response.json()) as PhotoImportPreview;
-  } catch (error) {
-    if (options.signal?.aborted) throw abortError("cancelled");
-    if (controller.signal.aborted) throw abortError("timeout");
-    if (error instanceof Error && error.name === "AbortError") throw abortError("timeout");
-    throw error;
-  } finally {
-    clearTimeout(timer);
-    options.signal?.removeEventListener("abort", onAbort);
+    data.append("image", file);
   }
+
+  return postPhotoImportForm(data, {
+    signal: options.signal,
+    timeoutMs: options.timeoutMs,
+    onUploadProgress: options.onUploadProgress,
+    onReading: () => options.onPhase?.("reading"),
+  });
 }
