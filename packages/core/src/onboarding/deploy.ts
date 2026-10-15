@@ -241,7 +241,7 @@ async function resolveVercelScopeFromApi(
 /**
  * Resolve the Vercel dashboard team/project slugs.
  *
- * Never uses `VERCEL_GIT_REPO_OWNER` — that is the GitHub owner, which 404s
+ * Never uses `VERCEL_GIT_REPO_OWNER` - that is the GitHub owner, which 404s
  * when the Vercel team slug differs. Order:
  * 1. `OVENLOVIN_VERCEL_TEAM_SLUG` + project slug override or git repo slug
  * 2. Vercel REST API via `VERCEL_PROJECT_ID` when a token is available (cached)

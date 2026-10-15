@@ -3,6 +3,6 @@ export function tapFeedback(ms = 14): void {
   try {
     navigator.vibrate(ms);
   } catch {
-    // haptic is a bonus — never block the tap
+    // haptic is a bonus - never block the tap
   }
 }

@@ -243,7 +243,7 @@ export function RecipeDetail({
               </button>
             </div>
             <p className="muted">
-              1–24 servings. Scales from {recipe.servings ?? storedServings} stored servings. Units
+              1-24 servings. Scales from {recipe.servings ?? storedServings} stored servings. Units
               stay as written.
             </p>
           </div>

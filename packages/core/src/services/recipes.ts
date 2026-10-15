@@ -518,7 +518,7 @@ export class RecipeService extends BaseService {
 
   /**
    * Copy inline `data:` photos into Blob when a put is configured.
-   * No-op without Blob — list/search still rewrite those rows to the image endpoint.
+   * No-op without Blob - list/search still rewrite those rows to the image endpoint.
    */
   async backfillInlineImages(put: StoredImagePut | undefined): Promise<{ updated: number }> {
     if (!put) return { updated: 0 };

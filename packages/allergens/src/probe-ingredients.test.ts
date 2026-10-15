@@ -1,6 +1,6 @@
 /**
  * Regression tests from the agent tester probe lists (report section 5).
- * People and recipes stay generic — no household-specific names.
+ * People and recipes stay generic - no household-specific names.
  */
 
 import { describe, expect, it } from "vitest";

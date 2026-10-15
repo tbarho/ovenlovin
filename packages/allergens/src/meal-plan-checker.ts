@@ -171,7 +171,7 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
 
     if (!skipIngredientCheck && (entry.attendees.length === 0 || attendingPeople.length === 0)) {
       incompleteReasons.push(
-        `No attendees listed for ${entry.recipeTitle || entry.freeformMeal || "this meal"} — cannot finish a safety check`
+        `No attendees listed for ${entry.recipeTitle || entry.freeformMeal || "this meal"} - cannot finish a safety check`
       );
       byEntry.push(entryResult);
       continue;

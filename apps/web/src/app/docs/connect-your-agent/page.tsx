@@ -23,7 +23,7 @@ export default async function ConnectYourAgentPage() {
       </p>
       <p className="intro">
         Sign in on the home page to mint a key, then paste it into the snippet. Allergen findings
-        name the person and the ingredient — not medical advice. Always check labels.
+        name the person and the ingredient - not medical advice. Always check labels.
       </p>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>
@@ -35,7 +35,7 @@ export default async function ConnectYourAgentPage() {
       <h2>Safety</h2>
       <p className="intro">
         Call <code>check_meal_plan</code> before <code>save_meal_plan</code>. If checking cannot
-        finish, the result is <code>status: incomplete</code> — never treat that as “no issues”.
+        finish, the result is <code>status: incomplete</code> - never treat that as “no issues”.
       </p>
     </DocsChrome>
   );

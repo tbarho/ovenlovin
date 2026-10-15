@@ -26,7 +26,7 @@ describe("LoveTags", () => {
         warningPersonIds={["parent-b"]}
       />
     );
-    expect(screen.getByText("Parent B loves this — check first")).toBeVisible();
+    expect(screen.getByText("Parent B loves this - check first")).toBeVisible();
     expect(screen.queryByText("Parent B loves this")).not.toBeInTheDocument();
   });
 

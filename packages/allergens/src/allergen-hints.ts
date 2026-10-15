@@ -1,7 +1,7 @@
 /**
  * High-signal phrases that mean "this line might be allergen X".
  * Used only to mark a check incomplete when we cannot classify the line.
- * Not a household policy — findings still come from per-person rules.
+ * Not a household policy - findings still come from per-person rules.
  */
 
 import { getDescendants } from "./taxonomy";

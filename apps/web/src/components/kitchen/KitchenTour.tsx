@@ -20,7 +20,7 @@ export function KitchenTour() {
         <h2>Start your kitchen</h2>
         <ol>
           <li>
-            <Link href="/people">Add your people</Link> first — their rules drive every warning.
+            <Link href="/people">Add your people</Link> first - their rules drive every warning.
           </li>
           <li>Import a recipe you already cook.</li>
           <li>

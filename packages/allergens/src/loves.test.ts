@@ -25,7 +25,7 @@ const mexican = {
 };
 
 describe("loves ranking", () => {
-  it("never treats a miss as a filter — unmatched recipes stay in the list", () => {
+  it("never treats a miss as a filter - unmatched recipes stay in the list", () => {
     const recipes = [
       {
         title: "Tomato soup",

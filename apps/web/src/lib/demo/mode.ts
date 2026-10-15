@@ -25,7 +25,7 @@ export function isDemoProjectConfirmed(env: EnvLike = process.env): boolean {
   return isTruthyEnvFlag(env.OVENLOVIN_DEMO_PROJECT);
 }
 
-/** The main OvenLovin Vercel production project — never a demo host. */
+/** The main OvenLovin Vercel production project - never a demo host. */
 export function isProductVercelProduction(env: EnvLike = process.env): boolean {
   return isVercelProductionBuild(env) && !isDemoProjectConfirmed(env);
 }

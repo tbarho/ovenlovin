@@ -11,7 +11,7 @@ describe("dev preview routes", () => {
     expect(isDevPreviewPath("/docs")).toBe(false);
   });
 
-  it("is allowed on preview, local, and CI — never on Vercel production", () => {
+  it("is allowed on preview, local, and CI - never on Vercel production", () => {
     expect(isDevPreviewAllowed({ NODE_ENV: "development" })).toBe(true);
     expect(isDevPreviewAllowed({ NODE_ENV: "test" })).toBe(true);
     expect(isDevPreviewAllowed({ VERCEL_ENV: "preview", VERCEL: "1" })).toBe(true);

@@ -44,7 +44,7 @@ describe("loveTagText", () => {
 
   it("qualifies a love when that person has a warning, not a block", () => {
     expect(loveTagText(hit, { blockPersonIds: [], warnPersonIds: ["child-c"] })).toBe(
-      "Child C loves this — check first"
+      "Child C loves this - check first"
     );
   });
 

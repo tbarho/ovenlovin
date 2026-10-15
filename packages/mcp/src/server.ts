@@ -33,7 +33,7 @@ export interface ServerConfig {
 function requireAuth(config: ServerConfig): AuthContext {
   if (!config.authContext?.householdId) {
     throw new Error(
-      "Authentication required. Derive householdId from the API key or Clerk token — do not use a stub."
+      "Authentication required. Derive householdId from the API key or Clerk token - do not use a stub."
     );
   }
   return config.authContext;

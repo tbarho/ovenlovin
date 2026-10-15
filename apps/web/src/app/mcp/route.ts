@@ -1,8 +1,8 @@
 /**
  * MCP Streamable HTTP endpoint.
  *
- * POST /mcp  — JSON-RPC (stateless, one request per POST)
- * GET  /mcp  — health
+ * POST /mcp - JSON-RPC (stateless, one request per POST)
+ * GET  /mcp - health
  *
  * Auth: `Authorization: ApiKey <rkapi_…>` or `Bearer <rkapi_…>` / Clerk JWT.
  * Household is derived from the key. No stub household, no shared transport.

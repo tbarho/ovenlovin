@@ -52,7 +52,7 @@ export function loveTagText(
 ): string | null {
   if (safety.blockPersonIds.includes(hit.personId)) return null;
   if (safety.warnPersonIds.includes(hit.personId)) {
-    return `${hit.personName} loves this — check first`;
+    return `${hit.personName} loves this - check first`;
   }
   return hit.tag;
 }

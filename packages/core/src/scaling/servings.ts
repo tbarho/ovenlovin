@@ -271,7 +271,7 @@ export function scaleIngredientDisplay(
     parsed.quantityMax != null
       ? formatQuantity(scaleQuantity(parsed.quantityMax, base, toServings))
       : null;
-  const qty = max ? `${min}–${max}` : min;
+  const qty = max ? `${min}-${max}` : min;
   const unit = parsed.unit ? ` ${parsed.unit}` : "";
   const name = parsed.name ? ` ${parsed.name}` : "";
   return `${qty}${unit}${name}`.trim();

@@ -55,7 +55,7 @@ export function summarizePeople(people: Person[], rules: PersonRule[]): PeopleSu
     return {
       line: prefers
         ? "Mostly easygoing, with a few preferences."
-        : "Everyone here can eat everything — for now.",
+        : "Everyone here can eat everything - for now.",
       avoids,
       severeCount,
       badge: null,

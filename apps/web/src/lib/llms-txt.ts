@@ -58,7 +58,7 @@ export function buildLlmsTxt(origin: string): string {
     `## Safety`,
     ``,
     `Rule checking is deterministic and per-person. Findings name the person, rule, ingredient, and reason.`,
-    `Incomplete checks return status: incomplete — never "no issues".`,
+    `Incomplete checks return status: incomplete - never "no issues".`,
     `This is not medical advice. Always read labels.`,
     ``,
     `## Full docs`,

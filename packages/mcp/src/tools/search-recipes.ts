@@ -257,7 +257,7 @@ async function checkRecipeForAttendees(
 export const searchRecipesTool = {
   name: "search_recipes",
   description:
-    "Search for recipes with optional filters. forAttendees hides recipes with a block finding and returns hiddenCount/hidden (id, title, who, ingredient, why). Warn/prefer_avoid stay as warnings. Loves never hide a recipe. Not medical advice — always check ingredient labels before serving.",
+    "Search for recipes with optional filters. forAttendees hides recipes with a block finding and returns hiddenCount/hidden (id, title, who, ingredient, why). Warn/prefer_avoid stay as warnings. Loves never hide a recipe. Not medical advice - always check ingredient labels before serving.",
   inputSchema: searchRecipesSchema,
   handler,
 } as const;

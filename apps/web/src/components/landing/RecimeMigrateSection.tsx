@@ -27,7 +27,7 @@ export function RecimeMigrateSection({
       <div>
         <p className="intro">
           For an agent with a browser plus this kitchen&apos;s MCP or API key. It signs into ReciMe,
-          walks every folder, and imports matching cookbooks and recipes here — images, servings,
+          walks every folder, and imports matching cookbooks and recipes here - images, servings,
           times, and source URLs included.
         </p>
         <ol>

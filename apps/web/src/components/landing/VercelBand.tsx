@@ -23,7 +23,7 @@ export function VercelBand({ deploy }: { deploy: DeployInfo }) {
       <p className="vercel-kicker">It&apos;s on Vercel</p>
       <p className="vercel-copy">
         {deploy.live
-          ? `${deploy.environmentLabel} on Vercel — this kitchen, this deploy, this commit.`
+          ? `${deploy.environmentLabel} on Vercel - this kitchen, this deploy, this commit.`
           : "Deploy to Vercel and this panel will link the project dashboard, this deployment, and the GitHub commit that built it."}
       </p>
       {links.length > 0 ? (

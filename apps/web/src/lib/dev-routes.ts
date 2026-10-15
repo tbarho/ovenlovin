@@ -1,6 +1,6 @@
 import { isVercelProductionBuild, type EnvLike } from "./e2e-auth";
 
-/** UX prototypes and fixture previews — never on the production host. */
+/** UX prototypes and fixture previews - never on the production host. */
 export function isDevPreviewPath(pathname: string): boolean {
   return (
     pathname === "/prototype" ||

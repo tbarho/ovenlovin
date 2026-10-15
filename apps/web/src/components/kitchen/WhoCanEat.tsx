@@ -50,7 +50,7 @@ export function WhoCanEat({
       {result.status === "incomplete" ? (
         <p className="olp-lead" data-testid="who-incomplete">
           This check is incomplete
-          {result.incompleteReasons[0] ? ` — ${result.incompleteReasons[0]}` : "."} Not a clean
+          {result.incompleteReasons[0] ? ` - ${result.incompleteReasons[0]}` : "."} Not a clean
           bill.
         </p>
       ) : null}
@@ -116,7 +116,7 @@ export function WhoCanEat({
               </div>
             ) : selected.mark !== "ok" ? (
               <p className="olp-hint">
-                No stored swap for this recipe. Reasons only — we do not invent a substitute.
+                No stored swap for this recipe. Reasons only - we do not invent a substitute.
               </p>
             ) : null}
           </div>

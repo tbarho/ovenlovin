@@ -54,7 +54,7 @@ export interface ShoppingListData {
   mealPlanId: string;
   weekStart: string;
   groupBy: ShoppingListGroupBy;
-  /** Kitchen staples (salt, oil, pepper) — not the pantry food-taxonomy category. */
+  /** Kitchen staples (salt, oil, pepper) - not the pantry food-taxonomy category. */
   includeStaples: boolean;
   /** @deprecated Alias of {@link ShoppingListData.includeStaples} for existing clients. */
   includePantryItems: boolean;
@@ -93,7 +93,7 @@ export interface BuildShoppingListInput {
   generatedAt?: string;
 }
 
-/** Section name for salt/oil when staples are included — distinct from category "Pantry". */
+/** Section name for salt/oil when staples are included - distinct from category "Pantry". */
 export const KITCHEN_STAPLES_SECTION = "Kitchen staples";
 
 /**

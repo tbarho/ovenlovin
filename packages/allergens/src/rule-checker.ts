@@ -281,7 +281,7 @@ export function checkIngredientsAgainstRules(
 
 /**
  * When a line looks like it might match an allergen rule but we could not
- * classify it, the check is incomplete — never "complete with no issues".
+ * classify it, the check is incomplete - never "complete with no issues".
  */
 function ambiguousMatchReason(
   ingredient: IngredientCheckInput,

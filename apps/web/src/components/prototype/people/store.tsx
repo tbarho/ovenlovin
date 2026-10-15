@@ -277,7 +277,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch {
-      // mock prototype — ignore bad local data
+      // mock prototype - ignore bad local data
     } finally {
       setReady(true);
     }
