@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AllergenDisclaimer } from "@/components/kitchen/AllergenDisclaimer";
 import { MealPlanWeek } from "@/components/kitchen/MealPlanWeek";
+import { RecheckBanner } from "@/components/kitchen/RecheckBanner";
 import { getSessionContext } from "@/lib/session";
 import { loadWeekKitchen } from "@/lib/week-plan";
 
@@ -30,11 +31,7 @@ export default async function PlansPage() {
         </div>
       </div>
       <AllergenDisclaimer />
-      {kitchen.plan?.needsRecheck ? (
-        <p className="week-recheck" role="status">
-          This plan needs a recheck. A recipe or someone&apos;s rules changed since the last check.
-        </p>
-      ) : null}
+      {kitchen.plan?.needsRecheck ? <RecheckBanner planId={kitchen.plan.id} /> : null}
       <MealPlanWeek
         days={kitchen.days}
         planId={kitchen.plan?.id ?? null}

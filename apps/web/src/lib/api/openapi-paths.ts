@@ -834,8 +834,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "post",
     path: "/meal-plans/{id}/check",
     tags: ["meal-plans"],
-    summary:
-      "Check a meal plan against per-person rules and schedule time budgets. Same as GET; POST is kept for existing clients.",
+    summary: "Recheck a meal plan, store the report, and clear needsRecheck. GET is a dry run.",
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: {
       200: { description: "Check report" },
