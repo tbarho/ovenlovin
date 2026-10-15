@@ -19,13 +19,15 @@ function finding(overrides: Partial<RuleCheckFinding> = {}): RuleCheckFinding {
 }
 
 describe("collapseRuleFindings", () => {
-  it("keeps one copy of the same person and message", () => {
+  it("keeps one copy of the same person and allergen, listing every ingredient", () => {
     const collapsed = collapseRuleFindings([
       finding({ ingredientName: "mozzarella" }),
       finding({ ingredientName: "parmesan" }),
     ]);
     expect(collapsed).toHaveLength(1);
-    expect(collapsed[0]?.ingredientName).toBe("mozzarella");
+    expect(collapsed[0]?.ingredientName).toBe("mozzarella, parmesan");
+    expect(collapsed[0]?.message).toMatch(/mozzarella/);
+    expect(collapsed[0]?.message).toMatch(/parmesan/);
   });
 
   it("keeps different people or different messages", () => {

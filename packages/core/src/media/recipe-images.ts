@@ -1,4 +1,6 @@
 /* eslint-disable no-undef */
+import { createHash } from "crypto";
+
 const BLOB_HOST_HINTS = ["public.blob.vercel-storage.com", "blob.vercel-storage.com"];
 
 export function recipeMainImage(images: string[] | null | undefined): string | null {
@@ -121,6 +123,23 @@ export function appOriginFromEnv(
 /** Drop inline data URLs so list/search payloads stay small. */
 export function omitInlineImagePayloads(values: string[] | null | undefined): string[] {
   return (values ?? []).filter((value) => value.trim().length > 0 && !isInlineImageDataUrl(value));
+}
+
+/** Stable id for a photo import: URL as-is, or sha256 of inline bytes. */
+export function fingerprintImageBlob(blob: string): string {
+  const trimmed = blob.trim();
+  if (/^https?:\/\//i.test(trimmed)) return `url:${trimmed}`;
+  const dataUrl = isInlineImageDataUrl(trimmed)
+    ? trimmed
+    : `data:image/jpeg;base64,${trimmed.replace(/\s+/g, "")}`;
+  const parsed = parseImageDataUrl(dataUrl);
+  const bytes = parsed ? Buffer.from(parsed.body) : Buffer.from(trimmed);
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+/** REST/MCP preview JSON: never inline base64; keep http(s) / Blob URLs. */
+export function presentPhotoImportImages(images: string[] | null | undefined): string[] {
+  return keepMainRecipeImages(omitInlineImagePayloads(images));
 }
 
 /**
