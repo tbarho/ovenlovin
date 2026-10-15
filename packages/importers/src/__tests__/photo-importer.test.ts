@@ -149,6 +149,9 @@ describe("Photo Importer", () => {
       expect(draft.reviewReasons).toContain("OCR quality: fair");
 
       expect(draft.source.type).toBe("photo");
+      expect(draft.source.blobRefs ?? []).not.toEqual(
+        expect.arrayContaining([expect.stringMatching(/^data:/)])
+      );
       expect(draft.source.importerName).toBe("photo-importer");
       expect(draft.source.licenseNote).toContain("Personal/family recipe");
       expect(draft.notes).toBe("Chill the dough before rolling.");
@@ -174,6 +177,35 @@ describe("Photo Importer", () => {
       expect(draft.source.attribution).toBe("Weeknight Dinners, p. 42");
       expect(draft.uncertainFields).toEqual([]);
       expect(draft.allergenClassifications?.some((hit) => hit.allergenCode === "milk")).toBe(true);
+    });
+
+    it("strips Step N: prefixes with the same normalizer as paste", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "photo",
+        sourceBlobs: ["https://example.com/card.jpg"],
+        rawData: {
+          title: "Test Olive Pancakes",
+          servings: 4,
+          ingredients: [{ text: "1 cup flour", ingredient: "flour", confidence: "high" }],
+          steps: [
+            { text: "Step 1: Whisk flour with milk.", confidence: "high" },
+            { text: "STEP 2: Rest the batter.", confidence: "high" },
+            { text: "3. Cook until golden.", confidence: "high" },
+            { text: "1 cup flour", confidence: "high" },
+          ],
+          ocrQuality: "excellent",
+        },
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+        modelUsed: "spacexai/grok-4.7",
+      });
+
+      expect(draft.steps.map((step) => step.text)).toEqual([
+        "Whisk flour with milk.",
+        "Rest the batter.",
+        "Cook until golden.",
+        "1 cup flour",
+      ]);
     });
 
     it("warns with named uncertain fields for a bad photo", async () => {

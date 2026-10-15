@@ -101,11 +101,34 @@ describe("preview and save draft", () => {
     expect(preview.allergenClassifications[0]?.allergenCode).toBe("milk");
     expect(preview.uncertainFields).toEqual([]);
 
+    expect(preview.source.blobRefs).toEqual(["https://blob.vercel-storage.com/main.jpg"]);
+
     const saved = draftFromPhotoPreview(preview);
     expect(saved.images).toEqual(["https://blob.vercel-storage.com/main.jpg"]);
+    expect(saved.source.blobRefs).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^data:/)])
+    );
     expect(saved.source.type).toBe("photo");
     expect(saved.ingredients[0]?.quantity).toEqual({ min: 0.5 });
     expect(saved.needsReview).toBe(true);
+  });
+
+  it("does not copy inline photo bytes into source.blobRefs", () => {
+    const data = `data:image/png;base64,${png}`;
+    const preview = previewFromDraft(
+      draft({
+        source: {
+          type: "photo",
+          importerName: "photo-importer",
+          importerVersion: "0.1.0",
+          rawExtractionJson: { via: "test" },
+          blobRefs: [data],
+        },
+      }),
+      [data]
+    );
+    expect(preview.images).toEqual([data]);
+    expect(preview.source.blobRefs ?? []).toEqual([]);
   });
 
   it("marks needsReview when uncertain fields are listed", () => {
@@ -127,5 +150,14 @@ describe("persistMainPhoto", () => {
     );
     expect(put).toHaveBeenCalledTimes(1);
     expect(stored).toEqual(["https://blob.vercel-storage.com/stored.png"]);
+  });
+
+  it("keeps the data URL in storage when Blob is not configured", async () => {
+    const stored = await persistMainPhoto(
+      [{ blob: asImageDataUrl(png, "image/png") }],
+      "household-1",
+      undefined
+    );
+    expect(stored[0]).toMatch(/^data:image\/png;base64,/);
   });
 });

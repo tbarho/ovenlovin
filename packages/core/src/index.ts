@@ -7,6 +7,7 @@ export * from "./parsing/ingredient-line";
 export * from "./parsing/plain-import";
 export * from "./scaling/servings";
 export * from "./media/recipe-images";
+export * from "./plans/merge-entries";
 export * from "./onboarding/instance";
 export * from "./onboarding/status-copy";
 export * from "./onboarding/agent-connect";

@@ -1,6 +1,12 @@
-import { eq, and, isNull, desc, gte, lte } from "drizzle-orm";
+import { eq, and, isNull, desc, gte, lte, inArray } from "drizzle-orm";
 import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db";
-import type { MealPlan, MealPlanEntry, MealPlanEntryWrite } from "../schemas/plans";
+import type {
+  MealPlan,
+  MealPlanEntry,
+  MealPlanEntryPatch,
+  MealPlanEntryWrite,
+} from "../schemas/plans";
+import { planMealPlanEntryMerge } from "../plans/merge-entries";
 import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
@@ -151,6 +157,71 @@ export class PlanService extends BaseService {
       .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)));
 
     return created;
+  }
+
+  async mergeMealPlanEntries(
+    planId: string,
+    patches: MealPlanEntryPatch[]
+  ): Promise<{ entries: MealPlanEntry[]; previous: MealPlanEntry[] }> {
+    const existing = await this.getMealPlanEntries(planId);
+    const plan = planMealPlanEntryMerge(existing, patches);
+
+    if (plan.clearIds.length > 0) {
+      await this._db
+        .update(mealPlanEntry)
+        .set({ deletedAt: new Date(), updatedAt: new Date() })
+        .where(inArray(mealPlanEntry.id, plan.clearIds));
+    }
+
+    for (const { existing: current, next } of plan.upserts) {
+      if (current) {
+        await this.updateMealPlanEntry(current.id, next);
+      } else {
+        await this.createMealPlanEntry({
+          mealPlanId: planId,
+          date: next.date,
+          mealSlot: next.meal,
+          recipeId: next.recipeId ?? null,
+          freeformMeal: next.freeformMeal ?? null,
+          servings: next.servings ?? null,
+          attendees: next.attendees ?? [],
+          prepAheadNotes: next.prepAheadNotes ?? null,
+          leftoverSourceId: null,
+        });
+      }
+    }
+
+    if (plan.clearIds.length > 0 || plan.upserts.length > 0) {
+      await this._db
+        .update(mealPlan)
+        .set({ needsRecheck: true, updatedAt: new Date() })
+        .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)));
+    }
+
+    return { entries: await this.getMealPlanEntries(planId), previous: plan.previous };
+  }
+
+  async updateMealPlanEntry(id: string, patch: MealPlanEntryWrite): Promise<MealPlanEntry | null> {
+    const recipeServings = patch.recipeId ? await this.getRecipeServings(patch.recipeId) : null;
+    const scaleFactor = scaleFactorForPlanEntry(patch.servings ?? null, recipeServings);
+    const [updated] = await this._db
+      .update(mealPlanEntry)
+      .set({
+        date: patch.date,
+        mealSlot: patch.meal,
+        recipeId: patch.recipeId ?? null,
+        freeformMeal: patch.freeformMeal ?? null,
+        servings: patch.servings ?? null,
+        attendees: patch.attendees ?? [],
+        scaleFactor: String(scaleFactor),
+        prepAheadNotes: patch.prepAheadNotes ?? null,
+        leftoverSourceId: null,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(mealPlanEntry.id, id), isNull(mealPlanEntry.deletedAt)))
+      .returning();
+
+    return updated ? this.mapMealPlanEntry(updated) : null;
   }
 
   async getMealPlanWithEntries(

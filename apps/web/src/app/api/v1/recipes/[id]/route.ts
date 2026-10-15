@@ -5,6 +5,7 @@ import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { RecipeService, type RecipeContentUpdate } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { assertRecipeHousehold } from "@/lib/api/recipes";
+import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const recipe = await new RecipeService(getDatabase()).getRecipeDetails(id);
     assertRecipeHousehold(recipe, householdId, id);
-    return jsonResponse(recipe);
+    return jsonResponse(presentRecipeDetailsForApi(recipe, requestApiOrigin(request)));
   } catch (error) {
     return handleApiError(error, request.url);
   }
@@ -31,7 +32,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const recipe = await service.updateRecipeDetails(id, body);
     if (!recipe) throw new NotFoundError("Recipe", id);
-    return jsonResponse(recipe);
+    return jsonResponse(presentRecipeDetailsForApi(recipe, requestApiOrigin(request)));
   } catch (error) {
     return handleApiError(error, request.url);
   }

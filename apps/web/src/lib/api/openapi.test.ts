@@ -19,6 +19,7 @@ describe("generateOpenApiDocument", () => {
         "/status",
         "/recipes",
         "/recipes/{id}",
+        "/recipes/{id}/image",
         "/recipes/import/photo",
         "/meal-plans",
         "/meal-plans/{id}",
@@ -85,7 +86,10 @@ describe("generateOpenApiDocument", () => {
 
     expect(patchSchema.properties).toHaveProperty("entries");
     expect(patchSchema.properties).toHaveProperty("status");
+    expect(patchSchema.properties).toHaveProperty("entriesMode");
     expect(patchSchema.additionalProperties).toBe(false);
+    expect(JSON.stringify(spec.paths?.["/meal-plans/{id}"]?.patch)).toMatch(/merge/);
+    expect(JSON.stringify(spec.paths?.["/meal-plans/{id}"]?.patch)).toMatch(/previousEntries/);
   });
 });
 

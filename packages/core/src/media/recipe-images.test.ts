@@ -1,14 +1,27 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  appOriginFromEnv,
+  backfillInlineImageList,
   copyRemoteImages,
   headersForRemoteImage,
   imageExtensionFromUrl,
   isBlobStoreConfigured,
+  isInlineImageDataUrl,
   isStoredBlobUrl,
   keepMainRecipeImages,
+  omitInlineImagePayloads,
+  parseImageDataUrl,
+  persistRecipeImageUrl,
+  presentRecipeImages,
+  publicRecipeImages,
   recipeGalleryImages,
+  recipeImageEndpointPath,
   recipeMainImage,
 } from "./recipe-images";
+
+const png =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+const dataUrl = `data:image/png;base64,${png}`;
 
 describe("recipe images", () => {
   it("picks the first non-empty image as the main photo", () => {
@@ -68,5 +81,63 @@ describe("recipe images", () => {
     );
     expect(isBlobStoreConfigured({ BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_x" })).toBe(true);
     expect(isBlobStoreConfigured({})).toBe(false);
+  });
+
+  it("detects and parses inline image data URLs", () => {
+    expect(isInlineImageDataUrl(dataUrl)).toBe(true);
+    expect(isInlineImageDataUrl("https://cdn.example/photo.jpg")).toBe(false);
+    const parsed = parseImageDataUrl(dataUrl);
+    expect(parsed?.contentType).toBe("image/png");
+    expect(parsed?.body.byteLength).toBeGreaterThan(0);
+    expect(omitInlineImagePayloads([dataUrl, "https://cdn.example/photo.jpg"])).toEqual([
+      "https://cdn.example/photo.jpg",
+    ]);
+  });
+
+  it("rewrites inline photos to a thumbnail endpoint and never returns bytes", () => {
+    const recipeId = "550e8400-e29b-41d4-a716-446655440000";
+    expect(publicRecipeImages(recipeId, [dataUrl, "https://ignored.example/b.jpg"])).toEqual([
+      recipeImageEndpointPath(recipeId),
+    ]);
+    expect(publicRecipeImages(recipeId, [dataUrl], { origin: "https://kitchen.example/" })).toEqual(
+      [`https://kitchen.example${recipeImageEndpointPath(recipeId)}`]
+    );
+    expect(presentRecipeImages({ id: recipeId, images: [dataUrl] }).images[0]).not.toMatch(
+      /^data:/
+    );
+    expect(JSON.stringify(presentRecipeImages({ id: recipeId, images: [dataUrl] }))).not.toContain(
+      "base64"
+    );
+    expect(publicRecipeImages(recipeId, ["https://blob.example/main.jpg"])).toEqual([
+      "https://blob.example/main.jpg",
+    ]);
+  });
+
+  it("uploads inline data URLs when a blob put is available", async () => {
+    const put = vi.fn().mockResolvedValue("https://blob.example/stored.png");
+    expect(await persistRecipeImageUrl(dataUrl, put, "recipes/hh/photo-import/1")).toBe(
+      "https://blob.example/stored.png"
+    );
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(await persistRecipeImageUrl(dataUrl, undefined, "recipes/hh/photo-import/1")).toBe(
+      dataUrl
+    );
+
+    const backfill = await backfillInlineImageList(
+      [dataUrl, "https://cdn.example/keep.jpg"],
+      put,
+      "recipes/hh/backfill"
+    );
+    expect(backfill.changed).toBe(true);
+    expect(backfill.images).toEqual(["https://blob.example/stored.png"]);
+  });
+
+  it("reads the app origin from env for MCP thumbnail URLs", () => {
+    expect(appOriginFromEnv({ NEXT_PUBLIC_APP_URL: "https://kitchen.example/" })).toBe(
+      "https://kitchen.example"
+    );
+    expect(appOriginFromEnv({ VERCEL_URL: "ovenlovin.vercel.app" })).toBe(
+      "https://ovenlovin.vercel.app"
+    );
   });
 });

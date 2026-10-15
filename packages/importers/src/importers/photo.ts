@@ -11,6 +11,7 @@ import type {
   ParsedStep,
   ImporterConfig,
 } from "../types/importer";
+import { stripLeadingStepNumber } from "@ovenlovin/core";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { classifyDraftIngredients } from "../utils/classify-allergens";
 import { resolveVisionModelId } from "../utils/models";
@@ -195,7 +196,9 @@ Rate overall ocrQuality: excellent (printed, perfect), good (printed, minor issu
           type: "photo" as const,
           url: visibleSource?.startsWith("http") ? visibleSource : undefined,
           attribution: visibleSource,
-          blobRefs: (raw.sourceBlobs || []) as string[],
+          blobRefs: ((raw.sourceBlobs || []) as string[]).filter(
+            (blob) => blob.startsWith("http://") || blob.startsWith("https://")
+          ),
           importerName: "photo-importer",
           importerVersion: IMPORTER_VERSION,
           modelUsed: raw.modelUsed,
@@ -335,7 +338,7 @@ function parseStepsWithOCR(
     }
 
     const step = item as Record<string, unknown>;
-    const text = typeof step.text === "string" ? step.text : "";
+    const text = typeof step.text === "string" ? stripLeadingStepNumber(step.text) : "";
     const ocrConfidence = typeof step.confidence === "string" ? step.confidence : "low";
 
     let confidence = 0.85;
