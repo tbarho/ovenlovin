@@ -197,6 +197,11 @@ function PhotoReviewForm({
         />
       </label>
       {error ? <p className="muted">{error}</p> : null}
+      {pending ? (
+        <p className="muted" role="status" aria-live="polite">
+          Saving this recipe…
+        </p>
+      ) : null}
       <button className="btn primary" type="submit" disabled={pending}>
         {pending ? "Saving…" : "Save recipe"}
       </button>
@@ -244,10 +249,20 @@ export function PhotoImportDialog({
       if ((!body.images || body.images.length === 0) && job.files[0]) {
         body.images = [await fileToDataUrl(job.files[0])];
       }
-      const recipe = await api<{ id: string }>("/api/v1/recipes", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
+      const recipe = await api<{ id: string; title?: string; servings?: number }>(
+        "/api/v1/recipes",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        }
+      );
+      window.sessionStorage.setItem(
+        "ovenlovin.import-toast",
+        JSON.stringify({
+          title: recipe.title || draft.title || "Untitled recipe",
+          servings: recipe.servings ?? (draft.servings.trim() ? Number(draft.servings) : 4),
+        })
+      );
       cancelPhotoImportJob();
       onClose();
       router.push(`/recipes/${recipe.id}`);
