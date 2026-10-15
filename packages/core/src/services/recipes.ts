@@ -176,6 +176,7 @@ export class RecipeService extends BaseService {
       description: data.description,
       notes: data.notes,
       servings: data.servings,
+      cuisine: data.cuisine,
       prepTimeMinutes: data.prepTimeMinutes,
       cookTimeMinutes: data.cookTimeMinutes,
       totalTimeMinutes: nextTotal,

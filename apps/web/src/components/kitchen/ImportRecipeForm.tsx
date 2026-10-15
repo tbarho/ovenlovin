@@ -160,6 +160,10 @@ export function ImportRecipeForm() {
         method: "POST",
         body: JSON.stringify({ source, content }),
       });
+      window.sessionStorage.setItem(
+        "ovenlovin.import-toast",
+        JSON.stringify({ title: recipe.title, servings: recipe.servings ?? 4 })
+      );
       router.push(`/recipes/${recipe.id}`);
       router.refresh();
     } catch (err) {

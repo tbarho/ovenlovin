@@ -52,12 +52,24 @@ function mealThumb(title: string, image: string | null) {
   );
 }
 
-function MealCopy({ meal }: { meal: WeekMeal }) {
+function servingsCopy(meal: WeekMeal, cookFor: number): string | null {
+  if (meal.isNoCook) return null;
+  const recipeMakes =
+    meal.recipeServings ?? (meal.servings && meal.servings !== cookFor ? meal.servings : null);
+  if (recipeMakes && recipeMakes !== cookFor) {
+    return `Recipe makes ${recipeMakes} · cooking for ${cookFor}`;
+  }
+  if (meal.servings) return `${meal.servings} servings`;
+  return `Cooking for ${cookFor}`;
+}
+
+function MealCopy({ meal, cookFor }: { meal: WeekMeal; cookFor: number }) {
+  const servings = servingsCopy(meal, cookFor);
   return (
     <div className="week-meal-copy">
       <p className="week-slot">{meal.isNoCook ? "Night off" : slotLabel(meal.mealSlot)}</p>
       <h3>{meal.title}</h3>
-      {meal.servings && !meal.isNoCook ? <p className="muted">{meal.servings} servings</p> : null}
+      {servings ? <p className="muted">{servings}</p> : null}
       {meal.checkStatus === "incomplete" && meal.findings.length === 0 ? (
         <p className="week-finding" data-severity="warn">
           We couldn&apos;t finish checking this dinner.
@@ -146,7 +158,7 @@ function DayEditor({
         <div className="week-editor">
           <div className="week-editor-head">
             <div>
-              <p className="week-slot">{day.weekday} dinner</p>
+              <p className="week-slot">Editing {day.weekday}</p>
               <p className="muted">
                 {current
                   ? current.isNoCook
@@ -381,7 +393,7 @@ export function MealPlanWeek({
     >
       <div className="week-toolbar">
         <label className="week-servings">
-          <span>This week we cook for</span>
+          <span>Scale shopping and portions for</span>
           <select
             value={servings}
             disabled={pending}
@@ -394,7 +406,7 @@ export function MealPlanWeek({
             ))}
           </select>
         </label>
-        <p className="muted">Tap a day to pick, swap, or clear dinner.</p>
+        <p className="muted">Select a day to pick, swap, or clear dinner.</p>
       </div>
 
       <div className="week-grid">
@@ -411,6 +423,7 @@ export function MealPlanWeek({
                   className="week-day-hit"
                   aria-expanded={selected}
                   aria-controls={selected ? `plan-editor-${day.date}` : undefined}
+                  aria-label={`Edit ${day.weekday} dinner`}
                   onClick={() => {
                     setSelectedDate((current) => (current === day.date ? null : day.date));
                     setQuery("");
@@ -428,7 +441,7 @@ export function MealPlanWeek({
                       {day.meals.map((meal) => (
                         <div className="week-meal-link" key={meal.entryId}>
                           {mealThumb(meal.title, meal.image)}
-                          <MealCopy meal={meal} />
+                          <MealCopy meal={meal} cookFor={servings} />
                         </div>
                       ))}
                     </div>

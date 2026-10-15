@@ -13,6 +13,12 @@ import {
 import "@/app/prototype/people/prototype.css";
 import "@/components/people/people.css";
 
+const MARK_LABEL = {
+  ok: "OK",
+  warn: "Check",
+  block: "Can't eat",
+} as const;
+
 export function WhoCanEat({
   people,
   rules,
@@ -35,6 +41,12 @@ export function WhoCanEat({
   return (
     <div className="who-can-eat">
       <h2 className="who-can-eat-title">Who can eat this</h2>
+      <p className="who-legend">
+        <span>OK can eat</span>
+        <span>Check ask first</span>
+        <span>Can&apos;t eat is a block</span>
+        <span>Tap someone for details</span>
+      </p>
       {result.status === "incomplete" ? (
         <p className="olp-lead" data-testid="who-incomplete">
           This check is incomplete
@@ -46,6 +58,7 @@ export function WhoCanEat({
         {result.people.map((item) => {
           const person = people.find((entry) => entry.id === item.personId);
           if (!person) return null;
+          const label = MARK_LABEL[item.mark];
           return (
             <button
               key={item.personId}
@@ -53,6 +66,8 @@ export function WhoCanEat({
               className="olp-who-person"
               data-testid={`mark-${item.personId}`}
               data-mark={item.mark}
+              title={`${item.personName}: ${label}. Opens details.`}
+              aria-label={`${item.personName}: ${label}. Opens details.`}
               onClick={() => setSelected(item)}
             >
               <Avatar
@@ -62,6 +77,7 @@ export function WhoCanEat({
                 mark={item.mark}
               />
               <span>{item.personName}</span>
+              <span className={`who-chip who-chip-${item.mark}`}>{label}</span>
             </button>
           );
         })}

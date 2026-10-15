@@ -90,10 +90,10 @@ export function ShoppingList({
   if (listed.length === 0) {
     return (
       <div className="shop-board">
-        <p className="empty-note">
-          Nothing to shop for yet. Add dinners on the plan, or jot milk and paper towels below.
-        </p>
         <ShopAdd value={draft} onChange={setDraft} onSubmit={addExtra} pending={pending} />
+        <p className="empty-note">
+          Nothing to shop for yet. Add dinners on the plan, or jot milk and paper towels above.
+        </p>
         {error ? <p className="muted">{error}</p> : null}
       </div>
     );
@@ -101,6 +101,7 @@ export function ShoppingList({
 
   return (
     <div className="shop-board" data-testid="shopping-list" aria-busy={pending}>
+      <ShopAdd value={draft} onChange={setDraft} onSubmit={addExtra} pending={pending} />
       {groups.map((group) => (
         <section className="shop-aisle" key={group.aisle}>
           <h2 className="shop-aisle-title">{group.aisle}</h2>
@@ -136,7 +137,6 @@ export function ShoppingList({
           </ul>
         </section>
       ))}
-      <ShopAdd value={draft} onChange={setDraft} onSubmit={addExtra} pending={pending} />
       {error ? <p className="muted">{error}</p> : null}
     </div>
   );
@@ -154,7 +154,7 @@ function ShopAdd({
   pending: boolean;
 }) {
   return (
-    <form className="shop-add" onSubmit={onSubmit}>
+    <form className="shop-add shop-add-top" onSubmit={onSubmit}>
       <label className="field">
         <span className="field-label">Add to the list</span>
         <input

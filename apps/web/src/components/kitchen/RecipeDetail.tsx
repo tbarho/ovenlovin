@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
 import type { Cookbook, Person, PersonRule, RecipeDetails } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
@@ -14,6 +14,7 @@ import {
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
 import { recipeDeleteConfirmCopy } from "@/lib/recipe-delete";
+import { whoCanEat } from "@/lib/who-can-eat";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { KitchenToast } from "./KitchenToast";
 import { LoveTags } from "./LoveTags";
@@ -43,6 +44,8 @@ export function RecipeDetail({
   rules = [],
   lovePeople = EMPTY_LOVE_PEOPLE,
   plannedDates = [],
+  backHref = "/recipes",
+  backLabel = "Recipes",
 }: {
   recipe: RecipeDetails;
   cookbooks: Cookbook[];
@@ -50,6 +53,8 @@ export function RecipeDetail({
   rules?: PersonRule[];
   lovePeople?: PersonLove[];
   plannedDates?: string[];
+  backHref?: string;
+  backLabel?: string;
 }) {
   const router = useRouter();
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
@@ -94,6 +99,32 @@ export function RecipeDetail({
 
   const mainImage = recipeMainImage(recipe.images);
   const sourceUrl = recipe.source?.canonicalUrl || recipe.source?.url || null;
+  const checkIngredients = recipe.ingredients.map((ingredient) => ({
+    id: ingredient.id,
+    name: ingredient.rawText,
+    substitutionNotes: ingredient.substitutionNotes,
+  }));
+  const eat = useMemo(
+    () => whoCanEat({ people, rules, ingredients: checkIngredients }),
+    [people, rules, recipe.ingredients]
+  );
+  const warningPersonIds = eat.people
+    .filter((person) => person.mark !== "ok")
+    .map((person) => person.personId);
+
+  useEffect(() => {
+    const raw = window.sessionStorage.getItem("ovenlovin.import-toast");
+    if (!raw) return;
+    window.sessionStorage.removeItem("ovenlovin.import-toast");
+    try {
+      const data = JSON.parse(raw) as { title?: string; servings?: number };
+      const title = data.title || recipe.title;
+      const count = data.servings || storedServings;
+      setToast(`Imported ${title} · ${count} servings (guessed) · Add to a cookbook`);
+    } catch {
+      setToast(`Imported ${recipe.title} · Add to a cookbook`);
+    }
+  }, [recipe.title, storedServings]);
 
   const scaledIngredients = useMemo(
     () =>
@@ -134,10 +165,23 @@ export function RecipeDetail({
         <div className="recipe-layout-media">
           <div className="kitchen-head">
             <div>
-              <Link href="/recipes" className="back-link">
-                ← Recipes
+              <Link href={backHref} className="back-link">
+                ← {backLabel}
               </Link>
-              <h1>{recipe.title}</h1>
+              <div className="section-head">
+                <h1>{recipe.title}</h1>
+                <button className="section-edit" type="button" onClick={() => setSheet("details")}>
+                  Edit details
+                </button>
+                <button
+                  className="section-edit"
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={deleted}
+                >
+                  Delete recipe
+                </button>
+              </div>
               <LoveTags
                 hits={loveHitsForRecipe(
                   {
@@ -150,6 +194,7 @@ export function RecipeDetail({
                   },
                   lovePeople
                 )}
+                warningPersonIds={warningPersonIds}
               />
               <div className="recipe-meta">
                 {formatDurationMinutes(recipe.prepTimeMinutes) ? (
@@ -164,6 +209,9 @@ export function RecipeDetail({
                     {book.name}
                   </Link>
                 ))}
+                <button className="chip" type="button" onClick={() => setSheet("cookbook")}>
+                  Cookbooks
+                </button>
               </div>
               {sourceUrl ? (
                 <a className="source-link" href={sourceUrl} target="_blank" rel="noreferrer">
@@ -180,61 +228,56 @@ export function RecipeDetail({
             ) : (
               <div className="recipe-hero-fallback">Add a photo of this dish</div>
             )}
-          </div>
-
-          <div className="recipe-actions">
-            <button className="btn" type="button" onClick={() => setSheet("details")}>
-              Edit details
-            </button>
-            <button className="btn" type="button" onClick={() => setSheet("image")}>
-              Edit image
-            </button>
-            <button className="btn" type="button" onClick={() => setSheet("ingredients")}>
-              Edit ingredients
-            </button>
-            <button className="btn" type="button" onClick={() => setSheet("steps")}>
-              Edit steps
-            </button>
-            <button className="btn" type="button" onClick={() => setSheet("cookbook")}>
-              Cookbooks
-            </button>
             <button
-              className="btn danger"
+              className="section-edit recipe-hero-edit"
               type="button"
-              onClick={() => setConfirmDelete(true)}
-              disabled={deleted}
+              onClick={() => setSheet("image")}
             >
-              Delete recipe
+              Edit image
             </button>
           </div>
         </div>
 
         <div className="recipe-layout-body">
-          <WhoCanEat
-            people={people}
-            rules={rules}
-            ingredients={recipe.ingredients.map((ingredient) => ({
-              id: ingredient.id,
-              name: ingredient.rawText,
-              substitutionNotes: ingredient.substitutionNotes,
-            }))}
-          />
+          <WhoCanEat people={people} rules={rules} ingredients={checkIngredients} />
 
           <div className="servings-card">
             <header>
               <strong>Servings</strong>
               <span>{servings}</span>
             </header>
-            <input
-              type="range"
-              min={1}
-              max={24}
-              value={servings}
-              onChange={(event) => setServings(clampServings(Number(event.target.value)))}
-            />
+            <div className="servings-stepper">
+              <button
+                type="button"
+                className="btn compact"
+                aria-label="Fewer servings"
+                onClick={() => setServings(clampServings(servings - 1))}
+              >
+                −
+              </button>
+              <input
+                type="range"
+                min={1}
+                max={24}
+                value={servings}
+                aria-valuemin={1}
+                aria-valuemax={24}
+                aria-valuenow={servings}
+                aria-label="Servings"
+                onChange={(event) => setServings(clampServings(Number(event.target.value)))}
+              />
+              <button
+                type="button"
+                className="btn compact"
+                aria-label="More servings"
+                onClick={() => setServings(clampServings(servings + 1))}
+              >
+                +
+              </button>
+            </div>
             <p className="muted">
-              Scales from {recipe.servings ?? storedServings} stored servings. Units stay as
-              written.
+              1–24 servings. Scales from {recipe.servings ?? storedServings} stored servings. Units
+              stay as written.
             </p>
           </div>
 
@@ -249,7 +292,16 @@ export function RecipeDetail({
 
           <div className="recipe-view">
             <section>
-              <h2>Ingredients</h2>
+              <div className="section-head">
+                <h2>Ingredients</h2>
+                <button
+                  className="section-edit"
+                  type="button"
+                  onClick={() => setSheet("ingredients")}
+                >
+                  Edit ingredients
+                </button>
+              </div>
               {scaledIngredients.length === 0 ? (
                 <p className="muted">No ingredients stored for this recipe.</p>
               ) : (
@@ -261,7 +313,12 @@ export function RecipeDetail({
               )}
             </section>
             <section>
-              <h2>Steps</h2>
+              <div className="section-head">
+                <h2>Steps</h2>
+                <button className="section-edit" type="button" onClick={() => setSheet("steps")}>
+                  Edit steps
+                </button>
+              </div>
               {recipe.steps.length === 0 ? (
                 <p className="muted">No steps stored for this recipe.</p>
               ) : (
@@ -301,18 +358,9 @@ export function RecipeDetail({
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => void deleteRecipe()}
       />
-      {deleted ? (
-        <p className="muted" data-testid="recipe-deleted">
-          {recipe.title} was deleted.{" "}
-          <Link href="/recipes" className="back-link">
-            Back to recipes
-          </Link>
-        </p>
-      ) : null}
-      {deleteError ? <p className="muted">{deleteError}</p> : null}
       <KitchenToast
         message={toast}
-        onUndo={toast ? () => void undoDelete() : undefined}
+        onUndo={deleted && toast ? () => void undoDelete() : undefined}
         onDismiss={() => setToast(null)}
       />
     </>

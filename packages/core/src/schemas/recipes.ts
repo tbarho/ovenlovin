@@ -158,6 +158,7 @@ export type RecipeContentUpdate = {
   description?: string | null;
   notes?: string | null;
   servings?: number | null;
+  cuisine?: string | null;
   prepTimeMinutes?: number | null;
   cookTimeMinutes?: number | null;
   totalTimeMinutes?: number | null;
