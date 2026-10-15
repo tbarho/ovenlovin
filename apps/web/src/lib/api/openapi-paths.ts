@@ -724,6 +724,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       date: z.string(),
       mealSlot: z.string(),
       recipeId: z.string().uuid().nullable().optional(),
+      freeformMeal: z.string().nullable().optional(),
       servings: z.number().int().positive().nullable().optional(),
       attendees: z.array(z.string().uuid()),
       prepAheadNotes: z.string().nullable().optional(),
@@ -743,6 +744,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   const mealPlanDetailSchema = mealPlanSchema
     .extend({
       entries: z.array(mealPlanEntrySchema),
+      previousEntries: z
+        .array(mealPlanEntrySchema)
+        .optional()
+        .describe("Nights this PATCH changed, as they were before the edit. Use to revert."),
     })
     .openapi("MealPlanDetail");
 
@@ -807,6 +812,8 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/meal-plans/{id}",
     tags: ["meal-plans"],
     summary: "Update a meal plan",
+    description:
+      "`entries` default to **merge** by date+meal: send one night to set, swap, or `{ clear: true }` to remove it. Other nights are left alone. Pass `entriesMode: replace` to rewrite the whole week. The response includes `previousEntries` for the nights this request changed.",
     request: {
       params: z.object({ id: z.string().uuid() }),
       body: {

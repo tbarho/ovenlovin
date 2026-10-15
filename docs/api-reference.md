@@ -645,29 +645,21 @@ POST /api/v1/meal-plans
 **Request body**:
 ```json
 {
-  "householdId": "household-123",
-  "name": "Week of Oct 13",
-  "startDate": "2026-10-13",
-  "endDate": "2026-10-19",
-  "attendees": ["person-1", "person-2", "person-3"],
+  "weekStart": "2026-10-13",
+  "status": "draft",
   "entries": [
     {
       "date": "2026-10-13",
-      "slot": "dinner",
+      "meal": "dinner",
       "recipeId": "recipe-123",
-      "servings": 4
-    },
-    {
-      "date": "2026-10-14",
-      "slot": "dinner",
-      "recipeId": "recipe-456",
-      "servings": 4
+      "servings": 4,
+      "attendees": ["person-1", "person-2"]
     }
   ]
 }
 ```
 
-**Response**: `201 Created` with created meal plan object
+**Response**: `201 Created` with the plan and `entries`. Create still takes the full week list.
 
 #### Get Meal Plan
 
@@ -675,29 +667,32 @@ POST /api/v1/meal-plans
 GET /api/v1/meal-plans/{planId}
 ```
 
-**Response**:
+Each entry includes `date`, `mealSlot`, `recipeId` and/or `freeformMeal`, `servings`, and `attendees`.
+
+#### Patch Meal Plan (per-night merge)
+
+```
+PATCH /api/v1/meal-plans/{planId}
+```
+
+`entries` **merge by date + meal** by default. Send one night to set or swap it; other nights stay. `{ "clear": true }` removes that night. The response includes `previousEntries` (those nights as they were) so a client can revert.
+
 ```json
-{
-  "id": "plan-123",
-  "householdId": "household-123",
-  "name": "Week of Oct 13",
-  "startDate": "2026-10-13",
-  "endDate": "2026-10-19",
-  "attendees": ["person-1", "person-2", "person-3"],
-  "entries": [
-    {
-      "id": "entry-1",
-      "date": "2026-10-13",
-      "slot": "dinner",
-      "recipeId": "recipe-123",
-      "recipeTitle": "Spaghetti Carbonara",
-      "servings": 4
-    }
-  ],
-  "needsRecheck": false,
-  "createdAt": "2026-10-12T12:00:00Z",
-  "updatedAt": "2026-10-12T12:00:00Z"
-}
+{ "entries": [{ "date": "2026-10-15", "meal": "dinner", "recipeId": "recipe-456", "servings": 4 }] }
+```
+
+```json
+{ "entries": [{ "date": "2026-10-16", "meal": "dinner", "freeformMeal": "Leftovers", "servings": 3 }] }
+```
+
+```json
+{ "entries": [{ "date": "2026-10-17", "meal": "dinner", "clear": true }] }
+```
+
+Full-week rewrite (the old behavior):
+
+```json
+{ "entriesMode": "replace", "entries": [{ "date": "2026-10-15", "meal": "dinner", "recipeId": "recipe-456" }] }
 ```
 
 #### Check Meal Plan
