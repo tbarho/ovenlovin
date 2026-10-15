@@ -106,7 +106,7 @@ export function whoCanEat(opts: {
       const mark = worstMark(findings);
       const reasons =
         findings.length > 0
-          ? findings.map((finding) => reasonForFinding(finding))
+          ? [...new Set(findings.map((finding) => reasonForFinding(finding)))]
           : result.status === "incomplete"
             ? (result.incompleteReasons ?? ["This check could not finish."])
             : [`Nothing in this recipe matches ${person.displayName}'s rules.`];

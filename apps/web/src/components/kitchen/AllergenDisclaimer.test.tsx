@@ -6,7 +6,7 @@ describe("AllergenDisclaimer", () => {
   it("keeps one calm line and skips the medical-advice pile-on", () => {
     render(<AllergenDisclaimer />);
     expect(screen.getByRole("note")).toHaveTextContent(
-      "Always read labels before serving. An incomplete check is not a clean bill."
+      "Always read labels before serving. If a check didn't finish, treat that dinner as unchecked."
     );
     expect(screen.queryByText(/not medical advice/i)).not.toBeInTheDocument();
   });

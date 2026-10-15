@@ -106,11 +106,11 @@ function pickSafety(
 ): Pick<PlanRecipePick, "safety" | "warning"> {
   if (people.length === 0) return { safety: "unknown", warning: null };
   if (ingredients.length === 0) {
-    return { safety: "unknown", warning: "This check is incomplete — not a clean bill." };
+    return { safety: "unknown", warning: "We couldn't finish checking this recipe." };
   }
   const { findings, checkStatus } = checkMeal(people, rules, ingredients);
   if (checkStatus === "incomplete" && findings.length === 0) {
-    return { safety: "unknown", warning: "This check is incomplete — not a clean bill." };
+    return { safety: "unknown", warning: "We couldn't finish checking this recipe." };
   }
   const blocked = findings.find((finding) => finding.severity === "block");
   if (blocked) return { safety: "block", warning: blocked.message };
@@ -329,12 +329,12 @@ async function recipePicksForCatalog(
   >
 ): Promise<PlanRecipePick[]> {
   const missing = catalog.filter((item) => !ingredientsByRecipe.has(item.id));
-  await Promise.all(
-    missing.map(async (item) => {
-      const rows = await plans.getRecipeIngredientsForEntry(item.id);
-      storeIngredients(ingredientsByRecipe, item.id, rows);
-    })
-  );
+  if (missing.length > 0) {
+    const grouped = await plans.getRecipeIngredientsForRecipes(missing.map((item) => item.id));
+    for (const item of missing) {
+      storeIngredients(ingredientsByRecipe, item.id, grouped.get(item.id) ?? []);
+    }
+  }
 
   return catalog.map((item) => {
     const rows = ingredientsByRecipe.get(item.id) ?? [];

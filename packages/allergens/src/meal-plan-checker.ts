@@ -6,6 +6,7 @@
  */
 
 import type { PersonRule } from "@ovenlovin/core";
+import { collapseRuleFindings } from "./collapse-findings";
 import {
   checkIngredientsAgainstRules,
   type RuleCheckContext,
@@ -196,24 +197,25 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
       );
     }
 
-    // Add findings to entry result
-    entryResult.findings.block.push(...checkResult.findings.block);
-    entryResult.findings.warn.push(...checkResult.findings.warn);
-    entryResult.findings.prefer_avoid.push(...checkResult.findings.prefer_avoid);
+    // One notice per person per meal — mozzarella and parmesan share a dairy message.
+    const collapsed = {
+      block: collapseRuleFindings(checkResult.findings.block),
+      warn: collapseRuleFindings(checkResult.findings.warn),
+      prefer_avoid: collapseRuleFindings(checkResult.findings.prefer_avoid),
+    };
+
+    entryResult.findings.block.push(...collapsed.block);
+    entryResult.findings.warn.push(...collapsed.warn);
+    entryResult.findings.prefer_avoid.push(...collapsed.prefer_avoid);
 
     // Track affected people for this entry
     const affectedPeopleIds = new Set<string>();
-    for (const finding of [
-      ...checkResult.findings.block,
-      ...checkResult.findings.warn,
-      ...checkResult.findings.prefer_avoid,
-    ]) {
+    for (const finding of [...collapsed.block, ...collapsed.warn, ...collapsed.prefer_avoid]) {
       affectedPeopleIds.add(finding.personId);
     }
     entryResult.affectedPeople = Array.from(affectedPeopleIds);
 
-    // Add findings to per-person results
-    for (const finding of checkResult.findings.block) {
+    for (const finding of collapsed.block) {
       const personResult = byPersonMap.get(finding.personId);
       if (personResult) {
         personResult.findings.block.push(finding);
@@ -222,7 +224,7 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
         }
       }
     }
-    for (const finding of checkResult.findings.warn) {
+    for (const finding of collapsed.warn) {
       const personResult = byPersonMap.get(finding.personId);
       if (personResult) {
         personResult.findings.warn.push(finding);
@@ -231,7 +233,7 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
         }
       }
     }
-    for (const finding of checkResult.findings.prefer_avoid) {
+    for (const finding of collapsed.prefer_avoid) {
       const personResult = byPersonMap.get(finding.personId);
       if (personResult) {
         personResult.findings.prefer_avoid.push(finding);
