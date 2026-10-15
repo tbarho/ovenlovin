@@ -6,7 +6,9 @@ import { FoodIcon } from "@/components/prototype/people/icons";
 import {
   customCatalogOffer,
   iconIdForTarget,
+  resolveFoodAdd,
   searchPeopleCatalog,
+  unknownAllergenWarning,
   type PeoplePickerMode,
 } from "@/lib/people-catalog";
 
@@ -20,13 +22,19 @@ export function InlineFoodAdd({
   mode,
   selectedTargets,
   onSelect,
+  onSelectDislike,
 }: {
   mode: PeoplePickerMode;
   selectedTargets: string[];
   onSelect: (item: CatalogEntry) => void;
+  onSelectDislike?: (item: CatalogEntry) => void;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [unknown, setUnknown] = useState<{
+    entry: CatalogEntry;
+    suggestion: CatalogEntry | null;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputKey = `inline-add-${mode}`;
   const tiles = useMemo(() => searchPeopleCatalog(query, { mode, limit: 24 }), [mode, query]);
@@ -37,23 +45,35 @@ export function InlineFoodAdd({
     if (selectedTargets.includes(entry.code)) return;
     onSelect(entry);
     setQuery("");
+    setUnknown(null);
     setOpen(true);
     inputRef.current?.focus();
+  }
+
+  function requestCustom(entry: CatalogEntry, suggestion: CatalogEntry | null) {
+    if (mode === "cant_eat") {
+      setUnknown({ entry, suggestion });
+      setOpen(false);
+      return;
+    }
+    add(entry);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Escape") {
       setOpen(false);
+      setUnknown(null);
       return;
     }
     if (event.key !== "Enter") return;
     event.preventDefault();
-    if (custom) {
-      add(custom);
+    const resolved = resolveFoodAdd(query, { mode, selectedTargets });
+    if (!resolved) return;
+    if (resolved.kind === "canonical") {
+      add(resolved.entry);
       return;
     }
-    const first = available[0];
-    if (first) add(first);
+    requestCustom(resolved.entry, resolved.suggestion);
   }
 
   return (
@@ -70,13 +90,59 @@ export function InlineFoodAdd({
           placeholder="Add…"
           onChange={(event) => {
             setQuery(event.target.value);
+            setUnknown(null);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
         />
       </label>
-      {open && (custom || available.length > 0) ? (
+      {unknown ? (
+        <div className="olp-unknown-confirm" data-testid="unknown-allergen-confirm" role="status">
+          <p>{unknownAllergenWarning(unknown.entry.name, unknown.suggestion)}</p>
+          {unknown.suggestion ? (
+            <button
+              type="button"
+              className="olp-typeahead-item"
+              data-testid="use-suggested-allergen"
+              onClick={() => {
+                const suggested = unknown.suggestion;
+                if (suggested) add(suggested);
+              }}
+            >
+              Use {unknown.suggestion.name}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="olp-typeahead-item"
+            data-testid="save-unknown-allergy"
+            onClick={() => add(unknown.entry)}
+          >
+            Save ‘{unknown.entry.name}’ as an allergy
+          </button>
+          {onSelectDislike ? (
+            <button
+              type="button"
+              className="olp-typeahead-item"
+              data-testid="save-unknown-dislike"
+              onClick={() => {
+                onSelectDislike(unknown.entry);
+                setQuery("");
+                setUnknown(null);
+                setOpen(true);
+                inputRef.current?.focus();
+              }}
+            >
+              Save ‘{unknown.entry.name}’ as a dislike
+            </button>
+          ) : null}
+          <button type="button" className="olp-typeahead-item" onClick={() => setUnknown(null)}>
+            Cancel
+          </button>
+        </div>
+      ) : null}
+      {open && !unknown && (custom || available.length > 0) ? (
         <ul className="olp-typeahead" role="listbox" aria-label={`${MODE_LABEL[mode]} suggestions`}>
           {custom ? (
             <li>
@@ -84,7 +150,7 @@ export function InlineFoodAdd({
                 type="button"
                 className="olp-typeahead-item"
                 data-testid="use-custom"
-                onClick={() => add(custom)}
+                onClick={() => requestCustom(custom, available[0] ?? null)}
               >
                 Use ‘{custom.name}’
               </button>

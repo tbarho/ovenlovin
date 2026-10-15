@@ -73,6 +73,42 @@ export function searchPeopleCatalog(
   return unique.slice(0, limit);
 }
 
+export function topCatalogMatch(
+  query: string,
+  options: { mode?: PeoplePickerMode; selectedTargets?: string[]; limit?: number } = {}
+): CatalogEntry | null {
+  const tiles = searchPeopleCatalog(query, {
+    mode: options.mode,
+    limit: options.limit ?? 24,
+  });
+  return tiles.find((entry) => !options.selectedTargets?.includes(entry.code)) ?? null;
+}
+
+export function unknownAllergenWarning(query: string, suggestion: CatalogEntry | null): string {
+  const typed = query.trim();
+  if (suggestion) {
+    return `We can't check '${typed}' against recipes; did you mean ${suggestion.name}?`;
+  }
+  return `We can't check '${typed}' against recipes. Save it only if you meant this exact food.`;
+}
+
+export type FoodAddResolution =
+  | { kind: "canonical"; entry: CatalogEntry }
+  | { kind: "unknown"; entry: CatalogEntry; suggestion: CatalogEntry | null };
+
+export function resolveFoodAdd(
+  query: string,
+  options: { mode?: PeoplePickerMode; selectedTargets?: string[] } = {}
+): FoodAddResolution | null {
+  const q = query.trim();
+  if (!q) return null;
+  const suggestion = topCatalogMatch(q, options);
+  const custom = customCatalogOffer(q);
+  if (suggestion) return { kind: "canonical", entry: suggestion };
+  if (!custom) return null;
+  return { kind: "unknown", entry: custom, suggestion };
+}
+
 export function customCatalogOffer(query: string): CatalogEntry | null {
   const q = query.trim();
   if (!q) return null;

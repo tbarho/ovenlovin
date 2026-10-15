@@ -402,6 +402,17 @@
   box-shadow: 0 0 0 4px rgba(224, 122, 61, 0.12);
 }
 
+.olp-unknown-confirm {
+  display: grid;
+  gap: 8px;
+}
+
+.olp-unknown-confirm p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 .olp-typeahead {
   display: grid;
   gap: 4px;
