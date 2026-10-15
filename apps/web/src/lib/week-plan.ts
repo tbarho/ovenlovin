@@ -1,3 +1,4 @@
+import { sanitizeWarningCopy } from "@ovenlovin/allergens";
 import {
   PeopleService,
   PlanService,
@@ -148,7 +149,7 @@ export function findingsFromCheck(check: WhoCanEatResult): WeekFinding[] {
     .map((person) => ({
       personName: person.personName,
       severity: person.mark === "block" ? ("block" as const) : ("warn" as const),
-      message: person.reasons[0] ?? person.title,
+      message: sanitizeWarningCopy(person.reasons[0] ?? person.title),
     }));
 }
 

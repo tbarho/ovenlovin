@@ -1,5 +1,7 @@
 import {
   checkIngredientsAgainstRules,
+  formatPlainFinding,
+  sanitizeWarningCopy,
   type IngredientCheckInput,
   type RuleCheckFinding,
   type RuleCheckResult,
@@ -60,6 +62,11 @@ function titleFor(personName: string, mark: EatMark): string {
   return `${personName} can eat this`;
 }
 
+function reasonForFinding(finding: RuleCheckFinding): string {
+  const plain = formatPlainFinding(finding);
+  return sanitizeWarningCopy(plain);
+}
+
 export function whoCanEat(opts: {
   people: Person[];
   rules: PersonRule[];
@@ -99,7 +106,7 @@ export function whoCanEat(opts: {
       const mark = worstMark(findings);
       const reasons =
         findings.length > 0
-          ? findings.map((finding) => finding.message)
+          ? findings.map((finding) => reasonForFinding(finding))
           : result.status === "incomplete"
             ? (result.incompleteReasons ?? ["This check could not finish."])
             : [`Nothing in this recipe matches ${person.displayName}'s rules.`];

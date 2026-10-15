@@ -13,7 +13,7 @@ describe("kitchen recipe layout", () => {
       <RecipeDetail
         recipe={testRecipeDetails({ title: "Weeknight pesto pasta" })}
         cookbooks={[testCookbook()]}
-        people={[testPerson({ displayName: "Jake" })]}
+        people={[testPerson({ displayName: "Child B" })]}
         rules={[testPersonRule({ target: "peanut", severity: "block" })]}
       />
     );
