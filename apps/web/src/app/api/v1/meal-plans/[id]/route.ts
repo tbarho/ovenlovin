@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
-import { PlanService, updateMealPlanBodySchema } from "@ovenlovin/core";
+import { PlanService, planPatchesToWrites, updateMealPlanBodySchema } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -54,12 +54,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       throw new NotFoundError("MealPlan", id);
     }
 
+    let previousEntries: Awaited<ReturnType<PlanService["getMealPlanEntries"]>> = [];
     if (body.entries) {
-      await service.replaceMealPlanEntries(id, body.entries);
+      if ((body.entriesMode ?? "merge") === "replace") {
+        previousEntries = await service.getMealPlanEntries(id);
+        await service.replaceMealPlanEntries(id, planPatchesToWrites(body.entries));
+      } else {
+        const merged = await service.mergeMealPlanEntries(id, body.entries);
+        previousEntries = merged.previous;
+      }
     }
 
     const detail = await service.getMealPlanWithEntries(id);
-    return jsonResponse(detail ?? plan);
+    return jsonResponse({ ...(detail ?? plan), previousEntries });
   } catch (error) {
     return handleApiError(error, request.url);
   }

@@ -164,7 +164,9 @@ describe("MealPlanWeek", () => {
     await user.click(screen.getByRole("button", { name: "Clear night" }));
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
-      body: JSON.stringify({ entries: [] }),
+      body: JSON.stringify({
+        entries: [{ date: "2026-10-12", meal: "dinner", clear: true }],
+      }),
     });
     expect(screen.getByText("Cleared Monday dinner")).toBeVisible();
 
@@ -178,6 +180,65 @@ describe("MealPlanWeek", () => {
             date: "2026-10-12",
             meal: "dinner",
             recipeId: "recipe-pesto",
+            servings: 4,
+            attendees: [],
+          },
+        ],
+      }),
+    });
+  });
+
+  it("lets a cook clear a no-cook night and undo it", async () => {
+    const user = userEvent.setup();
+    const noCook: WeekMeal = {
+      ...pesto,
+      entryId: "entry-off",
+      recipeId: null,
+      title: "No-cook night",
+      href: null,
+      image: null,
+      isNoCook: true,
+      findings: [],
+    };
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [noCook])}
+        planId="plan-1"
+        weekStart="2026-10-12"
+        recipes={recipes}
+        entries={[
+          {
+            id: "entry-off",
+            date: "2026-10-12",
+            mealSlot: "dinner",
+            recipeId: null,
+            freeformMeal: "No-cook night",
+            servings: 4,
+            attendees: [],
+          },
+        ]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /monday/i }));
+    expect(screen.getByText("Marked as no-cook. Pick a recipe if plans change.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Clear night" }));
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
+      method: "PATCH",
+      body: JSON.stringify({ entries: [] }),
+    });
+    expect(screen.getByText("Cleared Monday dinner")).toBeVisible();
+
+    vi.mocked(api).mockClear();
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
+      method: "PATCH",
+      body: JSON.stringify({
+        entries: [
+          {
+            date: "2026-10-12",
+            meal: "dinner",
+            freeformMeal: "No-cook night",
             servings: 4,
             attendees: [],
           },

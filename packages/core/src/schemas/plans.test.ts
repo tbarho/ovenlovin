@@ -63,7 +63,7 @@ describe("plans schemas", () => {
         entries: [{ date: "2026-11-03", meal: "lunch" }],
       });
       expect(body.status).toBe("approved");
-      expect(body.entries?.[0]?.attendees).toEqual([]);
+      expect(body.entries?.[0]?.attendees).toBeUndefined();
     });
 
     it("accepts shopping check-offs and extras for the plan week", () => {
@@ -90,6 +90,20 @@ describe("plans schemas", () => {
       });
       expect(body.entries?.[0]?.freeformMeal).toBe("No-cook night");
       expect(body.entries?.[0]?.recipeId).toBeUndefined();
+    });
+
+    it("accepts a per-night clear and merge vs replace mode", () => {
+      const merged = updateMealPlanBodySchema.parse({
+        entries: [{ date: "2026-11-06", meal: "dinner", clear: true }],
+      });
+      expect(merged.entries?.[0]?.clear).toBe(true);
+      expect(merged.entriesMode).toBeUndefined();
+
+      const replaced = updateMealPlanBodySchema.parse({
+        entriesMode: "replace",
+        entries: [{ date: "2026-11-06", meal: "dinner", freeformMeal: "Leftovers" }],
+      });
+      expect(replaced.entriesMode).toBe("replace");
     });
   });
 

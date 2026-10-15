@@ -77,6 +77,119 @@ export function isBlobStoreConfigured(
   return Boolean(env.BLOB_READ_WRITE_TOKEN);
 }
 
+export function isInlineImageDataUrl(value: string): boolean {
+  return /^\s*data:image\/[a-z0-9.+-]+;base64,/i.test(value);
+}
+
+export function parseImageDataUrl(
+  dataUrl: string
+): { contentType: string; body: ArrayBuffer } | null {
+  const match = dataUrl.trim().match(/^data:([^;,]+);base64,(.+)$/i);
+  if (!match?.[1] || !match[2]) return null;
+  const contentType = match[1];
+  if (!contentType.toLowerCase().startsWith("image/")) return null;
+  const bytes = Buffer.from(match[2], "base64");
+  if (bytes.byteLength === 0 || bytes.byteLength > 12 * 1024 * 1024) return null;
+  return {
+    contentType,
+    body: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+  };
+}
+
+export function recipeImageEndpointPath(recipeId: string): string {
+  return `/api/v1/recipes/${recipeId}/image`;
+}
+
+export function withPublicOrigin(pathOrUrl: string, origin?: string): string {
+  if (!origin || /^(https?:|data:)/i.test(pathOrUrl)) return pathOrUrl;
+  const base = origin.replace(/\/$/, "");
+  return `${base}${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
+}
+
+export function appOriginFromEnv(
+  env: Record<string, string | undefined> = process.env
+): string | undefined {
+  const configured = env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  if (env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (env.VERCEL_URL) return `https://${env.VERCEL_URL}`;
+  return undefined;
+}
+
+/** Drop inline data URLs so list/search payloads stay small. */
+export function omitInlineImagePayloads(values: string[] | null | undefined): string[] {
+  return (values ?? []).filter((value) => value.trim().length > 0 && !isInlineImageDataUrl(value));
+}
+
+/**
+ * One thumbnail URL for list/search/detail JSON. Inline bytes become the
+ * household-scoped image endpoint until Blob (or a later backfill) stores a URL.
+ */
+export function publicRecipeImages(
+  recipeId: string,
+  images: string[] | null | undefined,
+  options?: { origin?: string }
+): string[] {
+  const main = recipeMainImage(images);
+  if (!main) return [];
+  if (isInlineImageDataUrl(main)) {
+    return [withPublicOrigin(recipeImageEndpointPath(recipeId), options?.origin)];
+  }
+  return [main];
+}
+
+export function publicRecipeImageUrl(
+  recipeId: string,
+  image: string | null | undefined,
+  options?: { origin?: string }
+): string | null {
+  if (!image?.trim()) return null;
+  return publicRecipeImages(recipeId, [image], options)[0] ?? null;
+}
+
+export function presentRecipeImages<T extends { id: string; images?: string[] | null }>(
+  recipe: T,
+  options?: { origin?: string }
+): T {
+  return {
+    ...recipe,
+    images: publicRecipeImages(recipe.id, recipe.images, options),
+  };
+}
+
+export async function persistRecipeImageUrl(
+  url: string,
+  put: StoredImagePut | undefined,
+  pathnameWithoutExt: string
+): Promise<string> {
+  if (!isInlineImageDataUrl(url) || !put) return url;
+  const parsed = parseImageDataUrl(url);
+  if (!parsed) return url;
+  const stored = await put({
+    pathname: `${pathnameWithoutExt}.${imageExtensionFromUrl(url, parsed.contentType)}`,
+    body: parsed.body,
+    contentType: parsed.contentType,
+  });
+  return stored ?? url;
+}
+
+export async function backfillInlineImageList(
+  images: string[],
+  put: StoredImagePut | undefined,
+  prefix: string
+): Promise<{ images: string[]; changed: boolean }> {
+  const next: string[] = [];
+  let changed = false;
+  for (const [index, url] of images.entries()) {
+    const stored = await persistRecipeImageUrl(url, put, `${prefix}/${index + 1}`);
+    next.push(stored);
+    if (stored !== url) changed = true;
+  }
+  return { images: keepMainRecipeImages(next), changed };
+}
+
 async function fetchRemoteImage(url: string): Promise<Response> {
   const headers = headersForRemoteImage(url);
   let response = await fetch(url, { redirect: "follow", headers });

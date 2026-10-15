@@ -8,6 +8,8 @@ import {
   excludeRecipesBlockedForAttendees,
   parseForAttendeesParam,
 } from "@/lib/recipe-attendee-filter";
+import { scheduleInlineImageBackfill } from "@/lib/inline-image-backfill";
+import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +26,7 @@ export async function GET(request: NextRequest) {
 
     const db = getDatabase();
     const service = new RecipeService(db);
+    scheduleInlineImageBackfill(service);
 
     const result = await service.listRecipes(householdId, {
       status,
@@ -32,23 +35,25 @@ export async function GET(request: NextRequest) {
       uncategorized,
       pagination: { limit, cursor },
     });
+    const origin = requestApiOrigin(request);
+    const items = result.items.map((item) => presentListedRecipe(item, origin));
 
     const forAttendees = parseForAttendeesParam(url.searchParams.getAll("forAttendees"));
     if (forAttendees.length > 0) {
-      const { items, hidden } = await excludeRecipesBlockedForAttendees(
-        result.items,
+      const { items: visible, hidden } = await excludeRecipesBlockedForAttendees(
+        items,
         forAttendees,
         householdId
       );
       return jsonResponse({
         ...result,
-        items,
+        items: visible,
         hiddenCount: hidden.length,
         hidden,
       });
     }
 
-    return paginatedResponse(result);
+    return paginatedResponse({ ...result, items });
   } catch (error) {
     return handleApiError(error, request.url);
   }
@@ -116,7 +121,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return createdResponse(details, `/api/v1/recipes/${details.id}`);
+      return createdResponse(
+        presentListedRecipe(details, requestApiOrigin(request)),
+        `/api/v1/recipes/${details.id}`
+      );
     }
 
     const recipe = await service.createRecipe({
@@ -125,7 +133,10 @@ export async function POST(request: NextRequest) {
       createdBy,
     });
 
-    return createdResponse(recipe, `/api/v1/recipes/${recipe.id}`);
+    return createdResponse(
+      presentListedRecipe(recipe, requestApiOrigin(request)),
+      `/api/v1/recipes/${recipe.id}`
+    );
   } catch (error) {
     return handleApiError(error, request.url);
   }

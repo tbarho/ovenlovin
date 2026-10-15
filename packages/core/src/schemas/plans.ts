@@ -74,6 +74,24 @@ export const mealPlanEntryWriteSchema = z
   })
   .strict();
 
+/**
+ * PATCH upsert for one night. Omitted fields keep the current value.
+ * `clear: true` removes that date+meal. `attendees` is not defaulted so a
+ * single-night edit cannot wipe the rest of the week's guest list.
+ */
+export const mealPlanEntryPatchSchema = z
+  .object({
+    date: z.string().date(),
+    meal: z.string().min(1).max(50),
+    clear: z.boolean().optional(),
+    recipeId: uuidSchema.optional(),
+    freeformMeal: z.string().min(1).max(255).optional(),
+    servings: z.number().int().positive().optional(),
+    attendees: z.array(uuidSchema).optional(),
+    prepAheadNotes: z.string().optional(),
+  })
+  .strict();
+
 export const createMealPlanBodySchema = z
   .object({
     weekStart: z.string().date(),
@@ -86,7 +104,13 @@ export const updateMealPlanBodySchema = z
   .object({
     status: mealPlanStatusSchema.optional(),
     acknowledgedWarnings: z.array(z.string()).optional(),
-    entries: z.array(mealPlanEntryWriteSchema).optional(),
+    entries: z.array(mealPlanEntryPatchSchema).optional(),
+    entriesMode: z
+      .enum(["merge", "replace"])
+      .optional()
+      .describe(
+        "How `entries` are applied. Default `merge` upserts by date+meal (use clear:true to remove a night). `replace` rewrites the whole week."
+      ),
     shoppingState: shoppingTripStateSchema.optional(),
   })
   .strict();
@@ -135,6 +159,7 @@ export type MealPlanStatus = z.infer<typeof mealPlanStatusSchema>;
 export type MealPlan = z.infer<typeof mealPlanSchema>;
 export type MealPlanEntry = z.infer<typeof mealPlanEntrySchema>;
 export type MealPlanEntryWrite = z.infer<typeof mealPlanEntryWriteSchema>;
+export type MealPlanEntryPatch = z.infer<typeof mealPlanEntryPatchSchema>;
 export type CreateMealPlanBody = z.infer<typeof createMealPlanBodySchema>;
 export type UpdateMealPlanBody = z.infer<typeof updateMealPlanBodySchema>;
 export type CheckFindingSeverity = z.infer<typeof checkFindingSeveritySchema>;

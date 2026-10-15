@@ -7,6 +7,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { CookbookService, RecipeService, backfillParsedIngredient } from "@ovenlovin/core";
+import { mcpRecipeImages } from "../media";
 import {
   createDbClient,
   recipeIngredient,
@@ -201,7 +202,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     course: recipe.course ?? undefined,
     difficulty: recipe.difficulty ?? undefined,
     equipment: recipe.equipment || [],
-    images: recipe.images || [],
+    images: mcpRecipeImages(recipe.id, recipe.images),
     cookbooks,
     ingredients,
     steps,

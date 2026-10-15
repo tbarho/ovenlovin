@@ -9,9 +9,11 @@ import type { AuthContext } from "../auth/index";
 import {
   copyRemoteImages,
   keepMainRecipeImages,
+  persistRecipeImageUrl,
   RecipeService,
   type ImagePutInput,
 } from "@ovenlovin/core";
+import { mcpRecipeImages } from "../media";
 import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
 import { runPhotoImport } from "@ovenlovin/importers";
@@ -85,15 +87,12 @@ async function persistMainPhoto(blob: string, householdId: string): Promise<stri
   };
 
   if (blob.startsWith("data:")) {
-    const match = blob.match(/^data:([^;,]+);base64,(.+)$/);
-    if (!match?.[1] || !match[2]) return keepMainRecipeImages([blob]);
-    const bytes = Buffer.from(match[2], "base64");
-    const stored = await putStored({
-      pathname: `recipes/${householdId}/photo-import/1.jpg`,
-      body: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-      contentType: match[1],
-    });
-    return keepMainRecipeImages([stored ?? blob]);
+    const stored = await persistRecipeImageUrl(
+      blob,
+      putStored,
+      `recipes/${householdId}/photo-import/1`
+    );
+    return keepMainRecipeImages([stored]);
   }
 
   return copyRemoteImages(keepMainRecipeImages([blob]), putStored, `recipes/${householdId}`);
@@ -143,7 +142,7 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
     servings: recipe.servings ?? undefined,
     prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
-    images: recipe.images,
+    images: mcpRecipeImages(recipe.id, recipe.images),
     confidence: draft.overallConfidence,
     uncertainFields: extracted.uncertainFields,
     allergenClassifications: extracted.allergenClassifications,
