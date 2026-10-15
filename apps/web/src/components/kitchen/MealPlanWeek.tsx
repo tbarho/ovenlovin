@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/browser-api";
 import { dinnerEntryForDate, filterPlanRecipes, saferPicks } from "@/lib/plan-recipes";
 import { KitchenToast } from "./KitchenToast";
@@ -233,6 +233,7 @@ export function MealPlanWeek({
   const resolvedWeekStart = weekStart ?? days[0]?.date ?? "";
 
   const selectedDay = days.find((day) => day.date === selectedDate);
+  const dismissToast = useCallback(() => setToast(null), []);
 
   async function persist(nextEntries: PlanEntryDraft[]): Promise<boolean> {
     setPending(true);
@@ -397,7 +398,7 @@ export function MealPlanWeek({
               }
             : undefined
         }
-        onDismiss={() => setToast(null)}
+        onDismiss={dismissToast}
       />
     </div>
   );
