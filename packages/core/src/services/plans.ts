@@ -136,7 +136,7 @@ export class PlanService extends BaseService {
           date: entry.date,
           mealSlot: entry.meal,
           recipeId: entry.recipeId ?? null,
-          freeformMeal: null,
+          freeformMeal: entry.freeformMeal ?? null,
           servings: entry.servings ?? null,
           attendees: entry.attendees ?? [],
           prepAheadNotes: entry.prepAheadNotes ?? null,

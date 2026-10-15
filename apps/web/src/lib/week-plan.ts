@@ -45,16 +45,41 @@ export type WeekFinding = {
   message: string;
 };
 
+export const NO_COOK_LABEL = "No-cook night";
+
 export type WeekMeal = {
   entryId: string;
   date: string;
   mealSlot: string;
+  recipeId: string | null;
   title: string;
   href: string | null;
   image: string | null;
   servings: number | null;
+  isNoCook: boolean;
   findings: WeekFinding[];
   checkStatus: WhoCanEatResult["status"];
+};
+
+export type PlanEntryDraft = {
+  id?: string;
+  date: string;
+  mealSlot: string;
+  recipeId: string | null;
+  freeformMeal: string | null;
+  servings: number | null;
+  attendees: string[];
+};
+
+export type PlanRecipePick = {
+  id: string;
+  title: string;
+  image: string | null;
+  servings: number | null;
+  cookTimeMinutes: number | null;
+  prepTimeMinutes: number | null;
+  safety: "ok" | "block" | "warn" | "unknown";
+  warning: string | null;
 };
 
 export type WeekDay = {
@@ -85,6 +110,9 @@ export type WeekKitchen = {
   weekLabel: string;
   days: WeekDay[];
   shopping: ShopItem[];
+  entries: PlanEntryDraft[];
+  recipes: PlanRecipePick[];
+  defaultServings: number;
 };
 
 export function parseIsoDate(iso: string): { year: number; month: number; day: number } {
@@ -190,6 +218,61 @@ function checkMeal(
   return { findings: findingsFromCheck(check), checkStatus: check.status };
 }
 
+function pickSafety(
+  people: Person[],
+  rules: PersonRule[],
+  ingredients: CheckableIngredient[]
+): Pick<PlanRecipePick, "safety" | "warning"> {
+  if (people.length === 0) return { safety: "unknown", warning: null };
+  if (ingredients.length === 0) {
+    return { safety: "unknown", warning: "This check is incomplete — not a clean bill." };
+  }
+  const { findings, checkStatus } = checkMeal(people, rules, ingredients);
+  if (checkStatus === "incomplete" && findings.length === 0) {
+    return { safety: "unknown", warning: "This check is incomplete — not a clean bill." };
+  }
+  const blocked = findings.find((finding) => finding.severity === "block");
+  if (blocked) return { safety: "block", warning: blocked.message };
+  const warned = findings.find((finding) => finding.severity === "warn");
+  if (warned) return { safety: "warn", warning: warned.message };
+  return { safety: "ok", warning: null };
+}
+
+function storeIngredients(
+  target: Map<
+    string,
+    Array<{
+      id: string;
+      rawText: string;
+      name?: string;
+      substitutionNotes?: string | null;
+      quantity?: number;
+      unit?: string;
+    }>
+  >,
+  recipeId: string,
+  rows: Array<{
+    id: string;
+    rawText: string;
+    name?: string;
+    substitutionNotes?: string | null;
+    quantityMin?: number | null;
+    unit?: string | null;
+  }>
+) {
+  target.set(
+    recipeId,
+    rows.map((row) => ({
+      id: row.id,
+      rawText: row.rawText,
+      name: row.name,
+      substitutionNotes: row.substitutionNotes,
+      quantity: row.quantityMin ?? undefined,
+      unit: row.unit ?? undefined,
+    }))
+  );
+}
+
 export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen> {
   const db = getDatabase();
   const plans = new PlanService(db);
@@ -208,12 +291,17 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
   const rules = await peopleService.getRulesForPeople(people.map((person) => person.id));
 
   if (!plan) {
+    const catalog = await recipes.listRecipes(householdId, { pagination: { limit: 80 } });
+    const recipePicks = await recipePicksForCatalog(plans, catalog.items, people, rules, new Map());
     return {
       plan: null,
       weekStart,
       weekLabel: formatWeekRange(weekStart),
       days: groupMealsByDate(weekStart, []),
       shopping: [],
+      entries: [],
+      recipes: recipePicks,
+      defaultServings: people.length || 4,
     };
   }
 
@@ -241,18 +329,17 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
         plans.getRecipeIngredientsForEntry(recipeId),
       ]);
       if (recipe) recipeById.set(recipeId, recipe);
-      ingredientsByRecipe.set(
-        recipeId,
-        ingredientRows.map((row) => ({
-          id: row.id,
-          rawText: row.rawText,
-          name: row.name,
-          substitutionNotes: row.substitutionNotes,
-          quantity: row.quantityMin ?? undefined,
-          unit: row.unit ?? undefined,
-        }))
-      );
+      storeIngredients(ingredientsByRecipe, recipeId, ingredientRows);
     })
+  );
+
+  const catalog = await recipes.listRecipes(householdId, { pagination: { limit: 80 } });
+  const recipePicks = await recipePicksForCatalog(
+    plans,
+    catalog.items,
+    people,
+    rules,
+    ingredientsByRecipe
   );
 
   const meals: WeekMeal[] = entries.map((entry) => {
@@ -264,14 +351,17 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
       rules.filter((rule) => attendees.some((person) => person.id === rule.personId)),
       ingredientsForCheck(ingredientRows)
     );
+    const isNoCook = !entry.recipeId && Boolean(entry.freeformMeal);
     return {
       entryId: entry.id,
       date: entry.date,
       mealSlot: entry.mealSlot,
+      recipeId: entry.recipeId ?? null,
       title: recipe?.title ?? entry.freeformMeal ?? "Untitled meal",
       href: recipe ? `/recipes/${recipe.id}` : null,
       image: recipe ? recipeMainImage(recipe.images) : null,
       servings: entry.servings ?? recipe?.servings ?? null,
+      isNoCook,
       findings,
       checkStatus,
     };
@@ -321,7 +411,60 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
     weekLabel: formatWeekRange(weekStart),
     days: groupMealsByDate(weekStart, meals),
     shopping: shopItems,
+    entries: entries.map((entry) => ({
+      id: entry.id,
+      date: entry.date,
+      mealSlot: entry.mealSlot,
+      recipeId: entry.recipeId ?? null,
+      freeformMeal: entry.freeformMeal ?? null,
+      servings: entry.servings ?? null,
+      attendees: entry.attendees,
+    })),
+    recipes: recipePicks,
+    defaultServings:
+      entries.find((entry) => entry.servings && entry.servings > 0)?.servings || people.length || 4,
   };
+}
+
+async function recipePicksForCatalog(
+  plans: PlanService,
+  catalog: Recipe[],
+  people: Person[],
+  rules: PersonRule[],
+  ingredientsByRecipe: Map<
+    string,
+    Array<{
+      id: string;
+      rawText: string;
+      name?: string;
+      substitutionNotes?: string | null;
+      quantity?: number;
+      unit?: string;
+    }>
+  >
+): Promise<PlanRecipePick[]> {
+  const missing = catalog.filter((item) => !ingredientsByRecipe.has(item.id));
+  await Promise.all(
+    missing.map(async (item) => {
+      const rows = await plans.getRecipeIngredientsForEntry(item.id);
+      storeIngredients(ingredientsByRecipe, item.id, rows);
+    })
+  );
+
+  return catalog.map((item) => {
+    const rows = ingredientsByRecipe.get(item.id) ?? [];
+    const { safety, warning } = pickSafety(people, rules, ingredientsForCheck(rows));
+    return {
+      id: item.id,
+      title: item.title,
+      image: recipeMainImage(item.images),
+      servings: item.servings ?? null,
+      cookTimeMinutes: item.cookTimeMinutes ?? null,
+      prepTimeMinutes: item.prepTimeMinutes ?? null,
+      safety,
+      warning,
+    };
+  });
 }
 
 function peopleForEntry(people: Person[], entry: MealPlanEntry): Person[] {

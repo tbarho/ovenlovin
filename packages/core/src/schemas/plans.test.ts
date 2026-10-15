@@ -72,6 +72,14 @@ describe("plans schemas", () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it("accepts a no-cook night as a freeform meal", () => {
+      const body = updateMealPlanBodySchema.parse({
+        entries: [{ date: "2026-11-06", meal: "dinner", freeformMeal: "No-cook night" }],
+      });
+      expect(body.entries?.[0]?.freeformMeal).toBe("No-cook night");
+      expect(body.entries?.[0]?.recipeId).toBeUndefined();
+    });
   });
 
   describe("checkReportSchema", () => {
