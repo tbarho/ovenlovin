@@ -1,8 +1,9 @@
 import { attendingPeopleForEntry } from "@ovenlovin/allergens";
 import { describe, expect, it } from "vitest";
-import { testPerson } from "@/test/fixtures";
+import { testPerson, testPersonRule } from "@/test/fixtures";
 import {
   addDays,
+  checkMeal,
   findingsFromCheck,
   formatWeekRange,
   groupMealsByDate,
@@ -107,6 +108,20 @@ describe("week-plan view", () => {
     });
     expect(attendingPeopleForEntry([parentA, childB], [])).toEqual([parentA, childB]);
     expect(attendingPeopleForEntry([], [])).toEqual([]);
+  });
+
+  it("marks a dinner unfinished only when the household has no people", () => {
+    const pasta = [{ id: "ing-pasta", name: "pasta" }];
+    expect(checkMeal([], [], pasta)).toEqual({ findings: [], checkStatus: "incomplete" });
+    const parentA = testPerson({ displayName: "Parent A" });
+    const household = attendingPeopleForEntry([parentA], []);
+    expect(
+      checkMeal(
+        household,
+        [testPersonRule({ personId: parentA.id, target: "peanut", severity: "block" })],
+        pasta
+      ).checkStatus
+    ).toBe("complete");
   });
 
   it("rewrites leftover machine codes before they reach the kitchen", () => {

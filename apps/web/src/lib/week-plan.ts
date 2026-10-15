@@ -90,7 +90,7 @@ function ingredientsForCheck(
   }));
 }
 
-function checkMeal(
+export function checkMeal(
   people: Person[],
   rules: PersonRule[],
   ingredients: CheckableIngredient[]
