@@ -17,6 +17,10 @@ import {
 
 type MealPlanWrite = { id: string };
 
+function dinnerMeal(day: WeekDay): WeekMeal | undefined {
+  return day.meals.find((meal) => meal.mealSlot === "dinner") ?? day.meals[0];
+}
+
 function mealThumb(title: string, image: string | null) {
   if (image) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -337,7 +341,6 @@ export function MealPlanWeek({
 
       <div className="week-grid">
         {days.map((day) => {
-          const meal = day.meals[0];
           const selected = selectedDate === day.date;
           return (
             <section
@@ -360,20 +363,30 @@ export function MealPlanWeek({
                   <h2 id={`day-${day.date}`}>{day.weekday}</h2>
                   <p className="muted">{day.label}</p>
                 </header>
-                {meal ? (
-                  <div className="week-meal-link">
-                    {mealThumb(meal.title, meal.image)}
-                    <MealCopy meal={meal} />
-                  </div>
-                ) : (
+                {day.meals.length === 0 ? (
                   <p className="week-empty muted">Add dinner</p>
+                ) : (
+                  <div className="week-day-meals">
+                    {day.meals.map((meal) => (
+                      <div className="week-meal-link" key={meal.entryId}>
+                        {mealThumb(meal.title, meal.image)}
+                        <MealCopy meal={meal} />
+                      </div>
+                    ))}
+                  </div>
                 )}
               </button>
-              {meal?.href ? (
-                <Link className="week-meal-open" href={meal.href}>
-                  View recipe
-                </Link>
-              ) : null}
+              {day.meals
+                .filter((meal) => meal.href)
+                .map((meal) => (
+                  <Link
+                    className="week-meal-open"
+                    href={meal.href ?? "/recipes"}
+                    key={meal.entryId}
+                  >
+                    View {meal.title}
+                  </Link>
+                ))}
             </section>
           );
         })}
@@ -383,7 +396,7 @@ export function MealPlanWeek({
         <DayEditor
           open
           day={selectedDay}
-          current={selectedDay.meals[0]}
+          current={dinnerMeal(selectedDay)}
           recipes={recipes}
           query={query}
           pending={pending}

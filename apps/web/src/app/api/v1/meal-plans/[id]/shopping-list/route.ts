@@ -6,6 +6,7 @@ import {
   RecipeService,
   ShoppingListService,
   collectShoppingListEntries,
+  planEntriesForWeek,
   resolveIncludeStaples,
   type ShoppingListGroupBy,
 } from "@ovenlovin/core";
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       throw new NotFoundError("MealPlan", id);
     }
 
-    const entries = await planService.getMealPlanEntries(id);
+    const entries = planEntriesForWeek(await planService.getMealPlanEntries(id), plan.weekStart);
     const sources = await collectShoppingListEntries(entries, {
       getRecipe: (recipeId) => recipeService.getRecipe(recipeId),
       getIngredients: async (recipeId) => {

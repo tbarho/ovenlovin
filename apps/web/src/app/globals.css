@@ -2405,6 +2405,11 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   cursor: pointer;
 }
 
+.week-day-meals {
+  display: grid;
+  gap: 12px;
+}
+
 .week-meal-open {
   display: inline-block;
   margin-top: 10px;
