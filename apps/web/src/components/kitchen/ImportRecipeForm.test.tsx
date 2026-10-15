@@ -174,6 +174,41 @@ describe("ImportRecipeForm photo import", () => {
     expect(await screen.findByRole("dialog")).toBeVisible();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
   });
+
+  it("saves the recipe first, then POSTs a compressed photo separately", async () => {
+    mockXhr({ body: { ...preview, images: [] } });
+    const user = userEvent.setup();
+    vi.mocked(api).mockImplementation(async (path: string) => {
+      if (path === "/api/v1/recipes") return { id: "rec-1", title: "Weeknight Tomato Pasta" };
+      return { id: "rec-1", images: ["/api/v1/recipes/rec-1/image"] };
+    });
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    await user.upload(library, file);
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
+    await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
+    await waitFor(() => expect(api).toHaveBeenCalled());
+    const createCall = vi.mocked(api).mock.calls.find((call) => call[0] === "/api/v1/recipes");
+    expect(createCall).toBeTruthy();
+    const created = JSON.parse(String(createCall?.[1]?.body));
+    expect(created.images).toEqual([]);
+    expect(JSON.stringify(created)).not.toContain("data:image");
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith(
+        "/api/v1/recipes/rec-1/image",
+        expect.objectContaining({ method: "POST" })
+      )
+    );
+    const imageCall = vi.mocked(api).mock.calls.find(
+      (call) => call[0] === "/api/v1/recipes/rec-1/image"
+    );
+    const imageBody = JSON.parse(String(imageCall?.[1]?.body));
+    expect(imageBody.image).toMatch(/^data:image\/jpeg;base64,/);
+    expect(imageBody.image.length).toBeLessThan(50_000);
+  });
 });
 
 describe("ImportRecipeForm url and paste validation", () => {

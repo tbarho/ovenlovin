@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { handleApiError, NotFoundError } from "@/lib/api/errors";
+import { handleApiError, NotFoundError, BadRequestError } from "@/lib/api/errors";
+import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { assertRecipeHousehold } from "@/lib/api/recipes";
+import { createVercelImagePut } from "@/lib/blob-store";
+import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
 import {
   isInlineImageDataUrl,
   parseImageDataUrl,
+  persistRecipeImageUrl,
   recipeMainImage,
   RecipeService,
 } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+
+const PHOTO_SAVE_MAX_BYTES = 700_000;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -42,6 +48,44 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     throw new NotFoundError("RecipeImage", id);
+  } catch (error) {
+    return handleApiError(error, request.url);
+  }
+}
+
+/** Store a compressed photo after recipe create. Works without Vercel Blob. */
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const context = await getRequestContext(request);
+    const householdId = requireHouseholdId(context);
+    const { id } = await params;
+    const service = new RecipeService(getDatabase());
+    const recipe = await service.getRecipe(id);
+    assertRecipeHousehold(recipe, householdId, id);
+
+    const body = (await request.json()) as { image?: string };
+    const image = body.image?.trim() ?? "";
+    if (!isInlineImageDataUrl(image)) {
+      throw new BadRequestError("Provide a compressed image data URL");
+    }
+    const parsed = parseImageDataUrl(image);
+    if (!parsed) {
+      throw new BadRequestError("Image data URL must be a base64 data URI");
+    }
+    if (parsed.body.byteLength > PHOTO_SAVE_MAX_BYTES) {
+      throw new BadRequestError("Images must be 700KB or smaller after compress");
+    }
+
+    const stored = await persistRecipeImageUrl(
+      image,
+      createVercelImagePut(),
+      `recipes/${householdId}/${id}/photo`
+    );
+    const updated = await service.updateRecipe(id, { images: [stored] });
+    if (!updated) {
+      throw new NotFoundError("Recipe", id);
+    }
+    return jsonResponse(presentListedRecipe(updated, requestApiOrigin(request)));
   } catch (error) {
     return handleApiError(error, request.url);
   }
