@@ -42,7 +42,10 @@ export default async function PlansPage({
             {statusLabel(status)}
           </p>
           <h1>{thisWeek ? "This week" : kitchen.weekLabel}</h1>
-          <p className="muted">{kitchen.weekLabel}. Dinners the household is cooking.</p>
+          <p className="muted">
+            {kitchen.weekLabel}. Cook-for scales shopping and plated portions. Day cards also show
+            the recipe&apos;s stored yield when it differs.
+          </p>
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
           {kitchen.plan ? (
