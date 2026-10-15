@@ -436,7 +436,9 @@ export class PlanService extends BaseService {
       )
       .orderBy(mealPlanEntry.date);
 
-    return [...new Set(rows.map((row) => row.date).filter((date): date is string => Boolean(date)))];
+    return [
+      ...new Set(rows.map((row) => row.date).filter((date): date is string => Boolean(date))),
+    ];
   }
 
   private mapMealPlan(row: typeof mealPlan.$inferSelect): MealPlan {

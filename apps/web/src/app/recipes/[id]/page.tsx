@@ -22,10 +22,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
     people.items.map((person) => person.id),
     "love"
   );
-  const plannedDates = await new PlanService(db).listPlannedDatesForRecipe(
-    context.householdId,
-    id
-  );
+  const plannedDates = await new PlanService(db).listPlannedDatesForRecipe(context.householdId, id);
 
   return (
     <RecipeDetail
