@@ -39,6 +39,7 @@ export function buildLlmsTxt(origin: string): string {
     ``,
     `## REST (selected)`,
     ``,
+    `- GET /api/v1/status (commitSha = VERCEL_GIT_COMMIT_SHA)`,
     `- GET/POST /api/v1/recipes`,
     `- GET/PATCH/DELETE /api/v1/recipes/{id}`,
     `- POST /api/v1/recipes/import`,

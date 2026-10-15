@@ -10,6 +10,7 @@ describe("describeConfigStatus", () => {
       aiGatewayConfigured: true,
     });
     expect(ready.ready).toBe(true);
+    expect(ready.commitSha).toBeNull();
 
     const missing = describeConfigStatus({
       databaseConfigured: false,
@@ -89,5 +90,16 @@ describe("describeConfigStatus", () => {
     expect(demoReady.checks.find((c) => c.id === "aiGateway")?.configured).toBe(true);
     expect(demoReady.checks.find((c) => c.id === "aiGateway")?.detail).toMatch(/OIDC/);
     expect(demoReady.ready).toBe(true);
+  });
+
+  it("exposes the Vercel git commit SHA when provided", () => {
+    const status = describeConfigStatus({
+      databaseConfigured: true,
+      databaseReachable: true,
+      clerkConfigured: true,
+      aiGatewayConfigured: true,
+      commitSha: "7c77da5d6a4b42a12193ced572573d43ea2e71c3",
+    });
+    expect(status.commitSha).toBe("7c77da5d6a4b42a12193ced572573d43ea2e71c3");
   });
 });

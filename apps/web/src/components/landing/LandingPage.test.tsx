@@ -31,6 +31,7 @@ const deploy: DeployInfo = {
 const status: ConfigStatus = {
   ready: true,
   mode: "product",
+  commitSha: "abc1234",
   checks: [],
 };
 

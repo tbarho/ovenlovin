@@ -16,6 +16,7 @@ describe("generateOpenApiDocument", () => {
     const paths = Object.keys(spec.paths ?? {});
     expect(paths).toEqual(
       expect.arrayContaining([
+        "/status",
         "/recipes",
         "/recipes/{id}",
         "/recipes/import/photo",
@@ -32,6 +33,11 @@ describe("generateOpenApiDocument", () => {
         "/api-keys",
       ])
     );
+    expect(spec.paths?.["/status"]?.get).toBeTruthy();
+    const configStatus = spec.components?.schemas?.ConfigStatus as {
+      properties?: Record<string, unknown>;
+    };
+    expect(configStatus?.properties).toHaveProperty("commitSha");
     expect(spec.paths?.["/recipes"]?.get).toBeTruthy();
     expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("forAttendees");
     expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hiddenCount");

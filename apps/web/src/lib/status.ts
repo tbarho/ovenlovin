@@ -33,5 +33,6 @@ export async function getConfigStatus(): Promise<ConfigStatus> {
     aiGatewayConfigured,
     blobConfigured: isBlobStoreConfigured(process.env),
     demoMode: isDemoModeEnabled(),
+    commitSha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
   });
 }
