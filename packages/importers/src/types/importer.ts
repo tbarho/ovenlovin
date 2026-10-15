@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
 import { z } from "zod";
 import type { RecipeSourceType } from "@ovenlovin/core";
 
@@ -162,6 +162,7 @@ export interface ImporterConfig {
   modelId?: string;
   visionModelId?: string;
   confidenceThreshold?: number;
+  abortSignal?: AbortSignal;
 }
 
 /**

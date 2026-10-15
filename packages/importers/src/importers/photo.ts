@@ -19,6 +19,24 @@ import { listUncertainFields, type FieldConfidence } from "../utils/uncertain-fi
 
 const IMPORTER_VERSION = "0.1.0";
 
+function combineAbortSignals(...signals: Array<AbortSignal | undefined>): AbortSignal {
+  const list = signals.filter((signal): signal is AbortSignal => Boolean(signal));
+  const only = list[0];
+  if (list.length === 0 || !only) return AbortSignal.timeout(55_000);
+  if (list.length === 1) return only;
+  if (typeof AbortSignal.any === "function") return AbortSignal.any(list);
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  for (const signal of list) {
+    if (signal.aborted) {
+      controller.abort();
+      break;
+    }
+    signal.addEventListener("abort", abort, { once: true });
+  }
+  return controller.signal;
+}
+
 const ocrConfidence = z.enum(["high", "medium", "low", "illegible"]).describe("Reading confidence");
 
 const recipeSchema = z.object({
@@ -59,6 +77,10 @@ const recipeSchema = z.object({
     )
     .describe("Cooking steps in order"),
   ocrQuality: z.enum(["excellent", "good", "fair", "poor"]).describe("Overall image/text quality"),
+  looksLikeRecipe: z
+    .boolean()
+    .optional()
+    .describe("False when the photo is not a recipe card, cookbook page, or recipe screenshot"),
   handwrittenNotes: z
     .string()
     .optional()
@@ -91,6 +113,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
         model: gateway(visionModelId) as any,
+        abortSignal: combineAbortSignals(AbortSignal.timeout(55_000), config.abortSignal),
         messages: [
           {
             role: "user",
@@ -108,7 +131,8 @@ Extract:
 
 Mark confidence for the title, servings, times, each ingredient, and each step: high (printed/clear), medium (somewhat unclear), low (difficult to read), illegible (cannot read).
 
-Rate overall ocrQuality: excellent (printed, perfect), good (printed, minor issues), fair (handwritten but mostly legible), poor (blurry, cropped, or significant legibility issues).`,
+Rate overall ocrQuality: excellent (printed, perfect), good (printed, minor issues), fair (handwritten but mostly legible), poor (blurry, cropped, or significant legibility issues).
+Set looksLikeRecipe false when the photo is not a recipe (a receipt, landscape, random object, or blank page).`,
               },
               ...imageMessages,
             ],
