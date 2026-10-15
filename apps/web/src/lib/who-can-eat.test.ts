@@ -75,6 +75,25 @@ describe("whoCanEat", () => {
     expect(swapped.people[0]?.mark).toBe("ok");
   });
 
+  it("lists one dairy reason when mozzarella and parmesan both match", () => {
+    const milk = testPersonRule({
+      personId: parent.id,
+      target: "milk",
+      severity: "warn",
+    });
+    const result = whoCanEat({
+      people: [parent],
+      rules: [milk],
+      ingredients: [
+        { id: "mozz", name: "mozzarella" },
+        { id: "parm", name: "parmesan" },
+      ],
+    });
+    const reasons = result.people[0]?.reasons ?? [];
+    const dairy = reasons.filter((reason) => /dairy/i.test(reason));
+    expect(dairy).toHaveLength(1);
+  });
+
   it("does not report a clean bill when the check is incomplete", () => {
     const result = whoCanEat({
       people: [child],

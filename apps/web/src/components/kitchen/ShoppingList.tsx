@@ -6,6 +6,16 @@ import { api } from "@/lib/browser-api";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
 import type { ShopItem, ShoppingExtra, ShoppingTripState } from "@/lib/week-plan-view";
 
+function uniqueWarnings(warnings: ShopItem["warnings"]) {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = `${warning.personName}\0${warning.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function extraShopItem(extra: ShoppingExtra): ShopItem {
   return {
     key: extra.key,
@@ -109,11 +119,11 @@ export function ShoppingList({
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
-                      {item.warnings.map((warning) => (
+                      {uniqueWarnings(item.warnings).map((warning) => (
                         <span
                           className="week-finding"
                           data-severity={warning.severity}
-                          key={`${item.key}-${warning.personName}`}
+                          key={`${item.key}-${warning.personName}-${warning.message}`}
                         >
                           {warning.message}
                         </span>

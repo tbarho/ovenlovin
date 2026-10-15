@@ -17,6 +17,16 @@ import {
 
 type MealPlanWrite = { id: string };
 
+function uniqueFindings(findings: WeekMeal["findings"]) {
+  const seen = new Set<string>();
+  return findings.filter((finding) => {
+    const key = `${finding.personName}\0${finding.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function mealThumb(title: string, image: string | null) {
   if (image) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -35,12 +45,12 @@ function MealCopy({ meal }: { meal: WeekMeal }) {
       <p className="week-slot">{meal.isNoCook ? "Night off" : slotLabel(meal.mealSlot)}</p>
       <h3>{meal.title}</h3>
       {meal.servings && !meal.isNoCook ? <p className="muted">{meal.servings} servings</p> : null}
-      {meal.checkStatus === "incomplete" ? (
+      {meal.checkStatus === "incomplete" && meal.findings.length === 0 ? (
         <p className="week-finding" data-severity="warn">
-          This check is incomplete — not a clean bill.
+          We couldn&apos;t finish checking this dinner.
         </p>
       ) : null}
-      {meal.findings.map((finding) => (
+      {uniqueFindings(meal.findings).map((finding) => (
         <p
           className="week-finding"
           data-severity={finding.severity}

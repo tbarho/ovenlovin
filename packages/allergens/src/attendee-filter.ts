@@ -3,6 +3,7 @@
  * A block finding for any attendee hides the recipe. Warn / prefer_avoid stay.
  */
 
+import { collapseRuleFindings } from "./collapse-findings";
 import type { RuleCheckFinding, RuleCheckResult } from "./rule-checker";
 
 export type AttendeeWarning = {
@@ -17,11 +18,11 @@ export function isBlockedForAttendees(result: RuleCheckResult): boolean {
 
 export function attendeeWarningsFromCheck(result: RuleCheckResult): AttendeeWarning[] {
   const warnings: AttendeeWarning[] = [];
-  for (const finding of [
+  for (const finding of collapseRuleFindings([
     ...result.findings.block,
     ...result.findings.warn,
     ...result.findings.prefer_avoid,
-  ]) {
+  ])) {
     warnings.push({
       personId: finding.personId,
       severity: finding.severity,
