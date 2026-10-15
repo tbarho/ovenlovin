@@ -29,6 +29,28 @@ describe("ShoppingList", () => {
     expect(screen.getByText("Jake: pesto matches a tree nut block.")).toBeInTheDocument();
   });
 
+  it("shows friendly fractions instead of long decimals", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "salt",
+            name: "salt",
+            quantity: 1.8333,
+            unit: "tbsp",
+            displayQuantity: "5 1/2",
+            displayUnit: "tsp",
+            recipes: ["Baked ziti"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText(/5 1\/2 tsp/)).toBeInTheDocument();
+    expect(screen.queryByText(/1\.83/)).not.toBeInTheDocument();
+  });
+
   it("lets a shopper check an item off without removing the warning", async () => {
     const user = userEvent.setup();
     render(

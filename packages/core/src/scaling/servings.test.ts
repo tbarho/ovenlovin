@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   clampServings,
   formatDurationMinutes,
+  formatMeasureText,
   formatQuantity,
   scaleFactorForPlanEntry,
   scaleIngredientDisplay,
   scaleQuantity,
+  toFriendlyMeasure,
 } from "./servings";
 
 describe("scaleFactorForPlanEntry", () => {
@@ -41,6 +43,34 @@ describe("formatQuantity", () => {
     expect(formatQuantity(2.25)).toBe("2 1/4");
     expect(formatQuantity(1 / 3)).toBe("1/3");
     expect(formatQuantity(2)).toBe("2");
+  });
+});
+
+describe("toFriendlyMeasure", () => {
+  it("converts ugly spoon amounts into a shoppable fraction", () => {
+    expect(toFriendlyMeasure(1.8333, "tbsp")).toEqual({
+      displayQuantity: "5 1/2",
+      displayUnit: "tsp",
+    });
+    expect(formatMeasureText(1.8333, "tbsp")).toBe("5 1/2 tsp");
+  });
+
+  it("keeps a third-cup instead of 0.33 cup", () => {
+    expect(toFriendlyMeasure(0.33, "cup")).toEqual({
+      displayQuantity: "1/3",
+      displayUnit: "cup",
+    });
+    expect(toFriendlyMeasure(1 / 3, "cup")).toEqual({
+      displayQuantity: "1/3",
+      displayUnit: "cup",
+    });
+  });
+
+  it("promotes exact larger units and leaves integers alone", () => {
+    expect(toFriendlyMeasure(3, "tsp")).toEqual({ displayQuantity: "1", displayUnit: "tbsp" });
+    expect(toFriendlyMeasure(8, "tbsp")).toEqual({ displayQuantity: "1/2", displayUnit: "cup" });
+    expect(toFriendlyMeasure(5, "tbsp")).toEqual({ displayQuantity: "5", displayUnit: "tbsp" });
+    expect(toFriendlyMeasure(0.5, "tsp")).toEqual({ displayQuantity: "1/2", displayUnit: "tsp" });
   });
 });
 
