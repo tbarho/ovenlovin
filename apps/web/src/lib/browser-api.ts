@@ -2,6 +2,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     credentials: "include",
+    keepalive: init?.keepalive ?? init?.method === "PATCH" || init?.method === "POST",
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),

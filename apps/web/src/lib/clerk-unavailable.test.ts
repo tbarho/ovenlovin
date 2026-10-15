@@ -6,6 +6,6 @@ describe("clerkUnavailableCopy", () => {
     const copy = clerkUnavailableCopy(true);
     expect(copy.title).toMatch(/isn't available in the demo/i);
     expect(copy.body).not.toMatch(/CLERK|NEXT_PUBLIC/);
-    expect(copy.href).toBe("/recipes");
+    expect(copy.href).toBe("/api/demo/enter?next=%2Frecipes");
   });
 });

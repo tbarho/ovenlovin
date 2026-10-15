@@ -1,9 +1,9 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { CookbookService, PeopleService, PlanService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { RecipeDetail } from "@/components/kitchen/RecipeDetail";
 import { householdLovePeople } from "@/lib/household-loves";
-import { getSessionContext } from "@/lib/session";
+import { requireKitchenContext } from "@/lib/kitchen-session";
 
 export default async function RecipeDetailPage({
   params,
@@ -12,8 +12,7 @@ export default async function RecipeDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ fromCookbook?: string }>;
 }) {
-  const context = await getSessionContext().catch(() => null);
-  if (!context?.householdId) redirect("/sign-in");
+  const context = await requireKitchenContext();
 
   const { id } = await params;
   const { fromCookbook } = await searchParams;
