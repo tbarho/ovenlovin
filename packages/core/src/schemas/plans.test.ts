@@ -5,6 +5,7 @@ import {
   checkFindingSchema,
   createMealPlanBodySchema,
   updateMealPlanBodySchema,
+  mealPlanRevisionSchema,
 } from "./plans";
 
 describe("plans schemas", () => {
@@ -93,6 +94,18 @@ describe("plans schemas", () => {
         entries: [{ date: "2026-11-06", meal: "dinner", freeformMeal: "Leftovers" }],
       });
       expect(replaced.entriesMode).toBe("replace");
+    });
+  });
+
+  describe("mealPlanRevisionSchema", () => {
+    it("accepts a snapshot used for undo", () => {
+      const revision = mealPlanRevisionSchema.parse({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        createdAt: "2026-10-15T17:00:00.000Z",
+        action: "merge",
+        entries: [{ date: "2026-10-16", meal: "dinner", freeformMeal: "Leftovers", attendees: [] }],
+      });
+      expect(revision.entries[0]?.freeformMeal).toBe("Leftovers");
     });
   });
 

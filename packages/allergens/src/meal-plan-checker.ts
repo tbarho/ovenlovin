@@ -166,7 +166,9 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
       continue;
     }
 
-    if (entry.ingredients.length === 0) {
+    const skipIngredientCheck = !entry.recipeId && Boolean(entry.freeformMeal);
+
+    if (entry.ingredients.length === 0 && !skipIngredientCheck) {
       incompleteReasons.push(
         `Entry ${entry.id} (${entry.recipeTitle || entry.freeformMeal || "untitled"}) has no ingredients`
       );
@@ -184,8 +186,13 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
       }
     }
 
-    // Check ingredients against all attending people's rules
-    const checkResult = checkIngredientsAgainstRules(entry.ingredients, contexts);
+    const checkResult = skipIngredientCheck
+      ? {
+          status: "complete" as const,
+          findings: { block: [], warn: [], prefer_avoid: [] },
+          incompleteReasons: undefined,
+        }
+      : checkIngredientsAgainstRules(entry.ingredients, contexts);
 
     if (checkResult.status === "incomplete") {
       incompleteReasons.push(

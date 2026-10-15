@@ -695,6 +695,15 @@ Full-week rewrite (the old behavior):
 { "entriesMode": "replace", "entries": [{ "date": "2026-10-15", "meal": "dinner", "recipeId": "recipe-456" }] }
 ```
 
+#### Undo / history
+
+```
+POST /api/v1/meal-plans/{planId}/undo
+GET  /api/v1/meal-plans/{planId}/history
+```
+
+Each merge or replace PATCH records a snapshot. Undo restores the latest snapshot and returns `previousEntries` (the state that was undone). History is newest first (up to 20).
+
 #### Check Meal Plan
 
 ```

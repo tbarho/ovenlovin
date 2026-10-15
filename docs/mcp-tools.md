@@ -26,6 +26,7 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 - `manage_person_loves` — `list`, `add`, `remove` a food, cuisine, or style someone loves
 - `search_recipes` — attendee warnings plus love boosts and “Name loves this” tags
 - `save_meal_plan`
-- `get_meal_plan`
-- `check_meal_plan` — per-person findings plus informational `loveTags` (never a filter)
+- `get_meal_plan` — recipe nights plus `freeformMeal` / servings for leftovers or no-cook
+- `edit_meal_plan` — `set`, `swap`, or `clear` a single night (or `undo` the last entries edit) without rewriting the week
+- `check_meal_plan` — per-person findings plus informational `loveTags` (never a filter). Freeform leftovers are not flagged as cooking on a no-cook night
 - `export_shopping_list`

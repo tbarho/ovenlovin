@@ -14,6 +14,7 @@ import {
   exportShoppingListTool,
   saveMealPlanTool,
   getMealPlanTool,
+  editMealPlanTool,
   listCookbooksTool,
   getCookbookTool,
   manageCookbookTool,
@@ -414,6 +415,49 @@ describe("MCP Tool Schemas", () => {
 
     it("rejects a call with no image", () => {
       expect(importRecipeFromImageTool.inputSchema.safeParse({}).success).toBe(false);
+    });
+  });
+
+  describe("edit_meal_plan", () => {
+    const planId = "550e8400-e29b-41d4-a716-446655440000";
+    const recipeId = "550e8400-e29b-41d4-a716-446655440010";
+
+    it("accepts set, swap, clear, and undo", () => {
+      expect(
+        editMealPlanTool.inputSchema.safeParse({
+          planId,
+          date: "2026-10-16",
+          action: "set",
+          freeformMeal: "TEST Olive leftovers",
+          servings: 3,
+        }).success
+      ).toBe(true);
+      expect(
+        editMealPlanTool.inputSchema.safeParse({
+          planId,
+          date: "2026-10-14",
+          action: "swap",
+          recipeId,
+        }).success
+      ).toBe(true);
+      expect(
+        editMealPlanTool.inputSchema.safeParse({
+          planId,
+          date: "2026-10-15",
+          action: "clear",
+        }).success
+      ).toBe(true);
+      expect(editMealPlanTool.inputSchema.safeParse({ planId, action: "undo" }).success).toBe(true);
+    });
+
+    it("requires a recipe or freeform label to set a night", () => {
+      expect(
+        editMealPlanTool.inputSchema.safeParse({
+          planId,
+          date: "2026-10-16",
+          action: "set",
+        }).success
+      ).toBe(false);
     });
   });
 });

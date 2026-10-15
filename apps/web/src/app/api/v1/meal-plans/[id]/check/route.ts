@@ -102,11 +102,13 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
     planId: id,
     checkedAt: new Date().toISOString(),
     byEntry: checkResult.byEntry.map((entry) => {
+      const stored = entries.find((row) => row.id === entry.entryId);
       const scheduleIssues = scheduleIssuesForNight({
         date: entry.date,
-        recipeTitle: entry.recipeTitle ?? "This recipe",
+        recipeTitle: entry.recipeTitle ?? entry.freeformMeal ?? "This recipe",
         recipeTotalMinutes: recipeMinutesByEntryId.get(entry.entryId) ?? null,
         night: nightForDate(schedule.weeklyTemplate, entry.date),
+        plannedCooking: Boolean(stored?.recipeId),
       });
       return {
         ...entry,

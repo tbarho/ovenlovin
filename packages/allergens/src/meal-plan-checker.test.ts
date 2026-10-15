@@ -449,4 +449,29 @@ describe("checkMealPlan", () => {
     expect(result.status).toBe("complete");
     expect(result.byEntry[0]?.freeformMeal).toBe("Leftovers");
   });
+
+  it("treats freeform leftovers with no ingredient list as complete", () => {
+    const child: PersonWithRules = {
+      id: "child-a",
+      name: "Child A",
+      rules: [createRule({ personId: "child-a", target: "peanut", severity: "block" })],
+    };
+
+    const result = checkMealPlan({
+      entries: [
+        {
+          id: "entry-1",
+          date: "2026-10-16",
+          mealSlot: "dinner",
+          freeformMeal: "TEST Olive leftovers",
+          attendees: ["child-a"],
+          ingredients: [],
+        },
+      ],
+      people: [child],
+    });
+
+    expect(result.status).toBe("complete");
+    expect(result.incompleteReasons ?? []).toEqual([]);
+  });
 });

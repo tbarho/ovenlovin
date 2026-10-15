@@ -53,6 +53,18 @@ describe("schedule time-budget check", () => {
     expect(issues.some((issue) => issue.type === "time_budget")).toBe(false);
   });
 
+  it("does not flag leftovers or other freeform meals on a no-cook night", () => {
+    const issues = scheduleIssuesForNight({
+      date: "2026-10-16",
+      recipeTitle: "TEST Olive leftovers",
+      recipeTotalMinutes: null,
+      night: nightForDate(defaultWeeklySchedule(), "2026-10-16"),
+      plannedCooking: false,
+    });
+    expect(nightForDate(defaultWeeklySchedule(), "2026-10-16")?.cooking).toBe(false);
+    expect(issues).toEqual([]);
+  });
+
   it("does not warn when the recipe fits the budget", () => {
     const issues = scheduleIssuesForNight({
       date: "2026-10-28",

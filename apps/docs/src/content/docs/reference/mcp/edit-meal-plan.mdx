@@ -1,0 +1,36 @@
+---
+title: edit_meal_plan
+description: Set, swap, or clear one night on a saved meal plan, or undo the last edit
+---
+
+Edit a saved week without resending every night. `set` / `swap` upsert by date + meal. `clear` removes that night. `undo` restores the last recorded entries snapshot.
+
+## Input Schema
+
+| Parameter      | Type          | Required                 | Description                              |
+| -------------- | ------------- | ------------------------ | ---------------------------------------- |
+| `planId`       | string (UUID) | No\*                     | Saved plan ID                            |
+| `weekStart`    | string (date) | No\*                     | Week start if you don't have the ID      |
+| `date`         | string (date) | Yes unless undo          | Night to change                          |
+| `meal`         | string        | No (default `dinner`)    | Slot                                     |
+| `action`       | enum          | Yes                      | `set`, `swap`, `clear`, or `undo`        |
+| `recipeId`     | string (UUID) | For set/swap of a recipe | Recipe to place                          |
+| `freeformMeal` | string        | For leftovers / no-cook  | Label such as `Leftovers`                |
+| `servings`     | number        | No                       | Kept from the current night when omitted |
+| `attendees`    | uuid[]        | No                       | Kept from the current night when omitted |
+
+\*Provide `planId` or `weekStart`.
+
+## Example: leftovers on Friday
+
+```json
+{
+  "weekStart": "2026-10-12",
+  "date": "2026-10-16",
+  "action": "set",
+  "freeformMeal": "Leftovers",
+  "servings": 4
+}
+```
+
+The response includes `previousEntries` so you can revert with `action: "undo"` if the change was a mistake.
