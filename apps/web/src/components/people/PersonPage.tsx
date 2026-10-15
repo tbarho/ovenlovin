@@ -357,6 +357,11 @@ export function PersonPage({
                     .filter((rule) => uiBucketForRule(rule) === item.bucket)
                     .map((rule) => rule.target)}
                   onSelect={(entry) => pickRule(item.bucket, entry)}
+                  onSelectDislike={
+                    item.bucket === "cant_eat"
+                      ? (entry) => pickRule("doesnt_like", entry)
+                      : undefined
+                  }
                 />
               )}
             </section>

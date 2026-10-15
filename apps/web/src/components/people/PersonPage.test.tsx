@@ -158,6 +158,54 @@ describe("PersonPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("saves Peanut from a pean typo on Enter instead of the raw text", async () => {
+    const user = userEvent.setup();
+    mockedApi.mockResolvedValue(
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000096",
+        target: "peanut",
+      })
+    );
+    render(<PersonPage person={testPerson({ displayName: "Child B" })} rules={[]} />);
+    const input = within(screen.getByTestId("bucket-cant_eat")).getByLabelText(/add to can't eat/i);
+    await typeFullWordAndKeepFocus(user, input, "pean");
+    await user.keyboard("{Enter}");
+    expect(mockedApi).not.toHaveBeenCalled();
+    expect(screen.getByText(/avoid foods made where nuts are processed/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(mockedApi).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(mockedApi.mock.calls[0]?.[1]?.body))).toMatchObject({
+      kind: "allergen",
+      target: "peanut",
+      severity: "block",
+    });
+  });
+
+  it("does not save an unknown Can't eat typo without confirmation", async () => {
+    const user = userEvent.setup();
+    mockedApi.mockResolvedValue(
+      testPersonRule({
+        id: "00000000-0000-4000-8000-000000000095",
+        kind: "ingredient",
+        target: "xyzzy",
+        severity: "block",
+      })
+    );
+    render(<PersonPage person={testPerson({ displayName: "Child B" })} rules={[]} />);
+    const input = within(screen.getByTestId("bucket-cant_eat")).getByLabelText(/add to can't eat/i);
+    await typeFullWordAndKeepFocus(user, input, "xyzzy");
+    await user.keyboard("{Enter}");
+    expect(mockedApi).not.toHaveBeenCalled();
+    expect(screen.getByTestId("unknown-allergen-confirm")).toHaveTextContent(
+      /can't check 'xyzzy' against recipes/i
+    );
+    await user.click(screen.getByTestId("save-unknown-allergy"));
+    expect(JSON.parse(String(mockedApi.mock.calls[0]?.[1]?.body))).toMatchObject({
+      kind: "ingredient",
+      target: "xyzzy",
+    });
+  });
+
   it("adds the first typeahead match on Enter", async () => {
     const user = userEvent.setup();
     mockedApi.mockResolvedValue(

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { customCatalogOffer, iconIdForTarget, searchPeopleCatalog } from "./people-catalog";
+import {
+  customCatalogOffer,
+  iconIdForTarget,
+  resolveFoodAdd,
+  searchPeopleCatalog,
+  unknownAllergenWarning,
+} from "./people-catalog";
 
 describe("people catalog search", () => {
   it("shows featured allergens and diets when the query is empty", () => {
@@ -23,6 +29,24 @@ describe("people catalog search", () => {
     const loves = searchPeopleCatalog("", { mode: "loves" });
     expect(loves.some((entry) => entry.code === "salmon")).toBe(true);
     expect(loves.some((entry) => entry.code === "mexican")).toBe(true);
+  });
+
+  it("resolves a peanut typo to the canonical allergen", () => {
+    const resolved = resolveFoodAdd("pean", { mode: "cant_eat" });
+    expect(resolved?.kind).toBe("canonical");
+    expect(resolved?.entry.code).toBe("peanut");
+    expect(customCatalogOffer("pean")?.code).toBe("pean");
+    expect(unknownAllergenWarning("Pean", resolved?.entry ?? null)).toContain("Peanut");
+  });
+
+  it("flags a free-text allergen that is not in the catalog", () => {
+    const resolved = resolveFoodAdd("xyzzy", { mode: "cant_eat" });
+    expect(resolved).toEqual({
+      kind: "unknown",
+      entry: expect.objectContaining({ code: "xyzzy", name: "xyzzy" }),
+      suggestion: null,
+    });
+    expect(unknownAllergenWarning("xyzzy", null)).toMatch(/can't check 'xyzzy'/i);
   });
 
   it("maps catalog codes onto food icons", () => {
