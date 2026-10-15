@@ -67,7 +67,7 @@ export interface CheckMealPlanOutput {
       };
     }>;
     scheduleIssues?: Array<{
-      type: "time_budget" | "method_mismatch" | "attendance";
+      type: "time_budget" | "not_cooking_night" | "attendance";
       message: string;
     }>;
     loveTags?: string[];
