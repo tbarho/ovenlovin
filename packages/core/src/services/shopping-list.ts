@@ -1,5 +1,6 @@
 import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
+import { shopItemKey } from "../schemas/shopping-trip";
 import { formatMeasureText, scaleFactorForPlanEntry, toFriendlyMeasure } from "../scaling/servings";
 import {
   assignAisle,
@@ -23,6 +24,8 @@ export interface ShoppingListRecipeRef {
 }
 
 export interface ShoppingListIngredient {
+  /** Stable check-off id shared by the kitchen list and MCP/REST export. */
+  key: string;
   name: string;
   quantity?: number;
   unit?: string;
@@ -281,6 +284,7 @@ export class ShoppingListService {
         const existing = ingredientMap.get(key);
         if (!existing) {
           ingredientMap.set(key, {
+            key: shopItemKey(itemName, unit),
             name: itemName,
             quantity: scaledQuantity,
             unit,
@@ -310,6 +314,7 @@ export class ShoppingListService {
         const display = quantity != null ? toFriendlyMeasure(quantity, item.unit) : undefined;
         return {
           ...item,
+          key: shopItemKey(item.name, display?.displayUnit ?? item.unit),
           quantity,
           displayQuantity: display?.displayQuantity,
           displayUnit: display?.displayUnit,

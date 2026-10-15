@@ -10,6 +10,8 @@ describe("shopping trip state", () => {
   it("normalizes ingredient keys so a reload can find the same check-off", () => {
     expect(shopItemKey("Basil Pesto")).toBe("basil pesto");
     expect(shopItemKey("olive-oil")).toBe("olive oil");
+    expect(shopItemKey("garlic", "clove")).toBe("garlic::clove");
+    expect(shopItemKey("garlic", "clove")).toBe(shopItemKey("Garlic", "Clove"));
   });
 
   it("drops malformed saved state instead of inventing check-offs", () => {

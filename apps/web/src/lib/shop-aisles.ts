@@ -1,4 +1,5 @@
 import { assignAisle } from "@ovenlovin/core/aisles";
+import { pluralizeUnit } from "@ovenlovin/core";
 import type { ShopItem } from "@/lib/week-plan";
 
 const AISLE_ORDER = [
@@ -47,48 +48,8 @@ export function groupShopItemsByAisle(items: ShopItem[]): ShopAisleGroup[] {
     }));
 }
 
-const UNIT_PLURALS: Record<string, string> = {
-  cup: "cups",
-  tbsp: "tbsp",
-  tsp: "tsp",
-  oz: "oz",
-  lb: "lbs",
-  g: "g",
-  kg: "kg",
-  ml: "ml",
-  l: "l",
-  clove: "cloves",
-  bunch: "bunches",
-  pinch: "pinches",
-  slice: "slices",
-  can: "cans",
-  package: "packages",
-};
-
-function quantityValue(amount: string): number {
-  const parts = amount.trim().split(/\s+/);
-  let total = 0;
-  for (const part of parts) {
-    if (part.includes("/")) {
-      const [num, den] = part.split("/").map(Number);
-      if (num && den) total += num / den;
-      continue;
-    }
-    const value = Number(part);
-    if (!Number.isNaN(value)) total += value;
-  }
-  return total;
-}
-
 export function pluralizeShopUnit(amount: string, unit: string): string {
-  const trimmed = unit.trim();
-  if (!trimmed) return amount;
-  if (quantityValue(amount) === 1) return `${amount} ${trimmed}`;
-  const lower = trimmed.toLowerCase();
-  const plural = UNIT_PLURALS[lower] ?? (trimmed.endsWith("s") ? trimmed : `${trimmed}s`);
-  const cased =
-    trimmed[0] === trimmed[0]?.toUpperCase() ? plural[0]?.toUpperCase() + plural.slice(1) : plural;
-  return `${amount} ${cased}`;
+  return pluralizeUnit(amount, unit);
 }
 
 export function shopItemQuantity(item: ShopItem): string | null {
