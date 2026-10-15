@@ -238,7 +238,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto("/list");
   await expect(page.getByRole("heading", { name: "Shopping list" })).toBeVisible();
-  await expect(page.getByRole("note")).toBeVisible();
+  await expect(page.getByRole("note")).toHaveCount(0);
   await expect(page.getByTestId("shopping-list")).toBeVisible();
   await shot(page, width, "shopping-list");
 
