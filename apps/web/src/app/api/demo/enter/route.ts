@@ -16,8 +16,9 @@ function cookieSecure(): boolean {
  * Seeds (or reuses) a visitor sandbox and sets `ol_demo_sandbox`.
  *
  * Browser navigation: 303 to `next` (default `/recipes`).
- * Agents: `Accept: application/json` or `?format=json` returns the MCP URL and
- * sandbox API key so a test client can authenticate without scraping Settings.
+ * Agents: `?format=json` returns the MCP URL and sandbox API key so a test
+ * client can authenticate without scraping Settings. Accept: application/json
+ * alone is not enough, so a wrong API base path does not mint a key.
  */
 export async function GET(request: NextRequest) {
   if (!isDemoModeEnabled()) {
