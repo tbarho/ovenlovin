@@ -1,4 +1,4 @@
-import { formatQuantity } from "@ovenlovin/core";
+import { formatQuantity } from "@ovenlovin/core/scaling";
 
 /** Kitchen-facing amount: cooking fractions, never 0.33. */
 export function formatShopQuantity(quantity?: number, unit?: string): string | null {
