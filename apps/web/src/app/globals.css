@@ -2425,6 +2425,25 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   color: #8a5a12;
 }
 
+.shop-board {
+  display: grid;
+  gap: 18px;
+}
+
+.shop-aisle {
+  display: grid;
+  gap: 8px;
+}
+
+.shop-aisle-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .shop-list {
   display: grid;
   gap: 8px;
@@ -2506,6 +2525,13 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     bottom: 24px;
     width: min(420px, calc(100vw - 48px));
   }
+}
+
+.shop-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
 }
 
 @media (min-width: 1024px) {
