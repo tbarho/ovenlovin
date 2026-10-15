@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
-import type { ShopItem } from "@/lib/week-plan";
+import type { ShopItem } from "@/lib/week-plan-view";
 
 function extraItem(name: string, index: number): ShopItem {
   return {

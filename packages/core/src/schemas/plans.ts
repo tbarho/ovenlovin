@@ -65,6 +65,7 @@ export const mealPlanEntryWriteSchema = z
     date: z.string().date(),
     meal: z.string().min(1).max(50),
     recipeId: uuidSchema.optional(),
+    freeformMeal: z.string().min(1).max(255).optional(),
     servings: z.number().int().positive().optional(),
     attendees: z.array(uuidSchema).default([]),
     prepAheadNotes: z.string().optional(),

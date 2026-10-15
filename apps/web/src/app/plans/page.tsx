@@ -35,7 +35,14 @@ export default async function PlansPage() {
           This plan needs a recheck. A recipe or someone&apos;s rules changed since the last check.
         </p>
       ) : null}
-      <MealPlanWeek days={kitchen.days} />
+      <MealPlanWeek
+        days={kitchen.days}
+        planId={kitchen.plan?.id ?? null}
+        weekStart={kitchen.weekStart}
+        entries={kitchen.entries}
+        recipes={kitchen.recipes}
+        defaultServings={kitchen.defaultServings}
+      />
     </>
   );
 }

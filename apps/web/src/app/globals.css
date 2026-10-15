@@ -2332,6 +2332,36 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   font-size: 14px;
 }
 
+.week-plan {
+  display: grid;
+  gap: 14px;
+}
+
+.week-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.week-servings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.week-servings select {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
 .week-grid {
   display: grid;
   gap: 12px;
@@ -2343,6 +2373,148 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   border: 1px solid #eaeaea;
   border-radius: 12px;
   background: #ffffff;
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.week-day.is-selected {
+  border-color: #f0c9a0;
+  box-shadow: 0 0 0 3px rgba(224, 122, 61, 0.12);
+}
+
+.week-day-hit {
+  display: grid;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.week-meal-open {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--orange-deep);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.week-editor {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.week-editor-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.week-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.week-pick-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-pick {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.week-pick img,
+.week-pick .week-meal-fallback {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.week-pick span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.week-pick strong {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.week-pick em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.week-pick[data-safety="block"] {
+  border-color: #f3d2d2;
+}
+
+.week-pick[data-current="true"] {
+  border-color: #f0c9a0;
+}
+
+.kitchen-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #161310;
+  color: #fff8ee;
+  box-shadow: 0 16px 48px rgba(22, 19, 16, 0.18);
+}
+
+.kitchen-toast button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #ffd7b0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .kitchen-toast {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: min(420px, calc(100vw - 48px));
+  }
 }
 
 .week-day-head {
@@ -2533,6 +2705,16 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   .week-meal-fallback {
     width: 100%;
     height: 88px;
+  }
+
+  .week-pick-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .week-pick .week-meal-fallback,
+  .week-pick img {
+    width: 48px;
+    height: 48px;
   }
 }
 
