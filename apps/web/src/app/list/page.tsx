@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ShoppingList } from "@/components/kitchen/ShoppingList";
-import { getSessionContext } from "@/lib/session";
+import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadWeekKitchen } from "@/lib/week-plan";
 
 export default async function ShoppingListPage() {
-  const context = await getSessionContext().catch(() => null);
-  if (!context?.householdId) redirect("/sign-in");
+  const context = await requireKitchenContext();
 
   const kitchen = await loadWeekKitchen(context.householdId);
 
