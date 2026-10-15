@@ -6,6 +6,7 @@ import { FoodIcon } from "@/components/prototype/people/icons";
 import {
   customCatalogOffer,
   iconIdForTarget,
+  resolveFoodAdd,
   searchPeopleCatalog,
   type PeoplePickerMode,
 } from "@/lib/people-catalog";
@@ -32,6 +33,12 @@ export function FoodPicker({
           key="people-food-search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            const resolved = resolveFoodAdd(query, { mode });
+            if (resolved?.kind === "canonical") onSelect(resolved.entry);
+          }}
           placeholder="Search foods"
           autoComplete="off"
           autoCorrect="off"
