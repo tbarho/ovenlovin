@@ -8,6 +8,7 @@ import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
+import { recipeCardMeta } from "@/lib/recipe-card-meta";
 import { BottomSheet } from "./BottomSheet";
 import { CookbookRecipePicker } from "./CookbookRecipePicker";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -204,7 +205,7 @@ export function CookbookRecipes({
             const image = recipeMainImage(recipe.images);
             return (
               <article className="recipe-card cookbook-member-card" key={recipe.id}>
-                <Link href={`/recipes/${recipe.id}`}>
+                <Link href={`/recipes/${recipe.id}?fromCookbook=${cookbook.id}`}>
                   {image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={image} alt="" />
@@ -214,9 +215,7 @@ export function CookbookRecipes({
                   <div className="card-copy">
                     <h2>{recipe.title}</h2>
                     <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
-                    <p className="muted">
-                      {recipe.servings ? `${recipe.servings} servings` : recipe.status}
-                    </p>
+                    <p className="muted">{recipeCardMeta(recipe)}</p>
                   </div>
                 </Link>
                 <button
