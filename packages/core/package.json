@@ -11,6 +11,7 @@
     "./media": "./src/media/recipe-images.ts",
     "./parsing": "./src/parsing/ingredient-line.ts",
     "./scaling": "./src/scaling/servings.ts",
+    "./aisles": "./src/services/shopping-aisles.ts",
     "./people-order": "./src/services/people-order.ts"
   },
   "scripts": {

@@ -25,6 +25,7 @@ describe("ShoppingList", () => {
     );
 
     expect(screen.getByTestId("shopping-list")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Produce" })).toBeInTheDocument();
     expect(screen.getByText("1/3 cup basil pesto")).toBeInTheDocument();
     expect(screen.getByText("Contains tree nuts, so Child B can't eat this")).toBeInTheDocument();
     expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
@@ -71,5 +72,26 @@ describe("ShoppingList", () => {
     expect(box).not.toBeChecked();
     await user.click(box);
     expect(box).toBeChecked();
+  });
+
+  it("groups by aisle and keeps a jot-down item", async () => {
+    const user = userEvent.setup();
+    render(
+      <ShoppingList
+        items={[
+          { key: "onion", name: "yellow onion", recipes: ["Chili"], warnings: [] },
+          { key: "salt", name: "salt", recipes: ["Chili"], warnings: [] },
+        ]}
+      />
+    );
+
+    const headings = screen.getAllByRole("heading");
+    expect(headings.map((heading) => heading.textContent)).toEqual(["Produce", "Spices"]);
+
+    await user.type(screen.getByPlaceholderText("Milk, paper towels…"), "paper towels");
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    expect(screen.getByRole("heading", { name: "Other" })).toBeInTheDocument();
+    expect(screen.getByText("paper towels")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /yellow onion/i })).not.toBeChecked();
   });
 });
