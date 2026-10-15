@@ -1,13 +1,10 @@
-import { afterEach, describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   parseDuration,
   extractAuthor,
   extractImages,
   extractPageImages,
-  fetchHtml,
   pickImportRecipeImage,
-  RecipeImportFetchError,
-  shouldRetryFetchWithBrowserHeaders,
 } from "./url";
 
 describe("parseDuration", () => {
@@ -130,55 +127,6 @@ describe("pickImportRecipeImage", () => {
         "https://example.com/og.jpg",
       ])
     ).toBe("https://example.com/schema.jpg");
-  });
-});
-
-describe("fetchHtml", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("retries a 403 with browser-like headers", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 403,
-        statusText: "Forbidden",
-        url: "https://natashaskitchen.com/beef-stroganoff/",
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        url: "https://natashaskitchen.com/beef-stroganoff/",
-        text: async () => "<html><body>ok</body></html>",
-      });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const result = await fetchHtml("https://natashaskitchen.com/beef-stroganoff/");
-    expect(result.html).toContain("ok");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    const retryHeaders = fetchMock.mock.calls[1]?.[1]?.headers as Record<string, string>;
-    expect(retryHeaders["User-Agent"]).toMatch(/Mozilla\/5\.0/);
-  });
-
-  it("throws a paste-text fallback after a blocked retry", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 403,
-      statusText: "Forbidden",
-      url: "https://natashaskitchen.com/beef-stroganoff/",
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(fetchHtml("https://natashaskitchen.com/beef-stroganoff/")).rejects.toBeInstanceOf(
-      RecipeImportFetchError
-    );
-    await expect(fetchHtml("https://natashaskitchen.com/beef-stroganoff/")).rejects.toThrow(
-      /pasting the recipe text/
-    );
-    expect(shouldRetryFetchWithBrowserHeaders(403)).toBe(true);
   });
 });
 

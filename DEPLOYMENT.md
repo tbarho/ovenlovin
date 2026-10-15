@@ -47,6 +47,10 @@ The Deploy button provisions Neon, Blob, and Clerk via the `stores` parameter. C
 - `OVENLOVIN_VERCEL_TEAM_SLUG` - Vercel team/account slug for dashboard links (not the GitHub owner; example: `ty-barho`)
 - `OVENLOVIN_VERCEL_PROJECT_SLUG` - Vercel project slug if it differs from the git repo name
 - `VERCEL_TOKEN` / `OVENLOVIN_VERCEL_TOKEN` - optional; used to resolve the team/project slugs from `VERCEL_PROJECT_ID` when the overrides are unset. Without slugs or a token, links fall back to https://vercel.com/dashboard
+- `RECIPE_IMPORT_HEADLESS` - optional; `0` disables headless Chromium for URL import (default on). No paid proxy required. On Vercel, `@sparticuz/chromium-min` fetches a public pack at runtime (raise function memory in the dashboard if needed; Fluid does not allow `memory` in `vercel.json`).
+- `RECIPE_IMPORT_CACHE_FALLBACK` - optional; `0` disables public copies (Wayback Machine, then free Jina Reader HTML). Default on. No API key.
+- `RECIPE_IMPORT_CHROME_PATH` - optional local Chrome path off Vercel.
+- `RECIPE_IMPORT_CHROMIUM_PACK_URL` - optional override for the public Chromium pack URL used on Vercel.
 
 ### Database Migrations
 

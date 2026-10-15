@@ -13,6 +13,12 @@ import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/
 import { draftFromPlainText } from "@/lib/plain-import";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
+import { registerRecipePageRenderer } from "@/lib/import-page-render";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+registerRecipePageRenderer();
 
 export async function POST(request: NextRequest) {
   try {
