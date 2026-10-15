@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pathname = vi.hoisted(() => vi.fn(() => "/recipes"));
@@ -55,5 +56,19 @@ describe("KitchenNav", () => {
         .getAllByRole("link", { name: "Recipes" })
         .every((link) => !link.getAttribute("aria-current"))
     ).toBe(true);
+  });
+
+  it("shows a loading status on the phone tab bar while a tab switch is pending", async () => {
+    const user = userEvent.setup();
+    render(<KitchenNav variant="tabs" />);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Plan" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Loading…");
+    expect(screen.getByRole("navigation", { name: "Kitchen" })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
+    expect(screen.getByRole("link", { name: "Plan" })).toHaveAttribute("aria-busy", "true");
   });
 });

@@ -1948,6 +1948,19 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   }
 
+  .kitchen-tabbar-pending {
+    margin: 0;
+    padding: 2px 8px 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--orange-deep);
+  }
+
+  .kitchen-tabbar a[aria-busy="true"] {
+    color: var(--orange-deep);
+  }
+
   .kitchen-tabbar ul {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));

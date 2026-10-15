@@ -107,6 +107,7 @@ describe("plan risk confirm copy", () => {
     expect(copy.title).toContain("Sunday");
     expect(copy.body).toContain("Child B");
     expect(copy.body).toContain("peanuts");
+    expect(copy.body).toContain("warning stays on Sunday");
   });
 });
 
@@ -131,5 +132,60 @@ describe("applyDinnerToDays", () => {
       pick({ id: "tacos", title: "Veggie tacos" }),
     ]);
     expect(next[0]?.meals[0]?.title).toBe("Veggie tacos");
+    expect(next[0]?.meals[0]?.findings).toEqual([]);
+  });
+
+  it("rechecks only the swapped night from that recipe's safety", () => {
+    const days = groupMealsByDate("2026-10-12", [
+      {
+        entryId: "entry-1",
+        date: "2026-10-12",
+        mealSlot: "dinner",
+        recipeId: "pesto",
+        title: "Weeknight pesto pasta",
+        href: "/recipes/pesto",
+        image: null,
+        servings: 4,
+        isNoCook: false,
+        findings: [
+          {
+            personName: "Child B",
+            severity: "block",
+            message: "Contains pine nuts, so Child B can't eat this",
+          },
+        ],
+        checkStatus: "complete",
+      },
+      {
+        entryId: "entry-2",
+        date: "2026-10-13",
+        mealSlot: "dinner",
+        recipeId: "tacos",
+        title: "Veggie tacos",
+        href: "/recipes/tacos",
+        image: null,
+        servings: 4,
+        isNoCook: false,
+        findings: [],
+        checkStatus: "complete",
+      },
+    ]);
+    const next = applyDinnerToDays(
+      days,
+      "2026-10-12",
+      { recipeId: "kung-pao", freeformMeal: null },
+      [
+        pick({
+          id: "kung-pao",
+          title: "Kung pao chicken",
+          safety: "block",
+          warning: "Contains peanuts, so Child B can't eat this. Anaphylaxis risk",
+        }),
+      ]
+    );
+    expect(next[0]?.meals[0]?.title).toBe("Kung pao chicken");
+    expect(next[0]?.meals[0]?.findings[0]?.message).toMatch(/peanuts/);
+    expect(next[1]?.meals[0]?.title).toBe("Veggie tacos");
+    expect(next[1]?.meals[0]?.findings).toEqual([]);
   });
 });
