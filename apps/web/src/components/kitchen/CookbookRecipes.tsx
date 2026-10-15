@@ -8,6 +8,7 @@ import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
+import { recipeCardMeta } from "@/lib/recipe-card-meta";
 import { BottomSheet } from "./BottomSheet";
 import { CookbookRecipePicker } from "./CookbookRecipePicker";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -16,6 +17,39 @@ import { LoveTags } from "./LoveTags";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 const EMPTY_RECIPES: Recipe[] = [];
+
+function RecipeCardMenu({ pending, onRemove }: { pending: boolean; onRemove: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="recipe-card-menu">
+      <button
+        type="button"
+        className="recipe-card-more"
+        aria-label="Recipe actions"
+        aria-expanded={open}
+        title="More actions"
+        onClick={() => setOpen((value) => !value)}
+      >
+        ⋯
+      </button>
+      {open ? (
+        <div className="recipe-card-menu-list" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            disabled={pending}
+            onClick={() => {
+              setOpen(false);
+              onRemove();
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function RenameCookbookSheet({
   cookbook,
@@ -204,7 +238,7 @@ export function CookbookRecipes({
             const image = recipeMainImage(recipe.images);
             return (
               <article className="recipe-card cookbook-member-card" key={recipe.id}>
-                <Link href={`/recipes/${recipe.id}`}>
+                <Link href={`/recipes/${recipe.id}?fromCookbook=${cookbook.id}`}>
                   {image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={image} alt="" />
@@ -214,19 +248,10 @@ export function CookbookRecipes({
                   <div className="card-copy">
                     <h2>{recipe.title}</h2>
                     <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
-                    <p className="muted">
-                      {recipe.servings ? `${recipe.servings} servings` : recipe.status}
-                    </p>
+                    <p className="muted">{recipeCardMeta(recipe)}</p>
                   </div>
                 </Link>
-                <button
-                  type="button"
-                  className="recipe-card-remove"
-                  disabled={pending}
-                  onClick={() => void removeRecipe(recipe.id)}
-                >
-                  Remove
-                </button>
+                <RecipeCardMenu pending={pending} onRemove={() => void removeRecipe(recipe.id)} />
               </article>
             );
           })}

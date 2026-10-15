@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupShopItemsByAisle } from "./shop-aisles";
+import { groupShopItemsByAisle, pluralizeShopUnit, shopItemQuantity } from "./shop-aisles";
 import type { ShopItem } from "./week-plan";
 
 function item(name: string): ShopItem {
@@ -16,5 +16,22 @@ describe("groupShopItemsByAisle", () => {
     ]);
     expect(groups.map((group) => group.aisle)).toEqual(["Produce", "Meat", "Spices", "Other"]);
     expect(groups[0]?.items.map((entry) => entry.name)).toEqual(["yellow onion"]);
+  });
+});
+
+describe("shopItemQuantity", () => {
+  it("pluralizes shopping units", () => {
+    expect(pluralizeShopUnit("2", "cup")).toBe("2 cups");
+    expect(pluralizeShopUnit("1", "cup")).toBe("1 cup");
+    expect(
+      shopItemQuantity({
+        key: "salt",
+        name: "salt",
+        displayQuantity: "1 2/3",
+        displayUnit: "tbsp",
+        recipes: [],
+        warnings: [],
+      })
+    ).toBe("1 2/3 tbsp");
   });
 });

@@ -175,6 +175,10 @@ export function ImportRecipeForm() {
         id: recipe.id,
         notice: importGuessedNotice(recipe.title, recipe.servings ?? null),
       });
+      window.sessionStorage.setItem(
+        "ovenlovin.import-toast",
+        JSON.stringify({ title: recipe.title, servings: recipe.servings ?? 4 })
+      );
       router.push(`/recipes/${recipe.id}`);
       router.refresh();
     } catch (err) {
