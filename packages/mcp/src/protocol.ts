@@ -64,9 +64,7 @@ async function callTool(params: Record<string, unknown>, authContext: AuthContex
   }
 
   const result = await tool.handler(parsed.data as never, authContext);
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
-  };
+  return wrapToolResult(result);
 }
 
 /**
@@ -141,3 +139,27 @@ export async function dispatchMcpRequest(
 }
 
 export { listedTools };
+
+/**
+ * MCP tools return objects. Put the object on `structuredContent` so agents
+ * do not have to JSON.parse a string stuffed in `content`. Text clients still
+ * get a string: markdown/csv/text `content` when the tool already produced
+ * one, otherwise pretty-printed JSON.
+ */
+export function wrapToolResult(result: unknown): {
+  content: Array<{ type: "text"; text: string }>;
+  structuredContent: Record<string, unknown>;
+} {
+  const structuredContent =
+    result && typeof result === "object" && !Array.isArray(result)
+      ? (result as Record<string, unknown>)
+      : { result };
+  const text =
+    typeof structuredContent.content === "string"
+      ? structuredContent.content
+      : JSON.stringify(result, null, 2);
+  return {
+    content: [{ type: "text", text }],
+    structuredContent,
+  };
+}
