@@ -11,6 +11,7 @@ import { loveHitsForRecipe } from "@/lib/household-loves";
 import { BottomSheet } from "./BottomSheet";
 import { CookbookRecipePicker } from "./CookbookRecipePicker";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { KitchenToast } from "./KitchenToast";
 import { LoveTags } from "./LoveTags";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
@@ -87,8 +88,10 @@ export function CookbookRecipes({
   const [addOpen, setAddOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; recipeId: string } | null>(null);
   const closeRename = useCallback(() => setRenameOpen(false), []);
   const closeAdd = useCallback(() => setAddOpen(false), []);
+  const dismissToast = useCallback(() => setToast(null), []);
   const memberIds = useMemo(() => new Set(recipes.map((recipe) => recipe.id)), [recipes]);
 
   async function removeCookbook() {
@@ -125,13 +128,32 @@ export function CookbookRecipes({
   async function removeRecipe(recipeId: string) {
     setPending(true);
     setError(null);
+    const title = recipes.find((recipe) => recipe.id === recipeId)?.title ?? "recipe";
     try {
       await api(`/api/v1/cookbooks/${cookbook.id}/recipes?recipeId=${recipeId}`, {
         method: "DELETE",
       });
+      setToast({ message: `Removed ${title}`, recipeId });
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not remove recipe");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function undoRemove(recipeId: string) {
+    setToast(null);
+    setPending(true);
+    setError(null);
+    try {
+      await api(`/api/v1/cookbooks/${cookbook.id}/recipes`, {
+        method: "POST",
+        body: JSON.stringify({ recipeId }),
+      });
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not undo");
     } finally {
       setPending(false);
     }
@@ -232,6 +254,11 @@ export function CookbookRecipes({
         pending={pending}
         onCancel={() => setDeleteOpen(false)}
         onConfirm={removeCookbook}
+      />
+      <KitchenToast
+        message={toast?.message ?? null}
+        onUndo={toast ? () => void undoRemove(toast.recipeId) : undefined}
+        onDismiss={dismissToast}
       />
     </>
   );

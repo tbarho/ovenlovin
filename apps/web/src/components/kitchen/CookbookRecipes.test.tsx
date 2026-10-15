@@ -62,5 +62,16 @@ describe("CookbookRecipes add and remove", () => {
       "/api/v1/cookbooks/00000000-0000-4000-8000-000000000020/recipes?recipeId=r1",
       { method: "DELETE" }
     );
+    expect(screen.getByText("Removed Weeknight pesto pasta")).toBeVisible();
+
+    vi.mocked(api).mockResolvedValueOnce(undefined);
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(api).toHaveBeenCalledWith(
+      "/api/v1/cookbooks/00000000-0000-4000-8000-000000000020/recipes",
+      {
+        method: "POST",
+        body: JSON.stringify({ recipeId: "r1" }),
+      }
+    );
   });
 });
