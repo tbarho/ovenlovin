@@ -12,6 +12,7 @@ import {
 } from "@/lib/photo-import-client";
 import {
   cancelPhotoImportJob,
+  getPhotoImportJob,
   startPhotoImportJob,
   subscribePhotoImportJob,
   type PhotoImportJobSnapshot,
@@ -23,11 +24,17 @@ function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setSrc(url);
-    return () => {
-      if (typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(url);
-    };
+    if (typeof URL.createObjectURL === "function") {
+      const url = URL.createObjectURL(file);
+      setSrc(url);
+      return () => {
+        if (typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(url);
+      };
+    }
+    const reader = new FileReader();
+    reader.onload = () => setSrc(String(reader.result));
+    reader.readAsDataURL(file);
+    return () => reader.abort();
   }, [file]);
 
   return (
@@ -136,9 +143,12 @@ export function ImportRecipeForm() {
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [photoOpen, setPhotoOpen] = useState(false);
-  const [photoJob, setPhotoJob] = useState<PhotoImportJobSnapshot | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<File[]>(() => getPhotoImportJob()?.files ?? []);
+  const [photoOpen, setPhotoOpen] = useState(() => {
+    const existing = getPhotoImportJob();
+    return Boolean(existing && (existing.phase === "uploading" || existing.phase === "reading"));
+  });
+  const [photoJob, setPhotoJob] = useState<PhotoImportJobSnapshot | null>(() => getPhotoImportJob());
   const [imported, setImported] = useState<{
     id: string;
     notice: string;
@@ -146,7 +156,15 @@ export function ImportRecipeForm() {
   const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(content.trim());
   const jobBusy = photoJob?.phase === "uploading" || photoJob?.phase === "reading";
 
-  useEffect(() => subscribePhotoImportJob(setPhotoJob), []);
+  useEffect(
+    () =>
+      subscribePhotoImportJob((next) => {
+        setPhotoJob(next);
+        if (next?.files.length) setPhotoFiles(next.files);
+        if (!next) setPhotoFiles([]);
+      }),
+    []
+  );
 
   const addPhotos = useCallback((next: File[]) => {
     if (next.length === 0) return;
@@ -241,43 +259,37 @@ export function ImportRecipeForm() {
             </button>
           </div>
         </div>
+        {photoJob && jobBusy && !photoOpen ? (
+          <div className="photo-import-banner" data-testid="photo-import-progress">
+            {photoJob.previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoJob.previewUrl} alt="Selected recipe photo" />
+            ) : (
+              <span className="photo-thumb-fallback" aria-hidden="true" />
+            )}
+            <div>
+              <strong>{PHOTO_IMPORT_IN_PROGRESS}</strong>
+              <p>{photoImportAnnouncement(photoJob.phase, photoJob.percent)}</p>
+              <p className="muted">{PHOTO_IMPORT_ESTIMATE}.</p>
+            </div>
+            <div className="photo-import-banner-actions">
+              <button type="button" className="btn compact" onClick={() => setPhotoOpen(true)}>
+                Open
+              </button>
+              <button type="button" className="btn compact" onClick={() => cancelPhotoImportJob()}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
         {source === "photo" ? (
-          <>
-            <PhotoPick
-              files={photoFiles}
-              onAdd={addPhotos}
-              onRemove={(index) =>
-                setPhotoFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))
-              }
-            />
-            {photoJob && jobBusy && !photoOpen ? (
-              <div className="photo-import-banner">
-                {photoJob.previewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoJob.previewUrl} alt="" />
-                ) : (
-                  <span className="photo-thumb-fallback" aria-hidden="true" />
-                )}
-                <div>
-                  <strong>{PHOTO_IMPORT_IN_PROGRESS}</strong>
-                  <p>{photoImportAnnouncement(photoJob.phase, photoJob.percent)}</p>
-                  <p className="muted">{PHOTO_IMPORT_ESTIMATE}.</p>
-                </div>
-                <div className="photo-import-banner-actions">
-                  <button type="button" className="btn compact" onClick={() => setPhotoOpen(true)}>
-                    Open
-                  </button>
-                  <button
-                    type="button"
-                    className="btn compact"
-                    onClick={() => cancelPhotoImportJob()}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </>
+          <PhotoPick
+            files={photoFiles}
+            onAdd={addPhotos}
+            onRemove={(index) =>
+              setPhotoFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))
+            }
+          />
         ) : (
           <div className="import-row">
             <div className="import-field">

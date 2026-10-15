@@ -174,6 +174,23 @@ describe("ImportRecipeForm photo import", () => {
     expect(await screen.findByRole("dialog")).toBeVisible();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
   });
+
+  it("keeps Import in progress after switching to the URL tab", async () => {
+    mockXhr({ hang: true });
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    await user.upload(library, file);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("img", { name: /selected recipe photo/i })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    await user.click(screen.getByRole("tab", { name: "URL" }));
+    expect(screen.getByTestId("photo-import-progress")).toBeVisible();
+    expect(screen.getByText("Import in progress")).toBeVisible();
+    expect(screen.getByRole("img", { name: /selected recipe photo/i })).toBeVisible();
+  });
 });
 
 describe("ImportRecipeForm url and paste validation", () => {

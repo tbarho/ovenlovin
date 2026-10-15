@@ -305,7 +305,13 @@ export function PhotoImportDialog({
       {phase === "review" && draft ? (
         <PhotoReviewForm
           draft={draft}
-          heroSrc={job?.previewUrl || draft.images[0] || null}
+          heroSrc={
+            job?.previewUrl ||
+            (draft.images[0]?.startsWith("data:") || draft.images[0]?.startsWith("blob:")
+              ? draft.images[0]
+              : null) ||
+            null
+          }
           pending={pending}
           error={saveError}
           onChange={setDraft}
