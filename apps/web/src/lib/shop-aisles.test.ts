@@ -7,7 +7,7 @@ function item(name: string): ShopItem {
 }
 
 describe("groupShopItemsByAisle", () => {
-  it("walks the store instead of sorting A–Z", () => {
+  it("walks the store instead of sorting A-Z", () => {
     const groups = groupShopItemsByAisle([
       item("salt"),
       item("yellow onion"),

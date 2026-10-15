@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type RefObject } from "react";
 
-/** Editable fields only — never the sheet Close control or backdrop. */
+/** Editable fields only - never the sheet Close control or backdrop. */
 export const SHEET_TEXT_FIELD_SELECTOR = [
   "input:not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='file']):not([disabled])",
   "textarea:not([disabled])",

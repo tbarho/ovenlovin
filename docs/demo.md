@@ -24,7 +24,7 @@ OVENLOVIN_DEMO_MODE=1 DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:54
   pnpm --filter @ovenlovin/web dev
 ```
 
-Open `http://localhost:3000` — middleware sends you to `/api/demo/enter`, which seeds and redirects to `/recipes`.
+Open `http://localhost:3000` - middleware sends you to `/api/demo/enter`, which seeds and redirects to `/recipes`.
 
 ## Product landing
 
@@ -69,7 +69,7 @@ Then:
 # Health (no auth)
 curl -sS 'https://<demo-host>/mcp'
 
-# Stateless MCP — household is derived from the key
+# Stateless MCP - household is derived from the key
 curl -sS 'https://<demo-host>/mcp' \
   -H "Authorization: ApiKey $API_KEY" \
   -H 'Content-Type: application/json' \
@@ -102,7 +102,7 @@ Logged in as Ty (`vercel whoami` should be Ty's account / the `ty-barho` team):
 cd /path/to/ovenlovin
 vercel whoami
 
-# Create the project (name must be new — not `ovenlovin`)
+# Create the project (name must be new - not `ovenlovin`)
 vercel project add ovenlovin-demo
 
 # Link this checkout to the new project when prompted:
@@ -121,7 +121,7 @@ Then in the Vercel dashboard for **ovenlovin-demo** (Project → Settings):
 | Production Branch | `main` |
 | Framework Preset | Next.js |
 | Root Directory | `apps/web` |
-| Build Command | leave default — `apps/web/vercel.json` already sets `cd ../.. && pnpm install --prod=false && pnpm turbo run build --filter=@ovenlovin/web... && pnpm exec tsx packages/db/src/migrate.ts` |
+| Build Command | leave default - `apps/web/vercel.json` already sets `cd ../.. && pnpm install --prod=false && pnpm turbo run build --filter=@ovenlovin/web... && pnpm exec tsx packages/db/src/migrate.ts` |
 | Install Command | `pnpm install` |
 | Output Directory | Next.js default (leave empty) |
 | Node.js Version | `20.x` |
@@ -210,7 +210,7 @@ If `vercel env add --yes` is not accepted by the installed CLI, omit `--yes` and
 | `AI_GATEWAY_API_KEY` | Demo forces AI off. Setting a key does nothing useful and is extra attack surface. |
 | Product `DATABASE_URL` | Isolates visitor kitchens from real households |
 
-### Environment variables (product project — after demo is live)
+### Environment variables (product project - after demo is live)
 
 | Name | Environment | Value |
 | --- | --- | --- |

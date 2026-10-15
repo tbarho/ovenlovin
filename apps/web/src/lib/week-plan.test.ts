@@ -35,7 +35,7 @@ describe("week-plan dates", () => {
   });
 
   it("formats a same-month week range", () => {
-    expect(formatWeekRange("2026-10-12")).toBe("Oct 12–18, 2026");
+    expect(formatWeekRange("2026-10-12")).toBe("Oct 12-18, 2026");
   });
 
   it("adds days across month boundaries without local TZ drift", () => {

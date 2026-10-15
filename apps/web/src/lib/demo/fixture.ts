@@ -131,7 +131,7 @@ export const DEMO_RECIPES: DemoRecipe[] = [
     slug: "kung-pao-chicken",
     cookbook: "weeknight",
     title: "Kung pao chicken",
-    description: "A weeknight stir-fry with peanuts — Child C cannot eat this as written.",
+    description: "A weeknight stir-fry with peanuts - Child C cannot eat this as written.",
     servings: 4,
     prepTimeMinutes: 20,
     cookTimeMinutes: 15,

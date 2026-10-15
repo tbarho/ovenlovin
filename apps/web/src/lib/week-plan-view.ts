@@ -136,12 +136,12 @@ export function formatWeekRange(weekStart: string): string {
   const startMonth = MONTHS[start.month];
   const endMonth = MONTHS[end.month];
   if (start.year === end.year && start.month === end.month) {
-    return `${startMonth} ${start.day}–${end.day}, ${start.year}`;
+    return `${startMonth} ${start.day}-${end.day}, ${start.year}`;
   }
   if (start.year === end.year) {
-    return `${startMonth} ${start.day} – ${endMonth} ${end.day}, ${start.year}`;
+    return `${startMonth} ${start.day} - ${endMonth} ${end.day}, ${start.year}`;
   }
-  return `${startMonth} ${start.day}, ${start.year} – ${endMonth} ${end.day}, ${end.year}`;
+  return `${startMonth} ${start.day}, ${start.year} - ${endMonth} ${end.day}, ${end.year}`;
 }
 
 export function slotLabel(slot: string): string {

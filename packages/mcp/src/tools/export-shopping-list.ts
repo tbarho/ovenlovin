@@ -42,7 +42,7 @@ export type ExportShoppingListInput = z.infer<typeof exportShoppingListSchema>;
 
 export interface ExportShoppingListOutput {
   format: string;
-  /** Markdown, CSV, or plain text. Omitted for `json` — use `list` instead. */
+  /** Markdown, CSV, or plain text. Omitted for `json` - use `list` instead. */
   content?: string;
   /** Structured shopping list. Always present so MCP does not double-encode JSON. */
   list: ShoppingListData;

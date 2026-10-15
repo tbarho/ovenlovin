@@ -111,7 +111,7 @@ export const E2E_RECIPES: KitchenRecipe[] = [
     ...draft({
       slug: "kung-pao-chicken",
       title: "Kung pao chicken",
-      description: "A weeknight stir-fry with peanuts — Jake cannot eat this as written.",
+      description: "A weeknight stir-fry with peanuts - Jake cannot eat this as written.",
       servings: 4,
       prepTimeMinutes: 20,
       cookTimeMinutes: 15,

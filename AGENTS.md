@@ -66,7 +66,7 @@ pnpm typecheck
 # Clean
 pnpm clean
 
-# Signed-in kitchen (local e2e harness — see below)
+# Signed-in kitchen (local e2e harness - see below)
 ./scripts/e2e-kitchen-up.sh
 E2E_AUTH_BYPASS=1 DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin pnpm --filter @ovenlovin/web dev
 pnpm --filter @ovenlovin/web e2e:kitchen
@@ -89,7 +89,7 @@ Never set `E2E_AUTH_BYPASS` in Vercel production env vars.
 
 ## Public demo
 
-`OVENLOVIN_DEMO_MODE=1` is a separate no-signup deploy. Logic lives in `apps/web/src/lib/demo/`. First visit goes through `GET /api/demo/enter` (sets the sandbox cookie — do not `cookies().set` from a Server Component). Product Vercel production must never enable it (build fails unless `OVENLOVIN_DEMO_PROJECT=1` on the dedicated demo project). See `docs/demo.md`.
+`OVENLOVIN_DEMO_MODE=1` is a separate no-signup deploy. Logic lives in `apps/web/src/lib/demo/`. First visit goes through `GET /api/demo/enter` (sets the sandbox cookie - do not `cookies().set` from a Server Component). Product Vercel production must never enable it (build fails unless `OVENLOVIN_DEMO_PROJECT=1` on the dedicated demo project). See `docs/demo.md`.
 
 ### Local Postgres + seed
 
@@ -115,7 +115,7 @@ The seed (`apps/web/src/lib/e2e-kitchen.ts`) is the one fixture allowed to use t
 
 Other tests and docs still use generic names ("Parent A", "Child B"). This kitchen is visual UAT only.
 
-Open `/recipes` while the bypass is on — `getSessionContext()` returns the seeded household without Clerk.
+Open `/recipes` while the bypass is on - `getSessionContext()` returns the seeded household without Clerk.
 
 ### Screenshots
 
@@ -183,8 +183,9 @@ No real family names, photos, or private data in fixtures, tests, or docs. Use g
 - **Errors**: descriptive messages with remediation hints
 - **API**: cursor pagination, idempotency keys on writes, problem+json errors
 - **Naming**: camelCase for variables/functions, PascalCase for types/components
-- **Sheet-hosted inputs**: Never define a component inside another component’s render body — that remounts the tree (and blurs the field) on every keystroke. Keep `key` props stable; never use `Math.random()`, `Date.now()`, or the value being edited. Give each sheet a stable identity while it is open. Autofocus and focus-trap effects may depend only on `open`, not on inline `onClose` or draft state, so they run once when the sheet opens. Keep draft input state in the sheet form, not in a parent that rebuilds the sheet on every character.
-- **Motion**: Animate only when it conveys meaning — a state change, a spatial relationship (sheet/dialog enter/exit), reorder feedback, or confirming add/remove. Do not add decorative or ambient motion (hover bounces, staggered entrances, pulses, floating marks, press-scale gimmicks). Use the shared tokens in `apps/web/src/app/globals.css` (`--motion-fast`, `--motion-base`, `--motion-sheet`, `--motion-ease`) and `apps/web/src/lib/motion.ts`. Honor `prefers-reduced-motion` (tokens already collapse durations globally).
+- **Dashes**: Never use em dashes (U+2014) or en dashes (U+2013). Use a plain hyphen `-`, or spaced ` - ` between phrases.
+- **Sheet-hosted inputs**: Never define a component inside another component’s render body - that remounts the tree (and blurs the field) on every keystroke. Keep `key` props stable; never use `Math.random()`, `Date.now()`, or the value being edited. Give each sheet a stable identity while it is open. Autofocus and focus-trap effects may depend only on `open`, not on inline `onClose` or draft state, so they run once when the sheet opens. Keep draft input state in the sheet form, not in a parent that rebuilds the sheet on every character.
+- **Motion**: Animate only when it conveys meaning - a state change, a spatial relationship (sheet/dialog enter/exit), reorder feedback, or confirming add/remove. Do not add decorative or ambient motion (hover bounces, staggered entrances, pulses, floating marks, press-scale gimmicks). Use the shared tokens in `apps/web/src/app/globals.css` (`--motion-fast`, `--motion-base`, `--motion-sheet`, `--motion-ease`) and `apps/web/src/lib/motion.ts`. Honor `prefers-reduced-motion` (tokens already collapse durations globally).
 
 ## Safety Invariants (Do Not Break)
 

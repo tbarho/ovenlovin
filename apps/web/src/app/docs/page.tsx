@@ -20,7 +20,7 @@ export default async function DocsIndexPage() {
       <p className="lead">{OVENLOVIN_PITCH}</p>
       <p className="intro">
         This instance is <code>{origin}</code>. Sign in to cook. Connect an agent with an API key.
-        Allergen checks are deterministic and per-person — not medical advice. Always check labels.
+        Allergen checks are deterministic and per-person - not medical advice. Always check labels.
       </p>
       <ul className="yours-row">
         <li>

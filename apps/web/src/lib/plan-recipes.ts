@@ -48,7 +48,7 @@ export function planRiskConfirmCopy(
   const why = recipe.warning?.trim() || "This recipe may not be safe for everyone on the plan.";
   return {
     title: `Add ${recipe.title} to ${weekday}?`,
-    body: `${why} You can still add it — the warning stays on ${weekday} until you pick something else.`,
+    body: `${why} You can still add it - the warning stays on ${weekday} until you pick something else.`,
   };
 }
 

@@ -59,7 +59,7 @@ export function extractHtmlRecipe(html: string): Record<string, unknown> | null 
       .first()
       .text()
       .replace(/\s+/g, " ")
-      .replace(/\s*[—|].*$/, "")
+      .replace(/\s*[-|\u2014].*$/, "")
       .trim();
 
   const ingredientHeading = firstHeading($, INGREDIENT_HEADING);

@@ -96,7 +96,7 @@ export async function dispatchMcpRequest(
           capabilities: { tools: {}, resources: {} },
           serverInfo,
           instructions:
-            "OvenLovin household MCP. Not medical advice — always check ingredient labels before serving.",
+            "OvenLovin household MCP. Not medical advice - always check ingredient labels before serving.",
         });
       case "notifications/initialized":
       case "notifications/cancelled":

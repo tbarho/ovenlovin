@@ -435,7 +435,7 @@ export const RECIPES: Recipe[] = [
   {
     id: "grilled-cheese",
     title: "Grilled cheese",
-    lede: "Crisp bread, melted cheddar — the kids' emergency dinner.",
+    lede: "Crisp bread, melted cheddar - the kids' emergency dinner.",
     emoji: "🥪",
     minutes: 10,
     servings: 2,
@@ -633,9 +633,9 @@ export function bucketLabel(bucket: Bucket): string {
 }
 
 export function bucketHint(bucket: Bucket): string {
-  if (bucket === "cant_have") return "Allergy — treat as unsafe";
+  if (bucket === "cant_have") return "Allergy - treat as unsafe";
   if (bucket === "doesnt_eat") return "Diet or hard no";
-  return "Preference — warn, don't block";
+  return "Preference - warn, don't block";
 }
 
 export function formatList(items: string[]): string {
@@ -687,7 +687,7 @@ export function summarizeHousehold(household: Household): HouseholdSummary {
     return {
       line: prefers
         ? "Mostly easygoing, with a few preferences."
-        : "Everyone here can eat everything — for now.",
+        : "Everyone here can eat everything - for now.",
       avoids,
       severeCount,
       badge: null,
@@ -805,7 +805,7 @@ export function checkPerson(person: Person, recipe: Recipe): Finding {
         hits.push({
           mark,
           ingredientName: ingredient.food,
-          reason: `${person.name} would rather not eat ${label} — this recipe has ${ingredient.food.toLowerCase()}.`,
+          reason: `${person.name} would rather not eat ${label} - this recipe has ${ingredient.food.toLowerCase()}.`,
         });
       }
       continue;
@@ -825,7 +825,7 @@ export function checkPerson(person: Person, recipe: Recipe): Finding {
       facilityNoted = true;
       hits.push({
         mark: "warn",
-        reason: `The nuts are out, but this may be made where nuts are processed — and ${person.name} avoids that.`,
+        reason: `The nuts are out, but this may be made where nuts are processed - and ${person.name} avoids that.`,
       });
     } else if (
       nutRule &&
@@ -836,7 +836,7 @@ export function checkPerson(person: Person, recipe: Recipe): Finding {
       facilityNoted = true;
       hits.push({
         mark: "warn",
-        reason: `Ask before serving ${person.name} — this may be made where nuts are processed.`,
+        reason: `Ask before serving ${person.name} - this may be made where nuts are processed.`,
       });
     }
   }

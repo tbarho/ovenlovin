@@ -13,7 +13,7 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 | `format`              | enum          | No       | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"`                     |
 | `groupBy`             | enum          | No       | `"aisle"`    | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"`                       |
 | `includeStaples`      | boolean       | No       | `false`      | Include kitchen staples (salt, pepper, oil). Distinct from the pantry category. |
-| `includePantryItems`  | boolean       | No       | —            | Deprecated alias for `includeStaples`                                           |
+| `includePantryItems`  | boolean       | No       | - | Deprecated alias for `includeStaples`                                           |
 | `includeRuleWarnings` | boolean       | No       | `true`       | Include per-person rule warnings for shoppers                                   |
 
 ## Output Schema
@@ -32,7 +32,7 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 }
 ```
 
-MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.parse` a string stuffed in `content` to get the list — read `structuredContent.list` (or `list` after one parse of the text JSON for `format: "json"`).
+MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.parse` a string stuffed in `content` to get the list - read `structuredContent.list` (or `list` after one parse of the text JSON for `format: "json"`).
 
 ## Format Examples
 

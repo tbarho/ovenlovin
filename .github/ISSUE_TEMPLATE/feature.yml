@@ -16,7 +16,7 @@ body:
     id: why
     attributes:
       label: Why
-      description: Who is this for — a household cook, or an agent?
+      description: Who is this for - a household cook, or an agent?
     validations:
       required: true
   - type: dropdown

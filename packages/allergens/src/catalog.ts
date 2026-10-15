@@ -2,7 +2,7 @@
  * Searchable catalogs for the People / Rules UI.
  *
  * Allergen entries come from the taxonomy tree. Diet entries are common
- * household patterns — they are not hard-coded policies; a person still
+ * household patterns - they are not hard-coded policies; a person still
  * needs an explicit rule with a chosen severity.
  */
 
@@ -31,7 +31,7 @@ export interface DietCatalogEntry {
   phraseName: string;
   description: string;
   aliases: string[];
-  /** Ingredient phrases this diet rule matches. Not a hidden policy — only used when the person has this diet rule. */
+  /** Ingredient phrases this diet rule matches. Not a hidden policy - only used when the person has this diet rule. */
   matchPhrases?: string[];
 }
 

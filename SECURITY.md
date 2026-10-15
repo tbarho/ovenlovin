@@ -5,7 +5,7 @@
 OvenLovin checks recipes against **per-person rules** the household admin sets. This is safety-relevant software.
 
 - Findings always name the person, the rule, the ingredient, and the reason.
-- Incomplete checks return `status: incomplete` — never “no issues.”
+- Incomplete checks return `status: incomplete` - never “no issues.”
 - Rules are not hard-coded allergen policy. The family admin configures them.
 - OvenLovin is **not medical advice**. Always read ingredient labels before serving.
 

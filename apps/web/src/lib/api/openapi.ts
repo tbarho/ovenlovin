@@ -39,7 +39,7 @@ export function generateOpenApiDocument(origin?: string): oas30.OpenAPIObject {
       version: "0.1.0",
       title: "OvenLovin API",
       description:
-        "The family recipe box your AI can actually use, and it knows who can't eat what. REST for agents. Not medical advice — always check labels.",
+        "The family recipe box your AI can actually use, and it knows who can't eat what. REST for agents. Not medical advice - always check labels.",
       license: {
         name: "MIT",
         url: "https://github.com/tbarho/ovenlovin/blob/main/LICENSE",

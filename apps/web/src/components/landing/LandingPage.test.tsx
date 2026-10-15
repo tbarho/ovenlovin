@@ -50,7 +50,7 @@ describe("LandingPage", () => {
     expect(screen.getByRole("heading", { name: OVENLOVIN_PITCH })).toBeInTheDocument();
     expect(screen.queryByText("You're live.")).not.toBeInTheDocument();
     expect(
-      screen.queryByText("This is yours — Ty's kitchen. Your household. Your data.")
+      screen.queryByText("This is yours - Ty's kitchen. Your household. Your data.")
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText("fix: internal commit visitors must not see")
@@ -74,7 +74,7 @@ describe("LandingPage", () => {
 
     expect(screen.getByRole("heading", { name: "You're live." })).toBeInTheDocument();
     expect(
-      screen.getByText("This is yours — Ty's kitchen. Your household. Your data.")
+      screen.getByText("This is yours - Ty's kitchen. Your household. Your data.")
     ).toBeInTheDocument();
     expect(screen.getByText("fix: internal commit visitors must not see")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Project dashboard" })).toBeInTheDocument();

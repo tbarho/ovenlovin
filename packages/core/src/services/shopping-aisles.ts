@@ -1,6 +1,6 @@
 import { normalizeIngredientName } from "../parsing/ingredient-line";
 
-/** Food taxonomy for `groupBy=category` — not grocery-store aisles. */
+/** Food taxonomy for `groupBy=category` - not grocery-store aisles. */
 export const SHOPPING_LIST_CATEGORIES = [
   "produce",
   "protein",

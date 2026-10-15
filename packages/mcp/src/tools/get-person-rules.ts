@@ -121,7 +121,7 @@ async function handler(
 export const getPersonRulesTool = {
   name: "get_person_rules",
   description:
-    "Get detailed per-person rules (Can't eat / Doesn't like) and Loves. Loves never filter recipes; they boost ranking. Use this for detailed rule inspection. Not medical advice — always check ingredient labels before serving.",
+    "Get detailed per-person rules (Can't eat / Doesn't like) and Loves. Loves never filter recipes; they boost ranking. Use this for detailed rule inspection. Not medical advice - always check ingredient labels before serving.",
   inputSchema: getPersonRulesSchema,
   handler,
 } as const;

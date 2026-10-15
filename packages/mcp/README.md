@@ -100,7 +100,7 @@ Persist the household people order used by lists, who-can-eat, and household con
 
 ### `manage_person_rules`
 
-List, add, or remove Can't eat / Doesn't like rules. Allergen typos (`pean` → `peanut`) are canonicalized the same way as the People UI. Tree-nut rules accept `treatCoconutAsTreeNut` (default **false** — coconut is not a tree nut unless the family turns it on).
+List, add, or remove Can't eat / Doesn't like rules. Allergen typos (`pean` → `peanut`) are canonicalized the same way as the People UI. Tree-nut rules accept `treatCoconutAsTreeNut` (default **false** - coconut is not a tree nut unless the family turns it on).
 
 ```json
 {

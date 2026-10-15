@@ -142,7 +142,7 @@ export class ApiKeyService extends BaseService {
     return `rkapi_${bytes.toString("hex")}`;
   }
 
-  /** SHA-256 hex digest. Keep this hashing as-is — callers never store plaintext. */
+  /** SHA-256 hex digest. Keep this hashing as-is - callers never store plaintext. */
   private hashKey(plaintext: string): string {
     return createHash("sha256").update(plaintext).digest("hex");
   }

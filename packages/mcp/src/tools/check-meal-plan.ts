@@ -363,7 +363,7 @@ async function handler(
 export const checkMealPlanTool = {
   name: "check_meal_plan",
   description:
-    "Check a meal plan against per-person rules and schedule constraints. Nights may omit recipeId (leftovers, eat-out, empty). Returns per-entry, per-person findings by severity, plus informational loveTags (never a filter). MUST be called before saving a plan. Not medical advice — always check ingredient labels before serving.",
+    "Check a meal plan against per-person rules and schedule constraints. Nights may omit recipeId (leftovers, eat-out, empty). Returns per-entry, per-person findings by severity, plus informational loveTags (never a filter). MUST be called before saving a plan. Not medical advice - always check ingredient labels before serving.",
   inputSchema: checkMealPlanSchema,
   handler,
 } as const;

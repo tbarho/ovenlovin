@@ -51,7 +51,7 @@ describe("RecipeCardSafety", () => {
     );
 
     expect(screen.queryByText("Child C loves this")).not.toBeInTheDocument();
-    expect(screen.queryByText(/loves this — check first/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/loves this - check first/)).not.toBeInTheDocument();
     expect(screen.getByTestId("recipe-card-warnings")).toHaveTextContent(/pine nuts/i);
     expect(screen.getByTestId("recipe-card-warnings")).toHaveTextContent(/Child C can't eat this/);
   });
@@ -81,7 +81,7 @@ describe("RecipeCardSafety", () => {
     );
 
     expect(screen.queryByText("Child C loves this")).not.toBeInTheDocument();
-    expect(screen.queryByText(/loves this — check first/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/loves this - check first/)).not.toBeInTheDocument();
     expect(screen.getByText("Can't eat")).toBeVisible();
   });
 });

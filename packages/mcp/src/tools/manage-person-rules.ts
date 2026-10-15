@@ -41,7 +41,7 @@ export const managePersonRulesSchema = z.object({
   treatCoconutAsTreeNut: z
     .boolean()
     .optional()
-    .describe("For tree_nut rules. Defaults to false — coconut is not a tree nut unless set."),
+    .describe("For tree_nut rules. Defaults to false - coconut is not a tree nut unless set."),
 });
 
 async function handler(input: z.infer<typeof managePersonRulesSchema>, context: AuthContext) {
@@ -121,7 +121,7 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
 export const managePersonRulesTool = {
   name: "manage_person_rules",
   description:
-    "List, add, or remove Can't eat / Doesn't like rules for a person. Allergen typos (pean → peanut) are canonicalized the same way as the People UI. Not medical advice — always check ingredient labels before serving.",
+    "List, add, or remove Can't eat / Doesn't like rules for a person. Allergen typos (pean → peanut) are canonicalized the same way as the People UI. Not medical advice - always check ingredient labels before serving.",
   inputSchema: managePersonRulesSchema,
   handler,
 } as const;

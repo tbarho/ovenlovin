@@ -67,8 +67,8 @@ export function LandingPage({
             <h1>{signedIn ? deploy.headline : OVENLOVIN_PITCH}</h1>
             <p className="lead">
               {signedIn
-                ? `This is yours — ${instanceName}. Your household. Your data.`
-                : "Open-source recipe box for families and their agents. Per-person allergen checks. Not medical advice — always read the label."}
+                ? `This is yours - ${instanceName}. Your household. Your data.`
+                : "Open-source recipe box for families and their agents. Per-person allergen checks. Not medical advice - always read the label."}
             </p>
             {signedIn ? (
               <ul className="yours-row">
@@ -135,7 +135,7 @@ export function LandingPage({
               <h2>{signedIn ? "Open the kitchen" : "Sign in and cook"}</h2>
               <p>
                 {signedIn
-                  ? "Recipes, this week’s plan, the shopping list, and people rules — on this household."
+                  ? "Recipes, this week’s plan, the shopping list, and people rules - on this household."
                   : "Create your household on first sign-in, then import recipes and set people rules."}
               </p>
             </Link>
