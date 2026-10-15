@@ -1,12 +1,64 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
 import { keepMainRecipeImages } from "@ovenlovin/core/media";
 import { clampServings } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
+
+function RecipeSheet({
+  open,
+  title,
+  dirty,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  dirty: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const [confirm, setConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!open) setConfirm(false);
+  }, [open]);
+
+  function requestClose() {
+    if (confirm) {
+      setConfirm(false);
+      return;
+    }
+    if (dirty) {
+      setConfirm(true);
+      return;
+    }
+    onClose();
+  }
+
+  return (
+    <BottomSheet open={open} title={title} onClose={requestClose}>
+      {confirm ? (
+        <div className="sheet-discard" data-testid="discard-changes">
+          <p className="sheet-lead">Discard unsaved changes?</p>
+          <div className="sheet-actions">
+            <button type="button" className="btn" onClick={() => setConfirm(false)}>
+              Keep editing
+            </button>
+            <button type="button" className="btn danger" onClick={onClose}>
+              Discard
+            </button>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
+    </BottomSheet>
+  );
+}
 
 function useRecipePatch(recipeId: string, onClose: () => void) {
   const router = useRouter();
@@ -79,8 +131,15 @@ export function DetailsSheet({
     if (saved) onSavedServings(nextServings);
   }
 
+  const dirty =
+    title !== recipe.title ||
+    notes !== (recipe.notes ?? "") ||
+    prep !== (recipe.prepTimeMinutes?.toString() ?? "") ||
+    cook !== (recipe.cookTimeMinutes?.toString() ?? "") ||
+    baseServings !== storedServings.toString();
+
   return (
-    <BottomSheet open={open} title="Edit details" onClose={onClose}>
+    <RecipeSheet open={open} title="Edit details" dirty={dirty} onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={saveDetails}>
         <label>
           Title
@@ -128,7 +187,7 @@ export function DetailsSheet({
           {pending ? "Saving…" : "Save details"}
         </button>
       </form>
-    </BottomSheet>
+    </RecipeSheet>
   );
 }
 
@@ -194,7 +253,7 @@ export function PhotosSheet({
   }
 
   return (
-    <BottomSheet open={open} title="Recipe photo" onClose={onClose}>
+    <RecipeSheet open={open} title="Recipe photo" dirty={Boolean(imageUrl.trim())} onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={addImageFromUrl}>
         <p className="muted">This replaces the main photo on cards and this page.</p>
         <input
@@ -215,7 +274,7 @@ export function PhotosSheet({
         />
         {error ? <p className="muted">{error}</p> : null}
       </form>
-    </BottomSheet>
+    </RecipeSheet>
   );
 }
 
@@ -249,8 +308,14 @@ export function IngredientsSheet({
     });
   }
 
+  const original = recipe.ingredients.map((item) => item.rawText).join("\n");
   return (
-    <BottomSheet open={open} title="Edit ingredients" onClose={onClose}>
+    <RecipeSheet
+      open={open}
+      title="Edit ingredients"
+      dirty={ingredientText !== original}
+      onClose={onClose}
+    >
       <form className="form-card" style={{ margin: 0 }} onSubmit={saveIngredients}>
         <p className="muted">One ingredient per line. Quantities scale when you move servings.</p>
         <textarea
@@ -263,7 +328,7 @@ export function IngredientsSheet({
           {pending ? "Saving…" : "Save ingredients"}
         </button>
       </form>
-    </BottomSheet>
+    </RecipeSheet>
   );
 }
 
@@ -295,8 +360,9 @@ export function StepsSheet({
     });
   }
 
+  const original = recipe.steps.map((item) => item.text).join("\n");
   return (
-    <BottomSheet open={open} title="Edit steps" onClose={onClose}>
+    <RecipeSheet open={open} title="Edit steps" dirty={stepText !== original} onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={saveSteps}>
         <p className="muted">One step per line.</p>
         <textarea value={stepText} onChange={(event) => setStepText(event.target.value)} required />
@@ -305,7 +371,7 @@ export function StepsSheet({
           {pending ? "Saving…" : "Save steps"}
         </button>
       </form>
-    </BottomSheet>
+    </RecipeSheet>
   );
 }
 
@@ -333,8 +399,11 @@ export function CookbooksSheet({
     await patch({ cookbookIds: selectedBooks });
   }
 
+  const original = recipe.cookbooks.map((item) => item.id);
+  const dirty =
+    selectedBooks.length !== original.length || selectedBooks.some((id) => !original.includes(id));
   return (
-    <BottomSheet open={open} title="Cookbooks" onClose={onClose}>
+    <RecipeSheet open={open} title="Cookbooks" dirty={dirty} onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={saveCookbooks}>
         {cookbooks.length === 0 ? (
           <p className="muted">Create a cookbook from the Recipes shelf first.</p>
@@ -361,6 +430,6 @@ export function CookbooksSheet({
           {pending ? "Saving…" : "Save cookbooks"}
         </button>
       </form>
-    </BottomSheet>
+    </RecipeSheet>
   );
 }
