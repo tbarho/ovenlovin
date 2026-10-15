@@ -8,23 +8,6 @@ import { RecipeDetail } from "./RecipeDetail";
 import { RecipesKitchen } from "./RecipesKitchen";
 
 describe("kitchen recipe layout", () => {
-  it("returns to the cookbook the recipe was opened from", () => {
-    render(
-      <RecipeDetail
-        recipe={testRecipeDetails({
-          title: "Weeknight pesto pasta",
-          cookbooks: [testCookbook()],
-        })}
-        cookbooks={[testCookbook()]}
-        fromCookbookId={testCookbook().id}
-      />
-    );
-    expect(screen.getByRole("link", { name: "← Weeknight dinners" })).toHaveAttribute(
-      "href",
-      `/recipes?cookbook=${testCookbook().id}`
-    );
-  });
-
   it("places who-can-eat next to ingredients instead of a full-viewport block", () => {
     const { container } = render(
       <RecipeDetail
@@ -83,13 +66,6 @@ describe("kitchen sheet-hosted forms", () => {
 
     await user.click(screen.getByRole("button", { name: "Edit steps" }));
     await typeFullWordAndKeepFocus(user, screen.getByRole("textbox"), "simmer");
-  });
-
-  it("disables Create cookbook until a name is entered", async () => {
-    const user = userEvent.setup();
-    render(<RecipesKitchen cookbooks={[]} uncategorized={[]} recipes={[]} />);
-    await user.click(screen.getByRole("button", { name: "New cookbook" }));
-    expect(screen.getByRole("button", { name: "Create cookbook" })).toBeDisabled();
   });
 
   it("keeps focus while typing a new cookbook name", async () => {

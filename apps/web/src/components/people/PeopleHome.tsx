@@ -32,7 +32,7 @@ function AddPersonForm({ onAdded }: { onAdded: () => void }) {
     setError(null);
     try {
       const appearance: PersonAppearance = { emoji, color };
-      const created = await api<Person>("/api/v1/people", {
+      await api<Person>("/api/v1/people", {
         method: "POST",
         body: JSON.stringify({
           displayName: trimmed,
@@ -40,9 +40,8 @@ function AddPersonForm({ onAdded }: { onAdded: () => void }) {
         }),
       });
       setName("");
-      onAdded();
-      router.push(`/people/${created.id}`);
       router.refresh();
+      onAdded();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add person");
     } finally {

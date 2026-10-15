@@ -24,8 +24,7 @@ export function RecheckBanner({ planId }: { planId: string }) {
   return (
     <div className="week-recheck" role="status">
       <p>
-        This plan needs a recheck. A recipe, person, or rule changed since the last check. Recheck
-        now to refresh warnings on every dinner.
+        This plan needs a recheck. A recipe or someone&apos;s rules changed since the last check.
       </p>
       <button
         type="button"
