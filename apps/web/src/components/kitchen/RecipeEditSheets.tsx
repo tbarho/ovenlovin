@@ -253,7 +253,12 @@ export function PhotosSheet({
   }
 
   return (
-    <RecipeSheet open={open} title="Recipe photo" dirty={Boolean(imageUrl.trim())} onClose={onClose}>
+    <RecipeSheet
+      open={open}
+      title="Recipe photo"
+      dirty={Boolean(imageUrl.trim())}
+      onClose={onClose}
+    >
       <form className="form-card" style={{ margin: 0 }} onSubmit={addImageFromUrl}>
         <p className="muted">This replaces the main photo on cards and this page.</p>
         <input
