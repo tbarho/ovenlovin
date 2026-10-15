@@ -49,6 +49,7 @@ export function buildLlmsTxt(origin: string): string {
     `- GET/POST /api/v1/meal-plans`,
     `- GET /api/v1/meal-plans/{id}/check`,
     `- GET /api/v1/meal-plans/{id}/shopping-list`,
+    `- GET/PATCH /api/v1/meal-plans/{id}/shopping-list/state`,
     `- GET/POST /api/v1/cookbooks`,
     `- GET /api/v1/households`,
     `- GET/PUT /api/v1/households/schedule`,

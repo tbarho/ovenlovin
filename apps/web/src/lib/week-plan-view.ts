@@ -90,6 +90,8 @@ export type ShopItem = {
   warnings: ShopWarning[];
 };
 
+export type { ShoppingExtra, ShoppingTripState } from "@ovenlovin/core";
+
 export function parseIsoDate(iso: string): { year: number; month: number; day: number } {
   const [year, month, day] = iso.split("-").map((part) => Number(part));
   if (!year || !month || !day) {
