@@ -18,6 +18,31 @@ async function settle(page: Page) {
   await page.waitForLoadState("domcontentloaded");
 }
 
+async function expectPeopleDragHandlesTopRight(page: Page) {
+  const cards = page.locator(".olp-person-card");
+  const count = await cards.count();
+  expect(count).toBeGreaterThan(0);
+  await expect(page.getByTestId("people-reorder")).toHaveCount(1);
+  for (let index = 0; index < count; index += 1) {
+    const card = cards.nth(index);
+    const handle = card.getByRole("button", { name: /^Reorder / });
+    await expect(handle).toHaveCount(1);
+    await expect(card).toHaveCSS("position", "relative");
+    await expect(handle).toHaveCSS("position", "absolute");
+    const pad = await card.evaluate((el) => getComputedStyle(el).paddingTop);
+    expect(pad).toBe("8px");
+    await expect(handle).toHaveCSS("top", pad);
+    await expect(handle).toHaveCSS("right", pad);
+    const handleBox = await handle.boundingBox();
+    const nameBox = await card.locator(".olp-person-identity").boundingBox();
+    expect(handleBox && nameBox).toBeTruthy();
+    if (!handleBox || !nameBox) continue;
+    expect(handleBox.width).toBeGreaterThanOrEqual(44);
+    expect(handleBox.height).toBeGreaterThanOrEqual(44);
+    expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(handleBox.x + 1);
+  }
+}
+
 async function shot(page: Page, width: number, name: string) {
   await settle(page);
   await page.screenshot({
@@ -136,6 +161,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.locator('[data-testid^="person-card-more-cant_eat-"]')).toHaveCount(1);
   await expect(page.locator('[data-testid^="person-card-more-doesnt_like-"]')).toHaveCount(1);
   await expect(page.locator('[data-testid^="person-card-more-loves-"]')).toHaveCount(1);
+  await expectPeopleDragHandlesTopRight(page);
   await shot(page, width, "people-list");
 
   await page.goto(urls.tyHref);
