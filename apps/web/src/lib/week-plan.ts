@@ -274,7 +274,7 @@ export async function loadWeekKitchen(
     const check = whoCanEat({
       people,
       rules,
-      ingredients: [{ id: `shop-${index}`, name: item.name }],
+      ingredients: [{ id: item.key || `shop-${item.name}`, name: item.name }],
     });
     return {
       key: item.key || shopItemKey(item.name, item.displayUnit ?? item.unit),
