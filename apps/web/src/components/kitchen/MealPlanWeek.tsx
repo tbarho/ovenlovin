@@ -292,9 +292,14 @@ export function MealPlanWeek({
           },
         ];
     const ok = await persist(nextEntries);
-    if (ok && cleared && previous.length > 0) {
+    if (ok) {
       const weekday = days.find((day) => day.date === date)?.weekday ?? "that night";
-      setToast({ message: `Cleared ${weekday} dinner`, undoEntries: previous });
+      const message = cleared
+        ? `Cleared ${weekday} dinner`
+        : next.freeformMeal
+          ? `Marked ${weekday} as no-cook`
+          : `Updated ${weekday} dinner`;
+      setToast({ message, undoEntries: previous });
     }
   }
 

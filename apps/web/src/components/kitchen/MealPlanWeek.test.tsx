@@ -119,6 +119,24 @@ describe("MealPlanWeek", () => {
         ],
       }),
     });
+    expect(screen.getByText("Updated Monday dinner")).toBeVisible();
+
+    vi.mocked(api).mockClear();
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
+      method: "PATCH",
+      body: JSON.stringify({
+        entries: [
+          {
+            date: "2026-10-12",
+            meal: "dinner",
+            recipeId: "recipe-pesto",
+            servings: 4,
+            attendees: [],
+          },
+        ],
+      }),
+    });
   });
 
   it("marks a night as no-cook and can clear a planned dinner", async () => {
@@ -159,6 +177,7 @@ describe("MealPlanWeek", () => {
         ],
       }),
     });
+    expect(screen.getByText("Marked Monday as no-cook")).toBeVisible();
 
     vi.mocked(api).mockClear();
     await user.click(screen.getByRole("button", { name: "Clear night" }));
