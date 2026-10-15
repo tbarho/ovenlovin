@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (body.entries) {
-      await service.replaceMealPlanEntries(plan.id, body.entries);
+      await service.replaceMealPlanEntries(plan.id, body.entries, { recordHistory: false });
     }
 
     const detail = await service.getMealPlanWithEntries(plan.id);

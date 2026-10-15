@@ -8,6 +8,7 @@
     "get-person-rules",
     "save-meal-plan",
     "get-meal-plan",
+    "edit-meal-plan",
     "export-shopping-list",
     "import-recipe",
     "import-recipe-from-image",

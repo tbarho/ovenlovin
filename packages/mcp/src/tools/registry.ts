@@ -8,6 +8,7 @@ import { checkMealPlanTool } from "./check-meal-plan";
 import { exportShoppingListTool } from "./export-shopping-list";
 import { saveMealPlanTool } from "./save-meal-plan";
 import { getMealPlanTool } from "./get-meal-plan";
+import { editMealPlanTool } from "./edit-meal-plan";
 import { listCookbooksTool } from "./list-cookbooks";
 import { getCookbookTool } from "./get-cookbook";
 import { manageCookbookTool } from "./manage-cookbook";
@@ -39,6 +40,7 @@ export const MCP_TOOLS = [
   exportShoppingListTool,
   saveMealPlanTool,
   getMealPlanTool,
+  editMealPlanTool,
   deleteMealPlanTool,
   listCookbooksTool,
   getCookbookTool,

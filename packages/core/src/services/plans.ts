@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { eq, and, isNull, desc, gte, lte, inArray } from "drizzle-orm";
 import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db";
 import type {
@@ -5,9 +6,10 @@ import type {
   MealPlanEntry,
   MealPlanEntryPatch,
   MealPlanEntryWrite,
+  MealPlanRevision,
 } from "../schemas/plans";
+import { mealPlanEntryWriteFromRow, planMealPlanEntryMerge } from "../plans/merge-entries";
 import { parseShoppingTripState } from "../schemas/shopping-trip";
-import { planMealPlanEntryMerge } from "../plans/merge-entries";
 import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
@@ -128,8 +130,12 @@ export class PlanService extends BaseService {
 
   async replaceMealPlanEntries(
     planId: string,
-    entries: MealPlanEntryWrite[]
+    entries: MealPlanEntryWrite[],
+    options?: { recordHistory?: boolean }
   ): Promise<MealPlanEntry[]> {
+    if (options?.recordHistory !== false) {
+      await this.recordPlanRevision(planId, "replace");
+    }
     await this._db
       .update(mealPlanEntry)
       .set({ deletedAt: new Date() })
@@ -172,6 +178,9 @@ export class PlanService extends BaseService {
   ): Promise<{ entries: MealPlanEntry[]; previous: MealPlanEntry[] }> {
     const existing = await this.getMealPlanEntries(planId);
     const plan = planMealPlanEntryMerge(existing, patches);
+    if (plan.clearIds.length > 0 || plan.upserts.length > 0) {
+      await this.recordPlanRevision(planId, "merge", existing);
+    }
 
     if (plan.clearIds.length > 0) {
       await this._db
@@ -229,6 +238,68 @@ export class PlanService extends BaseService {
       .returning();
 
     return updated ? this.mapMealPlanEntry(updated) : null;
+  }
+
+  async getPlanHistory(planId: string): Promise<MealPlanRevision[]> {
+    const [row] = await this._db
+      .select({ editHistory: mealPlan.editHistory })
+      .from(mealPlan)
+      .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)))
+      .limit(1);
+    const history = (row?.editHistory ?? []) as MealPlanRevision[];
+    return [...history].reverse();
+  }
+
+  async recordPlanRevision(
+    planId: string,
+    action: MealPlanRevision["action"],
+    existing?: MealPlanEntry[]
+  ): Promise<void> {
+    const entries = existing ?? (await this.getMealPlanEntries(planId));
+    const [row] = await this._db
+      .select({ editHistory: mealPlan.editHistory })
+      .from(mealPlan)
+      .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)))
+      .limit(1);
+    const current = (row?.editHistory ?? []) as MealPlanRevision[];
+    const next: MealPlanRevision[] = [
+      ...current,
+      {
+        id: randomUUID(),
+        createdAt: new Date().toISOString(),
+        action,
+        entries: entries.map(mealPlanEntryWriteFromRow),
+      },
+    ].slice(-20);
+    await this._db
+      .update(mealPlan)
+      .set({ editHistory: next, updatedAt: new Date() })
+      .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)));
+  }
+
+  async undoLastPlanEdit(planId: string): Promise<{
+    entries: MealPlanEntry[];
+    previous: MealPlanEntry[];
+    restored: MealPlanRevision;
+  } | null> {
+    const [row] = await this._db
+      .select({ editHistory: mealPlan.editHistory })
+      .from(mealPlan)
+      .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)))
+      .limit(1);
+    const history = (row?.editHistory ?? []) as MealPlanRevision[];
+    const last = history[history.length - 1];
+    if (!last) return null;
+
+    const previous = await this.getMealPlanEntries(planId);
+    await this._db
+      .update(mealPlan)
+      .set({ editHistory: history.slice(0, -1), updatedAt: new Date() })
+      .where(and(eq(mealPlan.id, planId), isNull(mealPlan.deletedAt)));
+    const entries = await this.replaceMealPlanEntries(planId, last.entries, {
+      recordHistory: false,
+    });
+    return { entries, previous, restored: last };
   }
 
   async getMealPlanWithEntries(

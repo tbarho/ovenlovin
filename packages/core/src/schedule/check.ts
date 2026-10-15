@@ -42,12 +42,15 @@ export function scheduleIssuesForNight(input: {
   recipeTitle: string;
   recipeTotalMinutes: number | null;
   night: WeeklyNight | undefined;
+  /** Recipe nights only. Freeform leftovers / no-cook labels are valid on a rest night. */
+  plannedCooking?: boolean;
 }): ScheduleIssue[] {
   const issues: ScheduleIssue[] = [];
   const night = input.night;
   if (!night) return issues;
 
   if (!night.cooking) {
+    if (input.plannedCooking === false) return issues;
     issues.push({
       type: "not_cooking_night",
       message: `"${input.recipeTitle}" is planned on ${night.day}, which is marked as not a cooking night.`,

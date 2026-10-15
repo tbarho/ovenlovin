@@ -165,4 +165,12 @@ export type UpdateMealPlanBody = z.infer<typeof updateMealPlanBodySchema>;
 export type CheckFindingSeverity = z.infer<typeof checkFindingSeveritySchema>;
 export type CheckFinding = z.infer<typeof checkFindingSchema>;
 export type CheckResult = z.infer<typeof checkResultSchema>;
+export const mealPlanRevisionSchema = z.object({
+  id: z.string().uuid(),
+  createdAt: z.string(),
+  action: z.enum(["merge", "replace", "undo"]),
+  entries: z.array(mealPlanEntryWriteSchema),
+});
+
 export type CheckReport = z.infer<typeof checkReportSchema>;
+export type MealPlanRevision = z.infer<typeof mealPlanRevisionSchema>;

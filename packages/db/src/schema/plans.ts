@@ -78,6 +78,24 @@ export const mealPlan = pgTable("meal_plan", {
   checkedAt: timestamp("checked_at", { withTimezone: true }),
   contentHash: varchar("content_hash", { length: 64 }),
   acknowledgedWarnings: jsonb("acknowledged_warnings").$type<string[]>().default([]),
+  editHistory: jsonb("edit_history")
+    .$type<
+      Array<{
+        id: string;
+        createdAt: string;
+        action: string;
+        entries: Array<{
+          date: string;
+          meal: string;
+          recipeId?: string;
+          freeformMeal?: string;
+          servings?: number;
+          attendees?: string[];
+          prepAheadNotes?: string;
+        }>;
+      }>
+    >()
+    .default([]),
   needsRecheck: boolean("needs_recheck").default(false),
   shoppingState: jsonb("shopping_state").$type<{
     checkedKeys: string[];

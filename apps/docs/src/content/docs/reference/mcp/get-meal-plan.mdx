@@ -7,12 +7,12 @@ Get a saved meal plan with enriched recipe details, attendee information, and ch
 
 ## Input Schema
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `planId` | string (UUID) | No* | Meal plan ID to retrieve |
-| `weekStart` | string (date) | No* | Week start date (YYYY-MM-DD) to find plan for |
+| Parameter   | Type          | Required | Description                                   |
+| ----------- | ------------- | -------- | --------------------------------------------- |
+| `planId`    | string (UUID) | No\*     | Meal plan ID to retrieve                      |
+| `weekStart` | string (date) | No\*     | Week start date (YYYY-MM-DD) to find plan for |
 
-*Either `planId` or `weekStart` must be provided.
+\*Either `planId` or `weekStart` must be provided.
 
 ## Output Schema
 
@@ -29,8 +29,9 @@ Get a saved meal plan with enriched recipe details, attendee information, and ch
       title: string,
       prepTimeMinutes?: number,
       cookTimeMinutes?: number
-    },
-    servings: number,
+    } | null,
+    freeformMeal?: string,
+    servings: number | null,
     attendees: Array<{
       id: string,
       displayName: string
@@ -132,11 +133,13 @@ Get a saved meal plan with enriched recipe details, attendee information, and ch
 ## Lookup Behavior
 
 ### By planId
+
 - Returns exact plan matching the ID
 - Throws error if not found
 - Fastest lookup method
 
 ### By weekStart
+
 - Returns the first plan matching that week start date
 - Returns error if no plan exists for that week
 - Use when you know the week but not the plan ID

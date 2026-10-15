@@ -32,8 +32,9 @@ export interface GetMealPlanOutput {
       title: string;
       prepTimeMinutes?: number;
       cookTimeMinutes?: number;
-    };
-    servings: number;
+    } | null;
+    freeformMeal?: string;
+    servings: number | null;
     attendees: Array<{
       id: string;
       displayName: string;
@@ -109,8 +110,9 @@ async function handler(input: GetMealPlanInput, context: AuthContext): Promise<G
       return {
         date: entry.date,
         meal: entry.mealSlot,
-        recipe: recipe ?? { id: entry.recipeId ?? "", title: "[Unknown]" },
-        servings: entry.servings ?? 0,
+        recipe: recipe,
+        freeformMeal: entry.freeformMeal ?? undefined,
+        servings: entry.servings ?? null,
         attendees: attendeeDetails.filter((a): a is NonNullable<typeof a> => a !== null),
         prepAheadNotes: entry.prepAheadNotes ?? undefined,
       };
@@ -146,7 +148,8 @@ async function handler(input: GetMealPlanInput, context: AuthContext): Promise<G
 
 export const getMealPlanTool = {
   name: "get_meal_plan",
-  description: "Get a saved meal plan by ID or week start date.",
+  description:
+    "Get a saved meal plan by ID or week start date. Freeform nights (leftovers, no-cook) return freeformMeal and servings with recipe=null.",
   inputSchema: getMealPlanSchema,
   handler,
 } as const;

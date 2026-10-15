@@ -850,6 +850,31 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   });
 
   registry.registerPath({
+    method: "post",
+    path: "/meal-plans/{id}/undo",
+    tags: ["meal-plans"],
+    summary: "Undo the last entries edit",
+    description:
+      "Restores the previous week snapshot recorded on merge/replace PATCH. Returns the plan plus previousEntries (the state that was undone).",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: { description: "Restored plan" },
+      404: { description: "Plan or revision not found" },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/meal-plans/{id}/history",
+    tags: ["meal-plans"],
+    summary: "List recent meal-plan entry snapshots (newest first)",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: { description: "Revision list" },
+    },
+  });
+
+  registry.registerPath({
     method: "get",
     path: "/meal-plans/{id}/check",
     tags: ["meal-plans"],

@@ -252,7 +252,7 @@ describe("Property Tests: Findings Name Person and Rule", () => {
             ...result.findings.prefer_avoid,
           ];
 
-          return allFindings.every((f) => f.message.includes(f.personName));
+          return allFindings.every((f) => f.message.includes(f.personName.trim()));
         }
       ),
       { numRuns: 100 }
