@@ -2519,6 +2519,23 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   border-color: #f0c9a0;
 }
 
+.week-unsafe {
+  display: grid;
+  gap: 8px;
+}
+
+.week-unsafe-toggle {
+  width: 100%;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
 .kitchen-toast {
   position: fixed;
   left: 16px;

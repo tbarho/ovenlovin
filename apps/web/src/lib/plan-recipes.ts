@@ -37,6 +37,46 @@ export function saferPicks(
   );
 }
 
+export function recipeNeedsPlanConfirm(recipe: PlanRecipePick): boolean {
+  return recipe.safety === "block" || recipe.safety === "warn";
+}
+
+export function planRiskConfirmCopy(
+  recipe: PlanRecipePick,
+  weekday: string
+): { title: string; body: string } {
+  const why = recipe.warning?.trim() || "This recipe may not be safe for everyone on the plan.";
+  return {
+    title: `Add ${recipe.title} to ${weekday}?`,
+    body: `${why} Add it to the plan anyway? This will not hide the warning.`,
+  };
+}
+
+export function partitionPlanRecipes(
+  recipes: PlanRecipePick[],
+  query: string,
+  currentRecipeId: string | null
+): {
+  safer: PlanRecipePick[];
+  safe: PlanRecipePick[];
+  unsafe: PlanRecipePick[];
+} {
+  const filtered = filterPlanRecipes(recipes, query);
+  const ok = filtered.filter((recipe) => recipe.safety === "ok");
+  const risky = filtered.filter((recipe) => recipe.safety !== "ok");
+  const safer =
+    !query.trim() && risky.length > 0
+      ? ok.filter((recipe) => recipe.id !== currentRecipeId).slice(0, 3)
+      : [];
+  const saferIds = new Set(safer.map((recipe) => recipe.id));
+  const currentRisky = risky.filter((recipe) => recipe.id === currentRecipeId);
+  return {
+    safer,
+    safe: [...ok.filter((recipe) => !saferIds.has(recipe.id)), ...currentRisky],
+    unsafe: risky.filter((recipe) => recipe.id !== currentRecipeId),
+  };
+}
+
 export function dinnerEntryForDate<T extends { date: string; mealSlot: string }>(
   entries: T[],
   date: string

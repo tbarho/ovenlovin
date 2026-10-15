@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { applyDinnerToDays, filterPlanRecipes, saferPicks } from "./plan-recipes";
+import {
+  applyDinnerToDays,
+  filterPlanRecipes,
+  partitionPlanRecipes,
+  planRiskConfirmCopy,
+  recipeNeedsPlanConfirm,
+  saferPicks,
+} from "./plan-recipes";
 import { groupMealsByDate } from "./week-plan-view";
 import type { PlanRecipePick } from "./week-plan-view";
 
@@ -57,6 +64,49 @@ describe("saferPicks", () => {
   it("does not invent swaps when nothing is blocked", () => {
     const tacos = pick({ id: "tacos", title: "Veggie tacos", safety: "ok" });
     expect(saferPicks([tacos], "tacos", [])).toEqual([]);
+  });
+});
+
+describe("partitionPlanRecipes", () => {
+  const pesto = pick({
+    id: "pesto",
+    title: "Weeknight pesto pasta",
+    safety: "block",
+    warning: "Contains pine nuts, so Child B can't eat this",
+  });
+  const tacos = pick({ id: "tacos", title: "Veggie tacos", safety: "ok" });
+  const chili = pick({ id: "chili", title: "Beef chili", safety: "warn" });
+
+  it("shows safer picks first and keeps other risk recipes collapsed", () => {
+    const groups = partitionPlanRecipes([pesto, chili, tacos], "", null);
+    expect(groups.safer.map((recipe) => recipe.id)).toEqual(["tacos"]);
+    expect(groups.safe.map((recipe) => recipe.id)).toEqual([]);
+    expect(groups.unsafe.map((recipe) => recipe.id)).toEqual(["chili", "pesto"]);
+  });
+
+  it("keeps the current risky dinner visible instead of collapsing it", () => {
+    const groups = partitionPlanRecipes([pesto, tacos], "", "pesto");
+    expect(groups.safer.map((recipe) => recipe.id)).toEqual(["tacos"]);
+    expect(groups.safe.map((recipe) => recipe.id)).toEqual(["pesto"]);
+    expect(groups.unsafe).toEqual([]);
+  });
+});
+
+describe("plan risk confirm copy", () => {
+  it("names the person and allergen before adding a blocked recipe", () => {
+    const kungPao = pick({
+      id: "kung-pao",
+      title: "Kung pao chicken",
+      safety: "block",
+      warning: "Contains peanuts, so Child B can't eat this. Anaphylaxis risk",
+    });
+    expect(recipeNeedsPlanConfirm(kungPao)).toBe(true);
+    expect(recipeNeedsPlanConfirm(pick({ id: "tacos", title: "Veggie tacos" }))).toBe(false);
+    const copy = planRiskConfirmCopy(kungPao, "Sunday");
+    expect(copy.title).toContain("Kung pao chicken");
+    expect(copy.title).toContain("Sunday");
+    expect(copy.body).toContain("Child B");
+    expect(copy.body).toContain("peanuts");
   });
 });
 
