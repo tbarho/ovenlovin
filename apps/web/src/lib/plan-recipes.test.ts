@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterPlanRecipes, saferPicks } from "./plan-recipes";
-import type { PlanRecipePick } from "./week-plan";
+import type { PlanRecipePick } from "./week-plan-view";
 
 function pick(
   overrides: Partial<PlanRecipePick> & Pick<PlanRecipePick, "id" | "title">

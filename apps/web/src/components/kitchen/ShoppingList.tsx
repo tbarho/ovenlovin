@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ShopItem } from "@/lib/week-plan";
+import type { ShopItem } from "@/lib/week-plan-view";
 
 export function ShoppingList({ items }: { items: ShopItem[] }) {
   const [checked, setChecked] = useState<Record<string, boolean>>({});

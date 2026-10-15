@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
-import { groupMealsByDate, type PlanRecipePick, type WeekMeal } from "@/lib/week-plan";
+import { groupMealsByDate, type PlanRecipePick, type WeekMeal } from "@/lib/week-plan-view";
 import { MealPlanWeek } from "./MealPlanWeek";
 
 const pesto: WeekMeal = {

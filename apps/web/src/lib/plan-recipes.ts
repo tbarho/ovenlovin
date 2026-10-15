@@ -1,4 +1,4 @@
-import type { PlanRecipePick, WeekFinding } from "@/lib/week-plan";
+import type { PlanRecipePick, WeekFinding } from "@/lib/week-plan-view";
 
 const SAFETY_RANK: Record<PlanRecipePick["safety"], number> = {
   ok: 0,

@@ -12,7 +12,7 @@ import {
   type PlanRecipePick,
   type WeekDay,
   type WeekMeal,
-} from "@/lib/week-plan";
+} from "@/lib/week-plan-view";
 
 type MealPlanWrite = { id: string };
 
