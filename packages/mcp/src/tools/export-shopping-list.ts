@@ -12,6 +12,7 @@ import {
   PeopleService,
   ShoppingListService,
   collectShoppingListEntries,
+  planEntriesForWeek,
   resolveIncludeStaples,
   type ShoppingListData,
 } from "@ovenlovin/core";
@@ -72,7 +73,7 @@ async function handler(
     throw new Error("Unauthorized access to meal plan");
   }
 
-  const entries = await planService.getMealPlanEntries(plan.id);
+  const entries = planEntriesForWeek(await planService.getMealPlanEntries(plan.id), plan.weekStart);
   const sources = await collectShoppingListEntries(entries, {
     getRecipe: (id) => recipeService.getRecipe(id),
     getIngredients: async (id) => {

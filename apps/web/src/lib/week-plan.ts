@@ -6,6 +6,7 @@ import {
   ShoppingListService,
   emptyShoppingTripState,
   parseShoppingTripState,
+  planEntriesForWeek,
   shopItemKey,
   type MealPlan,
   type MealPlanEntry,
@@ -186,7 +187,7 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
     };
   }
 
-  const entries = await plans.getMealPlanEntries(plan.id);
+  const entries = planEntriesForWeek(await plans.getMealPlanEntries(plan.id), weekStart);
   const recipeIds = [
     ...new Set(entries.map((entry) => entry.recipeId).filter(Boolean)),
   ] as string[];
