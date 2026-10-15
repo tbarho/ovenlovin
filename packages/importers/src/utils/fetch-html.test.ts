@@ -6,9 +6,13 @@ import {
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
   fetchHtml,
+  googleTranslateUrl,
   isUsableRecipeHtml,
   looksLikeBotChallenge,
+  looksLikeWaybackShell,
   jinaReaderUrl,
+  relatedRecipeUrls,
+  waybackIdentityUrl,
   waybackMachineUrl,
 } from "./fetch-html";
 import { createUrlImporter } from "../importers/url";
@@ -107,10 +111,11 @@ describe("fetchHtml layers", () => {
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
   });
 
-  it("falls back to the Wayback Machine when direct and headless fail", async () => {
+  it("uses a public cache before headless Chromium so Vercel does not time out", async () => {
     const live = "https://www.budgetbytes.com/beef-stroganoff/";
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === live) {
+    const renderPage = vi.fn().mockResolvedValue(CHALLENGE);
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested === live) {
         return {
           ok: false,
           status: 403,
@@ -119,32 +124,52 @@ describe("fetchHtml layers", () => {
           text: async () => CHALLENGE,
         };
       }
-      expect(url).toBe(waybackMachineUrl(live));
+      if (requested.includes("archive.org")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () =>
+            requested.includes("available")
+              ? '{"archived_snapshots":{}}'
+              : BUDGET,
+        };
+      }
       return {
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        url,
-        text: async () => BUDGET,
+        ok: false,
+        status: 451,
+        statusText: "Unavailable For Legal Reasons",
+        url: requested,
+        text: async () => "excluded",
       };
     });
 
     const result = await fetchHtml(live, {
       fetchImpl: fetchMock as unknown as typeof fetch,
-      renderPage: async () => CHALLENGE,
+      renderPage,
     });
     expect(result.via).toBe("cache");
     expect(result.url).toBe(live);
     expect(extractJsonLd(result.html)?.name).toBe("Beef Stroganoff");
+    expect(renderPage).not.toHaveBeenCalled();
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("web/2id_"))).toBe(true);
+    expect(waybackIdentityUrl(live)).toContain("web/2id_/");
+    expect(waybackMachineUrl(live)).toContain("web/2/");
   });
 
   it("uses the Jina HTML copy when Wayback is blocked", async () => {
     const live = "https://natashaskitchen.com/beef-stroganoff/";
     const fetchMock = vi.fn(async (requested: string) => {
-      if (requested === live || requested.includes("web.archive.org")) {
+      if (
+        requested === live ||
+        requested.includes("archive.org") ||
+        requested.includes("translate.google") ||
+        requested.includes("translate.goog")
+      ) {
         return {
           ok: false,
-          status: 403,
+          status: requested.includes("jina") ? 451 : 403,
           statusText: "Forbidden",
           url: requested,
           text: async () => CHALLENGE,
@@ -166,6 +191,71 @@ describe("fetchHtml layers", () => {
     });
     expect(result.via).toBe("cache");
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
+  });
+
+  it("uses the Google Translate copy when Wayback and Jina are blocked", async () => {
+    const live = "https://www.allrecipes.com/recipe/26317/chicken-pot-pie-ix/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested === googleTranslateUrl(live) || requested.includes("translate.goog")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => NATASHA,
+        };
+      }
+      return {
+        ok: false,
+        status: requested.includes("jina") ? 451 : 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
+  });
+
+  it("tries Cookbook:Pancake when Cookbook:Pancakes is a 404", async () => {
+    const missing = "https://en.wikibooks.org/wiki/Cookbook:Pancakes";
+    const live = relatedRecipeUrls(missing)[0];
+    expect(live).toBe("https://en.wikibooks.org/wiki/Cookbook:Pancake");
+    const html = fixture("wikibooks-pancakes.html");
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested === missing) {
+        return {
+          ok: false,
+          status: 404,
+          statusText: "Not Found",
+          url: requested,
+          text: async () => "<html><title>Cookbook:Pancakes</title><body>No such page</body></html>",
+        };
+      }
+      if (requested === live) {
+        return { ok: true, status: 200, statusText: "OK", url: live, text: async () => html };
+      }
+      return { ok: false, status: 403, statusText: "Forbidden", url: requested, text: async () => "" };
+    });
+
+    const result = await fetchHtml(missing, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+    });
+    expect(result.via).toBe("direct");
+    expect(result.html).toMatch(/Ingredients/);
+  });
+
+  it("treats a Wayback Athena shell as unusable", () => {
+    const shell =
+      "<html><head><title>Wayback Machine</title><script src='https://web.archive.org/athena.js'></script></head><body>playback</body></html>";
+    expect(looksLikeWaybackShell(shell)).toBe(true);
+    expect(isUsableRecipeHtml(shell)).toBe(false);
   });
 
   it("returns Wikibooks HTML that has no JSON-LD instead of calling it blocked", async () => {

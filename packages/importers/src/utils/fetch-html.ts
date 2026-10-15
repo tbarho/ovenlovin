@@ -35,7 +35,8 @@ export const FULL_BROWSER_HEADERS: Record<string, string> = {
   "sec-fetch-user": "?1",
 };
 
-const BLOCKED_STATUSES = new Set([401, 402, 403, 406, 429, 503]);
+const BLOCKED_STATUSES = new Set([401, 402, 403, 406, 429, 451, 503]);
+const CACHE_FETCH_MS = 12_000;
 
 let installedRenderer: RecipePageRenderer | undefined;
 
@@ -79,26 +80,81 @@ export function looksLikeBotChallenge(html: string): boolean {
   );
 }
 
+/** Wayback Athena / JS playback shell: not the archived article. */
+export function looksLikeWaybackShell(html: string): boolean {
+  const head = html.slice(0, 12_000).toLowerCase();
+  if (head.includes("athena.js") || head.includes("playback.bundle.js")) return true;
+  const titledWayback = /<title>[^<]*wayback machine[^<]*<\/title>/i.test(html.slice(0, 4000));
+  return titledWayback && html.length < 20_000 && !/application\/ld\+json/i.test(html);
+}
+
 export function isUsableRecipeHtml(html: string): boolean {
-  if (!html || looksLikeBotChallenge(html)) return false;
+  if (!html || looksLikeBotChallenge(html) || looksLikeWaybackShell(html)) return false;
   const compact = html.replace(/\s+/g, " ").trim();
   if (compact.length < 400) return false;
-  return (
-    (/application\/ld\+json/i.test(html) && /Recipe/i.test(html)) ||
-    /itemprop=["']recipe/i.test(html) ||
-    /<(h1|h2|h3|h4)[^>]*>[^<]{0,80}(ingredient|procedure|instruction|direction|method)/i.test(
+  if (/application\/ld\+json/i.test(html) && /Recipe/i.test(html)) return true;
+  if (/itemprop=["']recipe/i.test(html)) return true;
+  if (/h-ingredient|p-ingredient|ingredient-name/i.test(html)) return true;
+  if (
+    /<(h1|h2|h3|h4)[^>]*>[\s\S]{0,240}(ingredient|procedure|instruction|direction|method)/i.test(
       html
-    ) ||
-    /["']Recipe["']/.test(html)
-  );
+    )
+  ) {
+    return true;
+  }
+  if (/["']Recipe["']/.test(html)) return true;
+  return looksLikeMarkdownRecipe(html);
+}
+
+export function looksLikeMarkdownRecipe(text: string): boolean {
+  if (!text || looksLikeBotChallenge(text)) return false;
+  const compact = text.replace(/\s+/g, " ").trim();
+  if (compact.length < 400) return false;
+  const hasIngredients =
+    /^#{1,4}\s+ingredients?\b/im.test(text) ||
+    /\bingredients?\b/i.test(text.slice(0, 12_000)) ||
+    /[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612]/.test(text);
+  const hasSteps =
+    /^#{1,4}\s+(instructions?|directions?|method|procedure|steps?)\b/im.test(text) ||
+    /\b(instructions?|directions?|method|procedure)\b/i.test(text);
+  return hasIngredients && hasSteps;
 }
 
 export function waybackMachineUrl(url: string): string {
   return `https://web.archive.org/web/2/${url}`;
 }
 
+export function waybackIdentityUrl(url: string): string {
+  return `https://web.archive.org/web/2id_/${url}`;
+}
+
+export function waybackSnapshotIdentityUrl(timestamp: string, url: string): string {
+  return `https://web.archive.org/web/${timestamp}id_/${url}`;
+}
+
+export function waybackAvailableUrl(url: string): string {
+  return `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`;
+}
+
 export function jinaReaderUrl(url: string): string {
   return `https://r.jina.ai/${url}`;
+}
+
+/** People Inc. sites (Allrecipes, Simply Recipes) exclude Jina; this copy still has JSON-LD. */
+export function googleTranslateUrl(url: string): string {
+  return `https://translate.google.com/translate?sl=auto&tl=en&u=${encodeURIComponent(url)}`;
+}
+
+export function translateGoogUrl(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return googleTranslateUrl(url);
+  }
+  const host = parsed.hostname.replace(/\./g, "-");
+  const query = parsed.search ? `${parsed.search}&` : "?";
+  return `https://${host}.translate.goog${parsed.pathname}${query}_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en`;
 }
 
 export type PublicCopy = {
@@ -106,26 +162,57 @@ export type PublicCopy = {
   headers?: Record<string, string>;
 };
 
-/** Free public copies: Wayback first, then Jina Reader HTML (no API key). */
+/**
+ * Free public copies. Wayback identity first (raw HTML, no Athena toolbar),
+ * then rewritten Wayback, Jina HTML, Jina markdown, Google Translate.
+ */
 export function publicCopyRequests(url: string): PublicCopy[] {
   return [
+    { url: waybackIdentityUrl(url) },
     { url: waybackMachineUrl(url) },
     { url: jinaReaderUrl(url), headers: { "X-Return-Format": "html" } },
+    { url: jinaReaderUrl(url) },
+    { url: googleTranslateUrl(url) },
+    { url: translateGoogUrl(url) },
   ];
+}
+
+/** Wikibooks Cookbook:Pancakes is a 404; Cookbook:Pancake is the live page. */
+export function relatedRecipeUrls(url: string): string[] {
+  try {
+    const parsed = new URL(url);
+    if (!/wikibooks\.org$/i.test(parsed.hostname)) return [];
+    const match = parsed.pathname.match(/^(.*\/Cookbook:[^/]+?)s\/?$/i);
+    if (!match?.[1]) return [];
+    const next = new URL(parsed.href);
+    next.pathname = match[1];
+    return next.href !== url ? [next.href] : [];
+  } catch {
+    return [];
+  }
 }
 
 function cacheFallbackEnabled(env: Record<string, string | undefined>): boolean {
   return env.RECIPE_IMPORT_CACHE_FALLBACK !== "0";
 }
 
+function abortSignal(ms: number): AbortSignal | undefined {
+  const timeout = (
+    globalThis.AbortSignal as { timeout?: (value: number) => AbortSignal } | undefined
+  )?.timeout;
+  return typeof timeout === "function" ? timeout(ms) : undefined;
+}
+
 async function readResponse(
   fetchImpl: typeof fetch,
   url: string,
-  extraHeaders?: Record<string, string>
+  extraHeaders?: Record<string, string>,
+  timeoutMs = CACHE_FETCH_MS
 ): Promise<{ ok: boolean; status: number; statusText: string; html: string; finalUrl: string }> {
   const response = await fetchImpl(url, {
     headers: { ...FULL_BROWSER_HEADERS, ...extraHeaders },
     redirect: "follow",
+    signal: abortSignal(timeoutMs),
   });
   const html = await response.text();
   return {
@@ -137,11 +224,48 @@ async function readResponse(
   };
 }
 
+async function usableCopy(
+  fetchImpl: typeof fetch,
+  url: string,
+  extraHeaders?: Record<string, string>
+): Promise<FetchResult | null> {
+  const cached = await readResponse(fetchImpl, url, extraHeaders);
+  if (cached.ok && isUsableRecipeHtml(cached.html)) {
+    return { html: cached.html, url, finalUrl: url, via: "cache" };
+  }
+  return null;
+}
+
+type WaybackAvailable = {
+  archived_snapshots?: { closest?: { timestamp?: string; status?: string } };
+};
+
+async function resolveWaybackSnapshot(
+  fetchImpl: typeof fetch,
+  url: string
+): Promise<string | null> {
+  try {
+    const response = await readResponse(
+      fetchImpl,
+      waybackAvailableUrl(url),
+      { Accept: "application/json" },
+      8_000
+    );
+    if (!response.ok) return null;
+    const data = JSON.parse(response.html) as WaybackAvailable;
+    const closest = data.archived_snapshots?.closest;
+    if (!closest?.timestamp || closest.status !== "200") return null;
+    return waybackSnapshotIdentityUrl(closest.timestamp, url);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Layered recipe-page fetch:
- * 1. Direct HTTP with a full browser header set
- * 2. Optional headless Chromium (injected renderer)
- * 3. Public copies: Wayback Machine, then Jina Reader HTML
+ * 1. Direct HTTP with a full browser header set (plus close URL variants)
+ * 2. Public copies first so Vercel 10s limits do not die in headless Chromium
+ * 3. Optional headless Chromium last
  */
 export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Promise<FetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -150,17 +274,38 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
 
   let lastStatus = 403;
   let lastStatusText = "Forbidden";
+  const candidates = [url, ...relatedRecipeUrls(url)];
 
-  try {
-    const direct = await readResponse(fetchImpl, url);
-    lastStatus = direct.status;
-    lastStatusText = direct.statusText;
-    if (direct.ok && isUsableRecipeHtml(direct.html)) {
-      return { html: direct.html, url, finalUrl: direct.finalUrl, via: "direct" };
+  for (const candidate of candidates) {
+    try {
+      const direct = await readResponse(fetchImpl, candidate);
+      lastStatus = direct.status;
+      lastStatusText = direct.statusText;
+      if (direct.ok && isUsableRecipeHtml(direct.html)) {
+        return { html: direct.html, url, finalUrl: direct.finalUrl, via: "direct" };
+      }
+    } catch {
+      lastStatus = 503;
+      lastStatusText = "Fetch failed";
     }
-  } catch {
-    lastStatus = 503;
-    lastStatusText = "Fetch failed";
+  }
+
+  if (cacheFallbackEnabled(env)) {
+    for (const candidate of candidates) {
+      const snapshot = await resolveWaybackSnapshot(fetchImpl, candidate);
+      const copies = [
+        ...(snapshot ? [{ url: snapshot }] : []),
+        ...publicCopyRequests(candidate),
+      ];
+      for (const copy of copies) {
+        try {
+          const hit = await usableCopy(fetchImpl, copy.url, copy.headers);
+          if (hit) return { ...hit, url };
+        } catch {
+          // try the next public copy
+        }
+      }
+    }
   }
 
   if (renderPage) {
@@ -170,20 +315,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
         return { html: rendered, url, finalUrl: url, via: "headless" };
       }
     } catch {
-      // fall through to public cache
-    }
-  }
-
-  if (cacheFallbackEnabled(env)) {
-    for (const copy of publicCopyRequests(url)) {
-      try {
-        const cached = await readResponse(fetchImpl, copy.url, copy.headers);
-        if (cached.ok && isUsableRecipeHtml(cached.html)) {
-          return { html: cached.html, url, finalUrl: url, via: "cache" };
-        }
-      } catch {
-        // try the next public copy
-      }
+      // already tried cache
     }
   }
 
