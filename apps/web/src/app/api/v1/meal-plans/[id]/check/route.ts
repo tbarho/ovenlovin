@@ -20,7 +20,7 @@ import {
   type PersonWithRules,
 } from "@ovenlovin/allergens";
 
-async function handleCheck(request: NextRequest, params: Promise<{ id: string }>) {
+async function handleCheck(request: NextRequest, params: Promise<{ id: string }>, persist = false) {
   const context = await getRequestContext(request);
   const householdId = requireHouseholdId(context);
 
@@ -96,11 +96,11 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
   };
 
   const checkResult = checkMealPlan(checkInput);
-
-  return jsonResponse({
+  const checkedAt = new Date().toISOString();
+  const report = {
     status: checkResult.status,
     planId: id,
-    checkedAt: new Date().toISOString(),
+    checkedAt,
     byEntry: checkResult.byEntry.map((entry) => {
       const stored = entries.find((row) => row.id === entry.entryId);
       const scheduleIssues = scheduleIssuesForNight({
@@ -118,12 +118,22 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
     byPerson: checkResult.byPerson,
     summary: checkResult.summary,
     incompleteReasons: checkResult.incompleteReasons,
-  });
+  };
+
+  if (persist) {
+    await planService.updateMealPlan(id, {
+      latestCheckReport: report,
+      checkedAt,
+      needsRecheck: false,
+    });
+  }
+
+  return jsonResponse(report);
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    return await handleCheck(request, context.params);
+    return await handleCheck(request, context.params, false);
   } catch (error) {
     return handleApiError(error, request.url);
   }
@@ -131,7 +141,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    return await handleCheck(request, context.params);
+    return await handleCheck(request, context.params, true);
   } catch (error) {
     return handleApiError(error, request.url);
   }

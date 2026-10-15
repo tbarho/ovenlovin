@@ -2323,6 +2323,11 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
 }
 
 .week-recheck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
   margin: -8px 0 var(--space-3);
   padding: 12px 14px;
   border: 1px solid #f1d2a4;
@@ -2330,6 +2335,11 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   background: #fff8ec;
   color: #8a5a12;
   font-size: 14px;
+}
+
+.week-recheck p {
+  margin: 0;
+  flex: 1 1 220px;
 }
 
 .week-plan {
