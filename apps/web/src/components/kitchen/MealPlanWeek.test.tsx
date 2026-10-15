@@ -164,7 +164,9 @@ describe("MealPlanWeek", () => {
     await user.click(screen.getByRole("button", { name: "Clear night" }));
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
-      body: JSON.stringify({ entries: [] }),
+      body: JSON.stringify({
+        entries: [{ date: "2026-10-12", meal: "dinner", clear: true }],
+      }),
     });
     expect(screen.getByText("Cleared Monday dinner")).toBeVisible();
 
