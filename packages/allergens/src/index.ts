@@ -109,6 +109,7 @@ export {
   loveLabel,
   loveTag,
   recipeHaystack,
+  recipeHasIngredients,
   recipeMatchesLove,
   lovesForRecipe,
   loveScore,
