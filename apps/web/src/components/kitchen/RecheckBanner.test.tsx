@@ -18,4 +18,11 @@ describe("RecheckBanner", () => {
     await user.click(screen.getByRole("button", { name: "Recheck now" }));
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1/check", { method: "POST" });
   });
+
+  it("names the nights that need a fresh check", () => {
+    render(<RecheckBanner planId="plan-1" nights={["Monday", "Wednesday"]} />);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "These dinners need a fresh check: Monday, Wednesday."
+    );
+  });
 });

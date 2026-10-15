@@ -2352,6 +2352,13 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   transition: opacity var(--motion-fast) var(--motion-ease);
 }
 
+.week-pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -8px 0 var(--space-3);
+}
+
 .week-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -2762,7 +2769,6 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
 
   .week-editor-slot {
     grid-column: 1 / -1;
-    order: 8;
   }
 
   .week-day {
