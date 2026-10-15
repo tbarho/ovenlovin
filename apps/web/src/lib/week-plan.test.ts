@@ -71,27 +71,47 @@ describe("week-plan view", () => {
       incompleteReasons: [],
       people: [
         {
-          personId: "jake",
-          personName: "Jake",
+          personId: "child-b",
+          personName: "Child B",
           mark: "block",
-          title: "Jake can't eat this",
-          reasons: ["Jake: pine nuts match a tree nut block."],
+          title: "Child B can't eat this",
+          reasons: ["Contains pine nuts, so Child B can't eat this"],
         },
         {
-          personId: "ty",
-          personName: "Ty",
+          personId: "parent-a",
+          personName: "Parent A",
           mark: "ok",
-          title: "Ty can eat this",
-          reasons: ["Nothing in this recipe matches Ty's rules."],
+          title: "Parent A can eat this",
+          reasons: ["Nothing in this recipe matches Parent A's rules."],
         },
       ],
     };
     expect(findingsFromCheck(check)).toEqual([
       {
-        personName: "Jake",
+        personName: "Child B",
         severity: "block",
-        message: "Jake: pine nuts match a tree nut block.",
+        message: "Contains pine nuts, so Child B can't eat this",
       },
     ]);
+  });
+
+  it("rewrites leftover machine codes before they reach the kitchen", () => {
+    const check: WhoCanEatResult = {
+      status: "complete",
+      incompleteReasons: [],
+      people: [
+        {
+          personId: "child-b",
+          personName: "Child B",
+          mark: "block",
+          title: "Child B can't eat this",
+          reasons: ['Child B (block: tree_nut). "pesto" contains pine nuts.'],
+        },
+      ],
+    };
+    const [finding] = findingsFromCheck(check);
+    expect(finding?.message).not.toMatch(/block\s*:/);
+    expect(finding?.message).not.toMatch(/tree_nut/);
+    expect(finding?.message).toMatch(/Child B/);
   });
 });

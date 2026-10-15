@@ -55,7 +55,8 @@ describe("checkIngredientAgainstRule", () => {
       expect(findings[0]?.severity).toBe("block");
       expect(findings[0]?.allergenCode).toBe("peanut");
       expect(findings[0]?.message).toContain("Child A");
-      expect(findings[0]?.message).toContain("block");
+      expect(findings[0]?.message).toMatch(/can't eat this/);
+      expect(findings[0]?.message).not.toMatch(/block\s*:/);
     });
 
     it("flags almonds for almond rule", () => {
@@ -284,7 +285,8 @@ describe("checkIngredientAgainstRule", () => {
       const findings = checkIngredientAgainstRule(ingredient, context);
 
       expect(findings).toHaveLength(1);
-      expect(findings[0]?.message).toContain("not mapped");
+      expect(findings[0]?.message).toMatch(/could not confirm/i);
+      expect(findings[0]?.message).toContain("mysterious paste");
     });
 
     it("does not flag unmapped when includeUnmappedIngredients=false", () => {
@@ -414,24 +416,27 @@ describe("checkIngredientAgainstRule", () => {
       expect(findings[0]?.message).toContain("Child A");
     });
 
-    it("includes severity in message", () => {
+    it("says the person cannot eat this instead of a severity code", () => {
       const rule = createRule({ target: "peanut", severity: "block" });
       const context = createContext("Child A", rule);
       const ingredient: IngredientCheckInput = { name: "peanut" };
 
       const findings = checkIngredientAgainstRule(ingredient, context);
 
-      expect(findings[0]?.message).toContain("block");
+      expect(findings[0]?.message).toMatch(/can't eat this/);
+      expect(findings[0]?.message).not.toMatch(/block\s*:/);
+      expect(findings[0]?.message).not.toMatch(/tree_nut|prefer_avoid/);
     });
 
-    it("includes ingredient name in message", () => {
+    it("names the food in plain language", () => {
       const rule = createRule({ target: "peanut", severity: "block" });
       const context = createContext("Child A", rule);
       const ingredient: IngredientCheckInput = { name: "peanut butter" };
 
       const findings = checkIngredientAgainstRule(ingredient, context);
 
-      expect(findings[0]?.message).toContain("peanut butter");
+      expect(findings[0]?.message).toMatch(/peanut/i);
+      expect(findings[0]?.message).toContain("Child A");
     });
 
     it("includes rule label when present", () => {

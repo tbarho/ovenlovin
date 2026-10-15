@@ -24,6 +24,13 @@ export {
 
 export { hintPhrasesForTarget } from "./allergen-hints";
 
+export {
+  formatPlainFinding,
+  formatUnmappedPlainFinding,
+  humanFoodName,
+  sanitizeWarningCopy,
+} from "./plain-language";
+
 export { freeClaimHintsForAllergen, lineNegatesAllergen, lineNegatesPhrase } from "./negation";
 
 export {

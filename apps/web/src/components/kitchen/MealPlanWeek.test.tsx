@@ -13,22 +13,24 @@ const pesto: WeekMeal = {
   servings: 4,
   findings: [
     {
-      personName: "Jake",
+      personName: "Child B",
       severity: "block",
-      message: "Jake: pine nuts match a tree nut block.",
+      message: "Contains pine nuts, so Child B can't eat this",
     },
   ],
   checkStatus: "complete",
 };
 
 describe("MealPlanWeek", () => {
-  it("shows the week grid, pesto, and Jake's named block", () => {
+  it("shows the week grid, pesto, and Child B's named block", () => {
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [pesto])} />);
 
     expect(screen.getByTestId("meal-plan-week")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Monday" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeInTheDocument();
-    expect(screen.getByText("Jake: pine nuts match a tree nut block.")).toBeInTheDocument();
+    expect(screen.getByText("Contains pine nuts, so Child B can't eat this")).toBeInTheDocument();
+    expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tree_nut/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /pesto pasta/i })).toHaveAttribute(
       "href",
       "/recipes/pesto"
