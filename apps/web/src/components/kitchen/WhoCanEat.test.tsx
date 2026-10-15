@@ -36,6 +36,11 @@ describe("WhoCanEat", () => {
     expect(screen.queryByText(/not medical advice/i)).not.toBeInTheDocument();
     expect(screen.getByTestId(`mark-${child.id}`)).toHaveAttribute("data-mark", "block");
     expect(screen.getByTestId(`mark-${parent.id}`)).toHaveAttribute("data-mark", "ok");
+    expect(screen.getByText("Can't eat")).toBeVisible();
+    expect(screen.getByText("OK")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Child B: Can't eat. Opens details/i })
+    ).toBeVisible();
 
     await user.click(screen.getByTestId(`mark-${child.id}`));
     expect(screen.getByRole("dialog", { name: /can't eat this/i })).toBeVisible();

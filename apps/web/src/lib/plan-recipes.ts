@@ -106,6 +106,7 @@ export function applyDinnerToDays(
       href: recipe ? `/recipes/${recipe.id}` : null,
       image: recipe?.image ?? null,
       servings: next.servings ?? existing?.servings ?? null,
+      recipeServings: recipe?.servings ?? existing?.recipeServings ?? null,
       isNoCook: !next.recipeId && Boolean(next.freeformMeal),
       findings: existing && existing.recipeId === next.recipeId ? existing.findings : [],
       checkStatus:

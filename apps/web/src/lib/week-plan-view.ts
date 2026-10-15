@@ -40,6 +40,7 @@ export type WeekMeal = {
   href: string | null;
   image: string | null;
   servings: number | null;
+  recipeServings?: number | null;
   isNoCook: boolean;
   findings: WeekFinding[];
   checkStatus: "complete" | "incomplete";
