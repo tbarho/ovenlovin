@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
+import { expectPeopleCardsStretchInRows, expectSnugFilledLanes } from "../people-card-layout";
 
 const WIDTHS = [1440, 1280, 1024, 768, 390] as const;
 const shotRoot = process.env.E2E_SHOT_DIR
@@ -188,6 +189,8 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.locator('[data-testid^="person-card-more-doesnt_like-"]')).toHaveCount(1);
   await expect(page.locator('[data-testid^="person-card-more-loves-"]')).toHaveCount(1);
   await expectPeopleDragHandlesTopRight(page);
+  await expectPeopleCardsStretchInRows(page);
+  await expectSnugFilledLanes(page);
   await shot(page, width, "people-list");
 
   await page.goto(urls.tyHref);
