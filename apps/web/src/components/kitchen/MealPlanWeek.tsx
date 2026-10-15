@@ -119,7 +119,7 @@ function DayEditor({
           </p>
         </div>
         <div className="week-editor-actions">
-          {current && !current.isNoCook ? (
+          {current ? (
             <button type="button" className="btn compact" disabled={pending} onClick={onClear}>
               Clear night
             </button>
