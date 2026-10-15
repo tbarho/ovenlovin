@@ -30,14 +30,18 @@ export default async function RecipesPage({
   if (cookbookId) {
     const cookbook = await cookbooks.getCookbook(cookbookId);
     if (!cookbook || cookbook.householdId !== householdId) redirect("/recipes");
-    const members = await recipes.listRecipes(householdId, {
-      cookbookId,
-      pagination: { limit: 80 },
-    });
+    const [members, catalog] = await Promise.all([
+      recipes.listRecipes(householdId, {
+        cookbookId,
+        pagination: { limit: 80 },
+      }),
+      recipes.listRecipes(householdId, { pagination: { limit: 100 } }),
+    ]);
     return (
       <CookbookRecipes
         cookbook={cookbook}
         recipes={sortRecipesByLoves(members.items, lovePeople)}
+        catalog={catalog.items}
         lovePeople={lovePeople}
       />
     );

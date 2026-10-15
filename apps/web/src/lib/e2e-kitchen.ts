@@ -505,6 +505,16 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
     }
   }
 
+  const books = await cookbooks.listCookbookCards(household.id);
+  if (!books.some((book) => /scratch book/i.test(book.name))) {
+    await cookbooks.createCookbook({
+      householdId: household.id,
+      name: "Scratch book",
+      description: "Empty on purpose so Add recipes is easy to find",
+      createdBy: user.id,
+    });
+  }
+
   return {
     userId: user.id,
     householdId: household.id,

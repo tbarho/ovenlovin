@@ -9,6 +9,7 @@ const label = process.env.E2E_SHOT_LABEL || "current";
 
 type KitchenUrls = {
   cookbookHref: string;
+  emptyCookbookHref: string;
   pestoHref: string;
   jakeHref: string;
   tyHref: string;
@@ -83,6 +84,14 @@ async function discoverKitchen(page: Page): Promise<KitchenUrls> {
     .getAttribute("href");
   expect(pestoHref).toBeTruthy();
 
+  await page.goto("/recipes");
+  await expect(page.getByRole("link", { name: /scratch book/i })).toBeVisible();
+  const emptyCookbookHref = await page
+    .getByRole("link", { name: /scratch book/i })
+    .first()
+    .getAttribute("href");
+  expect(emptyCookbookHref).toBeTruthy();
+
   await page.goto("/people");
   await expect(page.getByText("Jake")).toBeVisible();
   const jakeHref = await page.locator("a").filter({ hasText: "Jake" }).first().getAttribute("href");
@@ -92,6 +101,7 @@ async function discoverKitchen(page: Page): Promise<KitchenUrls> {
 
   return {
     cookbookHref: cookbookHref!,
+    emptyCookbookHref: emptyCookbookHref!,
     pestoHref: pestoHref!,
     jakeHref: jakeHref!,
     tyHref: tyHref!,
@@ -110,7 +120,23 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto(urls.cookbookHref);
   await expect(page.getByRole("heading", { name: /weeknight dinners/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add recipes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove" }).first()).toBeVisible();
   await shot(page, width, "cookbook");
+  await openSheet(page, /^add recipes$/i);
+  await expect(page.getByRole("dialog", { name: "Add recipes" })).toBeVisible();
+  await expect(page.getByText("Already in this book").first()).toBeVisible();
+  await shot(page, width, "sheet-add-recipes");
+  await closeSheet(page);
+  await page.goto(urls.emptyCookbookHref);
+  await expect(page.getByText("This cookbook is empty.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add recipes" }).nth(1)).toBeVisible();
+  await shot(page, width, "cookbook-empty");
+  await openSheet(page, /^add recipes$/i);
+  await shot(page, width, "sheet-add-recipes-empty");
+  await closeSheet(page);
+  await page.goto(urls.cookbookHref);
+  await expect(page.getByRole("heading", { name: /weeknight dinners/i })).toBeVisible();
   await openSheet(page, /rename/i);
   await shot(page, width, "sheet-rename-cookbook");
   await closeSheet(page);

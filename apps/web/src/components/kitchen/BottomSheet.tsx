@@ -10,11 +10,13 @@ export function BottomSheet({
   title,
   onClose,
   children,
+  layout = "sheet",
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
+  layout?: "sheet" | "picker";
 }) {
   const titleId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -26,7 +28,7 @@ export function BottomSheet({
   if (!open) return null;
 
   const tree = (
-    <div ref={rootRef} className="sheet-root" data-sheet="bottom">
+    <div ref={rootRef} className="sheet-root" data-sheet={layout}>
       <button type="button" className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div
         ref={panelRef}
