@@ -27,6 +27,27 @@ test("unsigned people preview shows the production people cards", async ({ page 
     "person-card-cant_eat-00000000-0000-4000-8000-000000000010"
   );
   await expect(filledCantEat).not.toHaveClass(/is-empty/);
+  const cards = page.locator(".olp-person-card");
+  const cardCount = await cards.count();
+  expect(cardCount).toBeGreaterThan(0);
+  for (let index = 0; index < cardCount; index += 1) {
+    const card = cards.nth(index);
+    const handle = card.getByRole("button", { name: /^Reorder / });
+    await expect(handle).toHaveCount(1);
+    await expect(card).toHaveCSS("position", "relative");
+    await expect(handle).toHaveCSS("position", "absolute");
+    const pad = await card.evaluate((el) => getComputedStyle(el).paddingTop);
+    expect(pad).toBe("8px");
+    await expect(handle).toHaveCSS("top", pad);
+    await expect(handle).toHaveCSS("right", pad);
+    const handleBox = await handle.boundingBox();
+    const nameBox = await card.locator(".olp-person-identity").boundingBox();
+    expect(handleBox && nameBox).toBeTruthy();
+    if (!handleBox || !nameBox) continue;
+    expect(handleBox.width).toBeGreaterThanOrEqual(44);
+    expect(handleBox.height).toBeGreaterThanOrEqual(44);
+    expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(handleBox.x + 1);
+  }
   await page.screenshot({
     path: `../../e2e-artifacts/people-preview-list-${testInfo.project.name}.png`,
     fullPage: true,

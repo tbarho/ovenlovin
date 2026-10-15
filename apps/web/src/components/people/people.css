@@ -98,6 +98,7 @@
 .olp-person-card,
 .kitchen-people .olp-person-card,
 .olp-person-ghost .olp-person-card {
+  --olp-card-pad: var(--space-1, 8px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -105,7 +106,7 @@
   min-width: 0;
   width: 100%;
   height: auto;
-  padding: 8px 12px 12px;
+  padding: var(--olp-card-pad) 12px 12px;
   overflow: hidden;
   border: 1px solid #ece7e0;
   border-radius: 16px;
@@ -123,6 +124,12 @@
   align-items: center;
   gap: 2px;
   min-width: 0;
+}
+
+.olp-person-card:has(.olp-drag-handle) .olp-person-card-head,
+.olp-person-ghost .olp-person-card:has(.olp-drag-handle) .olp-person-card-head {
+  min-height: 44px;
+  padding-right: 44px;
 }
 
 .olp-person-identity,
@@ -152,12 +159,17 @@
 }
 
 .olp-drag-handle,
-.kitchen-people .olp-drag-handle {
+.kitchen-people .olp-drag-handle,
+.olp-person-ghost .olp-drag-handle {
   appearance: none;
+  position: absolute;
+  top: var(--olp-card-pad, var(--space-1, 8px));
+  right: var(--olp-card-pad, var(--space-1, 8px));
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 44px;
+  flex: none;
   width: 44px;
   min-width: 44px;
   min-height: 44px;

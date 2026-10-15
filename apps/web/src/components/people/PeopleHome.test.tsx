@@ -149,8 +149,13 @@ describe("PeopleHome", () => {
     expect(screen.queryByRole("button", { name: "Move Ty up" })).not.toBeInTheDocument();
     const handle = screen.getByRole("button", { name: "Reorder Ty" });
     expect(handle).toHaveStyle({ minWidth: "44px", minHeight: "44px", cursor: "grab" });
+    expect(handle).toHaveClass("olp-drag-handle");
+    expect(handle).toHaveAttribute("aria-label", "Reorder Ty");
     expect(handle.closest(`[data-testid="person-card-shell-${ty.id}"]`)).toBeTruthy();
     expect(handle.closest(".olp-person-card-head")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /^Reorder / })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Reorder Ty" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Reorder Jake" })).toHaveLength(1);
   });
 
   it("adds a person with a chosen emoji", async () => {

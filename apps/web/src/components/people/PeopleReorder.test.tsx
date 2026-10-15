@@ -42,9 +42,13 @@ describe("PeopleReorder", () => {
     expect(screen.queryByRole("button", { name: /move .+ down/i })).not.toBeInTheDocument();
     const handle = screen.getByRole("button", { name: "Reorder Ty" });
     expect(handle).toHaveStyle({ minWidth: "44px", minHeight: "44px", cursor: "grab" });
+    expect(handle).toHaveClass("olp-drag-handle");
+    expect(handle).toHaveAttribute("aria-label", "Reorder Ty");
     expect(handle.closest(`[data-testid="person-card-shell-${ty.id}"]`)).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Reorder Ty" })).toHaveLength(1);
     expect(handle.getAttribute("aria-describedby")).toBe("people-reorder-hint people-reorder");
     expect(handle.getAttribute("aria-describedby")).not.toMatch(/DndDescribedBy/);
+    expect(document.querySelector("#people-reorder, [id='people-reorder']")).toBeTruthy();
   });
 
   it("persists a keyboard reorder and announces the new position", async () => {
