@@ -289,7 +289,7 @@ describe("MealPlanWeek", () => {
     });
   });
 
-  it("opens the editor under the tapped day and Close collapses it", async () => {
+  it("opens the editor under the selected day and Close collapses it", async () => {
     const user = userEvent.setup();
     const wednesday: WeekMeal = { ...pesto, date: "2026-10-14", entryId: "entry-wed" };
     render(
@@ -300,7 +300,7 @@ describe("MealPlanWeek", () => {
       />
     );
 
-    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    await user.click(screen.getByRole("button", { name: "Edit Wednesday dinner" }));
     const editor = screen.getByTestId("plan-editor-2026-10-14");
     const wednesdayHeading = screen.getByRole("heading", { name: "Wednesday" });
     const thursdayHeading = screen.getByRole("heading", { name: "Thursday" });
@@ -310,18 +310,14 @@ describe("MealPlanWeek", () => {
     expect(editor.compareDocumentPosition(thursdayHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
+    expect(screen.getByText("Editing Wednesday")).toBeVisible();
     expect(screen.queryByTestId("plan-editor-2026-10-12")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByTestId("plan-editor-2026-10-14")).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /wednesday/i }));
-    expect(screen.getByTestId("plan-editor-2026-10-14")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /wednesday/i }));
-    expect(screen.queryByTestId("plan-editor-2026-10-14")).not.toBeInTheDocument();
   });
 
-  it("keeps only one day editor open", async () => {
+  it("keeps only one day editor open and names each day button", async () => {
     const user = userEvent.setup();
     render(
       <MealPlanWeek
@@ -331,11 +327,20 @@ describe("MealPlanWeek", () => {
       />
     );
 
-    await user.click(screen.getByRole("button", { name: /monday/i }));
+    expect(screen.getByRole("button", { name: "Edit Monday dinner" })).toBeInTheDocument();
+    expect(screen.getByText("Select a day to pick, swap, or clear dinner.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Edit Monday dinner" }));
     expect(screen.getByTestId("plan-editor-2026-10-12")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /tuesday/i }));
+    await user.click(screen.getByRole("button", { name: "Edit Tuesday dinner" }));
     expect(screen.queryByTestId("plan-editor-2026-10-12")).not.toBeInTheDocument();
     expect(screen.getByTestId("plan-editor-2026-10-13")).toBeInTheDocument();
+  });
+
+  it("explains recipe yield when it differs from the cook-for count", () => {
+    const six: WeekMeal = { ...pesto, servings: 6, recipeServings: 6 };
+    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [six])} defaultServings={4} />);
+    expect(screen.getByText("Recipe makes 6 · cooking for 4")).toBeVisible();
+    expect(screen.getByText("Scale shopping and portions for")).toBeVisible();
   });
 
   it("creates a plan when Sunday is still empty", async () => {

@@ -122,7 +122,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await page.goto(urls.cookbookHref);
   await expect(page.getByRole("heading", { name: /weeknight dinners/i })).toBeVisible();
   await expect(page.getByRole("button", { name: "Add recipes" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Remove" }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recipe actions" }).first()).toBeVisible();
   await shot(page, width, "cookbook");
   await openSheet(page, /^add recipes$/i);
   await expect(page.getByRole("dialog", { name: "Add recipes" })).toBeVisible();

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const TOAST_MS = 6000;
+const TOAST_MS = 9000;
 
 export function KitchenToast({
   message,

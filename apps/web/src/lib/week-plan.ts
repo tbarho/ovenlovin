@@ -154,18 +154,20 @@ function storeIngredients(
   );
 }
 
-export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen> {
+export async function loadWeekKitchen(
+  householdId: string,
+  weekStartIso?: string
+): Promise<WeekKitchen> {
   const db = getDatabase();
   const plans = new PlanService(db);
   const recipes = new RecipeService(db);
   const peopleService = new PeopleService(db);
   const shopping = new ShoppingListService();
 
-  const thisMonday = startOfWeekMonday();
-  const listed = await plans.listMealPlans(householdId, { pagination: { limit: 20 } });
-  const plan =
-    listed.items.find((item) => item.weekStart === thisMonday) ?? listed.items[0] ?? null;
-  const weekStart = plan?.weekStart || thisMonday;
+  const requested = startOfWeekMonday(weekStartIso);
+  const listed = await plans.listMealPlans(householdId, { pagination: { limit: 40 } });
+  const plan = listed.items.find((item) => item.weekStart === requested) ?? null;
+  const weekStart = requested;
 
   const householdPeople = await peopleService.listPeopleByHousehold(householdId, { limit: 40 });
   const people = householdPeople.items;
@@ -243,6 +245,7 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
       href: recipe ? `/recipes/${recipe.id}` : null,
       image: recipe ? recipeMainImage(recipe.images) : null,
       servings: entry.servings ?? recipe?.servings ?? null,
+      recipeServings: recipe?.servings ?? null,
       isNoCook,
       findings,
       checkStatus,

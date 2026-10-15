@@ -112,8 +112,14 @@ export function buildRecimeMigratePrompt(input: {
   ].join("\n");
 }
 
+function connectSteps(steps: string[], hasSandboxKey: boolean): string[] {
+  if (!hasSandboxKey) return steps;
+  return steps.filter((step) => !/sign in here/i.test(step));
+}
+
 export function buildAgentGuides(input: { origin: string; apiKey?: string | null }): AgentGuide[] {
   const origin = normalizeOrigin(input.origin);
+  const hasSandboxKey = Boolean(input.apiKey?.trim());
   const apiKey = input.apiKey?.trim() || "YOUR_OVENLOVIN_API_KEY";
   const mcpUrl = `${origin}/mcp`;
   const apiUrl = `${origin}/api/v1`;
@@ -124,11 +130,14 @@ export function buildAgentGuides(input: { origin: string; apiKey?: string | null
       id: "grok",
       label: "Grok Bot",
       summary: "Paste this into Grok Bot MCP settings. It already has this instance’s URL.",
-      steps: [
-        "Sign in here and generate an API key (or create one under Settings).",
-        "In Grok, add an MCP server and paste the JSON below.",
-        'Ask: "Search my OvenLovin recipes for chicken."',
-      ],
+      steps: connectSteps(
+        [
+          "Sign in here and generate an API key (or create one under Settings).",
+          "In Grok, add an MCP server and paste the JSON below.",
+          'Ask: "Search my OvenLovin recipes for chicken."',
+        ],
+        hasSandboxKey
+      ),
       copyLabel: "Grok MCP config",
       content: JSON.stringify(
         {
