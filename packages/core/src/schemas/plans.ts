@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { baseEntitySchema, createdBySchema, uuidSchema } from "./common";
+import { shoppingTripStateSchema } from "./shopping-trip";
 
 export const busyLevelSchema = z.enum(["low", "medium", "high"]);
 
@@ -43,6 +44,7 @@ export const mealPlanSchema = baseEntitySchema.merge(createdBySchema).extend({
   contentHash: z.string().max(64).nullable().optional(),
   acknowledgedWarnings: z.array(z.string()).default([]),
   needsRecheck: z.boolean().default(false),
+  shoppingState: shoppingTripStateSchema.optional(),
   createdByApiKeyId: uuidSchema.nullable().optional(),
 });
 
@@ -85,6 +87,7 @@ export const updateMealPlanBodySchema = z
     status: mealPlanStatusSchema.optional(),
     acknowledgedWarnings: z.array(z.string()).optional(),
     entries: z.array(mealPlanEntryWriteSchema).optional(),
+    shoppingState: shoppingTripStateSchema.optional(),
   })
   .strict();
 

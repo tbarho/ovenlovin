@@ -21,6 +21,7 @@ describe("plans schemas", () => {
       });
       expect(plan.status).toBe("draft");
       expect(plan.needsRecheck).toBe(false);
+      expect(plan.shoppingState).toBeUndefined();
     });
   });
 
@@ -63,6 +64,16 @@ describe("plans schemas", () => {
       });
       expect(body.status).toBe("approved");
       expect(body.entries?.[0]?.attendees).toEqual([]);
+    });
+
+    it("accepts shopping check-offs and extras for the plan week", () => {
+      const body = updateMealPlanBodySchema.parse({
+        shoppingState: {
+          checkedKeys: ["basil pesto"],
+          extras: [{ key: "extra-1", name: "paper towels" }],
+        },
+      });
+      expect(body.shoppingState?.extras[0]?.name).toBe("paper towels");
     });
 
     it("rejects unknown fields instead of dropping them", () => {

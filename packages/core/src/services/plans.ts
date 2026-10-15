@@ -1,6 +1,7 @@
 import { eq, and, isNull, desc, gte, lte } from "drizzle-orm";
 import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db";
 import type { MealPlan, MealPlanEntry, MealPlanEntryWrite } from "../schemas/plans";
+import { parseShoppingTripState } from "../schemas/shopping-trip";
 import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
@@ -262,6 +263,7 @@ export class PlanService extends BaseService {
       contentHash: row.contentHash ?? null,
       acknowledgedWarnings: (row.acknowledgedWarnings as string[]) ?? [],
       needsRecheck: row.needsRecheck ?? false,
+      shoppingState: parseShoppingTripState(row.shoppingState),
       createdByApiKeyId: row.createdByApiKeyId ?? null,
     };
   }
