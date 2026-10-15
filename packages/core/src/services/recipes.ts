@@ -498,10 +498,7 @@ export class RecipeService extends BaseService {
     return details;
   }
 
-  async findPhotoImportDuplicate(
-    householdId: string,
-    fingerprint: string
-  ): Promise<Recipe | null> {
+  async findPhotoImportDuplicate(householdId: string, fingerprint: string): Promise<Recipe | null> {
     if (!fingerprint.trim()) return null;
     const [row] = await this._db
       .select({ recipe })
