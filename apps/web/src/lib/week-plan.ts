@@ -75,6 +75,8 @@ export type ShopItem = {
   name: string;
   quantity?: number;
   unit?: string;
+  displayQuantity?: string;
+  displayUnit?: string;
   recipes: string[];
   warnings: ShopWarning[];
 };
@@ -306,6 +308,8 @@ export async function loadWeekKitchen(householdId: string): Promise<WeekKitchen>
       name: item.name,
       quantity: item.quantity,
       unit: item.unit,
+      displayQuantity: item.displayQuantity,
+      displayUnit: item.displayUnit,
       recipes: [...new Set(item.recipes.map((recipe) => recipe.recipeTitle))],
       warnings: findingsFromCheck(check).map((finding) => ({
         personName: finding.personName,
