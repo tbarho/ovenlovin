@@ -1355,6 +1355,22 @@ select {
   color: #9b1c1c;
 }
 
+.recipe-card-warnings {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.recipe-card-warnings li {
+  margin: 0;
+  color: var(--bad);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
 .photo-preview {
   overflow: hidden;
   border-radius: 12px;

@@ -5,6 +5,7 @@ import { CookbookRecipes } from "@/components/kitchen/CookbookRecipes";
 import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { householdLovePeople, sortRecipesByLoves } from "@/lib/household-loves";
 import { requireKitchenContext } from "@/lib/kitchen-session";
+import { loadRecipeSafetyById } from "@/lib/load-recipe-safety";
 
 export default async function RecipesPage({
   searchParams,
@@ -20,10 +21,11 @@ export default async function RecipesPage({
   const cookbooks = new CookbookService(db);
   const peopleService = new PeopleService(db);
   const people = await peopleService.listPeopleByHousehold(householdId, { limit: 40 });
-  const preferences = await peopleService.getPreferencesForPeople(
-    people.items.map((person) => person.id),
-    "love"
-  );
+  const personIds = people.items.map((person) => person.id);
+  const [preferences, rules] = await Promise.all([
+    peopleService.getPreferencesForPeople(personIds, "love"),
+    peopleService.getRulesForPeople(personIds),
+  ]);
   const lovePeople = householdLovePeople(people.items, preferences);
 
   if (cookbookId) {
@@ -37,6 +39,11 @@ export default async function RecipesPage({
       recipes.listRecipes(householdId, { pagination: { limit: 100 } }),
       cookbooks.listRecipeCookbookNames(householdId),
     ]);
+    const safetyByRecipe = await loadRecipeSafetyById(
+      members.items.map((recipe) => recipe.id),
+      people.items,
+      rules
+    );
     return (
       <CookbookRecipes
         cookbook={cookbook}
@@ -44,6 +51,7 @@ export default async function RecipesPage({
         catalog={catalog.items}
         booksByRecipe={booksByRecipe}
         lovePeople={lovePeople}
+        safetyByRecipe={safetyByRecipe}
       />
     );
   }
@@ -54,12 +62,19 @@ export default async function RecipesPage({
     recipes.listRecipes(householdId, { pagination: { limit: 40 } }),
   ]);
 
+  const safetyByRecipe = await loadRecipeSafetyById(
+    all.items.map((recipe) => recipe.id),
+    people.items,
+    rules
+  );
+
   return (
     <RecipesKitchen
       cookbooks={cards}
       uncategorized={sortRecipesByLoves(uncategorized.items, lovePeople)}
       recipes={sortRecipesByLoves(all.items, lovePeople)}
       lovePeople={lovePeople}
+      safetyByRecipe={safetyByRecipe}
     />
   );
 }
