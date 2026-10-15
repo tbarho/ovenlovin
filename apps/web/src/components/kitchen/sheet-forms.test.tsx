@@ -1,7 +1,13 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { testCookbook, testPerson, testPersonRule, testRecipeDetails } from "@/test/fixtures";
+import {
+  testCookbook,
+  testPerson,
+  testPersonRule,
+  testRecipe,
+  testRecipeDetails,
+} from "@/test/fixtures";
 import { typeFullWordAndKeepFocus } from "@/test/sheet-focus";
 import { CookbookRecipes } from "./CookbookRecipes";
 import { RecipeDetail } from "./RecipeDetail";
@@ -25,6 +31,22 @@ describe("kitchen recipe layout", () => {
     expect(container.querySelector(".who-can-eat.olp")).toBeNull();
     expect(screen.getByRole("heading", { name: "Who can eat this" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Ingredients" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "← Recipes" })).toBeVisible();
+  });
+
+  it("sends the back link to the cookbook the cook came from", () => {
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Weeknight pesto pasta" })}
+        cookbooks={[testCookbook()]}
+        backHref="/recipes?cookbook=book-1"
+        backLabel="Weeknight dinners"
+      />
+    );
+    expect(screen.getByRole("link", { name: "← Weeknight dinners" })).toHaveAttribute(
+      "href",
+      "/recipes?cookbook=book-1"
+    );
   });
 
   it("shows recipe notes on the detail page", () => {
@@ -66,6 +88,26 @@ describe("kitchen sheet-hosted forms", () => {
 
     await user.click(screen.getByRole("button", { name: "Edit steps" }));
     await typeFullWordAndKeepFocus(user, screen.getByRole("textbox"), "simmer");
+  });
+
+  it("searches all recipes from the shelf", async () => {
+    const user = userEvent.setup();
+    render(
+      <RecipesKitchen
+        cookbooks={[{ ...testCookbook(), previewImages: [], recipeCount: 1 }]}
+        uncategorized={[]}
+        recipes={[testRecipe({ title: "Weeknight pesto pasta" })]}
+      />
+    );
+
+    expect(screen.getByRole("tab", { name: "All recipes" })).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: "All recipes" }));
+    expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeVisible();
+    await user.type(screen.getByLabelText("Search recipes"), "pesto");
+    expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeVisible();
+    await user.clear(screen.getByLabelText("Search recipes"));
+    await user.type(screen.getByLabelText("Search recipes"), "zzz");
+    expect(screen.getByText("No recipes match that search.")).toBeVisible();
   });
 
   it("keeps focus while typing a new cookbook name", async () => {

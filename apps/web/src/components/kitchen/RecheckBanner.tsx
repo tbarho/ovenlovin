@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/lib/browser-api";
 
-export function RecheckBanner({ planId }: { planId: string }) {
+export function RecheckBanner({ planId, nights = [] }: { planId: string; nights?: string[] }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,11 +21,14 @@ export function RecheckBanner({ planId }: { planId: string }) {
     }
   }
 
+  const detail =
+    nights.length > 0
+      ? `These dinners need a fresh check: ${nights.join(", ")}.`
+      : "A recipe or someone's rules changed since the last check.";
+
   return (
     <div className="week-recheck" role="status">
-      <p>
-        This plan needs a recheck. A recipe or someone&apos;s rules changed since the last check.
-      </p>
+      <p>This plan needs a recheck. {detail}</p>
       <button
         type="button"
         className="btn compact"

@@ -149,6 +149,10 @@ describe("ShoppingList", () => {
 
     const headings = screen.getAllByRole("heading");
     expect(headings.map((heading) => heading.textContent)).toEqual(["Produce", "Spices"]);
+    expect(
+      screen.getByLabelText("Add to the list").compareDocumentPosition(headings[0]!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 
     await user.type(screen.getByPlaceholderText("Milk, paper towels…"), "paper towels");
     await user.click(screen.getByRole("button", { name: "Add item" }));

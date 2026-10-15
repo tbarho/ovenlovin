@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
 import type { CookbookCard, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
+import { filterRecipesByQuery } from "@/lib/cookbook-recipes";
 import { loveHitsForRecipe } from "@/lib/household-loves";
+import { recipeCardMeta } from "@/lib/recipe-card-meta";
 import { ImportRecipeForm } from "./ImportRecipeForm";
 import { BottomSheet } from "./BottomSheet";
+import { KitchenTour } from "./KitchenTour";
 import { LoveTags } from "./LoveTags";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
@@ -76,7 +79,7 @@ function NewCookbookSheet({ open, onClose }: { open: boolean; onClose: () => voi
           required
         />
         {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending}>
+        <button className="btn primary" type="submit" disabled={pending || !name.trim()}>
           {pending ? "Creating…" : "Create cookbook"}
         </button>
       </form>
@@ -96,9 +99,16 @@ export function RecipesKitchen({
   lovePeople?: PersonLove[];
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<"unfiled" | "all">(cookbooks.length > 0 ? "unfiled" : "all");
   const close = useCallback(() => setOpen(false), []);
 
-  const listed = cookbooks.length > 0 ? uncategorized : recipes;
+  const pool = scope === "all" || query.trim() || cookbooks.length === 0 ? recipes : uncategorized;
+  const listed = useMemo(() => filterRecipesByQuery(pool, query), [pool, query]);
+  const sectionLabel =
+    query.trim() || scope === "all" || cookbooks.length === 0
+      ? "All recipes"
+      : "Recipes not in a cookbook yet";
 
   return (
     <>
@@ -115,7 +125,41 @@ export function RecipesKitchen({
           </button>
         </div>
       </div>
+      <KitchenTour />
       <ImportRecipeForm />
+
+      <div className="recipe-browse">
+        <label className="field">
+          <span className="field-label">Search recipes</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Pesto, soup, cookies…"
+          />
+        </label>
+        {cookbooks.length > 0 ? (
+          <div className="tabs recipe-scope" role="tablist" aria-label="Recipe shelf">
+            <button
+              type="button"
+              className="tab"
+              role="tab"
+              aria-selected={scope === "unfiled"}
+              onClick={() => setScope("unfiled")}
+            >
+              Unfiled
+            </button>
+            <button
+              type="button"
+              className="tab"
+              role="tab"
+              aria-selected={scope === "all"}
+              onClick={() => setScope("all")}
+            >
+              All recipes
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       {cookbooks.length > 0 ? (
         <>
@@ -142,15 +186,15 @@ export function RecipesKitchen({
 
       {listed.length === 0 ? (
         <p className="empty-note">
-          {cookbooks.length > 0
-            ? "Every recipe is filed in a cookbook. Import another, or open a book above."
-            : "No recipes yet. Import one above to start cooking."}
+          {query.trim()
+            ? "No recipes match that search."
+            : cookbooks.length > 0
+              ? "Recipes not in a cookbook yet will show up here. Import another, or open a book above."
+              : "No recipes yet. Import one above to start cooking."}
         </p>
       ) : (
         <>
-          <p className="section-label">
-            {cookbooks.length > 0 ? "Unfiled recipes" : "All recipes"}
-          </p>
+          <p className="section-label">{sectionLabel}</p>
           <div className="recipe-grid">
             {listed.map((recipe) => (
               <Link className="recipe-card" key={recipe.id} href={`/recipes/${recipe.id}`}>
@@ -158,15 +202,7 @@ export function RecipesKitchen({
                 <div className="card-copy">
                   <h2>{recipe.title}</h2>
                   <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
-                  <p className="muted">
-                    {[
-                      recipe.servings ? `${recipe.servings} servings` : null,
-                      recipe.prepTimeMinutes != null ? `${recipe.prepTimeMinutes} min prep` : null,
-                      recipe.cookTimeMinutes != null ? `${recipe.cookTimeMinutes} min cook` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || recipe.status}
-                  </p>
+                  <p className="muted">{recipeCardMeta(recipe)}</p>
                 </div>
               </Link>
             ))}

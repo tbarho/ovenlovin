@@ -37,7 +37,7 @@ test.describe("cookbook add recipes picker", () => {
 
       await page.goto(cookbookHref!);
       await expect(page.getByRole("heading", { name: /weeknight dinners/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Remove" }).first()).toBeVisible();
+      await expect(page.getByRole("button", { name: "Recipe actions" }).first()).toBeVisible();
       await shot(page, width, "cookbook-detail-v2");
 
       await page.getByRole("button", { name: "Add recipes" }).click();
