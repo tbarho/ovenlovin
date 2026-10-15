@@ -6,6 +6,7 @@ import {
   RecipeService,
   ShoppingListService,
   collectShoppingListEntries,
+  parseShoppingTripState,
   planEntriesForWeek,
   resolveIncludeStaples,
   type ShoppingListGroupBy,
@@ -73,9 +74,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       includeStaples,
     });
 
+    const trip = parseShoppingTripState(plan.shoppingState);
     const output = shoppingListService.format(
       shoppingList,
-      format as "json" | "csv" | "markdown" | "text"
+      format as "json" | "csv" | "markdown" | "text",
+      { checkedKeys: trip.checkedKeys }
     );
     const contentType =
       format === "csv"
