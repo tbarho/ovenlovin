@@ -3,22 +3,34 @@ import { and, eq, isNull, lte } from "drizzle-orm";
 import { getDatabase, type DbClient } from "@ovenlovin/db";
 import {
   apiKey,
+  checkResult,
   collection,
   collectionRecipe,
+  cookLog,
   demoSandbox,
   household,
   mealPlan,
   mealPlanEntry,
   membership,
+  nutritionGoal,
   person,
+  personLabelNote,
   personRule,
   preference,
   recipe,
   recipeIngredient,
+  recipeIngredientGroup,
+  recipeNutrition,
+  recipeRating,
   recipeSource,
   recipeStep,
+  recipeTag,
+  scheduleOverride,
+  scheduleTemplate,
+  share,
   shoppingList,
   shoppingListItem,
+  tag,
   user,
 } from "@ovenlovin/db/schema";
 import type { RequestContext } from "@/lib/api/middleware";
@@ -165,17 +177,20 @@ export async function resetDemoSandbox(
   cookieId: string | undefined,
   db: DbClient = getDatabase()
 ): Promise<DemoSandboxRecord> {
-  if (cookieId) {
-    const existing = await findDemoSandboxById(cookieId, db);
-    if (existing) {
-      await wipeSandboxHousehold(db, {
-        id: existing.id,
-        householdId: existing.householdId,
-        userId: existing.userId,
-      });
+  return db.transaction(async (tx) => {
+    const next = await getOrCreateDemoSandbox(undefined, tx);
+    if (cookieId) {
+      const existing = await findDemoSandboxById(cookieId, tx);
+      if (existing && existing.id !== next.id) {
+        await wipeSandboxHousehold(tx, {
+          id: existing.id,
+          householdId: existing.householdId,
+          userId: existing.userId,
+        });
+      }
     }
-  }
-  return getOrCreateDemoSandbox(undefined, db);
+    return next;
+  });
 }
 
 export async function wipeExpiredDemoSandboxes(
@@ -197,6 +212,18 @@ export async function wipeExpiredDemoSandboxes(
   return { wiped: expired.length };
 }
 
+/** Child tables wiped before recipes so a failed reset cannot leave empty cards. */
+export const DEMO_SANDBOX_RECIPE_CHILD_TABLES = [
+  "recipe_ingredient",
+  "recipe_ingredient_group",
+  "recipe_step",
+  "recipe_source",
+  "recipe_nutrition",
+  "recipe_tag",
+  "recipe_rating",
+  "cook_log",
+] as const;
+
 async function wipeSandboxHousehold(
   db: DbClient,
   row: { id: string; householdId: string; userId: string }
@@ -217,6 +244,7 @@ async function wipeSandboxHousehold(
     .from(mealPlan)
     .where(eq(mealPlan.householdId, householdId));
   for (const plan of plans) {
+    await db.delete(checkResult).where(eq(checkResult.mealPlanId, plan.id));
     await db.delete(mealPlanEntry).where(eq(mealPlanEntry.mealPlanId, plan.id));
   }
   await db.delete(mealPlan).where(eq(mealPlan.householdId, householdId));
@@ -236,10 +264,16 @@ async function wipeSandboxHousehold(
     .where(eq(recipe.householdId, householdId));
   for (const item of recipes) {
     await db.delete(recipeIngredient).where(eq(recipeIngredient.recipeId, item.id));
+    await db.delete(recipeIngredientGroup).where(eq(recipeIngredientGroup.recipeId, item.id));
     await db.delete(recipeStep).where(eq(recipeStep.recipeId, item.id));
     await db.delete(recipeSource).where(eq(recipeSource.recipeId, item.id));
+    await db.delete(recipeNutrition).where(eq(recipeNutrition.recipeId, item.id));
+    await db.delete(recipeTag).where(eq(recipeTag.recipeId, item.id));
+    await db.delete(recipeRating).where(eq(recipeRating.recipeId, item.id));
+    await db.delete(cookLog).where(eq(cookLog.recipeId, item.id));
   }
   await db.delete(recipe).where(eq(recipe.householdId, householdId));
+  await db.delete(tag).where(eq(tag.householdId, householdId));
 
   const people = await db
     .select({ id: person.id })
@@ -248,8 +282,14 @@ async function wipeSandboxHousehold(
   for (const item of people) {
     await db.delete(personRule).where(eq(personRule.personId, item.id));
     await db.delete(preference).where(eq(preference.personId, item.id));
+    await db.delete(personLabelNote).where(eq(personLabelNote.personId, item.id));
+    await db.delete(nutritionGoal).where(eq(nutritionGoal.personId, item.id));
   }
   await db.delete(person).where(eq(person.householdId, householdId));
+
+  await db.delete(scheduleOverride).where(eq(scheduleOverride.householdId, householdId));
+  await db.delete(scheduleTemplate).where(eq(scheduleTemplate.householdId, householdId));
+  await db.delete(share).where(eq(share.granteeHouseholdId, householdId));
 
   await db.delete(demoSandbox).where(eq(demoSandbox.id, row.id));
   await db.delete(apiKey).where(eq(apiKey.householdId, householdId));

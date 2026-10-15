@@ -23,8 +23,9 @@ describe("demo kitchen fixture", () => {
     ]);
   });
 
-  it("includes about 20 recipes with images and two cookbooks", () => {
+  it("includes about 20 recipes with images, ingredients, and two cookbooks", () => {
     expect(DEMO_RECIPES.length).toBeGreaterThanOrEqual(20);
+    expect(DEMO_RECIPES.every((recipe) => (recipe.ingredients?.length ?? 0) > 0)).toBe(true);
     expect(DEMO_RECIPES.every((recipe) => recipe.images?.[0]?.startsWith("/demo-kitchen/"))).toBe(
       true
     );
