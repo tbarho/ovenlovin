@@ -47,6 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       ...(body.acknowledgedWarnings !== undefined
         ? { acknowledgedWarnings: body.acknowledgedWarnings }
         : {}),
+      ...(body.shoppingState !== undefined ? { shoppingState: body.shoppingState } : {}),
     });
 
     if (!plan) {

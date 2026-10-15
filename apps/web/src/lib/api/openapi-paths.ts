@@ -731,6 +731,13 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     })
     .openapi("MealPlanEntry");
 
+  const shoppingTripStateDoc = z
+    .object({
+      checkedKeys: z.array(z.string()),
+      extras: z.array(z.object({ key: z.string(), name: z.string() })),
+    })
+    .openapi("ShoppingTripState");
+
   const mealPlanSchema = z
     .object({
       id: z.string().uuid(),
@@ -738,6 +745,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       weekStart: z.string(),
       status: z.enum(["draft", "approved", "archived"]),
       needsRecheck: z.boolean(),
+      shoppingState: shoppingTripStateDoc.optional(),
     })
     .openapi("MealPlan");
 
@@ -914,6 +922,43 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       }),
     },
     responses: { 200: { description: "Shopping list" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/meal-plans/{id}/shopping-list/state",
+    tags: ["meal-plans"],
+    summary: "Get saved check-offs and extras for this plan week",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: {
+        description: "Saved shopping trip state",
+        content: { "application/json": { schema: shoppingTripStateDoc } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "patch",
+    path: "/meal-plans/{id}/shopping-list/state",
+    tags: ["meal-plans"],
+    summary: "Save check-offs and extras for this plan week",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        content: {
+          "application/json": {
+            schema: shoppingTripStateDoc,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Saved shopping trip state",
+        content: { "application/json": { schema: shoppingTripStateDoc } },
+      },
+    },
   });
 
   registry.registerPath({

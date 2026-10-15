@@ -27,6 +27,7 @@ describe("generateOpenApiDocument", () => {
         "/meal-plans/{id}/history",
         "/meal-plans/{id}/check",
         "/meal-plans/{id}/shopping-list",
+        "/meal-plans/{id}/shopping-list/state",
         "/households",
         "/households/schedule",
         "/people",
@@ -64,6 +65,13 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/meal-plans/{id}/shopping-list"]?.get)).toContain(
       "includePantryItems"
     );
+    expect(spec.paths?.["/meal-plans/{id}/shopping-list/state"]?.get).toBeTruthy();
+    expect(spec.paths?.["/meal-plans/{id}/shopping-list/state"]?.patch).toBeTruthy();
+    const tripState = spec.components?.schemas?.ShoppingTripState as {
+      properties?: Record<string, unknown>;
+    };
+    expect(tripState?.properties).toHaveProperty("checkedKeys");
+    expect(tripState?.properties).toHaveProperty("extras");
   });
 
   it("documents meal-plan POST and PATCH bodies with entries and no silent extras", () => {

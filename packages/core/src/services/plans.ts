@@ -6,9 +6,10 @@ import type {
   MealPlanEntry,
   MealPlanEntryPatch,
   MealPlanEntryWrite,
+  MealPlanRevision,
 } from "../schemas/plans";
 import { mealPlanEntryWriteFromRow, planMealPlanEntryMerge } from "../plans/merge-entries";
-import type { MealPlanRevision } from "../schemas/plans";
+import { parseShoppingTripState } from "../schemas/shopping-trip";
 import type { RecipeIngredient } from "../schemas/recipes";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
@@ -404,6 +405,7 @@ export class PlanService extends BaseService {
       contentHash: row.contentHash ?? null,
       acknowledgedWarnings: (row.acknowledgedWarnings as string[]) ?? [],
       needsRecheck: row.needsRecheck ?? false,
+      shoppingState: parseShoppingTripState(row.shoppingState),
       createdByApiKeyId: row.createdByApiKeyId ?? null,
     };
   }
