@@ -134,6 +134,7 @@ describe("kitchen sheet-hosted forms", () => {
 
 describe("recipe delete", () => {
   beforeEach(() => {
+    window.sessionStorage.clear();
     vi.mocked(api).mockReset();
     vi.mocked(api).mockResolvedValue(undefined);
   });
@@ -157,14 +158,27 @@ describe("recipe delete", () => {
       expect.stringMatching(/\/api\/v1\/recipes\/.+/),
       expect.objectContaining({ method: "DELETE" })
     );
-    expect(screen.getByTestId("recipe-deleted")).toBeVisible();
+    expect(JSON.parse(window.sessionStorage.getItem("ovenlovin.delete-toast") ?? "null")).toEqual(
+      expect.objectContaining({ title: "Weeknight pesto pasta" })
+    );
+    expect(screen.queryByTestId("recipe-deleted")).not.toBeInTheDocument();
+  });
 
+  it("offers Undo on the recipe list after a delete", async () => {
+    const user = userEvent.setup();
+    window.sessionStorage.setItem(
+      "ovenlovin.delete-toast",
+      JSON.stringify({
+        id: "00000000-0000-4000-8000-000000000030",
+        title: "Weeknight pesto pasta",
+      })
+    );
+    render(<RecipesKitchen cookbooks={[]} uncategorized={[]} recipes={[]} />);
+    expect(screen.getByText("Deleted Weeknight pesto pasta")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Undo" }));
     expect(api).toHaveBeenCalledWith(
       expect.stringMatching(/\/api\/v1\/recipes\/.+\/restore/),
       expect.objectContaining({ method: "POST" })
     );
-    expect(screen.queryByTestId("recipe-deleted")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeVisible();
   });
 });

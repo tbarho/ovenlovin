@@ -1,3 +1,24 @@
+export const RECIPE_DELETE_TOAST_KEY = "ovenlovin.delete-toast";
+
+export type RecipeDeleteToast = { id: string; title: string };
+
+export function writeRecipeDeleteToast(recipe: RecipeDeleteToast): void {
+  window.sessionStorage.setItem(RECIPE_DELETE_TOAST_KEY, JSON.stringify(recipe));
+}
+
+export function readRecipeDeleteToast(): RecipeDeleteToast | null {
+  const raw = window.sessionStorage.getItem(RECIPE_DELETE_TOAST_KEY);
+  if (!raw) return null;
+  window.sessionStorage.removeItem(RECIPE_DELETE_TOAST_KEY);
+  try {
+    const data = JSON.parse(raw) as RecipeDeleteToast;
+    if (!data.id || !data.title) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export function formatPlannedDate(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) return isoDate;
