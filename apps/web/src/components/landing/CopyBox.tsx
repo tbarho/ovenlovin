@@ -9,15 +9,23 @@ export function CopyBox({
   label,
   content,
   secret = false,
+  secretValue,
 }: {
   label: string;
   content: string;
   secret?: boolean;
+  /** When set, only this substring is masked (Grok/Claude JSON), not the whole box. */
+  secretValue?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
-  const shown = secret && !revealed ? maskSecret(content) : content;
+  const shown =
+    secret && !revealed
+      ? secretValue?.trim()
+        ? content.split(secretValue).join(maskSecret(secretValue))
+        : maskSecret(content)
+      : content;
 
   async function onCopy() {
     try {

@@ -48,7 +48,35 @@ export function planRiskConfirmCopy(
   const why = recipe.warning?.trim() || "This recipe may not be safe for everyone on the plan.";
   return {
     title: `Add ${recipe.title} to ${weekday}?`,
-    body: `${why} Add it to the plan anyway? This will not hide the warning.`,
+    body: `${why} You can still add it — the warning stays on ${weekday} until you pick something else.`,
+  };
+}
+
+export function findingsForRecipePick(recipe: PlanRecipePick | undefined): {
+  findings: WeekFinding[];
+  checkStatus: WeekMeal["checkStatus"];
+} {
+  if (!recipe) return { findings: [], checkStatus: "complete" };
+  if (recipe.safety === "unknown") {
+    return {
+      findings: recipe.warning
+        ? [{ personName: "", severity: "warn", message: recipe.warning }]
+        : [],
+      checkStatus: "incomplete",
+    };
+  }
+  if (recipe.safety === "ok" || !recipe.warning) {
+    return { findings: [], checkStatus: "complete" };
+  }
+  return {
+    findings: [
+      {
+        personName: "",
+        severity: recipe.safety === "block" ? "block" : "warn",
+        message: recipe.warning,
+      },
+    ],
+    checkStatus: "complete",
   };
 }
 
@@ -97,6 +125,10 @@ export function applyDinnerToDays(
     }
     const recipe = next.recipeId ? recipes.find((item) => item.id === next.recipeId) : undefined;
     const existing = day.meals.find((meal) => meal.mealSlot === "dinner");
+    const sameRecipe = Boolean(existing && existing.recipeId === next.recipeId);
+    const checked = sameRecipe
+      ? { findings: existing?.findings ?? [], checkStatus: existing?.checkStatus ?? "complete" }
+      : findingsForRecipePick(recipe);
     const meal: WeekMeal = {
       entryId: existing?.entryId ?? `pending-${date}`,
       date,
@@ -108,9 +140,8 @@ export function applyDinnerToDays(
       servings: next.servings ?? existing?.servings ?? null,
       recipeServings: recipe?.servings ?? existing?.recipeServings ?? null,
       isNoCook: !next.recipeId && Boolean(next.freeformMeal),
-      findings: existing && existing.recipeId === next.recipeId ? existing.findings : [],
-      checkStatus:
-        existing && existing.recipeId === next.recipeId ? existing.checkStatus : "complete",
+      findings: checked.findings,
+      checkStatus: checked.checkStatus,
     };
     return { ...day, meals: [...day.meals.filter((item) => item.mealSlot !== "dinner"), meal] };
   });
