@@ -95,8 +95,11 @@ export function RecipeDetail({
     () => whoCanEat({ people, rules, ingredients: checkIngredients }),
     [people, rules, recipe.ingredients]
   );
+  const blockPersonIds = eat.people
+    .filter((person) => person.mark === "block")
+    .map((person) => person.personId);
   const warningPersonIds = eat.people
-    .filter((person) => person.mark !== "ok")
+    .filter((person) => person.mark === "warn")
     .map((person) => person.personId);
 
   useEffect(() => {
@@ -158,6 +161,7 @@ export function RecipeDetail({
                   lovePeople
                 )}
                 warningPersonIds={warningPersonIds}
+                blockPersonIds={blockPersonIds}
               />
               <div className="recipe-meta">
                 {formatDurationMinutes(recipe.prepTimeMinutes) ? (

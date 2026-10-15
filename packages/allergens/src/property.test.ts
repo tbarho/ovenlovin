@@ -364,9 +364,12 @@ describe("Property Tests: Findings Name Person and Rule", () => {
             ...result.findings.prefer_avoid,
           ];
 
-          // Each finding's severity must match the rule that created it
+          // Each finding's severity must match the rule that created it.
+          // Generated rule ids can collide, so look up by person + rule id.
           return allFindings.every((finding) => {
-            const ruleContext = contexts.find((c) => c.rule.id === finding.ruleId);
+            const ruleContext = contexts.find(
+              (c) => c.rule.id === finding.ruleId && c.personId === finding.personId
+            );
             return ruleContext && ruleContext.rule.severity === finding.severity;
           });
         }

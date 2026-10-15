@@ -8,14 +8,14 @@ import type { CookbookCard, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
 import { filterRecipesByQuery } from "@/lib/cookbook-recipes";
-import { loveHitsForRecipe } from "@/lib/household-loves";
 import { recipeCardMeta } from "@/lib/recipe-card-meta";
+import { EMPTY_RECIPE_SAFETY, type RecipeSafetySummary } from "@/lib/recipe-card-safety";
 import { readRecipeDeleteToast, type RecipeDeleteToast } from "@/lib/recipe-delete";
 import { ImportRecipeForm } from "./ImportRecipeForm";
 import { BottomSheet } from "./BottomSheet";
 import { KitchenToast } from "./KitchenToast";
 import { KitchenTour } from "./KitchenTour";
-import { LoveTags } from "./LoveTags";
+import { RecipeCardSafety } from "./RecipeCardSafety";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 
@@ -94,11 +94,13 @@ export function RecipesKitchen({
   uncategorized,
   recipes,
   lovePeople = EMPTY_LOVE_PEOPLE,
+  safetyByRecipe = {},
 }: {
   cookbooks: CookbookCard[];
   uncategorized: Recipe[];
   recipes: Recipe[];
   lovePeople?: PersonLove[];
+  safetyByRecipe?: Record<string, RecipeSafetySummary>;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -219,7 +221,11 @@ export function RecipesKitchen({
                 <RecipeThumb recipe={recipe} />
                 <div className="card-copy">
                   <h2>{recipe.title}</h2>
-                  <LoveTags hits={loveHitsForRecipe(recipe, lovePeople)} />
+                  <RecipeCardSafety
+                    recipe={recipe}
+                    lovePeople={lovePeople}
+                    safety={safetyByRecipe[recipe.id] ?? EMPTY_RECIPE_SAFETY}
+                  />
                   <p className="muted">{recipeCardMeta(recipe)}</p>
                 </div>
               </Link>
