@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import {
   copyRemoteImages,
+  fingerprintImageBlob,
   keepMainRecipeImages,
   persistRecipeImageUrl,
   RecipeService,
@@ -109,17 +110,32 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
     throw new Error("Provide imageUrl, imageBase64, or images[]");
   }
 
+  const db = createDbClient(process.env.DATABASE_URL!);
+  const recipeService = new RecipeService(db);
+  const fingerprint = fingerprintImageBlob(first);
+  const duplicate = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
+  if (duplicate) {
+    throw new Error(
+      `This photo was already imported as "${duplicate.title}" (${duplicate.id}). Skip or open that recipe.`
+    );
+  }
+
   const extracted = await runPhotoImport({ images, isHandwritten: input.isHandwritten }, {});
   const draft = extracted.draft;
   draft.images = await persistMainPhoto(first, context.householdId);
+  draft.source = {
+    ...draft.source,
+    rawExtractionJson: {
+      ...(draft.source.rawExtractionJson ?? {}),
+      photoFingerprint: fingerprint,
+    },
+  };
   if (input.skipReview) {
     draft.needsReview = false;
   } else if (extracted.uncertainFields.length > 0) {
     draft.needsReview = true;
   }
 
-  const db = createDbClient(process.env.DATABASE_URL!);
-  const recipeService = new RecipeService(db);
   const recipe = await recipeService.createRecipeFromDraft(draft, {
     householdId: context.householdId,
     createdBy: context.userId ?? context.apiKeyId ?? context.householdId,

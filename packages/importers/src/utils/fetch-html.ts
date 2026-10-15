@@ -81,7 +81,16 @@ export function looksLikeBotChallenge(html: string): boolean {
 
 export function isUsableRecipeHtml(html: string): boolean {
   if (!html || looksLikeBotChallenge(html)) return false;
-  return /application\/ld\+json/i.test(html) && /["']Recipe["']/.test(html);
+  const compact = html.replace(/\s+/g, " ").trim();
+  if (compact.length < 400) return false;
+  return (
+    (/application\/ld\+json/i.test(html) && /Recipe/i.test(html)) ||
+    /itemprop=["']recipe/i.test(html) ||
+    /<(h1|h2|h3|h4)[^>]*>[^<]{0,80}(ingredient|procedure|instruction|direction|method)/i.test(
+      html
+    ) ||
+    /["']Recipe["']/.test(html)
+  );
 }
 
 export function waybackMachineUrl(url: string): string {

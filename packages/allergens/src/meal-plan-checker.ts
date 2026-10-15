@@ -129,6 +129,10 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
   const byPersonMap = new Map<string, PersonCheckResult>();
   const incompleteReasons: string[] = [];
 
+  if (input.people.length === 0) {
+    incompleteReasons.push("No people to check this plan against");
+  }
+
   // Initialize per-person results
   for (const person of input.people) {
     byPersonMap.set(person.id, {
@@ -159,15 +163,19 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
       affectedPeople: [],
     };
 
-    // Find people attending this entry
-    const attendingPeople = input.people.filter((p) => entry.attendees.includes(p.id));
+    const skipIngredientCheck = !entry.recipeId && Boolean(entry.freeformMeal);
+    const attendingPeople =
+      entry.attendees.length === 0
+        ? []
+        : input.people.filter((p) => entry.attendees.includes(p.id));
 
-    if (attendingPeople.length === 0) {
-      // No attendees, skip
+    if (!skipIngredientCheck && (entry.attendees.length === 0 || attendingPeople.length === 0)) {
+      incompleteReasons.push(
+        `No attendees listed for ${entry.recipeTitle || entry.freeformMeal || "this meal"} — cannot finish a safety check`
+      );
+      byEntry.push(entryResult);
       continue;
     }
-
-    const skipIngredientCheck = !entry.recipeId && Boolean(entry.freeformMeal);
 
     if (entry.ingredients.length === 0 && !skipIngredientCheck) {
       incompleteReasons.push(
@@ -204,7 +212,7 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
       );
     }
 
-    // One notice per person per meal — mozzarella and parmesan share a dairy message.
+    // One notice per person per allergen, listing every matching ingredient.
     const collapsed = {
       block: collapseRuleFindings(checkResult.findings.block),
       warn: collapseRuleFindings(checkResult.findings.warn),

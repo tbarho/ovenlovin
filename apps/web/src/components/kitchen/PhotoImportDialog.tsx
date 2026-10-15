@@ -11,6 +11,15 @@ import {
 } from "@/lib/photo-import-review";
 import { BottomSheet } from "./BottomSheet";
 
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read that photo"));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function extractFromFiles(files: File[]): Promise<PhotoImportPreview> {
   const data = new FormData();
   for (const file of files) {
@@ -33,12 +42,14 @@ async function extractFromFiles(files: File[]): Promise<PhotoImportPreview> {
 
 function PhotoReviewForm({
   draft,
+  heroSrc,
   pending,
   error,
   onChange,
   onSave,
 }: {
   draft: PhotoReviewDraft;
+  heroSrc: string | null;
   pending: boolean;
   error: string | null;
   onChange: (next: PhotoReviewDraft) => void;
@@ -55,9 +66,9 @@ function PhotoReviewForm({
           Fix anything that looks off, then save. One main photo is kept.
         </p>
       )}
-      {draft.images[0] ? (
+      {heroSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="photo-review-hero" src={draft.images[0]} alt="" />
+        <img className="photo-review-hero" src={heroSrc} alt="" />
       ) : null}
       <label>
         Title
@@ -152,7 +163,19 @@ export function PhotoImportDialog({
   const [draft, setDraft] = useState<PhotoReviewDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [localHero, setLocalHero] = useState<string | null>(null);
   const extractedKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    const file = files[0];
+    if (!open || !file) {
+      setLocalHero(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setLocalHero(url);
+    return () => URL.revokeObjectURL(url);
+  }, [open, files]);
 
   useEffect(() => {
     if (!open) {
@@ -194,9 +217,13 @@ export function PhotoImportDialog({
     setPending(true);
     setError(null);
     try {
+      const body = recipeCreateBodyFromReview(draft);
+      if ((!body.images || body.images.length === 0) && files[0]) {
+        body.images = [await fileToDataUrl(files[0])];
+      }
       const recipe = await api<{ id: string }>("/api/v1/recipes", {
         method: "POST",
-        body: JSON.stringify(recipeCreateBodyFromReview(draft)),
+        body: JSON.stringify(body),
       });
       onClose();
       router.push(`/recipes/${recipe.id}`);
@@ -218,6 +245,7 @@ export function PhotoImportDialog({
       {phase === "review" && draft ? (
         <PhotoReviewForm
           draft={draft}
+          heroSrc={draft.images[0] || localHero}
           pending={pending}
           error={error}
           onChange={setDraft}

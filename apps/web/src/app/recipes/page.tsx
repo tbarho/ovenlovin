@@ -4,16 +4,15 @@ import { getDatabase } from "@ovenlovin/db";
 import { CookbookRecipes } from "@/components/kitchen/CookbookRecipes";
 import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { householdLovePeople, sortRecipesByLoves } from "@/lib/household-loves";
+import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadRecipeSafetyById } from "@/lib/load-recipe-safety";
-import { getSessionContext } from "@/lib/session";
 
 export default async function RecipesPage({
   searchParams,
 }: {
   searchParams: Promise<{ cookbook?: string }>;
 }) {
-  const context = await getSessionContext().catch(() => null);
-  if (!context?.householdId) redirect("/sign-in");
+  const context = await requireKitchenContext();
   const householdId = context.householdId;
   const { cookbook: cookbookId } = await searchParams;
 

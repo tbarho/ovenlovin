@@ -1,15 +1,13 @@
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { ApiKeyManager } from "@/components/settings/ApiKeyManager";
 import { DemoAgentPanel } from "@/components/demo/DemoAgentPanel";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { findDemoSandboxByHousehold } from "@/lib/demo/sandbox";
+import { requireKitchenContext } from "@/lib/kitchen-session";
 import { resolveOrigin } from "@/lib/origin";
-import { getSessionContext } from "@/lib/session";
 
 export default async function SettingsPage() {
-  const context = await getSessionContext().catch(() => null);
-  if (!context?.householdId) redirect("/sign-in");
+  const context = await requireKitchenContext();
 
   const demo = isDemoModeEnabled();
   const sandbox = demo ? await findDemoSandboxByHousehold(context.householdId) : null;

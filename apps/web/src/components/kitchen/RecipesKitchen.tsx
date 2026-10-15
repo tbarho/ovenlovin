@@ -114,6 +114,7 @@ export function RecipesKitchen({
 
   return (
     <>
+      <KitchenTour />
       <div className="kitchen-head">
         <div>
           <h1>Recipes</h1>
@@ -127,7 +128,6 @@ export function RecipesKitchen({
           </button>
         </div>
       </div>
-      <KitchenTour />
       <ImportRecipeForm />
 
       <div className="recipe-browse">

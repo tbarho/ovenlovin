@@ -6,10 +6,10 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "ovenlovin.first-run-v1";
 
 export function KitchenTour() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
-    setOpen(window.localStorage.getItem(STORAGE_KEY) !== "1");
+    if (window.localStorage.getItem(STORAGE_KEY) === "1") setOpen(false);
   }, []);
 
   if (!open) return null;
