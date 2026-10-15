@@ -100,7 +100,7 @@ Persist the household people order used by lists, who-can-eat, and household con
 
 ### `manage_person_rules`
 
-List, add, or remove Can't eat / Doesn't like rules. Tree-nut rules accept `treatCoconutAsTreeNut` (default **false** — coconut is not a tree nut unless the family turns it on).
+List, add, or remove Can't eat / Doesn't like rules. Allergen typos (`pean` → `peanut`) are canonicalized the same way as the People UI. Tree-nut rules accept `treatCoconutAsTreeNut` (default **false** — coconut is not a tree nut unless the family turns it on).
 
 ```json
 {
@@ -138,7 +138,7 @@ List, add, or remove a Love. Loves never filter recipes; they boost ranking and 
 
 ### `check_meal_plan`
 
-**MUST** be called before saving a plan. Returns per-entry, per-person findings by severity.
+**MUST** be called before saving a plan. Returns per-entry, per-person findings by severity. Nights may omit `recipeId` (leftovers, eat-out, or an empty night); use `freeformMeal` for a label.
 
 ```json
 {

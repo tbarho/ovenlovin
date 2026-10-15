@@ -15,6 +15,7 @@ import {
   extractPageImages,
   pickImportRecipeImage,
 } from "../utils/url";
+import { extractHtmlRecipe } from "../utils/html-recipe";
 import {
   parseRecipeNotes,
   parseRecipeNutrition,
@@ -43,10 +44,12 @@ export function createUrlImporter(): Importer<UrlImportInput> {
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
       const { html, finalUrl } = await fetchHtml(input.url);
-      const jsonLd = extractJsonLd(html);
+      const jsonLd = extractJsonLd(html) ?? extractHtmlRecipe(html);
 
       if (!jsonLd) {
-        throw new Error("No schema.org Recipe JSON-LD found on page");
+        throw new Error(
+          "We got the page but could not find a recipe on it. Try pasting the recipe text instead."
+        );
       }
 
       return {

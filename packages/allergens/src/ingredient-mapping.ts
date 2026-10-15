@@ -1039,6 +1039,19 @@ function defaultIngredientMap(): Map<string, IngredientAllergenMapping[]> {
 }
 
 /**
+ * "Almond-free pesto" is a seed or swap pesto, not a pine-nut finding.
+ * Still flag explicit pine nuts on the same line.
+ */
+function skipPestoPineNutHeuristic(line: string, mapping: IngredientAllergenMapping): boolean {
+  if (mapping.allergenCode !== "pine_nut") return false;
+  const pestoName =
+    mapping.name === "pesto" || mapping.aliases.some((alias) => /\bpesto\b/i.test(alias));
+  if (!pestoName) return false;
+  if (/\bpine\s*nuts?\b/i.test(line)) return false;
+  return /\b(almond|cashew|walnut|pecan|hazelnut|pistachio|macadamia|nut)s?-free\b/i.test(line);
+}
+
+/**
  * Match an ingredient line to allergen mappings.
  * Exact lookup first, then word-boundary / plural phrase scan on raw text
  * (so "1/2 cup roasted peanuts" matches peanut). Longer phrases win so
@@ -1050,7 +1063,9 @@ export function matchIngredient(
 ): IngredientAllergenMapping[] {
   const keep = (mappings: IngredientAllergenMapping[]) =>
     dedupeMappings(mappings).filter(
-      (mapping) => !lineNegatesAllergen(ingredientName, mapping.allergenCode)
+      (mapping) =>
+        !lineNegatesAllergen(ingredientName, mapping.allergenCode) &&
+        !skipPestoPineNutHeuristic(ingredientName, mapping)
     );
 
   const exact = map.get(normalizeIngredientName(ingredientName));

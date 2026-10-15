@@ -204,14 +204,14 @@ function DayEditor({
             </div>
             <div className="week-editor-actions">
               {current ? (
-                <button type="button" className="btn compact" disabled={pending} onClick={onClear}>
+                <button type="button" className="btn compact" onClick={onClear}>
                   Clear night
                 </button>
               ) : null}
               <button
                 type="button"
                 className="btn compact"
-                disabled={pending || current?.isNoCook}
+                disabled={current?.isNoCook}
                 onClick={onNoCook}
               >
                 No-cook night
@@ -232,7 +232,6 @@ function DayEditor({
                       type="button"
                       className="week-pick"
                       data-safety={recipe.safety}
-                      disabled={pending}
                       onClick={() => onPick(recipe.id)}
                     >
                       {mealThumb(recipe.title, recipe.image)}
@@ -268,7 +267,7 @@ function DayEditor({
                       <RecipePickButton
                         recipe={recipe}
                         currentRecipeId={current?.recipeId ?? null}
-                        pending={pending}
+                        pending={false}
                         onPick={onPick}
                       />
                     </li>
@@ -292,7 +291,7 @@ function DayEditor({
                           <RecipePickButton
                             recipe={recipe}
                             currentRecipeId={current?.recipeId ?? null}
-                            pending={pending}
+                            pending={false}
                             onPick={onPick}
                           />
                         </li>
@@ -303,6 +302,7 @@ function DayEditor({
               ) : null}
             </>
           )}
+          {pending ? <p className="muted">Saving this night…</p> : null}
           {error ? <p className="muted">{error}</p> : null}
         </div>
       </div>
@@ -349,6 +349,7 @@ export function MealPlanWeek({
   }, [entries]);
 
   const selectedDay = daysView.find((day) => day.date === selectedDate);
+  const persistQueue = useRef(Promise.resolve());
   const dismissToast = useCallback(() => setToast(null), []);
   const closeEditor = useCallback(() => {
     setSelectedDate(null);
@@ -372,30 +373,42 @@ export function MealPlanWeek({
     nextEntries: PlanEntryDraft[],
     patch?: { entries: Array<Record<string, unknown>> }
   ): Promise<boolean> {
-    setPending(true);
-    setError(null);
-    const writes = nextEntries.map(toEntryWrite);
-    try {
-      if (!planId) {
-        await api<MealPlanWrite>("/api/v1/meal-plans", {
-          method: "POST",
-          body: JSON.stringify({ weekStart: resolvedWeekStart, status: "draft", entries: writes }),
-        });
-        router.refresh();
-      } else {
-        await api(`/api/v1/meal-plans/${planId}`, {
-          method: "PATCH",
-          body: JSON.stringify(patch ?? { entries: writes }),
-        });
-        if (!patch) router.refresh();
+    const run = async () => {
+      setPending(true);
+      setError(null);
+      const writes = nextEntries.map(toEntryWrite);
+      try {
+        if (!planId) {
+          await api<MealPlanWrite>("/api/v1/meal-plans", {
+            method: "POST",
+            body: JSON.stringify({
+              weekStart: resolvedWeekStart,
+              status: "draft",
+              entries: writes,
+            }),
+          });
+          router.refresh();
+        } else {
+          await api(`/api/v1/meal-plans/${planId}`, {
+            method: "PATCH",
+            body: JSON.stringify(patch ?? { entries: writes }),
+          });
+          if (!patch) router.refresh();
+        }
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not update the plan");
+        return false;
+      } finally {
+        setPending(false);
       }
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update the plan");
-      return false;
-    } finally {
-      setPending(false);
-    }
+    };
+    const queued = persistQueue.current.then(run, run);
+    persistQueue.current = queued.then(
+      () => undefined,
+      () => undefined
+    );
+    return queued;
   }
 
   async function withDinner(
@@ -580,7 +593,7 @@ export function MealPlanWeek({
       <KitchenToast
         message={toast?.message ?? null}
         onUndo={
-          toast
+          toast && !pending
             ? () => {
                 const restore = toast.undoEntries;
                 const restoreDays = toast.undoDays;

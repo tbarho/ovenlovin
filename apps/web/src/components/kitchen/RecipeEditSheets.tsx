@@ -283,7 +283,7 @@ export function PhotosSheet({
         {preview ? (
           <div className="photo-preview">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="" />
+            <img src={preview} alt="Recipe photo preview" />
           </div>
         ) : (
           <p className="muted">No photo yet.</p>

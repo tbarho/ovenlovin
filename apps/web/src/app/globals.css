@@ -1301,6 +1301,24 @@ select {
   font-weight: 650;
 }
 
+@media (max-width: 480px) {
+  .kitchen-tour {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+
+  .kitchen-tour h2 {
+    font-size: 15px;
+  }
+
+  .kitchen-tour ol {
+    font-size: 13px;
+  }
+}
+
 .who-legend {
   display: flex;
   flex-wrap: wrap;
@@ -3054,12 +3072,14 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     align-items: start;
   }
 
-  .week-editor-slot {
-    grid-column: 1 / -1;
+  .week-day {
+    grid-row: 1;
+    padding: 12px 10px 14px;
   }
 
-  .week-day {
-    padding: 12px 10px 14px;
+  .week-editor-slot {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .week-day-head {
@@ -3138,7 +3158,8 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   color: #161310;
 }
 
-.demo-banner-dismiss {
+.demo-banner-dismiss,
+.demo-banner-reset {
   appearance: none;
   border: 0;
   background: transparent;
@@ -3146,17 +3167,26 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.demo-banner-reset {
+  order: 3;
+  font-size: 12px;
+  color: rgba(255, 248, 238, 0.55);
 }
 
 @media (max-width: 720px) {
   .demo-banner {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 8px;
     padding: 6px var(--gut);
     font-size: 13px;
   }
 
   .demo-banner-actions {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 6px;
   }
 
   .demo-banner-copy {
@@ -3168,8 +3198,9 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     border-color: rgba(255, 248, 238, 0.35);
     color: #fff8ee;
     box-shadow: none;
-    padding: 6px 10px;
-    font-size: 13px;
+    padding: 4px 8px;
+    font-size: 12px;
+    white-space: nowrap;
   }
 }
 
