@@ -81,10 +81,12 @@ describe("kitchen sheet-hosted forms", () => {
       "https://example.com/garlic.jpg"
     );
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    await user.click(screen.getByRole("button", { name: "Discard" }));
 
     await user.click(screen.getByRole("button", { name: "Edit ingredients" }));
     await typeFullWordAndKeepFocus(user, screen.getByRole("textbox"), "garlic");
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    await user.click(screen.getByRole("button", { name: "Discard" }));
 
     await user.click(screen.getByRole("button", { name: "Edit steps" }));
     await typeFullWordAndKeepFocus(user, screen.getByRole("textbox"), "simmer");
