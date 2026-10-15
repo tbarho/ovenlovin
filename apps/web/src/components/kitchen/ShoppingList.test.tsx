@@ -10,7 +10,9 @@ describe("ShoppingList", () => {
         items={[
           {
             key: "pesto",
-            name: "1/3 cup basil pesto",
+            name: "basil pesto",
+            quantity: 1 / 3,
+            unit: "cup",
             recipes: ["Weeknight pesto pasta"],
             warnings: [
               {
@@ -25,7 +27,9 @@ describe("ShoppingList", () => {
     );
 
     expect(screen.getByTestId("shopping-list")).toBeInTheDocument();
-    expect(screen.getByText("1/3 cup basil pesto")).toBeInTheDocument();
+    expect(screen.getByText("basil pesto")).toBeInTheDocument();
+    expect(screen.getByText(/1\/3 cup/)).toBeInTheDocument();
+    expect(screen.queryByText(/0\.33/)).not.toBeInTheDocument();
     expect(screen.getByText("Contains tree nuts, so Child B can't eat this")).toBeInTheDocument();
     expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
   });

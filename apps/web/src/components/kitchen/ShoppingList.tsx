@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatShopQuantity } from "@/lib/format-quantity";
 import type { ShopItem } from "@/lib/week-plan";
 
 export function ShoppingList({ items }: { items: ShopItem[] }) {
@@ -18,12 +19,7 @@ export function ShoppingList({ items }: { items: ShopItem[] }) {
     <ul className="shop-list" data-testid="shopping-list">
       {items.map((item) => {
         const done = Boolean(checked[item.key]);
-        const qty =
-          item.quantity != null
-            ? `${Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)}${
-                item.unit ? ` ${item.unit}` : ""
-              }`
-            : null;
+        const qty = formatShopQuantity(item.quantity, item.unit);
         return (
           <li className={`shop-item${done ? " is-done" : ""}`} key={item.key}>
             <label>
