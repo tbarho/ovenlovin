@@ -411,6 +411,65 @@ export function allCatalogEntries(): CatalogEntry[] {
   return [...allergenCatalog(), ...dietCatalogEntries(), ...dislikeCatalog, ...loveCatalog];
 }
 
+function slugCatalogCode(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+function intentForRuleKind(kind?: string): RuleIntent {
+  if (kind === "diet") return "diet";
+  if (kind === "ingredient" || kind === "ingredient_category" || kind === "tag") return "dislike";
+  return "allergy";
+}
+
+export function catalogGroupForRuleKind(kind?: string): CatalogGroup | undefined {
+  if (kind === "allergen") return "allergen";
+  if (kind === "diet") return "diet";
+  if (kind === "ingredient" || kind === "ingredient_category") return "ingredient";
+  return undefined;
+}
+
+export function ruleKindForCatalogGroup(group: CatalogGroup): "allergen" | "diet" | "ingredient" {
+  if (group === "allergen") return "allergen";
+  if (group === "diet") return "diet";
+  return "ingredient";
+}
+
+/**
+ * Canonicalize a typed allergen/diet/ingredient the same way the People UI
+ * does (`resolveFoodAdd`): exact catalog codes win, then searchCatalog typos
+ * such as "pean" → peanut.
+ */
+export function resolveCatalogTarget(
+  query: string,
+  options: { kind?: string } = {}
+): CatalogEntry | null {
+  const q = query.trim();
+  if (!q) return null;
+  const slug = slugCatalogCode(q);
+  const group = catalogGroupForRuleKind(options.kind);
+  const exact =
+    (slug ? findCatalogEntry(slug, group) : undefined) ??
+    (slug ? findCatalogEntry(slug) : undefined) ??
+    findCatalogEntry(q, group) ??
+    findCatalogEntry(q);
+  if (exact) return exact;
+
+  const primary = intentForRuleKind(options.kind);
+  const intents: RuleIntent[] = [];
+  for (const intent of [primary, "allergy", "diet", "dislike"] as const) {
+    if (!intents.includes(intent)) intents.push(intent);
+  }
+  for (const intent of intents) {
+    const match = searchCatalog(q, { intent, limit: 8 })[0];
+    if (match) return match;
+  }
+  return null;
+}
+
 export function findCatalogEntry(code: string, group?: CatalogGroup): CatalogEntry | undefined {
   const pools =
     group === "diet"
