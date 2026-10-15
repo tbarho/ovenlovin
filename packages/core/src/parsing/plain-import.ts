@@ -49,7 +49,7 @@ type PasteMeta = {
 };
 
 export function stripLeadingStepNumber(text: string): string {
-  return text.replace(/^\s*(?:\d+|[A-Za-z]|[ivxlcdm]+)[.)]\s+/i, "").trim();
+  return text.replace(/^\s*(?:steps?\s+)?(?:\d+|[A-Za-z]|[ivxlcdm]+)[.:)]\s+/i, "").trim();
 }
 
 function parseSourceValue(value: string): { sourceUrl?: string; sourceName?: string } {
