@@ -4,6 +4,8 @@ import {
   catalogForIntent,
   findCatalogEntry,
   humanizeTarget,
+  resolveCatalogTarget,
+  ruleKindForCatalogGroup,
   searchCatalog,
 } from "./catalog";
 
@@ -57,6 +59,23 @@ describe("searchCatalog", () => {
     expect(results.every((entry) => entry.group === "ingredient")).toBe(true);
     expect(results.some((entry) => entry.code === "cilantro")).toBe(true);
     expect(catalogForIntent("dislike").every((entry) => entry.group === "ingredient")).toBe(true);
+  });
+});
+
+describe("resolveCatalogTarget", () => {
+  it("canonicalizes a peanut typo the same way the People UI does", () => {
+    const resolved = resolveCatalogTarget("pean", { kind: "allergen" });
+    expect(resolved?.code).toBe("peanut");
+    expect(resolved?.group).toBe("allergen");
+    expect(ruleKindForCatalogGroup(resolved!.group)).toBe("allergen");
+  });
+
+  it("keeps an exact catalog code", () => {
+    expect(resolveCatalogTarget("tree_nut", { kind: "allergen" })?.code).toBe("tree_nut");
+  });
+
+  it("leaves an unknown custom food alone", () => {
+    expect(resolveCatalogTarget("zxqfoodnotincatalog", { kind: "ingredient" })).toBeNull();
   });
 });
 

@@ -1,7 +1,27 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
+import { resolveCatalogTarget, ruleKindForCatalogGroup } from "@ovenlovin/allergens";
 import { createDbClient } from "@ovenlovin/db";
+
+export function canonicalizePersonRuleTarget(
+  kind: "allergen" | "ingredient" | "ingredient_category" | "diet" | "tag" | "custom",
+  target: string
+): { kind: typeof kind; target: string; canonicalized: boolean } {
+  const resolved = resolveCatalogTarget(target, { kind });
+  if (!resolved) {
+    return { kind, target: target.trim(), canonicalized: false };
+  }
+  const nextKind =
+    kind === "custom" || kind === "tag" || kind === "ingredient_category"
+      ? kind
+      : ruleKindForCatalogGroup(resolved.group);
+  return {
+    kind: nextKind,
+    target: resolved.code,
+    canonicalized: resolved.code !== target.trim() || nextKind !== kind,
+  };
+}
 
 export const managePersonRulesSchema = z.object({
   action: z.enum(["list", "add", "remove"]),
@@ -58,10 +78,11 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
     if (!input.kind || !input.target || !input.severity) {
       throw new Error("kind, target, and severity are required to add a rule");
     }
+    const canonical = canonicalizePersonRuleTarget(input.kind, input.target);
     const created = await people.createRule({
       personId: person.id,
-      kind: input.kind,
-      target: input.target,
+      kind: canonical.kind,
+      target: canonical.target,
       severity: input.severity,
       includeMayContain: input.includeMayContain ?? input.severity === "block",
       includeCrossContact: input.includeCrossContact ?? input.severity === "block",
@@ -84,6 +105,7 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
         target: created.target,
         severity: created.severity,
       },
+      canonicalizedFrom: canonical.canonicalized ? input.target : undefined,
     };
   }
 
@@ -99,7 +121,7 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
 export const managePersonRulesTool = {
   name: "manage_person_rules",
   description:
-    "List, add, or remove Can't eat / Doesn't like rules for a person. Not medical advice — always check ingredient labels before serving.",
+    "List, add, or remove Can't eat / Doesn't like rules for a person. Allergen typos (pean → peanut) are canonicalized the same way as the People UI. Not medical advice — always check ingredient labels before serving.",
   inputSchema: managePersonRulesSchema,
   handler,
 } as const;
