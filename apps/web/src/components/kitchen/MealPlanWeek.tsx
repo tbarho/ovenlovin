@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/browser-api";
-import { dinnerEntryForDate, filterPlanRecipes, saferPicks } from "@/lib/plan-recipes";
+import {
+  applyDinnerToDays,
+  applyDinnerToEntries,
+  dinnerEntryForDate,
+  filterPlanRecipes,
+  saferPicks,
+} from "@/lib/plan-recipes";
 import { KitchenToast } from "./KitchenToast";
 import {
   NO_COOK_LABEL,
@@ -16,6 +22,9 @@ import {
 } from "@/lib/week-plan-view";
 
 type MealPlanWrite = { id: string };
+
+const EMPTY_ENTRIES: PlanEntryDraft[] = [];
+const EMPTY_RECIPES: PlanRecipePick[] = [];
 
 function mealThumb(title: string, image: string | null) {
   if (image) {
@@ -119,7 +128,7 @@ function DayEditor({
           </p>
         </div>
         <div className="week-editor-actions">
-          {current && !current.isNoCook ? (
+          {current ? (
             <button type="button" className="btn compact" disabled={pending} onClick={onClear}>
               Clear night
             </button>
@@ -210,8 +219,8 @@ export function MealPlanWeek({
   days,
   planId = null,
   weekStart,
-  entries = [],
-  recipes = [],
+  entries = EMPTY_ENTRIES,
+  recipes = EMPTY_RECIPES,
   defaultServings = 4,
 }: {
   days: WeekDay[];
@@ -227,12 +236,21 @@ export function MealPlanWeek({
   const [servings, setServings] = useState(defaultServings);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [daysView, setDaysView] = useState(days);
+  const [entriesView, setEntriesView] = useState(entries);
   const [toast, setToast] = useState<{ message: string; undoEntries: PlanEntryDraft[] } | null>(
     null
   );
   const resolvedWeekStart = weekStart ?? days[0]?.date ?? "";
 
-  const selectedDay = days.find((day) => day.date === selectedDate);
+  useEffect(() => {
+    setDaysView(days);
+  }, [days]);
+  useEffect(() => {
+    setEntriesView(entries);
+  }, [entries]);
+
+  const selectedDay = daysView.find((day) => day.date === selectedDate);
   const dismissToast = useCallback(() => setToast(null), []);
 
   async function persist(nextEntries: PlanEntryDraft[]): Promise<boolean> {
@@ -274,40 +292,41 @@ export function MealPlanWeek({
     date: string,
     next: { recipeId?: string | null; freeformMeal?: string | null; servings?: number | null }
   ) {
-    const previous = entries;
-    const rest = entries.filter((entry) => !(entry.date === date && entry.mealSlot === "dinner"));
+    const previousDays = daysView;
+    const previous = entriesView;
     const cleared = next.recipeId === null && next.freeformMeal === null;
-    const nextEntries = cleared
-      ? rest
-      : [
-          ...rest,
-          {
-            id: dinnerEntryForDate(entries, date)?.id,
-            date,
-            mealSlot: "dinner",
-            recipeId: next.recipeId ?? null,
-            freeformMeal: next.freeformMeal ?? null,
-            servings: next.servings ?? dinnerEntryForDate(entries, date)?.servings ?? servings,
-            attendees: dinnerEntryForDate(entries, date)?.attendees ?? [],
-          },
-        ];
+    const nextEntries = applyDinnerToEntries(entriesView, date, {
+      ...next,
+      servings: next.servings ?? dinnerEntryForDate(entriesView, date)?.servings ?? servings,
+    });
+    setDaysView(applyDinnerToDays(daysView, date, next, recipes));
+    setEntriesView(nextEntries);
     const ok = await persist(nextEntries);
+    if (!ok) {
+      setDaysView(previousDays);
+      setEntriesView(previous);
+      return;
+    }
     if (ok && cleared && previous.length > 0) {
-      const weekday = days.find((day) => day.date === date)?.weekday ?? "that night";
+      const weekday = daysView.find((day) => day.date === date)?.weekday ?? "that night";
       setToast({ message: `Cleared ${weekday} dinner`, undoEntries: previous });
     }
   }
 
   function applyServings(nextServings: number) {
     setServings(nextServings);
-    if (entries.length === 0) return;
+    if (entriesView.length === 0) return;
     void persist(
-      entries.map((entry) => (entry.recipeId ? { ...entry, servings: nextServings } : entry))
+      entriesView.map((entry) => (entry.recipeId ? { ...entry, servings: nextServings } : entry))
     );
   }
 
   return (
-    <div className="week-plan" data-testid="meal-plan-week">
+    <div
+      className={`week-plan${pending ? " is-pending" : ""}`}
+      data-testid="meal-plan-week"
+      aria-busy={pending}
+    >
       <div className="week-toolbar">
         <label className="week-servings">
           <span>This week we cook for</span>
@@ -327,7 +346,7 @@ export function MealPlanWeek({
       </div>
 
       <div className="week-grid">
-        {days.map((day) => {
+        {daysView.map((day) => {
           const meal = day.meals[0];
           const selected = selectedDate === day.date;
           return (

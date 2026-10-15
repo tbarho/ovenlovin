@@ -105,6 +105,7 @@ describe("MealPlanWeek", () => {
     expect(within(editor).getByRole("button", { name: /weeknight pesto pasta/i })).toBeVisible();
 
     await user.click(within(editor).getByRole("button", { name: /veggie tacos/i }));
+    expect(screen.getByRole("heading", { name: "Veggie tacos" })).toBeInTheDocument();
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({
@@ -177,7 +178,7 @@ describe("MealPlanWeek", () => {
           {
             date: "2026-10-12",
             meal: "dinner",
-            recipeId: "recipe-pesto",
+            freeformMeal: "No-cook night",
             servings: 4,
             attendees: [],
           },

@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc, gte, lte } from "drizzle-orm";
+import { eq, and, isNull, desc, gte, lte, inArray } from "drizzle-orm";
 import { mealPlan, mealPlanEntry, recipeIngredient, recipe } from "@ovenlovin/db";
 import type { MealPlan, MealPlanEntry, MealPlanEntryWrite } from "../schemas/plans";
 import type { RecipeIngredient } from "../schemas/recipes";
@@ -128,22 +128,28 @@ export class PlanService extends BaseService {
       .set({ deletedAt: new Date() })
       .where(and(eq(mealPlanEntry.mealPlanId, planId), isNull(mealPlanEntry.deletedAt)));
 
-    const created: MealPlanEntry[] = [];
-    for (const entry of entries) {
-      created.push(
-        await this.createMealPlanEntry({
-          mealPlanId: planId,
-          date: entry.date,
-          mealSlot: entry.meal,
-          recipeId: entry.recipeId ?? null,
-          freeformMeal: entry.freeformMeal ?? null,
-          servings: entry.servings ?? null,
-          attendees: entry.attendees ?? [],
-          prepAheadNotes: entry.prepAheadNotes ?? null,
-          leftoverSourceId: null,
-        })
-      );
-    }
+    const recipeIds = [
+      ...new Set(entries.map((entry) => entry.recipeId).filter((id): id is string => Boolean(id))),
+    ];
+    const servingsByRecipe = await this.getRecipeServingsByIds(recipeIds);
+    const created = await Promise.all(
+      entries.map((entry) =>
+        this.createMealPlanEntry(
+          {
+            mealPlanId: planId,
+            date: entry.date,
+            mealSlot: entry.meal,
+            recipeId: entry.recipeId ?? null,
+            freeformMeal: entry.freeformMeal ?? null,
+            servings: entry.servings ?? null,
+            attendees: entry.attendees ?? [],
+            prepAheadNotes: entry.prepAheadNotes ?? null,
+            leftoverSourceId: null,
+          },
+          entry.recipeId ? (servingsByRecipe.get(entry.recipeId) ?? null) : null
+        )
+      )
+    );
 
     await this._db
       .update(mealPlan)
@@ -165,9 +171,15 @@ export class PlanService extends BaseService {
   async createMealPlanEntry(
     data: Omit<MealPlanEntry, "id" | "createdAt" | "updatedAt" | "deletedAt" | "scaleFactor"> & {
       scaleFactor?: number;
-    }
+    },
+    knownRecipeServings?: number | null
   ): Promise<MealPlanEntry> {
-    const recipeServings = data.recipeId ? await this.getRecipeServings(data.recipeId) : null;
+    const recipeServings =
+      knownRecipeServings !== undefined
+        ? knownRecipeServings
+        : data.recipeId
+          ? await this.getRecipeServings(data.recipeId)
+          : null;
     const scaleFactor = scaleFactorForPlanEntry(data.servings, recipeServings, data.scaleFactor);
     const [created] = await this._db
       .insert(mealPlanEntry)
@@ -190,20 +202,30 @@ export class PlanService extends BaseService {
   }
 
   async getRecipeIngredientsForEntry(recipeId: string): Promise<RecipeIngredient[]> {
+    const grouped = await this.getRecipeIngredientsForRecipes([recipeId]);
+    return grouped.get(recipeId) ?? [];
+  }
+
+  async getRecipeIngredientsForRecipes(
+    recipeIds: string[]
+  ): Promise<Map<string, RecipeIngredient[]>> {
+    const grouped = new Map<string, RecipeIngredient[]>();
+    if (recipeIds.length === 0) return grouped;
+
     const ingredients = await this._db
       .select()
       .from(recipeIngredient)
-      .where(and(eq(recipeIngredient.recipeId, recipeId), isNull(recipeIngredient.deletedAt)))
+      .where(and(inArray(recipeIngredient.recipeId, recipeIds), isNull(recipeIngredient.deletedAt)))
       .orderBy(recipeIngredient.order);
 
-    return ingredients.map((ing) => {
+    for (const ing of ingredients) {
       const parsed = backfillParsedIngredient({
         rawText: ing.rawText,
         quantityMin: ing.quantityMin ? Number(ing.quantityMin) : null,
         quantityMax: ing.quantityMax ? Number(ing.quantityMax) : null,
         unit: ing.unit ?? null,
       });
-      return {
+      const mapped: RecipeIngredient = {
         ...ing,
         createdAt: ing.createdAt.toISOString(),
         updatedAt: ing.updatedAt.toISOString(),
@@ -221,7 +243,11 @@ export class PlanService extends BaseService {
         substitutionNotes: ing.substitutionNotes ?? undefined,
         parseConfidence: ing.parseConfidence ? Number(ing.parseConfidence) : undefined,
       };
-    });
+      const list = grouped.get(ing.recipeId) ?? [];
+      list.push(mapped);
+      grouped.set(ing.recipeId, list);
+    }
+    return grouped;
   }
 
   async getRecipeTitle(recipeId: string): Promise<string | null> {
@@ -235,13 +261,21 @@ export class PlanService extends BaseService {
   }
 
   async getRecipeServings(recipeId: string): Promise<number | null> {
-    const [result] = await this._db
-      .select({ servings: recipe.servings })
-      .from(recipe)
-      .where(and(eq(recipe.id, recipeId), isNull(recipe.deletedAt)))
-      .limit(1);
+    const byId = await this.getRecipeServingsByIds([recipeId]);
+    return byId.get(recipeId) ?? null;
+  }
 
-    return result?.servings ?? null;
+  async getRecipeServingsByIds(recipeIds: string[]): Promise<Map<string, number | null>> {
+    const byId = new Map<string, number | null>();
+    if (recipeIds.length === 0) return byId;
+    const rows = await this._db
+      .select({ id: recipe.id, servings: recipe.servings })
+      .from(recipe)
+      .where(and(inArray(recipe.id, recipeIds), isNull(recipe.deletedAt)));
+    for (const row of rows) {
+      byId.set(row.id, row.servings ?? null);
+    }
+    return byId;
   }
 
   private mapMealPlan(row: typeof mealPlan.$inferSelect): MealPlan {
