@@ -449,4 +449,28 @@ describe("checkMealPlan", () => {
     expect(result.status).toBe("complete");
     expect(result.byEntry[0]?.freeformMeal).toBe("Leftovers");
   });
+
+  it("emits one dairy notice per person per meal, not one per cheese", () => {
+    const parentA: PersonWithRules = {
+      id: "parent-a",
+      name: "Parent A",
+      rules: [createRule({ personId: "parent-a", target: "milk", severity: "warn" })],
+    };
+
+    const entry: MealPlanEntryInput = {
+      id: "entry-ziti",
+      date: "2026-10-13",
+      mealSlot: "dinner",
+      recipeTitle: "Baked ziti",
+      attendees: ["parent-a"],
+      ingredients: [{ name: "mozzarella" }, { name: "parmesan" }, { name: "pasta" }],
+    };
+
+    const result = checkMealPlan({ entries: [entry], people: [parentA] });
+    const dairy = result.byEntry[0]?.findings.warn ?? [];
+    expect(dairy).toHaveLength(1);
+    expect(dairy[0]?.personName).toBe("Parent A");
+    expect(dairy[0]?.message).toMatch(/dairy/i);
+    expect(result.byPerson[0]?.findings.warn).toHaveLength(1);
+  });
 });

@@ -18,6 +18,7 @@ import {
 import { createDbClient } from "@ovenlovin/db";
 import {
   checkIngredientsAgainstRules,
+  collapseRuleFindings,
   type RuleCheckContext,
   type IngredientCheckInput,
 } from "@ovenlovin/allergens";
@@ -117,11 +118,15 @@ async function handler(
 
     if (contexts.length > 0 && ingredientsToCheck.length > 0) {
       const checkResult = checkIngredientsAgainstRules(ingredientsToCheck, contexts);
-      for (const finding of [
+      const seen = new Set<string>();
+      for (const finding of collapseRuleFindings([
         ...checkResult.findings.block,
         ...checkResult.findings.warn,
         ...checkResult.findings.prefer_avoid,
-      ]) {
+      ])) {
+        const key = `${finding.personName}\0${finding.message}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
         warnings.push({
           ingredient: finding.ingredientName,
           personName: finding.personName,

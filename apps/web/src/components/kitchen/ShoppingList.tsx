@@ -4,6 +4,16 @@ import { useMemo, useState } from "react";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
 import type { ShopItem } from "@/lib/week-plan-view";
 
+function uniqueWarnings(warnings: ShopItem["warnings"]) {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = `${warning.personName}\0${warning.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function extraItem(name: string, index: number): ShopItem {
   return {
     key: `extra-${index}-${name.toLowerCase()}`,
@@ -66,11 +76,11 @@ export function ShoppingList({ items }: { items: ShopItem[] }) {
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
-                      {item.warnings.map((warning) => (
+                      {uniqueWarnings(item.warnings).map((warning) => (
                         <span
                           className="week-finding"
                           data-severity={warning.severity}
-                          key={`${item.key}-${warning.personName}`}
+                          key={`${item.key}-${warning.personName}-${warning.message}`}
                         >
                           {warning.message}
                         </span>

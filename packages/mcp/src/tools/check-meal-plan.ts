@@ -250,6 +250,14 @@ async function handler(
         });
       }
 
+      const seenFindings = new Set<string>();
+      const uniqueFindings = findings.filter((finding) => {
+        const key = `${finding.personId}\0${finding.severity}\0${finding.message}`;
+        if (seenFindings.has(key)) return false;
+        seenFindings.add(key);
+        return true;
+      });
+
       const loveHits = lovesForRecipe(
         {
           title: recipe.title,
@@ -273,7 +281,7 @@ async function handler(
         date: entry.date,
         meal: entry.meal,
         recipeTitle: recipe.title,
-        findings,
+        findings: uniqueFindings,
         scheduleIssues: scheduleIssues.length > 0 ? scheduleIssues : undefined,
         loveTags: loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
         incompleteReasons: entryIncompleteReasons,
