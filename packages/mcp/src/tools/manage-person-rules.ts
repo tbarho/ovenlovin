@@ -66,7 +66,7 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
       throw new Error("kind, target, and severity are required to add a rule");
     }
     const canonical = canonicalizePersonRuleTarget(input.kind, input.target);
-    if (!canonical.resolved && !input.confirmUnknown) {
+    if (input.kind === "allergen" && !canonical.resolved && !input.confirmUnknown) {
       throw new Error(unknownRuleTargetMessage(input.target));
     }
     const created = await people.createRule({

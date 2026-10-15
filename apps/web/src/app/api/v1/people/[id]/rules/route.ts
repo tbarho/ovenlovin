@@ -66,7 +66,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const kind = (body.kind ?? "allergen") as PersonRuleKind;
     const target = String(body.target ?? "");
     const canonical = canonicalizePersonRuleTarget(kind, target);
-    if (!canonical.resolved && !confirmUnknown) {
+    if (kind === "allergen" && !canonical.resolved && !confirmUnknown) {
       throw new BadRequestError(unknownRuleTargetMessage(target));
     }
 

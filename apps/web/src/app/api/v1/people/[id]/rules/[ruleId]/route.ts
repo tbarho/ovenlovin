@@ -82,7 +82,7 @@ export async function PATCH(
     const nextKind = (body.kind ?? existingRule.kind) as PersonRuleKind;
     const nextTarget = String(body.target ?? existingRule.target);
     const canonical = canonicalizePersonRuleTarget(nextKind, nextTarget);
-    if (!canonical.resolved && !confirmUnknown) {
+    if (nextKind === "allergen" && !canonical.resolved && !confirmUnknown) {
       throw new BadRequestError(unknownRuleTargetMessage(nextTarget));
     }
     const rest = { ...body };

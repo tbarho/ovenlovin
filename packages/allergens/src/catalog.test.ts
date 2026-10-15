@@ -91,6 +91,7 @@ describe("resolveCatalogTarget", () => {
   it("does not invent a catalog match for xyzzy", () => {
     expect(resolveCatalogTarget("xyzzy", { kind: "allergen" })).toBeNull();
     expect(canonicalizePersonRuleTarget("allergen", "xyzzy").resolved).toBe(false);
+    expect(canonicalizePersonRuleTarget("custom", "blueberries").resolved).toBe(false);
   });
 });
 
