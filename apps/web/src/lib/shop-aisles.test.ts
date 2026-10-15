@@ -23,6 +23,8 @@ describe("shopItemQuantity", () => {
   it("pluralizes shopping units", () => {
     expect(pluralizeShopUnit("2", "cup")).toBe("2 cups");
     expect(pluralizeShopUnit("1", "cup")).toBe("1 cup");
+    expect(pluralizeShopUnit("1/3", "cup")).toBe("1/3 cup");
+    expect(pluralizeShopUnit("1/8", "cup")).toBe("1/8 cup");
     expect(
       shopItemQuantity({
         key: "salt",

@@ -23,4 +23,22 @@ describe("dirty recipe edit sheets", () => {
     await user.click(screen.getByRole("button", { name: "Discard" }));
     expect(screen.queryByRole("dialog", { name: "Edit steps" })).not.toBeInTheDocument();
   });
+
+  it("previews the current recipe photo in the photo sheet", async () => {
+    const user = userEvent.setup();
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ images: ["https://example.com/pasta.jpg"] })}
+        cookbooks={[testCookbook()]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "Edit image" }));
+    const dialog = screen.getByRole("dialog", { name: "Recipe photo" });
+    expect(within(dialog).getByRole("img", { name: "Recipe photo preview" })).toHaveAttribute(
+      "src",
+      "https://example.com/pasta.jpg"
+    );
+    expect(within(dialog).getByRole("button", { name: "Remove photo" })).toBeVisible();
+    expect(within(dialog).getByText(/JPEG, PNG, or WebP/i)).toBeVisible();
+  });
 });

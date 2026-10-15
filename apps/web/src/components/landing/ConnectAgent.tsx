@@ -50,7 +50,12 @@ export function ConnectAgent({ origin, apiKey }: { origin: string; apiKey?: stri
             ))}
           </ol>
         </div>
-        <CopyBox label={guide.copyLabel} content={guide.content} />
+        <CopyBox
+          label={guide.copyLabel}
+          content={guide.content}
+          secret={Boolean(apiKey?.trim())}
+          secretValue={apiKey?.trim() || undefined}
+        />
       </div>
     </div>
   );

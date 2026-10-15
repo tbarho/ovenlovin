@@ -83,7 +83,8 @@ function quantityValue(amount: string): number {
 export function pluralizeShopUnit(amount: string, unit: string): string {
   const trimmed = unit.trim();
   if (!trimmed) return amount;
-  if (quantityValue(amount) === 1) return `${amount} ${trimmed}`;
+  const quantity = quantityValue(amount);
+  if (quantity > 0 && quantity <= 1) return `${amount} ${trimmed}`;
   const lower = trimmed.toLowerCase();
   const plural = UNIT_PLURALS[lower] ?? (trimmed.endsWith("s") ? trimmed : `${trimmed}s`);
   const cased =
