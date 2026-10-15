@@ -13,6 +13,11 @@ import { backfillParsedIngredient, parseIngredientLine } from "../parsing/ingred
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
 import { CookbookService } from "./cookbooks";
+import {
+  backfillInlineImageList,
+  omitInlineImagePayloads,
+  type StoredImagePut,
+} from "../media/recipe-images";
 
 export class RecipeService extends BaseService {
   async getRecipe(id: string): Promise<Recipe | null> {
@@ -343,7 +348,7 @@ export class RecipeService extends BaseService {
             canonicalUrl: sources[0].canonicalUrl ?? null,
             author: sources[0].author ?? null,
             attribution: sources[0].attribution ?? null,
-            blobRefs: (sources[0].blobRefs as string[]) ?? [],
+            blobRefs: omitInlineImagePayloads((sources[0].blobRefs as string[]) ?? []),
             importerName: sources[0].importerName ?? null,
             importerVersion: sources[0].importerVersion ?? null,
             modelUsed: sources[0].modelUsed ?? null,
@@ -443,7 +448,10 @@ export class RecipeService extends BaseService {
       canonicalUrl: draft.source.canonicalUrl ?? null,
       author: draft.source.author ?? null,
       attribution: draft.source.attribution ?? null,
-      blobRefs: draft.source.blobRefs ?? [],
+      blobRefs: omitInlineImagePayloads([
+        ...(draft.source.blobRefs ?? []),
+        ...(draft.images ?? []),
+      ]),
       importerName: draft.source.importerName,
       importerVersion: draft.source.importerVersion,
       modelUsed: draft.source.modelUsed ?? null,
@@ -472,6 +480,70 @@ export class RecipeService extends BaseService {
     const details = await this.getRecipeDetails(created.id);
     if (!details) throw new Error("Failed to load imported recipe");
     return details;
+  }
+
+  /**
+   * Copy inline `data:` photos into Blob when a put is configured.
+   * No-op without Blob — list/search still rewrite those rows to the image endpoint.
+   */
+  async backfillInlineImages(put: StoredImagePut | undefined): Promise<{ updated: number }> {
+    if (!put) return { updated: 0 };
+
+    const rows = await this._db
+      .select({
+        id: recipe.id,
+        householdId: recipe.householdId,
+        images: recipe.images,
+      })
+      .from(recipe)
+      .where(and(isNull(recipe.deletedAt), sql`${recipe.images}::text ilike '%data:image%'`));
+
+    let updated = 0;
+    for (const row of rows) {
+      const current = (row.images as string[]) ?? [];
+      const result = await backfillInlineImageList(
+        current,
+        put,
+        `recipes/${row.householdId}/backfill/${row.id}`
+      );
+      if (!result.changed) continue;
+      await this._db
+        .update(recipe)
+        .set({ images: result.images, updatedAt: new Date() })
+        .where(eq(recipe.id, row.id));
+      updated += 1;
+    }
+
+    const sources = await this._db
+      .select({
+        id: recipeSource.id,
+        recipeId: recipeSource.recipeId,
+        blobRefs: recipeSource.blobRefs,
+      })
+      .from(recipeSource)
+      .where(
+        and(
+          isNull(recipeSource.deletedAt),
+          sql`${recipeSource.blobRefs}::text ilike '%data:image%'`
+        )
+      );
+
+    for (const row of sources) {
+      const next = omitInlineImagePayloads((row.blobRefs as string[]) ?? []);
+      const current = (row.blobRefs as string[]) ?? [];
+      if (
+        next.length === current.length &&
+        next.every((value, index) => value === current[index])
+      ) {
+        continue;
+      }
+      await this._db
+        .update(recipeSource)
+        .set({ blobRefs: next, updatedAt: new Date() })
+        .where(eq(recipeSource.id, row.id));
+    }
+
+    return { updated };
   }
 
   async countRecipesByHousehold(householdId: string): Promise<number> {

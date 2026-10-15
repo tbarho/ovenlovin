@@ -195,7 +195,9 @@ Rate overall ocrQuality: excellent (printed, perfect), good (printed, minor issu
           type: "photo" as const,
           url: visibleSource?.startsWith("http") ? visibleSource : undefined,
           attribution: visibleSource,
-          blobRefs: (raw.sourceBlobs || []) as string[],
+          blobRefs: ((raw.sourceBlobs || []) as string[]).filter(
+            (blob) => blob.startsWith("http://") || blob.startsWith("https://")
+          ),
           importerName: "photo-importer",
           importerVersion: IMPORTER_VERSION,
           modelUsed: raw.modelUsed,

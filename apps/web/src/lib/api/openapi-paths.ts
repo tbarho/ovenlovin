@@ -88,6 +88,8 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/recipes",
     tags: ["recipes"],
     summary: "List recipes",
+    description:
+      "`images` is a thumbnail URL only. Photo imports never inline `data:` bytes here; fetch `GET /recipes/{id}/image` when Blob is not configured.",
     request: {
       query: z.object({
         limit: z.coerce.number().int().positive().max(100).optional(),
@@ -210,6 +212,21 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         description: "Updated recipe",
         content: { "application/json": { schema: recipeSchema } },
       },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/recipes/{id}/image",
+    tags: ["recipes"],
+    summary: "Main recipe photo (thumbnail URL from list/search)",
+    description:
+      "Returns the stored main photo. List and search never inline image bytes: they expose this URL (or a Blob URL) instead of data: URLs. Requires the same household auth as GET /recipes/{id}.",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: {
+      200: { description: "Image bytes" },
+      302: { description: "Redirect to a Blob or remote URL" },
+      404: { description: "Recipe or image not found" },
     },
   });
 

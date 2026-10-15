@@ -7,6 +7,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { RecipeService, PeopleService, type Recipe, type PersonRule } from "@ovenlovin/core";
+import { mcpRecipeImages } from "../media";
 import { createDbClient, recipeIngredient } from "@ovenlovin/db";
 import { eq, and, isNull } from "drizzle-orm";
 import {
@@ -157,7 +158,7 @@ async function handler(
         cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
         servings: recipe.servings ?? undefined,
         methodTags: recipe.methodTags || [],
-        images: recipe.images || [],
+        images: mcpRecipeImages(recipe.id, recipe.images),
         warnings: warnings.length > 0 ? warnings : undefined,
         loveTags: loveHits.length > 0 ? [...new Set(loveHits.map((hit) => hit.tag))] : undefined,
         _loveScore: loveScore(recipe, lovePeople),

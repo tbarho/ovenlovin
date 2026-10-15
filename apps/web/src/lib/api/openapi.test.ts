@@ -19,6 +19,7 @@ describe("generateOpenApiDocument", () => {
         "/status",
         "/recipes",
         "/recipes/{id}",
+        "/recipes/{id}/image",
         "/recipes/import/photo",
         "/meal-plans",
         "/meal-plans/{id}",

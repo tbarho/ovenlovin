@@ -149,6 +149,9 @@ describe("Photo Importer", () => {
       expect(draft.reviewReasons).toContain("OCR quality: fair");
 
       expect(draft.source.type).toBe("photo");
+      expect(draft.source.blobRefs ?? []).not.toEqual(
+        expect.arrayContaining([expect.stringMatching(/^data:/)])
+      );
       expect(draft.source.importerName).toBe("photo-importer");
       expect(draft.source.licenseNote).toContain("Personal/family recipe");
       expect(draft.notes).toBe("Chill the dough before rolling.");
