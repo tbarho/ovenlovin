@@ -1,4 +1,4 @@
-import { sanitizeWarningCopy } from "@ovenlovin/allergens";
+import { attendingPeopleForEntry, sanitizeWarningCopy } from "@ovenlovin/allergens";
 import {
   PeopleService,
   PlanService,
@@ -364,7 +364,5 @@ async function recipePicksForCatalog(
 }
 
 function peopleForEntry(people: Person[], entry: MealPlanEntry): Person[] {
-  if (entry.attendees.length === 0) return [];
-  const selected = people.filter((person) => entry.attendees.includes(person.id));
-  return selected.length > 0 ? selected : [];
+  return attendingPeopleForEntry(people, entry.attendees);
 }

@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import type { PersonRule } from "@ovenlovin/core";
 import {
+  attendingPeopleForEntry,
   checkMealPlan,
+  personIdsForPlanCheck,
   type MealPlanCheckInput,
   type PersonWithRules,
   type MealPlanEntryInput,
@@ -233,33 +235,73 @@ describe("checkMealPlan", () => {
     expect(result.summary.peopleWithWarnings).toBe(1);
   });
 
-  it("treats a recipe night with no attendees as incomplete, not all-clear", () => {
-    const childA: PersonWithRules = {
-      id: "child-a",
-      name: "Child A",
-      rules: [createRule({ personId: "child-a", target: "peanut", severity: "block" })],
+  it("checks a recipe night with no attendees against everyone in the household", () => {
+    const parentA: PersonWithRules = {
+      id: "parent-a",
+      name: "Parent A",
+      rules: [],
+    };
+    const childB: PersonWithRules = {
+      id: "child-b",
+      name: "Child B",
+      rules: [createRule({ personId: "child-b", target: "peanut", severity: "block" })],
     };
 
-    const entry: MealPlanEntryInput = {
-      id: "entry-1",
-      date: "2026-10-13",
-      mealSlot: "lunch",
-      recipeTitle: "Mystery Meal",
-      attendees: [],
-      ingredients: [{ name: "peanut butter" }],
-    };
+    const result = checkMealPlan({
+      entries: [
+        {
+          id: "entry-1",
+          date: "2026-10-12",
+          mealSlot: "dinner",
+          recipeId: "recipe-monday",
+          recipeTitle: "Monday dinner",
+          attendees: [],
+          ingredients: [{ name: "peanut sauce" }],
+        },
+      ],
+      people: [parentA, childB],
+    });
 
-    const input: MealPlanCheckInput = {
-      entries: [entry],
-      people: [childA],
-    };
+    expect(result.status).toBe("complete");
+    expect(result.summary.totalPeople).toBe(2);
+    expect(result.incompleteReasons ?? []).toEqual([]);
+    expect(result.byEntry[0]?.findings.block[0]?.personName).toBe("Child B");
+    expect(result.byEntry[0]?.findings.block[0]?.message).toMatch(/peanut/i);
+  });
 
-    const result = checkMealPlan(input);
+  it("treats a night without a recipe as complete even when attendees are empty", () => {
+    const result = checkMealPlan({
+      entries: [
+        {
+          id: "entry-1",
+          date: "2026-10-12",
+          mealSlot: "dinner",
+          freeformMeal: "Leftovers",
+          attendees: [],
+          ingredients: [],
+        },
+      ],
+      people: [
+        {
+          id: "parent-a",
+          name: "Parent A",
+          rules: [createRule({ personId: "parent-a", target: "peanut", severity: "block" })],
+        },
+      ],
+    });
 
-    expect(result.status).toBe("incomplete");
-    expect(result.incompleteReasons?.join(" ")).toMatch(/no attendees/i);
-    expect(result.byEntry).toHaveLength(1);
+    expect(result.status).toBe("complete");
+    expect(result.incompleteReasons ?? []).toEqual([]);
     expect(result.byEntry[0]?.findings.block).toHaveLength(0);
+  });
+
+  it("uses household people when a night listed no attendees", () => {
+    const parentA = { id: "parent-a", name: "Parent A" };
+    const childB = { id: "child-b", name: "Child B" };
+    expect(attendingPeopleForEntry([parentA, childB], [])).toEqual([parentA, childB]);
+    expect(attendingPeopleForEntry([parentA, childB], ["child-b"])).toEqual([childB]);
+    expect(personIdsForPlanCheck([], ["parent-a", "child-b"])).toEqual(["parent-a", "child-b"]);
+    expect(personIdsForPlanCheck(["child-b"], ["parent-a", "child-b"])).toEqual(["child-b"]);
   });
 
   it("treats a plan with no people as incomplete", () => {

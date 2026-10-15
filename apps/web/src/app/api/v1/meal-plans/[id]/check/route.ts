@@ -15,6 +15,7 @@ import {
 import { getDatabase } from "@ovenlovin/db";
 import {
   checkMealPlan,
+  personIdsForPlanCheck,
   type MealPlanCheckInput,
   type MealPlanEntryInput,
   type IngredientCheckInput,
@@ -71,16 +72,17 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
     })
   );
 
-  const attendeeIds = new Set<string>();
-  for (const entry of entries) {
-    for (const attendeeId of entry.attendees) {
-      attendeeIds.add(attendeeId);
-    }
-  }
+  const householdPeople = await peopleService.listPeopleByHousehold(householdId, { limit: 40 });
+  const attendeeIds = personIdsForPlanCheck(
+    entries.flatMap((entry) => entry.attendees),
+    householdPeople.items.map((person) => person.id)
+  );
 
   const peopleWithRules: PersonWithRules[] = await Promise.all(
-    Array.from(attendeeIds).map(async (personId) => {
-      const person = await peopleService.getPerson(personId);
+    attendeeIds.map(async (personId) => {
+      const person =
+        householdPeople.items.find((item) => item.id === personId) ??
+        (await peopleService.getPerson(personId));
       const rules = await peopleService.getRulesForPerson(personId);
 
       return {

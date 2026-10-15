@@ -1,4 +1,6 @@
+import { attendingPeopleForEntry } from "@ovenlovin/allergens";
 import { describe, expect, it } from "vitest";
+import { testPerson } from "@/test/fixtures";
 import {
   addDays,
   findingsFromCheck,
@@ -95,6 +97,16 @@ describe("week-plan view", () => {
         message: "Contains pine nuts, so Child B can't eat this",
       },
     ]);
+  });
+
+  it("checks an unlisted-attendee Monday dinner against Parent A and Child B", () => {
+    const parentA = testPerson({ displayName: "Parent A" });
+    const childB = testPerson({
+      id: "00000000-0000-4000-8000-000000000012",
+      displayName: "Child B",
+    });
+    expect(attendingPeopleForEntry([parentA, childB], [])).toEqual([parentA, childB]);
+    expect(attendingPeopleForEntry([], [])).toEqual([]);
   });
 
   it("rewrites leftover machine codes before they reach the kitchen", () => {
