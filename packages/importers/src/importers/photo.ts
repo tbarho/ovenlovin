@@ -11,6 +11,7 @@ import type {
   ParsedStep,
   ImporterConfig,
 } from "../types/importer";
+import { stripLeadingStepNumber } from "@ovenlovin/core";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { classifyDraftIngredients } from "../utils/classify-allergens";
 import { resolveVisionModelId } from "../utils/models";
@@ -337,7 +338,7 @@ function parseStepsWithOCR(
     }
 
     const step = item as Record<string, unknown>;
-    const text = typeof step.text === "string" ? step.text : "";
+    const text = typeof step.text === "string" ? stripLeadingStepNumber(step.text) : "";
     const ocrConfidence = typeof step.confidence === "string" ? step.confidence : "low";
 
     let confidence = 0.85;
