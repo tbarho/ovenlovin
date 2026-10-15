@@ -45,9 +45,7 @@ describe("extractHtmlRecipe", () => {
       <ol><li>Mix the batter.</li><li>Cook on a skillet.</li></ol>
     </body></html>`;
     const recipe = extractHtmlRecipe(html);
-    expect(recipe?.recipeIngredient).toEqual(
-      expect.arrayContaining(["1 cup flour", "1 egg"])
-    );
+    expect(recipe?.recipeIngredient).toEqual(expect.arrayContaining(["1 cup flour", "1 egg"]));
     expect(recipe?.recipeInstructions).toHaveLength(2);
   });
 

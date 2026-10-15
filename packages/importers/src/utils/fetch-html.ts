@@ -293,10 +293,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   if (cacheFallbackEnabled(env)) {
     for (const candidate of candidates) {
       const snapshot = await resolveWaybackSnapshot(fetchImpl, candidate);
-      const copies = [
-        ...(snapshot ? [{ url: snapshot }] : []),
-        ...publicCopyRequests(candidate),
-      ];
+      const copies = [...(snapshot ? [{ url: snapshot }] : []), ...publicCopyRequests(candidate)];
       for (const copy of copies) {
         try {
           const hit = await usableCopy(fetchImpl, copy.url, copy.headers);

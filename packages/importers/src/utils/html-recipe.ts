@@ -5,7 +5,8 @@ const INGREDIENT_HEADING = /\b(ingredients?|you will need|what you need)\b/i;
 const STEP_HEADING =
   /\b(procedure|method|directions?|instructions?|steps?|preparation|how to (make|cook))\b/i;
 const RECIPE_BOX = /[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612]/;
-const MARKDOWN_INGREDIENT = /^\s*(?:[-*]|\d+\.)\s+(?:[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612])?\s*(.+)$/;
+const MARKDOWN_INGREDIENT =
+  /^\s*(?:[-*]|\d+\.)\s+(?:[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612])?\s*(.+)$/;
 
 function headingText($el: ReturnType<cheerio.CheerioAPI>): string {
   return $el.text().replace(/\s+/g, " ").trim();
@@ -112,9 +113,7 @@ function extractCardMarkdown(text: string): Record<string, unknown> | null {
   }
   if (ingredients.length < 2 || steps.length < 1) return null;
   const title =
-    text.match(/^Title:\s+(.+)$/m)?.[1]?.trim() ||
-    text.match(/^#\s+(.+)$/m)?.[1]?.trim() ||
-    "";
+    text.match(/^Title:\s+(.+)$/m)?.[1]?.trim() || text.match(/^#\s+(.+)$/m)?.[1]?.trim() || "";
   if (!title) return null;
   return {
     "@type": "Recipe",

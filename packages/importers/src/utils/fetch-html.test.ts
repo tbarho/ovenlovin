@@ -131,9 +131,7 @@ describe("fetchHtml layers", () => {
           statusText: "OK",
           url: requested,
           text: async () =>
-            requested.includes("available")
-              ? '{"archived_snapshots":{}}'
-              : BUDGET,
+            requested.includes("available") ? '{"archived_snapshots":{}}' : BUDGET,
         };
       }
       return {
@@ -234,13 +232,20 @@ describe("fetchHtml layers", () => {
           status: 404,
           statusText: "Not Found",
           url: requested,
-          text: async () => "<html><title>Cookbook:Pancakes</title><body>No such page</body></html>",
+          text: async () =>
+            "<html><title>Cookbook:Pancakes</title><body>No such page</body></html>",
         };
       }
       if (requested === live) {
         return { ok: true, status: 200, statusText: "OK", url: live, text: async () => html };
       }
-      return { ok: false, status: 403, statusText: "Forbidden", url: requested, text: async () => "" };
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => "",
+      };
     });
 
     const result = await fetchHtml(missing, {
