@@ -13,7 +13,7 @@ import {
 } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
-import { recipeDeleteConfirmCopy } from "@/lib/recipe-delete";
+import { recipeDeleteConfirmCopy, writeRecipeDeleteToast } from "@/lib/recipe-delete";
 import { whoCanEat } from "@/lib/who-can-eat";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { KitchenToast } from "./KitchenToast";
@@ -63,7 +63,6 @@ export function RecipeDetail({
     null | "details" | "image" | "ingredients" | "steps" | "cookbook"
   >(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleted, setDeleted] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -76,24 +75,12 @@ export function RecipeDetail({
     try {
       await api(`/api/v1/recipes/${recipe.id}`, { method: "DELETE" });
       setConfirmDelete(false);
-      setDeleted(true);
-      setToast(`Deleted ${recipe.title}`);
+      writeRecipeDeleteToast({ id: recipe.id, title: recipe.title });
+      router.push("/recipes");
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Could not delete recipe");
     } finally {
       setPendingDelete(false);
-    }
-  }
-
-  async function undoDelete() {
-    setToast(null);
-    setDeleteError(null);
-    try {
-      await api(`/api/v1/recipes/${recipe.id}/restore`, { method: "POST" });
-      setDeleted(false);
-      router.refresh();
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Could not undo");
     }
   }
 
@@ -108,8 +95,11 @@ export function RecipeDetail({
     () => whoCanEat({ people, rules, ingredients: checkIngredients }),
     [people, rules, recipe.ingredients]
   );
+  const blockPersonIds = eat.people
+    .filter((person) => person.mark === "block")
+    .map((person) => person.personId);
   const warningPersonIds = eat.people
-    .filter((person) => person.mark !== "ok")
+    .filter((person) => person.mark === "warn")
     .map((person) => person.personId);
 
   useEffect(() => {
@@ -135,30 +125,6 @@ export function RecipeDetail({
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );
 
-  if (deleted) {
-    return (
-      <>
-        <div className="kitchen-head">
-          <div>
-            <Link href="/recipes" className="back-link">
-              ← Recipes
-            </Link>
-            <h1>{recipe.title}</h1>
-            <p className="muted" data-testid="recipe-deleted">
-              This recipe was deleted. Undo if that was a mistake.
-            </p>
-            {deleteError ? <p className="muted">{deleteError}</p> : null}
-          </div>
-        </div>
-        <KitchenToast
-          message={toast}
-          onUndo={toast ? () => void undoDelete() : undefined}
-          onDismiss={() => setToast(null)}
-        />
-      </>
-    );
-  }
-
   return (
     <>
       <div className="recipe-layout">
@@ -177,7 +143,7 @@ export function RecipeDetail({
                   className="section-edit"
                   type="button"
                   onClick={() => setConfirmDelete(true)}
-                  disabled={deleted}
+                  disabled={pendingDelete}
                 >
                   Delete recipe
                 </button>
@@ -195,6 +161,7 @@ export function RecipeDetail({
                   lovePeople
                 )}
                 warningPersonIds={warningPersonIds}
+                blockPersonIds={blockPersonIds}
               />
               <div className="recipe-meta">
                 {formatDurationMinutes(recipe.prepTimeMinutes) ? (
@@ -358,11 +325,8 @@ export function RecipeDetail({
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => void deleteRecipe()}
       />
-      <KitchenToast
-        message={toast}
-        onUndo={deleted && toast ? () => void undoDelete() : undefined}
-        onDismiss={() => setToast(null)}
-      />
+      {deleteError ? <p className="muted">{deleteError}</p> : null}
+      <KitchenToast message={toast} onDismiss={() => setToast(null)} />
     </>
   );
 }

@@ -1355,6 +1355,22 @@ select {
   color: #9b1c1c;
 }
 
+.recipe-card-warnings {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.recipe-card-warnings li {
+  margin: 0;
+  color: var(--bad);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
 .photo-preview {
   overflow: hidden;
   border-radius: 12px;
@@ -1946,6 +1962,19 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     -webkit-backdrop-filter: saturate(180%) blur(16px);
     border-top: 1px solid var(--line);
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .kitchen-tabbar-pending {
+    margin: 0;
+    padding: 2px 8px 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--orange-deep);
+  }
+
+  .kitchen-tabbar a[aria-busy="true"] {
+    color: var(--orange-deep);
   }
 
   .kitchen-tabbar ul {

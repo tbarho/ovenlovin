@@ -164,14 +164,13 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
     };
 
     const skipIngredientCheck = !entry.recipeId && Boolean(entry.freeformMeal);
-    const attendingPeople =
-      entry.attendees.length === 0
-        ? []
-        : input.people.filter((p) => entry.attendees.includes(p.id));
+    const attendingPeople = attendingPeopleForEntry(input.people, entry.attendees);
 
-    if (!skipIngredientCheck && (entry.attendees.length === 0 || attendingPeople.length === 0)) {
+    if (!skipIngredientCheck && attendingPeople.length === 0) {
       incompleteReasons.push(
-        `No attendees listed for ${entry.recipeTitle || entry.freeformMeal || "this meal"} — cannot finish a safety check`
+        input.people.length === 0
+          ? `No people to check ${entry.recipeTitle || entry.freeformMeal || "this meal"} against`
+          : `Could not load attendees for ${entry.recipeTitle || entry.freeformMeal || "this meal"}`
       );
       byEntry.push(entryResult);
       continue;
@@ -282,4 +281,26 @@ export function checkMealPlan(input: MealPlanCheckInput): MealPlanCheckResult {
     summary,
     incompleteReasons: incompleteReasons.length > 0 ? incompleteReasons : undefined,
   };
+}
+
+/**
+ * Empty attendees means "everyone we were given" (the household), not
+ * "nobody." Only a missing people list, or IDs that resolve to no one,
+ * is an unfinished check.
+ */
+export function attendingPeopleForEntry<T extends { id: string }>(
+  people: T[],
+  attendeeIds: string[]
+): T[] {
+  if (attendeeIds.length === 0) return people;
+  return people.filter((person) => attendeeIds.includes(person.id));
+}
+
+/** When no night listed attendees, check against the household. */
+export function personIdsForPlanCheck(
+  entryAttendeeIds: Iterable<string>,
+  householdPersonIds: string[]
+): string[] {
+  const listed = [...new Set(entryAttendeeIds)];
+  return listed.length > 0 ? listed : householdPersonIds;
 }

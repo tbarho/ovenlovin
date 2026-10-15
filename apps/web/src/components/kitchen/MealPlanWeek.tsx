@@ -69,13 +69,15 @@ function RecipePickButton({
 }
 
 function uniqueFindings(findings: WeekMeal["findings"]) {
-  const seen = new Set<string>();
-  return findings.filter((finding) => {
-    const key = `${finding.personName}\0${finding.message}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const byPerson = new Map<string, WeekMeal["findings"][number]>();
+  for (const finding of findings) {
+    const key = `${finding.personName}\0${finding.severity}`;
+    const existing = byPerson.get(key);
+    if (!existing || finding.message.length > existing.message.length) {
+      byPerson.set(key, finding);
+    }
+  }
+  return [...byPerson.values()];
 }
 
 function mealThumb(title: string, image: string | null) {
@@ -110,7 +112,7 @@ function MealCopy({ meal, cookFor }: { meal: WeekMeal; cookFor: number }) {
       {servings ? <p className="muted">{servings}</p> : null}
       {meal.checkStatus === "incomplete" && meal.findings.length === 0 ? (
         <p className="week-finding" data-severity="warn">
-          We couldn&apos;t finish checking this dinner.
+          This dinner wasn&apos;t fully checked. Add who is eating, then we&apos;ll try again.
         </p>
       ) : null}
       {uniqueFindings(meal.findings).map((finding) => (
@@ -385,13 +387,14 @@ export function MealPlanWeek({
               entries: writes,
             }),
           });
+          router.refresh();
         } else {
           await api(`/api/v1/meal-plans/${planId}`, {
             method: "PATCH",
             body: JSON.stringify(patch ?? { entries: writes }),
           });
+          if (!patch) router.refresh();
         }
-        router.refresh();
         return true;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not update the plan");

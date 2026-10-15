@@ -3,8 +3,17 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/lib/browser-api";
+import { recheckBannerDetail, type PlanBlockNight } from "@/lib/plan-final";
 
-export function RecheckBanner({ planId, nights = [] }: { planId: string; nights?: string[] }) {
+export function RecheckBanner({
+  planId,
+  nights = [],
+  blockNights = [],
+}: {
+  planId: string;
+  nights?: string[];
+  blockNights?: PlanBlockNight[];
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,14 +26,12 @@ export function RecheckBanner({ planId, nights = [] }: { planId: string; nights?
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not recheck the plan");
+    } finally {
       setPending(false);
     }
   }
 
-  const detail =
-    nights.length > 0
-      ? `These dinners need a fresh check: ${nights.join(", ")}.`
-      : "A recipe or someone's rules changed since the last check.";
+  const detail = recheckBannerDetail({ nights, blockNights });
 
   return (
     <div className="week-recheck" role="status">
