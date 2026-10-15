@@ -21,7 +21,8 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 ```typescript
 {
   format: string,
-  content: string,
+  list: ShoppingListData, // structured object; never a JSON string
+  content?: string,       // markdown / csv / text only; omitted for json
   itemCount: number,
   warnings: Array<{
     ingredient: string,
@@ -30,6 +31,8 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
   }>
 }
 ```
+
+MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.parse` a string stuffed in `content` to get the list — read `structuredContent.list` (or `list` after one parse of the text JSON for `format: "json"`).
 
 ## Format Examples
 
@@ -136,6 +139,7 @@ WARNINGS:
 ```json
 {
   "format": "markdown",
+  "list": { "mealPlanId": "plan-abc-123", "ingredients": [], "itemCount": 15 },
   "content": "# Shopping List\n\n## Grilled Chicken Salad\n\n- 2 lbs chicken breast...",
   "itemCount": 15,
   "warnings": [

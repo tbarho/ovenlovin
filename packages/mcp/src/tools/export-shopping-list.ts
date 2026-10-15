@@ -13,6 +13,7 @@ import {
   ShoppingListService,
   collectShoppingListEntries,
   resolveIncludeStaples,
+  type ShoppingListData,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import {
@@ -39,7 +40,10 @@ export type ExportShoppingListInput = z.infer<typeof exportShoppingListSchema>;
 
 export interface ExportShoppingListOutput {
   format: string;
-  content: string;
+  /** Markdown, CSV, or plain text. Omitted for `json` — use `list` instead. */
+  content?: string;
+  /** Structured shopping list. Always present so MCP does not double-encode JSON. */
+  list: ShoppingListData;
   itemCount: number;
   warnings: Array<{
     ingredient: string;
@@ -138,7 +142,9 @@ async function handler(
 
   return {
     format: input.format,
-    content: shoppingListService.format(shoppingList, input.format),
+    list: shoppingList,
+    content:
+      input.format === "json" ? undefined : shoppingListService.format(shoppingList, input.format),
     itemCount: shoppingList.itemCount,
     warnings,
   };
@@ -147,7 +153,7 @@ async function handler(
 export const exportShoppingListTool = {
   name: "export_shopping_list",
   description:
-    "Export a shopping list for a meal plan in various formats. Aggregates ingredients, converts units, and includes per-person rule warnings for shoppers.",
+    "Export a shopping list for a meal plan. Returns structured `list` (object, never a JSON string) plus optional markdown/csv/text `content`. Aggregates ingredients, converts units, and includes per-person rule warnings for shoppers.",
   inputSchema: exportShoppingListSchema,
   handler,
 } as const;

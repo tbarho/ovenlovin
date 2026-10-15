@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { handleHttpRequest } from "./transport/http";
-import { dispatchMcpRequest, listedTools } from "./protocol";
+import { dispatchMcpRequest, listedTools, wrapToolResult } from "./protocol";
 import { JsonRpcErrorCode } from "./json-rpc";
 import { zodToMcpInputSchema } from "./json-schema";
 import { searchRecipesTool, importRecipeTool, checkMealPlanTool } from "./index.js";
@@ -207,6 +207,42 @@ describe("handleHttpRequest", () => {
       jsonrpc: "2.0",
       id: 9,
       error: { code: JsonRpcErrorCode.invalidParams },
+    });
+  });
+});
+
+describe("wrapToolResult", () => {
+  it("puts a shopping list object on structuredContent instead of stringifying it twice", () => {
+    const list = {
+      mealPlanId: "plan-1",
+      weekStart: "2026-10-12",
+      ingredients: [{ name: "salt", quantity: 1.8333, unit: "tbsp" }],
+    };
+    const wrapped = wrapToolResult({
+      format: "json",
+      list,
+      itemCount: 1,
+      warnings: [],
+    });
+
+    expect(wrapped.structuredContent.list).toEqual(list);
+    expect(typeof wrapped.structuredContent.list).toBe("object");
+    const parsed = JSON.parse(wrapped.content[0]!.text) as { list: typeof list };
+    expect(parsed.list).toEqual(list);
+    expect(wrapped.content[0]?.text).not.toContain('\\"mealPlanId\\"');
+  });
+
+  it("uses markdown content as the text block when the tool already formatted it", () => {
+    const wrapped = wrapToolResult({
+      format: "markdown",
+      content: "# Shopping List\n\n- 1 onion\n",
+      list: { ingredients: [{ name: "onion", quantity: 1 }] },
+      itemCount: 1,
+      warnings: [],
+    });
+    expect(wrapped.content[0]?.text).toBe("# Shopping List\n\n- 1 onion\n");
+    expect(wrapped.structuredContent.list).toEqual({
+      ingredients: [{ name: "onion", quantity: 1 }],
     });
   });
 });
