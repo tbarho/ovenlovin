@@ -14,9 +14,9 @@ export function DemoAgentPanel({ origin, apiKey }: { origin: string; apiKey: str
         The key dies when the sandbox resets.
       </p>
       <CopyBox label="MCP URL" content={mcpUrl} />
-      <CopyBox label="Sandbox API key" content={apiKey} />
+      <CopyBox label="Sandbox API key" content={apiKey} secret />
       <p className="muted">
-        Authorization header: <code>ApiKey {apiKey}</code>
+        Authorization header: <code>ApiKey</code> plus the sandbox key above.
       </p>
       <ConnectAgent origin={origin} apiKey={apiKey} />
     </div>

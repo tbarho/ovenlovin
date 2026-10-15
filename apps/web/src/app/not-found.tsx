@@ -6,13 +6,19 @@ export default function NotFound() {
     <AppChrome>
       <div className="kitchen-head">
         <div>
-          <h1>Page not found</h1>
-          <p className="muted">That page isn&apos;t in this kitchen.</p>
+          <p className="badge">
+            <i />
+            Missing page
+          </p>
+          <h1>We couldn&apos;t find that page</h1>
+          <p className="muted">It may have been moved, or the link is out of date.</p>
+        </div>
+        <div className="recipe-actions" style={{ margin: 0 }}>
+          <Link className="btn primary" href="/recipes">
+            Back to recipes
+          </Link>
         </div>
       </div>
-      <Link className="btn primary" href="/recipes">
-        Back to recipes
-      </Link>
     </AppChrome>
   );
 }
