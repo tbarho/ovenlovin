@@ -84,3 +84,31 @@ export function isUncertainReviewField(fields: string[], key: string): boolean {
   }
   return false;
 }
+
+function namedUncertainFields(fields: string[], prefix: string): string[] {
+  return fields
+    .filter((field) => field.startsWith(prefix))
+    .map((field) => field.slice(prefix.length).trim())
+    .filter(Boolean);
+}
+
+/** Short per-field note so a reviewer knows why a box is highlighted. */
+export function uncertainFieldNote(fields: string[], key: string): string | null {
+  if (!isUncertainReviewField(fields, key)) return null;
+  if (key === "title") return "This title was hard to read.";
+  if (key === "servings") return "Servings were hard to read.";
+  if (key === "times") return "Prep or cook time was hard to read.";
+  if (key === "ingredients") {
+    const named = namedUncertainFields(fields, "ingredient:");
+    if (named.length === 1) return `${named[0]} was hard to read.`;
+    if (named.length > 1) return `These lines were hard to read: ${named.join(", ")}.`;
+    return "One or more ingredient lines were hard to read.";
+  }
+  if (key === "steps") {
+    const named = namedUncertainFields(fields, "step ");
+    if (named.length === 1) return `Step ${named[0]} was hard to read.`;
+    if (named.length > 1) return `These steps were hard to read: ${named.join(", ")}.`;
+    return "One or more steps were hard to read.";
+  }
+  return "This field was hard to read.";
+}

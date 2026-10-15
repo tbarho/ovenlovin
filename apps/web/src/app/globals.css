@@ -2385,6 +2385,13 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   background: #fff8ef;
 }
 
+.photo-review-form .field-note {
+  display: block;
+  margin-top: 6px;
+  color: #8a6a28;
+  font-size: 0.85rem;
+}
+
 .photo-import-banner {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) auto;

@@ -138,6 +138,8 @@ describe("ImportRecipeForm photo import", () => {
       "Ready to review. This photo was hard to read. Check title, ingredient: pasta."
     );
     expect(within(dialog).getByLabelText("Title").closest("label")).toHaveClass("is-uncertain");
+    expect(within(dialog).getByText("This title was hard to read.")).toBeVisible();
+    expect(within(dialog).getByText("pasta was hard to read.")).toBeVisible();
     await typeFullWordAndKeepFocus(user, within(dialog).getByLabelText("Title"), "Garlic");
   });
 

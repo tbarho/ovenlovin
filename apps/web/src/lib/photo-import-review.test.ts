@@ -4,6 +4,7 @@ import {
   isUncertainReviewField,
   recipeCreateBodyFromReview,
   reviewDraftFromPreview,
+  uncertainFieldNote,
 } from "./photo-import-review";
 
 const preview: PhotoImportPreview = {
@@ -53,5 +54,18 @@ describe("photo import review draft", () => {
     expect(isUncertainReviewField(["title", "ingredient: pasta"], "ingredients")).toBe(true);
     expect(isUncertainReviewField(["times"], "times")).toBe(true);
     expect(isUncertainReviewField(["title"], "steps")).toBe(false);
+  });
+
+  it("names the hard-to-read field next to the box", () => {
+    expect(uncertainFieldNote(["title", "ingredient: pasta"], "title")).toBe(
+      "This title was hard to read."
+    );
+    expect(uncertainFieldNote(["title", "ingredient: pasta"], "ingredients")).toBe(
+      "pasta was hard to read."
+    );
+    expect(uncertainFieldNote(["step 2", "step 4"], "steps")).toBe(
+      "These steps were hard to read: 2, 4."
+    );
+    expect(uncertainFieldNote(["title"], "steps")).toBeNull();
   });
 });
