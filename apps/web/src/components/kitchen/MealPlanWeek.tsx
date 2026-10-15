@@ -26,6 +26,16 @@ type MealPlanWrite = { id: string };
 const EMPTY_ENTRIES: PlanEntryDraft[] = [];
 const EMPTY_RECIPES: PlanRecipePick[] = [];
 
+function uniqueFindings(findings: WeekMeal["findings"]) {
+  const seen = new Set<string>();
+  return findings.filter((finding) => {
+    const key = `${finding.personName}\0${finding.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function mealThumb(title: string, image: string | null) {
   if (image) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -44,12 +54,12 @@ function MealCopy({ meal }: { meal: WeekMeal }) {
       <p className="week-slot">{meal.isNoCook ? "Night off" : slotLabel(meal.mealSlot)}</p>
       <h3>{meal.title}</h3>
       {meal.servings && !meal.isNoCook ? <p className="muted">{meal.servings} servings</p> : null}
-      {meal.checkStatus === "incomplete" ? (
+      {meal.checkStatus === "incomplete" && meal.findings.length === 0 ? (
         <p className="week-finding" data-severity="warn">
-          This check is incomplete — not a clean bill.
+          We couldn&apos;t finish checking this dinner.
         </p>
       ) : null}
-      {meal.findings.map((finding) => (
+      {uniqueFindings(meal.findings).map((finding) => (
         <p
           className="week-finding"
           data-severity={finding.severity}
@@ -318,10 +328,13 @@ export function MealPlanWeek({
       setEntriesView(previous);
       return;
     }
-    if (cleared && previous.length > 0) {
-      const weekday = daysView.find((day) => day.date === date)?.weekday ?? "that night";
-      setToast({ message: `Cleared ${weekday} dinner`, undoEntries: previous });
-    }
+    const weekday = daysView.find((day) => day.date === date)?.weekday ?? "that night";
+    const message = cleared
+      ? `Cleared ${weekday} dinner`
+      : next.freeformMeal
+        ? `Marked ${weekday} as no-cook`
+        : `Updated ${weekday} dinner`;
+    setToast({ message, undoEntries: previous });
   }
 
   function applyServings(nextServings: number) {

@@ -51,6 +51,8 @@ export {
   type RuleCheckResult,
 } from "./rule-checker";
 
+export { collapseRuleFindings, uniqueWarningCopy } from "./collapse-findings";
+
 export {
   checkMealPlan,
   type MealPlanCheckInput,

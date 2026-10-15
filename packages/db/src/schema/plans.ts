@@ -79,6 +79,10 @@ export const mealPlan = pgTable("meal_plan", {
   contentHash: varchar("content_hash", { length: 64 }),
   acknowledgedWarnings: jsonb("acknowledged_warnings").$type<string[]>().default([]),
   needsRecheck: boolean("needs_recheck").default(false),
+  shoppingState: jsonb("shopping_state").$type<{
+    checkedKeys: string[];
+    extras: Array<{ key: string; name: string }>;
+  }>(),
   createdByApiKeyId: uuid("created_by_api_key_id").references(() => apiKey.id),
 });
 

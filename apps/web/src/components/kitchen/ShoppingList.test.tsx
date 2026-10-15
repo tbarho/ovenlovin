@@ -1,9 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/browser-api";
 import { ShoppingList } from "./ShoppingList";
 
 describe("ShoppingList", () => {
+  beforeEach(() => {
+    vi.mocked(api).mockReset();
+    vi.mocked(api).mockResolvedValue({ checkedKeys: [], extras: [] });
+  });
+
   it("lists ingredients and names the person in a block warning", () => {
     render(
       <ShoppingList
@@ -29,6 +35,34 @@ describe("ShoppingList", () => {
     expect(screen.getByText("1/3 cup basil pesto")).toBeInTheDocument();
     expect(screen.getByText("Contains tree nuts, so Child B can't eat this")).toBeInTheDocument();
     expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
+  });
+
+  it("shows one warning when the same person message is repeated", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "cheese",
+            name: "mozzarella",
+            recipes: ["Baked ziti"],
+            warnings: [
+              {
+                personName: "Parent A",
+                severity: "warn",
+                message: "Contains dairy, so check with Parent A first",
+              },
+              {
+                personName: "Parent A",
+                severity: "warn",
+                message: "Contains dairy, so check with Parent A first",
+              },
+            ],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getAllByText("Contains dairy, so check with Parent A first")).toHaveLength(1);
   });
 
   it("shows friendly fractions instead of long decimals", () => {
@@ -57,6 +91,7 @@ describe("ShoppingList", () => {
     const user = userEvent.setup();
     render(
       <ShoppingList
+        planId="plan-1"
         items={[
           {
             key: "pasta",
@@ -72,12 +107,39 @@ describe("ShoppingList", () => {
     expect(box).not.toBeChecked();
     await user.click(box);
     expect(box).toBeChecked();
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1/shopping-list/state", {
+      method: "PATCH",
+      body: JSON.stringify({ checkedKeys: ["pasta"], extras: [] }),
+    });
   });
 
-  it("groups by aisle and keeps a jot-down item", async () => {
+  it("restores saved check-offs and extras after a reload", () => {
+    render(
+      <ShoppingList
+        planId="plan-1"
+        checkedKeys={["pasta"]}
+        extras={[{ key: "extra-1", name: "paper towels" }]}
+        items={[
+          {
+            key: "pasta",
+            name: "12 oz pasta",
+            recipes: ["Weeknight pesto pasta"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByRole("checkbox", { name: /12 oz pasta/i })).toBeChecked();
+    expect(screen.getByText("paper towels")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /paper towels/i })).not.toBeChecked();
+  });
+
+  it("groups by aisle and saves a jot-down item for the plan week", async () => {
     const user = userEvent.setup();
     render(
       <ShoppingList
+        planId="plan-1"
         items={[
           { key: "onion", name: "yellow onion", recipes: ["Chili"], warnings: [] },
           { key: "salt", name: "salt", recipes: ["Chili"], warnings: [] },
@@ -93,5 +155,12 @@ describe("ShoppingList", () => {
     expect(screen.getByRole("heading", { name: "Other" })).toBeInTheDocument();
     expect(screen.getByText("paper towels")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /yellow onion/i })).not.toBeChecked();
+    expect(api).toHaveBeenCalledWith(
+      "/api/v1/meal-plans/plan-1/shopping-list/state",
+      expect.objectContaining({
+        method: "PATCH",
+        body: expect.stringContaining("paper towels"),
+      })
+    );
   });
 });

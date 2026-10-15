@@ -29,7 +29,12 @@ export default async function ShoppingListPage() {
           </Link>
         </div>
       </div>
-      <ShoppingList items={kitchen.shopping} />
+      <ShoppingList
+        items={kitchen.shopping}
+        planId={kitchen.plan?.id ?? null}
+        checkedKeys={kitchen.shoppingState.checkedKeys}
+        extras={kitchen.shoppingState.extras}
+      />
     </>
   );
 }

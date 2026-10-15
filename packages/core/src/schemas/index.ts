@@ -6,3 +6,4 @@ export * from "./ingredients";
 export * from "./recipes";
 export * from "./cookbooks";
 export * from "./plans";
+export * from "./shopping-trip";
