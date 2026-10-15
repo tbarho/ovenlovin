@@ -3041,12 +3041,14 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     align-items: start;
   }
 
-  .week-editor-slot {
-    grid-column: 1 / -1;
+  .week-day {
+    grid-row: 1;
+    padding: 12px 10px 14px;
   }
 
-  .week-day {
-    padding: 12px 10px 14px;
+  .week-editor-slot {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .week-day-head {
