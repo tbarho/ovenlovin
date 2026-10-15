@@ -87,6 +87,24 @@ export function ShoppingList({
     persist({ checkedKeys: checked, extras: nextExtras });
   }
 
+  function removeExtra(key: string) {
+    const nextExtras = added.filter((item) => item.key !== key);
+    const nextChecked = checked.filter((item) => item !== key);
+    setAdded(nextExtras);
+    setChecked(nextChecked);
+    persist({ checkedKeys: nextChecked, extras: nextExtras });
+  }
+
+  function clearChecked() {
+    const checkedExtraKeys = new Set(
+      added.filter((item) => checkedSet.has(item.key)).map((item) => item.key)
+    );
+    const nextExtras = added.filter((item) => !checkedExtraKeys.has(item.key));
+    setAdded(nextExtras);
+    setChecked([]);
+    persist({ checkedKeys: [], extras: nextExtras });
+  }
+
   if (listed.length === 0) {
     return (
       <div className="shop-board">
@@ -102,6 +120,13 @@ export function ShoppingList({
   return (
     <div className="shop-board" data-testid="shopping-list" aria-busy={pending}>
       <ShopAdd value={draft} onChange={setDraft} onSubmit={addExtra} pending={pending} />
+      {checked.length > 0 ? (
+        <div className="shop-toolbar">
+          <button type="button" className="btn compact" onClick={clearChecked} disabled={pending}>
+            Clear checked
+          </button>
+        </div>
+      ) : null}
       {groups.map((group) => (
         <section className="shop-aisle" key={group.aisle}>
           <h2 className="shop-aisle-title">{group.aisle}</h2>
@@ -131,6 +156,16 @@ export function ShoppingList({
                       ))}
                     </span>
                   </label>
+                  {item.key.startsWith("extra:") ? (
+                    <button
+                      type="button"
+                      className="shop-item-remove"
+                      aria-label={`Remove ${item.name}`}
+                      onClick={() => removeExtra(item.key)}
+                    >
+                      ×
+                    </button>
+                  ) : null}
                 </li>
               );
             })}
