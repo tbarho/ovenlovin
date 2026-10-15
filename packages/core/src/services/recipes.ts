@@ -498,6 +498,27 @@ export class RecipeService extends BaseService {
     return details;
   }
 
+  async findPhotoImportDuplicate(
+    householdId: string,
+    fingerprint: string
+  ): Promise<Recipe | null> {
+    if (!fingerprint.trim()) return null;
+    const [row] = await this._db
+      .select({ recipe })
+      .from(recipe)
+      .innerJoin(recipeSource, eq(recipeSource.recipeId, recipe.id))
+      .where(
+        and(
+          eq(recipe.householdId, householdId),
+          isNull(recipe.deletedAt),
+          eq(recipeSource.type, "photo"),
+          sql`(${recipeSource.rawExtractionJson} ->> 'photoFingerprint') = ${fingerprint}`
+        )
+      )
+      .limit(1);
+    return row ? this.mapRecipe(row.recipe) : null;
+  }
+
   /**
    * Copy inline `data:` photos into Blob when a put is configured.
    * No-op without Blob — list/search still rewrite those rows to the image endpoint.

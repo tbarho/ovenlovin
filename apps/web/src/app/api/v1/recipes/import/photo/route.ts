@@ -1,14 +1,18 @@
 import { NextRequest } from "next/server";
-import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { CookbookService, fingerprintImageBlob, RecipeService } from "@ovenlovin/core";
 import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
-import { BadRequestError, handleApiError } from "@/lib/api/errors";
+import { BadRequestError, ConflictError, handleApiError } from "@/lib/api/errors";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { readPhotoImportRequest } from "@/lib/photo-import-request";
-import { draftFromPhotoPreview, extractPhotoPreview } from "@/lib/photo-import";
+import {
+  draftFromPhotoPreview,
+  extractPhotoPreview,
+  presentPhotoImportPreview,
+} from "@/lib/photo-import";
 import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
 export async function POST(request: NextRequest) {
@@ -25,6 +29,19 @@ export async function POST(request: NextRequest) {
     }
 
     const input = await readPhotoImportRequest(request);
+    const first = input.images[0]?.blob;
+    if (first) {
+      const duplicate = await new RecipeService(getDatabase()).findPhotoImportDuplicate(
+        householdId,
+        fingerprintImageBlob(first)
+      );
+      if (duplicate) {
+        throw new ConflictError("This photo was already imported as a recipe", {
+          recipeId: duplicate.id,
+          title: duplicate.title,
+        });
+      }
+    }
     const preview = await extractPhotoPreview(input.images, {
       householdId,
       isHandwritten: input.isHandwritten,
@@ -32,7 +49,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!input.save) {
-      return jsonResponse(preview);
+      return jsonResponse(presentPhotoImportPreview(preview));
     }
 
     const db = getDatabase();
@@ -52,8 +69,13 @@ export async function POST(request: NextRequest) {
 
     await recordSuccessfulDemoImport(householdId);
 
+    const presented = presentRecipeDetailsForApi(recipe, requestApiOrigin(request));
     return createdResponse(
-      { ...preview, recipe: presentRecipeDetailsForApi(recipe, requestApiOrigin(request)) },
+      {
+        ...presentPhotoImportPreview(preview),
+        images: presented.images,
+        recipe: presented,
+      },
       `/api/v1/recipes/${recipe.id}`
     );
   } catch (error) {
