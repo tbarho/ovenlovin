@@ -156,7 +156,9 @@ function PhotoReviewForm({
           ) : null}
         </div>
         <div className="review-field">
-          <label className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}>
+          <label
+            className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
+          >
             Prep (min)
             <input
               type="number"
@@ -173,7 +175,9 @@ function PhotoReviewForm({
           ) : null}
         </div>
         <div className="review-field">
-          <label className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}>
+          <label
+            className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
+          >
             Cook (min)
             <input
               type="number"
