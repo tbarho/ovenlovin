@@ -31,14 +31,14 @@ describe("demo enter helpers", () => {
     expect(shouldRedirectToDemoEnter("/demo-kitchen/pesto.svg", undefined)).toBe(false);
   });
 
-  it("returns JSON for agents, HTML redirect for browser navigation", () => {
+  it("mints a demo key only when format=json is explicit", () => {
     expect(
       wantsDemoEnterJson({
         accept: "application/json",
         format: null,
         secFetchDest: null,
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       wantsDemoEnterJson({
         accept: "text/html",

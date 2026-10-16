@@ -5,7 +5,8 @@ const INGREDIENT_HEADING = /\b(ingredients?|you will need|what you need)\b/i;
 const STEP_HEADING =
   /\b(procedure|method|directions?|instructions?|steps?|preparation|how to (make|cook))\b/i;
 const RECIPE_BOX = /[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612]/;
-const MARKDOWN_ITEM = /^\s*(?:[-*]|\d+\.)\s+(?:[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612])?\s*(.+)$/;
+const MARKDOWN_INGREDIENT =
+  /^\s*(?:[-*]|\d+\.)\s+(?:[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612])?\s*(.+)$/;
 
 function headingText($el: ReturnType<cheerio.CheerioAPI>): string {
   return $el.text().replace(/\s+/g, " ").trim();
@@ -78,7 +79,7 @@ function markdownToRoughHtml(text: string): string {
       out.push(`<h2>${heading[1]}</h2>`);
       continue;
     }
-    const item = line.match(MARKDOWN_ITEM);
+    const item = line.match(MARKDOWN_INGREDIENT);
     if (item?.[1]) {
       list.push(`<li>${item[1].replace(/\s*\(\$[\d.]+.*$/, "").trim()}</li>`);
       continue;

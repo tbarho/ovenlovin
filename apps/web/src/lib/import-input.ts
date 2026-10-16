@@ -1,7 +1,18 @@
+const EXAMPLE_HOSTS = new Set(["example.com", "example.org", "example.net", "example.edu"]);
+
 export function looksLikeHttpUrl(value: string): boolean {
   try {
     const url = new URL(value.trim());
     return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function isExamplePlaceholderUrl(value: string): boolean {
+  try {
+    const host = new URL(value.trim()).hostname.toLowerCase();
+    return EXAMPLE_HOSTS.has(host) || [...EXAMPLE_HOSTS].some((name) => host.endsWith(`.${name}`));
   } catch {
     return false;
   }
@@ -13,6 +24,9 @@ export function importInputError(source: "url" | "paste", content: string): stri
   }
   if (source === "url" && !looksLikeHttpUrl(content)) {
     return "That doesn't look like a web address";
+  }
+  if (source === "url" && isExamplePlaceholderUrl(content)) {
+    return "No recipe found on this page.";
   }
   return null;
 }

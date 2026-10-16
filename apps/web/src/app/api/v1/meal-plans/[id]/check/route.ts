@@ -1,26 +1,8 @@
 import { NextRequest } from "next/server";
-import { handleApiError, NotFoundError, requireResourceId } from "@/lib/api/errors";
+import { handleApiError, requireResourceId } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
-import {
-  PlanService,
-  PeopleService,
-  RecipeService,
-  ScheduleService,
-  planEntriesForWeek,
-  nightForDate,
-  recipeTotalTimeMinutes,
-  scheduleIssuesForNight,
-} from "@ovenlovin/core";
-import { getDatabase } from "@ovenlovin/db";
-import {
-  checkMealPlan,
-  personIdsForPlanCheck,
-  type MealPlanCheckInput,
-  type MealPlanEntryInput,
-  type IngredientCheckInput,
-  type PersonWithRules,
-} from "@ovenlovin/allergens";
+import { persistMealPlanCheck, runMealPlanCheck } from "@/lib/run-meal-plan-check";
 
 async function handleCheck(request: NextRequest, params: Promise<{ id: string }>, persist = false) {
   const context = await getRequestContext(request);
@@ -29,108 +11,9 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
   const { id } = await params;
   requireResourceId("MealPlan", id);
 
-  const db = getDatabase();
-  const planService = new PlanService(db);
-  const peopleService = new PeopleService(db);
-  const recipeService = new RecipeService(db);
-  const schedule = await new ScheduleService(db).getSchedule(householdId);
-  const recipeMinutesByEntryId = new Map<string, number | null>();
-
-  const plan = await planService.getMealPlan(id);
-  if (!plan || plan.householdId !== householdId) {
-    throw new NotFoundError("MealPlan", id);
-  }
-
-  const entries = planEntriesForWeek(await planService.getMealPlanEntries(id), plan.weekStart);
-
-  const entryInputs: MealPlanEntryInput[] = await Promise.all(
-    entries.map(async (entry) => {
-      let ingredients: IngredientCheckInput[] = [];
-      let recipeTitle: string | undefined;
-
-      if (entry.recipeId) {
-        const ingredientRows = await planService.getRecipeIngredientsForEntry(entry.recipeId);
-        ingredients = ingredientRows.map((ing) => ({
-          name: ing.rawText,
-        }));
-        const recipe = await recipeService.getRecipe(entry.recipeId);
-        recipeTitle =
-          recipe?.title ?? (await planService.getRecipeTitle(entry.recipeId)) ?? undefined;
-        recipeMinutesByEntryId.set(entry.id, recipeTotalTimeMinutes(recipe));
-      }
-
-      return {
-        id: entry.id,
-        date: entry.date,
-        mealSlot: entry.mealSlot,
-        recipeId: entry.recipeId ?? undefined,
-        recipeTitle,
-        freeformMeal: entry.freeformMeal ?? undefined,
-        attendees: entry.attendees,
-        ingredients,
-      };
-    })
-  );
-
-  const householdPeople = await peopleService.listPeopleByHousehold(householdId, { limit: 40 });
-  const attendeeIds = personIdsForPlanCheck(
-    entries.flatMap((entry) => entry.attendees),
-    householdPeople.items.map((person) => person.id)
-  );
-
-  const peopleWithRules: PersonWithRules[] = await Promise.all(
-    attendeeIds.map(async (personId) => {
-      const person =
-        householdPeople.items.find((item) => item.id === personId) ??
-        (await peopleService.getPerson(personId));
-      const rules = await peopleService.getRulesForPerson(personId);
-
-      return {
-        id: personId,
-        name: person?.displayName ?? "Unknown",
-        rules,
-      };
-    })
-  );
-
-  const checkInput: MealPlanCheckInput = {
-    entries: entryInputs,
-    people: peopleWithRules,
-  };
-
-  const checkResult = checkMealPlan(checkInput);
-  const checkedAt = new Date().toISOString();
-  const report = {
-    status: checkResult.status,
-    planId: id,
-    checkedAt,
-    byEntry: checkResult.byEntry.map((entry) => {
-      const stored = entries.find((row) => row.id === entry.entryId);
-      const scheduleIssues = scheduleIssuesForNight({
-        date: entry.date,
-        recipeTitle: entry.recipeTitle ?? entry.freeformMeal ?? "This recipe",
-        recipeTotalMinutes: recipeMinutesByEntryId.get(entry.entryId) ?? null,
-        night: nightForDate(schedule.weeklyTemplate, entry.date),
-        plannedCooking: Boolean(stored?.recipeId),
-      });
-      return {
-        ...entry,
-        scheduleIssues: scheduleIssues.length > 0 ? scheduleIssues : undefined,
-      };
-    }),
-    byPerson: checkResult.byPerson,
-    summary: checkResult.summary,
-    incompleteReasons: checkResult.incompleteReasons,
-  };
-
-  if (persist) {
-    await planService.updateMealPlan(id, {
-      latestCheckReport: report,
-      checkedAt,
-      needsRecheck: false,
-    });
-  }
-
+  const report = persist
+    ? await persistMealPlanCheck(id, householdId)
+    : await runMealPlanCheck(id, householdId);
   return jsonResponse(report);
 }
 
