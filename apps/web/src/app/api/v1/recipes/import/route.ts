@@ -3,6 +3,7 @@ import {
   createPasteImporter,
   createUrlImporter,
   RecipeImportFetchError,
+  RecipeNotFoundError,
 } from "@ovenlovin/importers";
 import { copyRemoteImages, keepMainRecipeImages, RecipeService } from "@ovenlovin/core";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     return createdResponse(recipe, `/api/v1/recipes/${recipe.id}`);
   } catch (error) {
-    if (error instanceof RecipeImportFetchError) {
+    if (error instanceof RecipeImportFetchError || error instanceof RecipeNotFoundError) {
       return handleApiError(new BadRequestError(error.message), request.url);
     }
     return handleApiError(error, request.url);

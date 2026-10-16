@@ -13,8 +13,8 @@ describe("import input", () => {
   });
 
   it("does not call a placeholder example.com address blocked", () => {
-    expect(importInputError("url", "https://example.com/chocolate-chip-cookies")).toMatch(
-      /placeholder/i
+    expect(importInputError("url", "https://example.com/chocolate-chip-cookies")).toBe(
+      "No recipe found on this page."
     );
     expect(importInputError("url", "https://example.com/chocolate-chip-cookies")).not.toMatch(
       /blocked/i

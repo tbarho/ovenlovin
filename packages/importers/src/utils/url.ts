@@ -5,12 +5,19 @@ export {
   CHROME_USER_AGENT,
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
+  RecipeNotFoundError,
   fetchHtml,
+  formatLayersTried,
   getRecipePageRenderer,
   importBlockedMessage,
   installRecipePageRenderer,
   isUsableRecipeHtml,
   looksLikeBotChallenge,
+  looksLikeCompleteDocument,
+  looksLikePaywall,
+  looksLikeSoftBlock,
+  looksLikeWaybackShell,
+  shouldKeepLooking,
   shouldRetryFetchWithBrowserHeaders,
   waybackMachineUrl,
   waybackIdentityUrl,
@@ -19,12 +26,13 @@ export {
   translateGoogUrl,
   relatedRecipeUrls,
   publicCopyRequests,
-  looksLikeWaybackShell,
   type FetchHtmlOptions,
+  type FetchLayer,
   type FetchResult,
   type RecipePageRenderer,
 } from "./fetch-html";
 export { extractHtmlRecipe, htmlLooksLikeRecipe } from "./html-recipe";
+export { resolveScrapeService, scrapeRemotePage } from "./scrape-service";
 
 function isRecipeType(value: unknown): boolean {
   if (value === "Recipe") return true;

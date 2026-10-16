@@ -5,13 +5,17 @@ import { fileURLToPath } from "node:url";
 import {
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
+  RecipeNotFoundError,
   fetchHtml,
   googleTranslateUrl,
+  importBlockedMessage,
   isUsableRecipeHtml,
   looksLikeBotChallenge,
+  looksLikeCompleteDocument,
   looksLikeWaybackShell,
   jinaReaderUrl,
   relatedRecipeUrls,
+  shouldKeepLooking,
   waybackIdentityUrl,
   waybackMachineUrl,
 } from "./fetch-html";
@@ -28,6 +32,17 @@ const CHALLENGE = fixture("cloudflare-challenge.html");
 const NATASHA = fixture("natashaskitchen-beef-stroganoff.html");
 const BUDGET = fixture("budgetbytes-beef-stroganoff.html");
 const WELLPLATED = fixture("wellplated-beef-stroganoff.html");
+const EXAMPLE_COM = `<!doctype html>
+<html>
+<head><title>Example Domain</title></head>
+<body>
+<div>
+    <h1>Example Domain</h1>
+    <p>This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.</p>
+    <p><a href="https://www.iana.org/domains/example">More information...</a></p>
+</div>
+</body>
+</html>`;
 
 describe("Cloudflare-protected recipe fixtures", () => {
   it("treats a Cloudflare interstitial as unusable", () => {
@@ -63,6 +78,28 @@ describe("Cloudflare-protected recipe fixtures", () => {
   );
 });
 
+describe("page classification", () => {
+  it("treats example.com as a complete non-recipe page, not a block", () => {
+    expect(looksLikeCompleteDocument(EXAMPLE_COM)).toBe(true);
+    expect(isUsableRecipeHtml(EXAMPLE_COM)).toBe(false);
+    expect(shouldKeepLooking(EXAMPLE_COM, 200)).toBe(false);
+    expect(looksLikeBotChallenge(EXAMPLE_COM)).toBe(false);
+  });
+
+  it("treats a Wayback Athena shell as unusable", () => {
+    const shell =
+      "<html><head><title>Wayback Machine</title><script src='https://web.archive.org/athena.js'></script></head><body>playback</body></html>";
+    expect(looksLikeWaybackShell(shell)).toBe(true);
+    expect(isUsableRecipeHtml(shell)).toBe(false);
+  });
+
+  it("lists tried layers in the blocked message", () => {
+    expect(importBlockedMessage(["direct", "cache", "headless"])).toBe(
+      "This site blocked the importer (tried direct, cache, headless). Try importing by pasting the recipe text instead."
+    );
+  });
+});
+
 describe("fetchHtml layers", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -79,9 +116,10 @@ describe("fetchHtml layers", () => {
 
     const result = await fetchHtml("https://natashaskitchen.com/beef-stroganoff/", {
       fetchImpl: fetchMock as unknown as typeof fetch,
-      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0", RECIPE_IMPORT_SCRAPE: "0" },
     });
     expect(result.via).toBe("direct");
+    expect(result.layersTried).toEqual(["direct"]);
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
     const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
     expect(headers["User-Agent"]).toMatch(/Mozilla\/5.0/);
@@ -89,6 +127,28 @@ describe("fetchHtml layers", () => {
     expect(headers["sec-fetch-mode"]).toBe("navigate");
     expect(headers["Accept-Language"]).toMatch(/en-US/);
     expect(FULL_BROWSER_HEADERS["sec-fetch-dest"]).toBe("document");
+  });
+
+  it("returns example.com HTML instead of calling it blocked", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://example.com/",
+      text: async () => EXAMPLE_COM,
+    });
+    const renderPage = vi.fn();
+
+    const result = await fetchHtml("https://example.com/", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      renderPage,
+      env: {},
+    });
+    expect(result.via).toBe("direct");
+    expect(result.html).toMatch(/Example Domain/);
+    expect(isUsableRecipeHtml(result.html)).toBe(false);
+    expect(renderPage).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("renders in headless Chromium when the live response is a challenge", async () => {
@@ -104,9 +164,10 @@ describe("fetchHtml layers", () => {
     const result = await fetchHtml("https://natashaskitchen.com/beef-stroganoff/", {
       fetchImpl: fetchMock as unknown as typeof fetch,
       renderPage,
-      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0", RECIPE_IMPORT_SCRAPE: "0" },
     });
     expect(result.via).toBe("headless");
+    expect(result.layersTried).toEqual(["direct", "headless"]);
     expect(renderPage).toHaveBeenCalledWith("https://natashaskitchen.com/beef-stroganoff/");
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
   });
@@ -146,9 +207,11 @@ describe("fetchHtml layers", () => {
     const result = await fetchHtml(live, {
       fetchImpl: fetchMock as unknown as typeof fetch,
       renderPage,
+      env: { RECIPE_IMPORT_SCRAPE: "0" },
     });
     expect(result.via).toBe("cache");
     expect(result.url).toBe(live);
+    expect(result.layersTried).toEqual(["direct", "cache"]);
     expect(extractJsonLd(result.html)?.name).toBe("Beef Stroganoff");
     expect(renderPage).not.toHaveBeenCalled();
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("web/2id_"))).toBe(true);
@@ -185,7 +248,7 @@ describe("fetchHtml layers", () => {
 
     const result = await fetchHtml(live, {
       fetchImpl: fetchMock as unknown as typeof fetch,
-      env: {},
+      env: { RECIPE_IMPORT_SCRAPE: "0" },
     });
     expect(result.via).toBe("cache");
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
@@ -214,9 +277,34 @@ describe("fetchHtml layers", () => {
 
     const result = await fetchHtml(live, {
       fetchImpl: fetchMock as unknown as typeof fetch,
-      env: {},
+      env: { RECIPE_IMPORT_SCRAPE: "0" },
     });
     expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
+  });
+
+  it("uses a remote scrape service after caches fail", async () => {
+    const live = "https://www.simplyrecipes.com/recipes/chocolate_chip_cookies/";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      statusText: "Forbidden",
+      url: live,
+      text: async () => CHALLENGE,
+    });
+    const scrapePage = vi.fn().mockResolvedValue(WELLPLATED);
+    const renderPage = vi.fn();
+
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      scrapePage,
+      renderPage,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+    });
+    expect(result.via).toBe("scrape");
+    expect(result.layersTried).toEqual(["direct", "scrape"]);
+    expect(scrapePage).toHaveBeenCalledWith(live);
+    expect(renderPage).not.toHaveBeenCalled();
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
   });
 
@@ -250,17 +338,10 @@ describe("fetchHtml layers", () => {
 
     const result = await fetchHtml(missing, {
       fetchImpl: fetchMock as unknown as typeof fetch,
-      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0", RECIPE_IMPORT_SCRAPE: "0" },
     });
-    expect(result.via).toBe("direct");
+    expect(result.via).toBe("related");
     expect(result.html).toMatch(/Ingredients/);
-  });
-
-  it("treats a Wayback Athena shell as unusable", () => {
-    const shell =
-      "<html><head><title>Wayback Machine</title><script src='https://web.archive.org/athena.js'></script></head><body>playback</body></html>";
-    expect(looksLikeWaybackShell(shell)).toBe(true);
-    expect(isUsableRecipeHtml(shell)).toBe(false);
   });
 
   it("returns Wikibooks HTML that has no JSON-LD instead of calling it blocked", async () => {
@@ -276,14 +357,14 @@ describe("fetchHtml layers", () => {
 
     const result = await fetchHtml("https://en.wikibooks.org/wiki/Cookbook:Pancakes", {
       fetchImpl: fetchMock as unknown as typeof fetch,
-      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0", RECIPE_IMPORT_SCRAPE: "0" },
     });
     expect(result.via).toBe("direct");
     expect(result.html).toMatch(/Ingredients/);
     expect(extractJsonLd(result.html)).toBeNull();
   });
 
-  it("throws a paste-text fallback when every layer fails", async () => {
+  it("throws a paste-text fallback that names every layer when they all fail", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       status: 403,
@@ -295,8 +376,46 @@ describe("fetchHtml layers", () => {
     await expect(
       fetchHtml("https://natashaskitchen.com/beef-stroganoff/", {
         fetchImpl: fetchMock as unknown as typeof fetch,
-        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0", RECIPE_IMPORT_SCRAPE: "0" },
       })
-    ).rejects.toBeInstanceOf(RecipeImportFetchError);
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      layersTried: ["direct"],
+    });
+
+    try {
+      await fetchHtml("https://natashaskitchen.com/beef-stroganoff/", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0", RECIPE_IMPORT_SCRAPE: "0" },
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(RecipeImportFetchError);
+      expect((error as Error).message).toMatch(/tried direct/);
+      expect((error as Error).message).not.toMatch(/No recipe found/);
+    }
+  });
+});
+
+describe("url importer extract messages", () => {
+  it("says no recipe found for example.com", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://example.com/",
+      text: async () => EXAMPLE_COM,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      await expect(
+        createUrlImporter().extract({ url: "https://example.com/" })
+      ).rejects.toMatchObject({
+        name: "RecipeNotFoundError",
+        message: "No recipe found on this page.",
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

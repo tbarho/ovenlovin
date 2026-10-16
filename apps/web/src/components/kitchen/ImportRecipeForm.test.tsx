@@ -300,7 +300,7 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://example.com/chocolate-chip-cookies"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByText(/placeholder/i)).toBeVisible();
+    expect(screen.getByText("No recipe found on this page.")).toBeVisible();
     expect(screen.queryByText(/blocked/i)).not.toBeInTheDocument();
     expect(api).not.toHaveBeenCalled();
   });

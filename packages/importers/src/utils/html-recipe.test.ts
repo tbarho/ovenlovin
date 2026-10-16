@@ -50,22 +50,24 @@ describe("extractHtmlRecipe", () => {
   });
 
   it("reads a Jina markdown recipe card", () => {
-    const markdown = `Title: Beef Stroganoff
-
-URL Source: https://www.budgetbytes.com/beef-stroganoff/
-
-Markdown Content:
-
-This one-pot beef stroganoff is a weeknight dinner with egg noodles, mushrooms, and a sour cream sauce.
-
-*   ▢  2 cloves garlic($0.16)
-*   ▢  2 Tbsp butter($0.22)
-*   ▢  1/2 lb. ground beef($2.50)
-
-*   Mince the garlic and saute it in the butter until fragrant.
-*   Add the ground beef and cook until browned.
-*   Stir in the sour cream and serve hot.
-`;
+    const box = "\u25A2";
+    const markdown = [
+      "Title: Beef Stroganoff",
+      "",
+      "URL Source: https://www.budgetbytes.com/beef-stroganoff/",
+      "",
+      "Markdown Content:",
+      "",
+      "This one-pot beef stroganoff is a weeknight dinner with egg noodles.",
+      "",
+      `*   ${box}  2 cloves garlic($0.16)`,
+      `*   ${box}  2 Tbsp butter($0.22)`,
+      `*   ${box}  1/2 lb. ground beef($2.50)`,
+      "",
+      "*   Mince the garlic and saute it in the butter until fragrant.",
+      "*   Add the ground beef and cook until browned.",
+      "*   Stir in the sour cream and serve hot.",
+    ].join("\n");
     const recipe = extractHtmlRecipe(markdown);
     expect(recipe?.name).toMatch(/stroganoff/i);
     expect(recipe?.recipeIngredient).toEqual(

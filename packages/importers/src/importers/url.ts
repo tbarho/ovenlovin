@@ -14,6 +14,7 @@ import {
   extractAuthor,
   extractPageImages,
   pickImportRecipeImage,
+  RecipeNotFoundError,
 } from "../utils/url";
 import { extractHtmlRecipe } from "../utils/html-recipe";
 import {
@@ -43,13 +44,11 @@ export function createUrlImporter(): Importer<UrlImportInput> {
     },
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
-      const { html, finalUrl } = await fetchHtml(input.url);
+      const { html, finalUrl, layersTried } = await fetchHtml(input.url);
       const jsonLd = extractJsonLd(html) ?? extractHtmlRecipe(html);
 
       if (!jsonLd) {
-        throw new Error(
-          "We got the page but could not find a recipe on it. Try pasting the recipe text instead."
-        );
+        throw new RecipeNotFoundError(finalUrl, layersTried);
       }
 
       return {

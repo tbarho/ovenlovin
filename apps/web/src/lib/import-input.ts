@@ -26,7 +26,7 @@ export function importInputError(source: "url" | "paste", content: string): stri
     return "That doesn't look like a web address";
   }
   if (source === "url" && isExamplePlaceholderUrl(content)) {
-    return "example.com is a placeholder, not a recipe page. Paste a real recipe URL, or type the recipe instead.";
+    return "No recipe found on this page.";
   }
   return null;
 }
