@@ -45,11 +45,22 @@ describe("recheckBannerDetail", () => {
 });
 
 describe("plan night helpers", () => {
-  it("lists recipe nights and block nights", () => {
+  it("lists only unfinished recipe nights and block nights", () => {
     const days = [
       {
         weekday: "Friday",
-        meals: [{ isNoCook: true, recipeId: null, findings: [] }],
+        meals: [{ isNoCook: true, recipeId: null, findings: [], checkStatus: "complete" as const }],
+      },
+      {
+        weekday: "Monday",
+        meals: [
+          {
+            isNoCook: false,
+            recipeId: "tacos",
+            findings: [],
+            checkStatus: "complete" as const,
+          },
+        ],
       },
       {
         weekday: "Saturday",
@@ -57,6 +68,7 @@ describe("plan night helpers", () => {
           {
             isNoCook: false,
             recipeId: "pesto",
+            checkStatus: "incomplete" as const,
             findings: [
               { severity: "block", message: "Contains pine nuts, so Child C can't eat this." },
             ],
