@@ -179,12 +179,14 @@ describe("ImportRecipeForm photo import", () => {
   it("shows Saving this recipe after Save and stores the import toast", async () => {
     const user = userEvent.setup();
     let finishSave: (value: { id: string; title: string; servings: number }) => void = () => {};
-    vi.mocked(api).mockImplementation(
-      () =>
-        new Promise((resolve) => {
+    vi.mocked(api).mockImplementation((path: string) => {
+      if (path === "/api/v1/recipes") {
+        return new Promise((resolve) => {
           finishSave = resolve;
-        })
-    );
+        });
+      }
+      return Promise.resolve({ id: "rec-1", images: ["/api/v1/recipes/rec-1/image"] });
+    });
     render(<ImportRecipeForm />);
     await user.click(screen.getByRole("tab", { name: "Photo" }));
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
@@ -197,11 +199,48 @@ describe("ImportRecipeForm photo import", () => {
     expect(within(dialog).getByRole("button", { name: "Saving…" })).toBeDisabled();
     finishSave({ id: "rec-1", title: "Weeknight Tomato Pasta", servings: 4 });
     await waitFor(() =>
-      expect(JSON.parse(window.sessionStorage.getItem("ovenlovin.import-toast") ?? "null")).toEqual({
-        title: "Weeknight Tomato Pasta",
-        servings: 4,
-      })
+      expect(JSON.parse(window.sessionStorage.getItem("ovenlovin.import-toast") ?? "null")).toEqual(
+        {
+          title: "Weeknight Tomato Pasta",
+          servings: 4,
+        }
+      )
     );
+  });
+
+  it("saves the recipe first, then POSTs a compressed photo separately", async () => {
+    mockXhr({ body: { ...preview, images: [] } });
+    const user = userEvent.setup();
+    vi.mocked(api).mockImplementation(async (path: string) => {
+      if (path === "/api/v1/recipes") return { id: "rec-1", title: "Weeknight Tomato Pasta" };
+      return { id: "rec-1", images: ["/api/v1/recipes/rec-1/image"] };
+    });
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    await user.upload(library, file);
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
+    await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
+    await waitFor(() => expect(api).toHaveBeenCalled());
+    const createCall = vi.mocked(api).mock.calls.find((call) => call[0] === "/api/v1/recipes");
+    expect(createCall).toBeTruthy();
+    const created = JSON.parse(String(createCall?.[1]?.body));
+    expect(created.images).toEqual([]);
+    expect(JSON.stringify(created)).not.toContain("data:image");
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith(
+        "/api/v1/recipes/rec-1/image",
+        expect.objectContaining({ method: "POST" })
+      )
+    );
+    const imageCall = vi
+      .mocked(api)
+      .mock.calls.find((call) => call[0] === "/api/v1/recipes/rec-1/image");
+    const imageBody = JSON.parse(String(imageCall?.[1]?.body));
+    expect(imageBody.image).toMatch(/^data:image\/jpeg;base64,/);
+    expect(imageBody.image.length).toBeLessThan(50_000);
   });
 });
 
@@ -228,6 +267,22 @@ describe("ImportRecipeForm url and paste validation", () => {
     await user.type(screen.getByPlaceholderText(/example.com/i), "not a url");
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(screen.getByText("That doesn't look like a web address")).toBeVisible();
+    expect(api).not.toHaveBeenCalled();
+    await user.clear(screen.getByPlaceholderText(/example.com/i));
+    await user.type(screen.getByPlaceholderText(/example.com/i), "https://www.allrecipes.com/x");
+    expect(screen.queryByText("That doesn't look like a web address")).not.toBeInTheDocument();
+  });
+
+  it("does not report example.com as blocked", async () => {
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/example.com/i),
+      "https://example.com/chocolate-chip-cookies"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(screen.getByText(/placeholder/i)).toBeVisible();
+    expect(screen.queryByText(/blocked/i)).not.toBeInTheDocument();
     expect(api).not.toHaveBeenCalled();
   });
 

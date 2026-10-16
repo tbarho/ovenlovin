@@ -6,6 +6,7 @@ import { api } from "@/lib/browser-api";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_STEPS,
+  compressPhotoForSave,
   photoImportAnnouncement,
   photoImportStepReached,
   uploadingStepLabel,
@@ -24,15 +25,6 @@ import {
   type PhotoReviewDraft,
 } from "@/lib/photo-import-review";
 import { BottomSheet } from "./BottomSheet";
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error ?? new Error("Could not read that photo"));
-    reader.readAsDataURL(file);
-  });
-}
 
 function stepLabel(stepId: (typeof PHOTO_IMPORT_STEPS)[number]["id"], percent: number): string {
   if (stepId === "uploading") return uploadingStepLabel(percent);
@@ -246,9 +238,6 @@ export function PhotoImportDialog({
     setSaveError(null);
     try {
       const body = recipeCreateBodyFromReview(draft);
-      if ((!body.images || body.images.length === 0) && job.files[0]) {
-        body.images = [await fileToDataUrl(job.files[0])];
-      }
       const recipe = await api<{ id: string; title?: string; servings?: number }>(
         "/api/v1/recipes",
         {
@@ -256,6 +245,13 @@ export function PhotoImportDialog({
           body: JSON.stringify(body),
         }
       );
+      if ((!body.images || body.images.length === 0) && job.files[0]) {
+        const image = await compressPhotoForSave(job.files[0]);
+        await api(`/api/v1/recipes/${recipe.id}/image`, {
+          method: "POST",
+          body: JSON.stringify({ image }),
+        });
+      }
       window.sessionStorage.setItem(
         "ovenlovin.import-toast",
         JSON.stringify({

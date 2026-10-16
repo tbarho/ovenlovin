@@ -37,6 +37,7 @@ describe("people catalog search", () => {
     expect(resolved?.entry.code).toBe("peanut");
     expect(customCatalogOffer("pean")?.code).toBe("pean");
     expect(unknownAllergenWarning("Pean", resolved?.entry ?? null)).toContain("Peanut");
+    expect(resolveFoodAdd("peanutz", { mode: "cant_eat" })?.entry.code).toBe("peanut");
   });
 
   it("flags a free-text allergen that is not in the catalog", () => {
