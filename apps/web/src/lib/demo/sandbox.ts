@@ -178,11 +178,14 @@ export async function resetDemoSandbox(
   db: DbClient = getDatabase()
 ): Promise<DemoSandboxRecord> {
   return db.transaction(async (tx) => {
-    const next = await getOrCreateDemoSandbox(undefined, tx);
+    // Drizzle's transaction handle is query-compatible but not typed as DbClient
+    // ($client is missing). Cast so wipe/seed stay on the same connection.
+    const session = tx as unknown as DbClient;
+    const next = await getOrCreateDemoSandbox(undefined, session);
     if (cookieId) {
-      const existing = await findDemoSandboxById(cookieId, tx);
+      const existing = await findDemoSandboxById(cookieId, session);
       if (existing && existing.id !== next.id) {
-        await wipeSandboxHousehold(tx, {
+        await wipeSandboxHousehold(session, {
           id: existing.id,
           householdId: existing.householdId,
           userId: existing.userId,
