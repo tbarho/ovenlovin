@@ -16,7 +16,9 @@ export function pageTextFromHtml(html: string, maxChars = MAX_PAGE_TEXT): string
   if (title) parts.push(title);
   if (h1 && h1 !== title) parts.push(h1);
 
-  $("h2, h3, li, p").each((_, el) => {
+  const scoped = $("main, article, #mw-content-text, .hentry, .recipe").first();
+  const nodes = scoped.length > 0 ? scoped.find("h2, h3, li, p") : $("h2, h3, li, p");
+  nodes.each((_, el) => {
     const text = $(el).text().replace(/\s+/g, " ").trim();
     if (text.length >= 2) parts.push(text);
   });

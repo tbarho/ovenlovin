@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import { publicCopyRequests, relatedRecipeUrls } from "./public-copies";
+import { publicCopyRequests, relatedRecipeUrls, type PublicCopy } from "./public-copies";
 
 export type FetchLayer = "direct" | "related" | "cache";
 
@@ -181,6 +181,22 @@ function cacheFallbackEnabled(env: Record<string, string | undefined>): boolean 
   return env.RECIPE_IMPORT_CACHE_FALLBACK !== "0";
 }
 
+function cacheCopyFamily(label: string): "google-translate" | "jina" {
+  return label.startsWith("jina") ? "jina" : "google-translate";
+}
+
+function cacheCopyHeaders(copy: PublicCopy): Record<string, string> {
+  if (copy.label.startsWith("jina")) {
+    return {
+      "User-Agent": CHROME_USER_AGENT,
+      Accept: "text/html, text/markdown, */*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      ...copy.headers,
+    };
+  }
+  return { ...FULL_BROWSER_HEADERS, ...copy.headers };
+}
+
 async function readResponse(
   fetchImpl: typeof fetch,
   url: string,
@@ -218,7 +234,7 @@ type PageHit = {
 /**
  * Layered recipe-page fetch:
  * 1. Direct HTTP with a full browser header set (and related live URLs on 404)
- * 2. Public copies: Google Translate, then Jina
+ * 2. Public copies: Google Translate and Jina (named in the blocked message)
  *
  * A live page that is not a recipe (example.com) is returned so extract can
  * say "no recipe found". "Blocked" is only thrown when every layer failed.
@@ -275,35 +291,43 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   const found = await tryDirect(url, "direct");
   if (found) return found;
 
-  if (lastStatus === 404) {
-    for (const related of relatedRecipeUrls(url)) {
-      const relatedHit = await tryDirect(related, "related");
-      if (relatedHit) return relatedHit;
-    }
+  for (const related of relatedRecipeUrls(url)) {
+    const relatedHit = await tryDirect(related, "related");
+    if (relatedHit) return relatedHit;
   }
 
   const settledPage = state.fallback;
-  const haveSettledPage =
-    settledPage !== null && lastStatus !== 404 && !looksLikePaywall(settledPage.html);
+  const haveSettledNonRecipe =
+    settledPage !== null &&
+    lastStatus >= 200 &&
+    lastStatus < 300 &&
+    !looksLikePaywall(settledPage.html);
 
-  if (cacheFallbackEnabled(env) && !haveSettledPage) {
-    layersTried.push("cache");
+  if (cacheFallbackEnabled(env) && !haveSettledNonRecipe) {
     const candidates = [url, ...relatedRecipeUrls(url)];
-    for (const candidate of candidates) {
-      for (const copy of publicCopyRequests(candidate)) {
+    const copies = candidates.flatMap((candidate) => publicCopyRequests(candidate));
+    const families = [...new Set(copies.map((copy) => cacheCopyFamily(copy.label)))];
+    layersTried.push(...families);
+
+    const responses = await Promise.all(
+      copies.map(async (copy) => {
         try {
-          const cached = await readResponse(fetchImpl, copy.url, copy.headers);
-          const hit = remember({
-            html: cached.html,
-            finalUrl: url,
-            via: "cache",
-            status: cached.ok ? 200 : cached.status,
-          });
-          if (hit) return hit;
+          return await readResponse(fetchImpl, copy.url, cacheCopyHeaders(copy));
         } catch {
-          // try the next public copy
+          return null;
         }
-      }
+      })
+    );
+
+    for (const cached of responses) {
+      if (!cached) continue;
+      const hit = remember({
+        html: cached.html,
+        finalUrl: url,
+        via: "cache",
+        status: cached.ok ? 200 : cached.status,
+      });
+      if (hit) return hit;
     }
   }
 

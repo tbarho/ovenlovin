@@ -83,8 +83,8 @@ describe("page classification", () => {
   });
 
   it("lists tried layers in the blocked message", () => {
-    expect(importBlockedMessage(["direct", "cache"])).toBe(
-      "This site blocked the importer (tried direct, cache). Try importing by pasting the recipe text instead."
+    expect(importBlockedMessage(["direct", "google-translate", "jina"])).toBe(
+      "This site blocked the importer (tried direct, google-translate, jina). Try importing by pasting the recipe text instead."
     );
   });
 });
@@ -163,7 +163,7 @@ describe("fetchHtml layers", () => {
       env: {},
     });
     expect(result.via).toBe("cache");
-    expect(result.layersTried).toEqual(["direct", "cache"]);
+    expect(result.layersTried).toEqual(["direct", "google-translate", "jina"]);
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
   });
 
@@ -233,6 +233,47 @@ describe("fetchHtml layers", () => {
     expect(result.html).toMatch(/Ingredients/);
   });
 
+  it("follows Cookbook:Pancake to the North American recipe when the overview has no card", async () => {
+    const overview = "https://en.wikibooks.org/wiki/Cookbook:Pancake";
+    const recipe = "https://en.wikibooks.org/wiki/Cookbook:Pancakes_(North_American)";
+    expect(relatedRecipeUrls(overview)).toEqual([recipe]);
+    const html = fixture("wikibooks-pancakes.html");
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested === overview) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: overview,
+          text: async () =>
+            `<!doctype html><html><head><title>Cookbook:Pancake</title></head>
+             <body><h1>Cookbook:Pancake</h1>
+             <p>Pancakes are a subcategory of flatbreads. See American pancakes.</p>
+             <p>This overview is a complete document with no ingredient list.</p>
+             </body></html>`,
+        };
+      }
+      if (requested === recipe) {
+        return { ok: true, status: 200, statusText: "OK", url: recipe, text: async () => html };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => "",
+      };
+    });
+
+    const result = await fetchHtml(overview, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+    });
+    expect(result.via).toBe("related");
+    expect(result.finalUrl).toBe(recipe);
+    expect(result.html).toMatch(/Ingredients/);
+  });
+
   it("returns Wikibooks HTML that has no JSON-LD instead of calling it blocked", async () => {
     const html = fixture("wikibooks-pancakes.html");
     expect(isUsableRecipeHtml(html)).toBe(true);
@@ -269,7 +310,7 @@ describe("fetchHtml layers", () => {
       })
     ).rejects.toMatchObject({
       name: "RecipeImportFetchError",
-      layersTried: ["direct", "cache"],
+      layersTried: ["direct", "google-translate", "jina"],
     });
 
     try {
@@ -279,7 +320,7 @@ describe("fetchHtml layers", () => {
       });
     } catch (error) {
       expect(error).toBeInstanceOf(RecipeImportFetchError);
-      expect((error as Error).message).toMatch(/tried direct, cache/);
+      expect((error as Error).message).toMatch(/tried direct, google-translate, jina/);
       expect((error as Error).message).not.toMatch(/No recipe found/);
     }
   });

@@ -18,9 +18,13 @@ describe("public recipe copies", () => {
     expect(translateGoogUrl(live)).toContain("_x_tr_sl=auto");
   });
 
-  it("follows Cookbook:Pancakes to the live Wikibooks title", () => {
+  it("follows Cookbook pancake titles to the live recipe page", () => {
     expect(relatedRecipeUrls("https://en.wikibooks.org/wiki/Cookbook:Pancakes")).toEqual([
       "https://en.wikibooks.org/wiki/Cookbook:Pancake",
+      "https://en.wikibooks.org/wiki/Cookbook:Pancakes_(North_American)",
+    ]);
+    expect(relatedRecipeUrls("https://en.wikibooks.org/wiki/Cookbook:Pancake")).toEqual([
+      "https://en.wikibooks.org/wiki/Cookbook:Pancakes_(North_American)",
     ]);
     expect(relatedRecipeUrls(live)).toEqual([]);
   });

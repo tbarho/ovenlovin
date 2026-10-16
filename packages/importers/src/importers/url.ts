@@ -27,6 +27,7 @@ import {
   stripTrailingRecipeWord,
 } from "../utils/recipe-ld";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
+import { decodeHtmlEntities } from "../utils/decode-html";
 
 const IMPORTER_VERSION = "0.1.0";
 
@@ -65,14 +66,14 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
         sourceType: "url",
         sourceUrl: finalUrl,
         pageImages: extractPageImages(html),
-        author: extractAuthor(structured),
+        author: decodeOptionalText(extractAuthor(structured)),
         attribution: structured.publisher
           ? typeof structured.publisher === "string"
-            ? structured.publisher
+            ? decodeHtmlEntities(structured.publisher)
             : typeof structured.publisher === "object" &&
                 structured.publisher !== null &&
                 "name" in structured.publisher
-              ? String((structured.publisher as { name: unknown }).name)
+              ? decodeHtmlEntities(String((structured.publisher as { name: unknown }).name))
               : undefined
           : undefined,
         rawData: structured,
@@ -85,12 +86,16 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
     async toDraft(raw: RawExtraction): Promise<RecipeDraft> {
       const recipe = raw.rawData;
 
-      const title = typeof recipe.name === "string" ? stripTrailingRecipeWord(recipe.name) : "";
-      const description = typeof recipe.description === "string" ? recipe.description : undefined;
+      const title =
+        typeof recipe.name === "string"
+          ? stripTrailingRecipeWord(decodeHtmlEntities(recipe.name))
+          : "";
+      const description =
+        typeof recipe.description === "string" ? decodeHtmlEntities(recipe.description) : undefined;
 
       const servings = parseRecipeServings(recipe);
       const nutrition = parseRecipeNutrition(recipe);
-      const notes = parseRecipeNotes(recipe);
+      const notes = decodeOptionalText(parseRecipeNotes(recipe));
 
       const prepTime = parseDuration(recipe.prepTime as string);
       const cookTime = parseDuration(recipe.cookTime as string);
@@ -158,6 +163,10 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
   };
 }
 
+function decodeOptionalText(value: string | undefined): string | undefined {
+  return value == null ? value : decodeHtmlEntities(value);
+}
+
 function parseIngredients(recipeIngredient: unknown): ParsedIngredient[] {
   if (!recipeIngredient) return [];
 
@@ -175,7 +184,8 @@ function parseIngredients(recipeIngredient: unknown): ParsedIngredient[] {
     }
   }
 
-  return ingredientStrings.map((rawText) => {
+  return ingredientStrings.map((line) => {
+    const rawText = decodeHtmlEntities(line);
     const parsed = parseIngredientLine(rawText);
     return {
       rawText,
@@ -220,10 +230,13 @@ function parseSteps(recipeInstructions: unknown): ParsedStep[] {
     }
   }
 
-  return stepStrings.map((text, index) => ({
-    text,
-    order: index,
-    timers: extractTimers(text),
-    confidence: 1.0,
-  }));
+  return stepStrings.map((line, index) => {
+    const text = decodeHtmlEntities(line);
+    return {
+      text,
+      order: index,
+      timers: extractTimers(text),
+      confidence: 1.0,
+    };
+  });
 }
