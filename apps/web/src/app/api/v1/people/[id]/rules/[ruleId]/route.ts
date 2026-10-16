@@ -1,8 +1,13 @@
 import { NextRequest } from "next/server";
-import { handleApiError, NotFoundError } from "@/lib/api/errors";
+import { BadRequestError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
+import {
+  canonicalizePersonRuleTarget,
+  unknownRuleTargetMessage,
+  type PersonRuleKind,
+} from "@ovenlovin/allergens";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(
@@ -73,8 +78,19 @@ export async function PATCH(
       apiKeyCreatedBy: context.apiKeyCreatedBy,
     });
 
+    const confirmUnknown = Boolean(body.confirmUnknown);
+    const nextKind = (body.kind ?? existingRule.kind) as PersonRuleKind;
+    const nextTarget = String(body.target ?? existingRule.target);
+    const canonical = canonicalizePersonRuleTarget(nextKind, nextTarget);
+    if (nextKind === "allergen" && !canonical.resolved && !confirmUnknown) {
+      throw new BadRequestError(unknownRuleTargetMessage(nextTarget));
+    }
+    const rest = { ...body };
+    delete rest.confirmUnknown;
     const updated = await service.updateRule(ruleId, {
-      ...body,
+      ...rest,
+      kind: body.kind ? canonical.kind : undefined,
+      target: body.target ? canonical.target : undefined,
       setBy: actor.setBy,
     });
 

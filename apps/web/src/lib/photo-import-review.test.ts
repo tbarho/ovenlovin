@@ -49,6 +49,14 @@ describe("photo import review draft", () => {
     expect(body.ingredients).toHaveLength(2);
   });
 
+  it("drops inline data URLs from the create body so Save stays under the 4.5MB cap", () => {
+    const draft = reviewDraftFromPreview({
+      ...preview,
+      images: ["data:image/jpeg;base64,aaaa"],
+    });
+    expect(recipeCreateBodyFromReview(draft).images).toEqual([]);
+  });
+
   it("highlights title, times, and ingredient fields that were uncertain", () => {
     expect(isUncertainReviewField(["title", "ingredient: pasta"], "title")).toBe(true);
     expect(isUncertainReviewField(["title", "ingredient: pasta"], "ingredients")).toBe(true);

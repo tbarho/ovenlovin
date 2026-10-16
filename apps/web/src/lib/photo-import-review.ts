@@ -35,6 +35,10 @@ export function reviewDraftFromPreview(preview: PhotoImportPreview): PhotoReview
   };
 }
 
+export function remoteRecipeImages(images: string[] | null | undefined): string[] {
+  return keepMainRecipeImages(images).filter((image) => /^https?:\/\//i.test(image));
+}
+
 export function recipeCreateBodyFromReview(draft: PhotoReviewDraft) {
   const servings = draft.servings.trim() ? Number(draft.servings) : undefined;
   const prep = draft.prepTimeMinutes.trim() ? Number(draft.prepTimeMinutes) : undefined;
@@ -45,7 +49,7 @@ export function recipeCreateBodyFromReview(draft: PhotoReviewDraft) {
     servings: Number.isFinite(servings) ? servings : undefined,
     prepTimeMinutes: Number.isFinite(prep) ? prep : undefined,
     cookTimeMinutes: Number.isFinite(cook) ? cook : undefined,
-    images: keepMainRecipeImages(draft.images),
+    images: remoteRecipeImages(draft.images),
     ingredients: draft.ingredientsText
       .split(/\r?\n/)
       .map((line) => line.trim())
