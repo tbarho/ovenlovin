@@ -163,6 +163,8 @@ export interface ImporterConfig {
   visionModelId?: string;
   confidenceThreshold?: number;
   abortSignal?: AbortSignal;
+  /** Test hook: structured recipe from page text after JSON-LD and HTML extract. */
+  extractWithLlm?: (pageText: string) => Promise<Record<string, unknown> | null>;
 }
 
 /**

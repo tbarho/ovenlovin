@@ -1,0 +1,102 @@
+[
+  {
+    "id": "allrecipes",
+    "host": "allrecipes.com",
+    "url": "https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/",
+    "extractor": "json-ld",
+    "title": "Best Chocolate Chip Cookies",
+    "ingredientCount": 11,
+    "stepCount": 9,
+    "status": "ok"
+  },
+  {
+    "id": "simplyrecipes",
+    "host": "simplyrecipes.com",
+    "url": "https://www.simplyrecipes.com/recipes/chocolate_chip_cookies/",
+    "extractor": "json-ld",
+    "title": "Chewy Chocolate Chip Cookies",
+    "ingredientCount": 10,
+    "stepCount": 12,
+    "status": "ok"
+  },
+  {
+    "id": "budgetbytes",
+    "host": "budgetbytes.com",
+    "url": "https://www.budgetbytes.com/beef-stroganoff/",
+    "extractor": "json-ld",
+    "title": "Beef Stroganoff",
+    "ingredientCount": 11,
+    "stepCount": 6,
+    "status": "ok"
+  },
+  {
+    "id": "seriouseats",
+    "host": "seriouseats.com",
+    "url": "https://www.seriouseats.com/the-food-lab-best-chocolate-chip-cookie-recipe",
+    "extractor": "json-ld",
+    "title": "The Food Lab's Chocolate Chip Cookies",
+    "ingredientCount": 10,
+    "stepCount": 4,
+    "status": "ok"
+  },
+  {
+    "id": "natashaskitchen",
+    "host": "natashaskitchen.com",
+    "url": "https://natashaskitchen.com/beef-stroganoff/",
+    "extractor": "json-ld",
+    "title": "Beef Stroganoff Recipe",
+    "ingredientCount": 16,
+    "stepCount": 6,
+    "status": "ok"
+  },
+  {
+    "id": "foodnetwork",
+    "host": "foodnetwork.com",
+    "url": "https://www.foodnetwork.com/recipes/alton-brown/the-chewy-recipe-1909047",
+    "extractor": "json-ld",
+    "title": "The Chewy",
+    "ingredientCount": 11,
+    "stepCount": 4,
+    "status": "ok"
+  },
+  {
+    "id": "bonappetit",
+    "host": "bonappetit.com",
+    "url": "https://www.bonappetit.com/recipe/bas-best-chocolate-chip-cookies",
+    "extractor": "json-ld",
+    "title": "BA's Best Chocolate Chip Cookies",
+    "ingredientCount": 10,
+    "stepCount": 4,
+    "status": "ok"
+  },
+  {
+    "id": "nytcooking",
+    "host": "cooking.nytimes.com",
+    "url": "https://cooking.nytimes.com/recipes/1015819-chocolate-chip-cookies",
+    "extractor": "json-ld",
+    "title": "Best Chocolate Chip Cookies",
+    "ingredientCount": 11,
+    "stepCount": 4,
+    "status": "ok"
+  },
+  {
+    "id": "wikibooks",
+    "host": "en.wikibooks.org",
+    "url": "https://en.wikibooks.org/wiki/Cookbook:Pancake",
+    "extractor": "html",
+    "title": "Cookbook:Pancakes",
+    "ingredientCount": 6,
+    "stepCount": 3,
+    "status": "ok"
+  },
+  {
+    "id": "plain-blog",
+    "host": "example-blog.test",
+    "url": "https://example-blog.test/weeknight-tomato-pasta/",
+    "extractor": "html",
+    "title": "Weeknight Tomato Pasta",
+    "ingredientCount": 7,
+    "stepCount": 3,
+    "status": "ok"
+  }
+]

@@ -1,0 +1,27 @@
+import { describe, expect, it } from "vitest";
+import { pageTextFromHtml } from "./page-text";
+
+describe("pageTextFromHtml", () => {
+  it("keeps title, headings, and list items and drops scripts", () => {
+    const text = pageTextFromHtml(`<html><head>
+      <title>Weeknight Tomato Pasta</title>
+      <script>window.ad = true</script>
+    </head><body>
+      <nav>Home</nav>
+      <h1>Weeknight Tomato Pasta</h1>
+      <h2>Ingredients</h2>
+      <ul><li>12 oz pasta</li><li>1 can tomatoes</li></ul>
+      <h2>Instructions</h2>
+      <ol><li>Boil the pasta.</li></ol>
+    </body></html>`);
+    expect(text).toMatch(/Weeknight Tomato Pasta/);
+    expect(text).toMatch(/12 oz pasta/);
+    expect(text).toMatch(/Boil the pasta/);
+    expect(text).not.toMatch(/window\.ad/);
+  });
+
+  it("caps long pages", () => {
+    const long = `<html><body><p>${"pasta ".repeat(8000)}</p></body></html>`;
+    expect(pageTextFromHtml(long).length).toBeLessThanOrEqual(12_000);
+  });
+});

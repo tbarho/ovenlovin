@@ -1,5 +1,6 @@
 import type {
   Importer,
+  ImporterConfig,
   UrlImportInput,
   RawExtraction,
   RecipeDraft,
@@ -17,6 +18,8 @@ import {
   RecipeNotFoundError,
 } from "../utils/url";
 import { extractHtmlRecipe } from "../utils/html-recipe";
+import { extractRecipeWithLlm } from "../utils/llm-recipe";
+import { pageTextFromHtml } from "../utils/page-text";
 import {
   parseRecipeNotes,
   parseRecipeNutrition,
@@ -27,7 +30,7 @@ import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../
 
 const IMPORTER_VERSION = "0.1.0";
 
-export function createUrlImporter(): Importer<UrlImportInput> {
+export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImportInput> {
   return {
     name: "url-importer",
     version: IMPORTER_VERSION,
@@ -45,9 +48,16 @@ export function createUrlImporter(): Importer<UrlImportInput> {
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
       const { html, finalUrl, layersTried } = await fetchHtml(input.url);
-      const jsonLd = extractJsonLd(html) ?? extractHtmlRecipe(html);
+      const jsonLd = extractJsonLd(html);
+      const htmlRecipe = jsonLd ? null : extractHtmlRecipe(html);
+      const structured =
+        jsonLd ??
+        htmlRecipe ??
+        (await (config.extractWithLlm
+          ? config.extractWithLlm(pageTextFromHtml(html))
+          : extractRecipeWithLlm(pageTextFromHtml(html), { modelId: config.modelId })));
 
-      if (!jsonLd) {
+      if (!structured) {
         throw new RecipeNotFoundError(finalUrl, layersTried);
       }
 
@@ -55,19 +65,20 @@ export function createUrlImporter(): Importer<UrlImportInput> {
         sourceType: "url",
         sourceUrl: finalUrl,
         pageImages: extractPageImages(html),
-        author: extractAuthor(jsonLd),
-        attribution: jsonLd.publisher
-          ? typeof jsonLd.publisher === "string"
-            ? jsonLd.publisher
-            : typeof jsonLd.publisher === "object" &&
-                jsonLd.publisher !== null &&
-                "name" in jsonLd.publisher
-              ? String((jsonLd.publisher as { name: unknown }).name)
+        author: extractAuthor(structured),
+        attribution: structured.publisher
+          ? typeof structured.publisher === "string"
+            ? structured.publisher
+            : typeof structured.publisher === "object" &&
+                structured.publisher !== null &&
+                "name" in structured.publisher
+              ? String((structured.publisher as { name: unknown }).name)
               : undefined
           : undefined,
-        rawData: jsonLd,
+        rawData: structured,
         extractedAt: new Date(),
         extractorVersion: IMPORTER_VERSION,
+        modelUsed: jsonLd || htmlRecipe ? undefined : config.modelId,
       };
     },
 

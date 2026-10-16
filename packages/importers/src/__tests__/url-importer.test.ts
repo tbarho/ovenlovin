@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createUrlImporter } from "../importers/url";
-import { extractJsonLd } from "../utils/url";
+import { extractJsonLd, RecipeNotFoundError } from "../utils/url";
 import chocolateChipCookiesJson from "./fixtures/url/chocolate-chip-cookies.json";
 
 describe("URL Importer", () => {
@@ -228,6 +228,72 @@ describe("URL Importer", () => {
 
       const result = extractJsonLd(html);
       expect(result).toBeNull();
+    });
+  });
+
+  describe("extract fallbacks", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const prosePage = `<!doctype html><html><head><title>Grandma soup</title></head>
+      <body><h1>Grandma soup</h1>
+      <p>This family soup uses a chicken, carrots, celery, onion, noodles, salt, and pepper.</p>
+      <p>Simmer the chicken, add the vegetables, then stir in the noodles until tender.</p>
+      <p>More copy so the page is a complete document and not treated as a challenge wall.</p>
+      </body></html>`;
+
+    it("uses the LLM when JSON-LD and HTML extract miss", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: "https://example-blog.test/grandma-soup",
+          text: async () => prosePage,
+        })
+      );
+
+      const importer = createUrlImporter({
+        extractWithLlm: async () => ({
+          "@type": "Recipe",
+          name: "Grandma soup",
+          recipeIngredient: ["1 chicken", "2 carrots", "2 celery stalks"],
+          recipeInstructions: [{ "@type": "HowToStep", text: "Simmer and add noodles." }],
+        }),
+      });
+
+      const raw = await importer.extract({ url: "https://example-blog.test/grandma-soup" });
+      expect(raw.rawData.name).toBe("Grandma soup");
+      expect(raw.rawData.recipeIngredient).toHaveLength(3);
+    });
+
+    it("says no recipe found when every extract layer misses", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: "https://example.com/",
+          text: async () =>
+            `<!doctype html><html><head><title>Example Domain</title></head>
+             <body><h1>Example Domain</h1>
+             <p>This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.</p>
+             </body></html>`,
+        })
+      );
+
+      await expect(
+        createUrlImporter({ extractWithLlm: async () => null }).extract({
+          url: "https://example.com/",
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeNotFoundError",
+        message: "No recipe found on this page.",
+      });
+      expect(RecipeNotFoundError).toBeTruthy();
     });
   });
 });
