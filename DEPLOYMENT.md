@@ -43,6 +43,7 @@ The Deploy button provisions Neon, Blob, and Clerk via the `stores` parameter. C
 #### Optional
 - `USDA_FDC_API_KEY` - USDA FoodData Central. Not required to deploy.
 - `AI_GATEWAY_API_KEY` - only needed off Vercel; on Vercel, AI Gateway uses OIDC
+- `RK_MODEL_EXTRACT` - optional URL-import text model after JSON-LD/HTML miss. Default `openai/gpt-4o-mini`. No new Vercel key required; uses the existing gateway.
 - `NEXT_PUBLIC_APP_URL` - Base URL for the app (auto-set by Vercel)
 - `OVENLOVIN_VERCEL_TEAM_SLUG` - Vercel team/account slug for dashboard links (not the GitHub owner; example: `ty-barho`)
 - `OVENLOVIN_VERCEL_PROJECT_SLUG` - Vercel project slug if it differs from the git repo name

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_VISION_MODEL, resolveVisionModelId } from "./models";
+import {
+  DEFAULT_EXTRACT_MODEL,
+  DEFAULT_VISION_MODEL,
+  resolveExtractModelId,
+  resolveVisionModelId,
+} from "./models";
 
 describe("resolveVisionModelId", () => {
   it("uses the explicit override first", () => {
@@ -21,5 +26,26 @@ describe("resolveVisionModelId", () => {
 
   it("ignores blank override and env values", () => {
     expect(resolveVisionModelId("  ", { RK_MODEL_VISION: "   " })).toBe(DEFAULT_VISION_MODEL);
+  });
+});
+
+describe("resolveExtractModelId", () => {
+  it("uses the cheap gateway default, not RK_MODEL_DEFAULT", () => {
+    expect(resolveExtractModelId(undefined, { RK_MODEL_DEFAULT: "spacexai/grok-4.7" })).toBe(
+      DEFAULT_EXTRACT_MODEL
+    );
+    expect(DEFAULT_EXTRACT_MODEL).toBe("openai/gpt-4o-mini");
+  });
+
+  it("uses RK_MODEL_EXTRACT when set", () => {
+    expect(resolveExtractModelId(undefined, { RK_MODEL_EXTRACT: "google/gemini-2.5-flash" })).toBe(
+      "google/gemini-2.5-flash"
+    );
+  });
+
+  it("uses the explicit override first", () => {
+    expect(
+      resolveExtractModelId("openai/gpt-4o-mini", { RK_MODEL_EXTRACT: "google/gemini-2.5-flash" })
+    ).toBe("openai/gpt-4o-mini");
   });
 });

@@ -34,6 +34,7 @@ interface Importer<TInput> {
 - Fetch layers: live browser headers, related URLs on 404, public copies (Wayback / Jina / Google Translate), optional remote scrape (Browserless / ScrapingBee), then stealth Chromium
 - schema.org Recipe JSON-LD (primary)
 - HTML / markdown recipe-card fallback (Wikibooks, Jina)
+- Cheap LLM fallback (`openai/gpt-4o-mini` via Vercel AI Gateway, override with `RK_MODEL_EXTRACT`)
 - "No recipe found on this page" when the page loaded but is not a recipe (example.com)
 - "This site blocked the importer (tried ...)" only after every layer failed
 

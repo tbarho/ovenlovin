@@ -49,6 +49,7 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 - **USDA_FDC_API_KEY** - optional USDA FoodData Central key ([get one](https://fdc.nal.usda.gov/api-key-signup.html)). Not required to deploy.
 - **NEXT_PUBLIC_INSTANCE_NAME** - optional landing-page name (defaults to "Your OvenLovin")
 - **AI_GATEWAY_API_KEY** - optional; on Vercel, AI Gateway authenticates with OIDC
+- **RK_MODEL_EXTRACT** - optional; URL-import text model after JSON-LD/HTML miss. Default: `openai/gpt-4o-mini` (cheap/fast on the gateway catalog). Leave unset unless you want a different model.
 - **OVENLOVIN_VERCEL_TEAM_SLUG** - optional Vercel team/account slug for dashboard links (not the GitHub owner)
 - **OVENLOVIN_VERCEL_PROJECT_SLUG** - optional Vercel project slug if it differs from the git repo name
 - **VERCEL_TOKEN** / **OVENLOVIN_VERCEL_TOKEN** - optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset. Otherwise links fall back to https://vercel.com/dashboard
