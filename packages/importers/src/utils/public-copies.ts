@@ -34,19 +34,29 @@ export function publicCopyRequests(url: string): PublicCopy[] {
 }
 
 /**
- * Nearby live URLs to try after a 404.
- * Wikibooks Cookbook:Pancakes is a missing title; Cookbook:Pancake is live.
+ * Nearby live URLs to try after a 404 or a cookbook overview.
+ * Cookbook:Pancakes 404s. Cookbook:Pancake is a disambiguation page.
+ * Cookbook:Pancakes_(North_American) is the cookable recipe.
  */
 export function relatedRecipeUrls(url: string): string[] {
   try {
     const parsed = new URL(url);
+    const related: string[] = [];
     if (/\/Cookbook:Pancakes\/?$/i.test(parsed.pathname)) {
-      const next = new URL(parsed.href);
-      next.pathname = parsed.pathname.replace(/Pancakes\/?$/i, "Pancake");
-      return [next.toString()];
+      const overview = new URL(parsed.href);
+      overview.pathname = parsed.pathname.replace(/Pancakes\/?$/i, "Pancake");
+      related.push(overview.toString());
     }
+    if (/\/Cookbook:Pancakes?(?:\/|$)/i.test(parsed.pathname)) {
+      const recipe = new URL(parsed.href);
+      recipe.pathname = parsed.pathname.replace(
+        /Cookbook:Pancakes?\/?$/i,
+        "Cookbook:Pancakes_(North_American)"
+      );
+      related.push(recipe.toString());
+    }
+    return related;
   } catch {
     return [];
   }
-  return [];
 }

@@ -130,6 +130,27 @@ describe("URL Importer", () => {
       expect(draft.notes).toBe("Rinse the cauliflower well.");
     });
 
+    it("decodes HTML entities in titles and text", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "url",
+        sourceUrl: "https://www.seriouseats.com/the-food-lab-best-chocolate-chip-cookie-recipe",
+        rawData: {
+          ...chocolateChipCookiesJson,
+          name: "The Food Lab&#39;s Chocolate Chip Cookies",
+          description: "Brown butter &amp; chocolate.",
+          recipeIngredient: ["1 cup unsalted butter", "12 oz chocolate chips"],
+          recipeInstructions: [
+            { "@type": "HowToStep", text: "Cream the butter. It&#39;s ready when pale." },
+          ],
+        },
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+      expect(draft.title).toBe("The Food Lab's Chocolate Chip Cookies");
+      expect(draft.description).toBe("Brown butter & chocolate.");
+      expect(draft.steps[0]?.text).toBe("Cream the butter. It's ready when pale.");
+    });
+
     it("should extract timers from steps", async () => {
       const rawExtraction = {
         sourceType: "url" as const,
@@ -242,6 +263,40 @@ describe("URL Importer", () => {
       <p>Simmer the chicken, add the vegetables, then stir in the noodles until tender.</p>
       <p>More copy so the page is a complete document and not treated as a challenge wall.</p>
       </body></html>`;
+
+    it("uses the LLM for a Wikibooks-like page with no recipe markup", async () => {
+      const overview = `<!doctype html><html><head><title>Cookbook:Pancake</title></head>
+        <body><h1>Cookbook:Pancake</h1>
+        <p>Pancakes are made from a thin batter cooked on a griddle.</p>
+        <p>A typical batter uses 1 cup flour, 1 cup milk, 1 egg, and 2 tablespoons butter.</p>
+        <p>Mix the batter, then cook until bubbles form and flip once.</p>
+        </body></html>`;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: "https://en.wikibooks.org/wiki/Cookbook:Pancake",
+          text: async () => overview,
+        })
+      );
+      const extractWithLlm = vi.fn(async () => ({
+        "@type": "Recipe",
+        name: "Pancake",
+        recipeIngredient: ["1 cup flour", "1 cup milk", "1 egg", "2 tablespoons butter"],
+        recipeInstructions: [
+          { "@type": "HowToStep", text: "Mix the batter and cook on a griddle." },
+        ],
+      }));
+
+      const raw = await createUrlImporter({ extractWithLlm }).extract({
+        url: "https://en.wikibooks.org/wiki/Cookbook:Pancake",
+      });
+      expect(extractWithLlm).toHaveBeenCalled();
+      expect(String(extractWithLlm.mock.calls[0]?.[0])).toMatch(/1 cup flour/);
+      expect(raw.rawData.name).toBe("Pancake");
+    });
 
     it("uses the LLM when JSON-LD and HTML extract miss", async () => {
       vi.stubGlobal(
