@@ -3,6 +3,7 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
+import { shortBuildSha } from "@/lib/build-sha";
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { KitchenNav } from "./KitchenNav";
 import { KitchenPageTitle } from "./KitchenPageTitle";
@@ -26,6 +27,7 @@ function Account() {
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const demo = isDemoModeEnabled();
+  const buildSha = shortBuildSha();
   return (
     <div className="shell kitchen-shell">
       {demo ? <DemoBanner /> : null}
@@ -43,6 +45,11 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className="wrap kitchen">{children}</div>
+      {buildSha ? (
+        <p className="kitchen-build muted" data-testid="build-sha">
+          Build {buildSha}
+        </p>
+      ) : null}
       <KitchenNav variant="tabs" />
     </div>
   );

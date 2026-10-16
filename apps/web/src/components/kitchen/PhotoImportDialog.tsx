@@ -22,6 +22,7 @@ import {
   isUncertainReviewField,
   recipeCreateBodyFromReview,
   reviewDraftFromPreview,
+  uncertainFieldNote,
   type PhotoReviewDraft,
 } from "@/lib/photo-import-review";
 import { BottomSheet } from "./BottomSheet";
@@ -91,6 +92,11 @@ function PhotoReviewForm({
   onSave: (event: React.FormEvent) => void;
 }) {
   const uncertain = draft.uncertainFields;
+  const titleNote = uncertainFieldNote(uncertain, "title");
+  const servingsNote = uncertainFieldNote(uncertain, "servings");
+  const timesNote = uncertainFieldNote(uncertain, "times");
+  const ingredientsNote = uncertainFieldNote(uncertain, "ingredients");
+  const stepsNote = uncertainFieldNote(uncertain, "steps");
   return (
     <form className="form-card photo-review-form" style={{ margin: 0 }} onSubmit={onSave}>
       <ol className="sheet-steps">
@@ -113,44 +119,80 @@ function PhotoReviewForm({
         // eslint-disable-next-line @next/next/no-img-element
         <img className="photo-review-hero" src={heroSrc} alt="Selected recipe photo" />
       ) : null}
-      <label className={isUncertainReviewField(uncertain, "title") ? "is-uncertain" : undefined}>
-        Title
-        <input
-          value={draft.title}
-          onChange={(event) => onChange({ ...draft, title: event.target.value })}
-          required
-        />
-      </label>
+      <div className="review-field">
+        <label className={isUncertainReviewField(uncertain, "title") ? "is-uncertain" : undefined}>
+          Title
+          <input
+            value={draft.title}
+            onChange={(event) => onChange({ ...draft, title: event.target.value })}
+            aria-describedby={titleNote ? "photo-note-title" : undefined}
+            required
+          />
+        </label>
+        {titleNote ? (
+          <span id="photo-note-title" className="field-note">
+            {titleNote}
+          </span>
+        ) : null}
+      </div>
       <div className="photo-review-meta">
-        <label
-          className={isUncertainReviewField(uncertain, "servings") ? "is-uncertain" : undefined}
-        >
-          Servings
-          <input
-            type="number"
-            min={1}
-            value={draft.servings}
-            onChange={(event) => onChange({ ...draft, servings: event.target.value })}
-          />
-        </label>
-        <label className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}>
-          Prep (min)
-          <input
-            type="number"
-            min={0}
-            value={draft.prepTimeMinutes}
-            onChange={(event) => onChange({ ...draft, prepTimeMinutes: event.target.value })}
-          />
-        </label>
-        <label className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}>
-          Cook (min)
-          <input
-            type="number"
-            min={0}
-            value={draft.cookTimeMinutes}
-            onChange={(event) => onChange({ ...draft, cookTimeMinutes: event.target.value })}
-          />
-        </label>
+        <div className="review-field">
+          <label
+            className={isUncertainReviewField(uncertain, "servings") ? "is-uncertain" : undefined}
+          >
+            Servings
+            <input
+              type="number"
+              min={1}
+              value={draft.servings}
+              onChange={(event) => onChange({ ...draft, servings: event.target.value })}
+              aria-describedby={servingsNote ? "photo-note-servings" : undefined}
+            />
+          </label>
+          {servingsNote ? (
+            <span id="photo-note-servings" className="field-note">
+              {servingsNote}
+            </span>
+          ) : null}
+        </div>
+        <div className="review-field">
+          <label
+            className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
+          >
+            Prep (min)
+            <input
+              type="number"
+              min={0}
+              value={draft.prepTimeMinutes}
+              onChange={(event) => onChange({ ...draft, prepTimeMinutes: event.target.value })}
+              aria-describedby={timesNote ? "photo-note-prep" : undefined}
+            />
+          </label>
+          {timesNote ? (
+            <span id="photo-note-prep" className="field-note">
+              {timesNote}
+            </span>
+          ) : null}
+        </div>
+        <div className="review-field">
+          <label
+            className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
+          >
+            Cook (min)
+            <input
+              type="number"
+              min={0}
+              value={draft.cookTimeMinutes}
+              onChange={(event) => onChange({ ...draft, cookTimeMinutes: event.target.value })}
+              aria-describedby={timesNote ? "photo-note-cook" : undefined}
+            />
+          </label>
+          {timesNote ? (
+            <span id="photo-note-cook" className="field-note">
+              {timesNote}
+            </span>
+          ) : null}
+        </div>
       </div>
       <label>
         Notes
@@ -168,26 +210,42 @@ function PhotoReviewForm({
           placeholder="Cookbook, author, or URL if you saw one"
         />
       </label>
-      <label
-        className={isUncertainReviewField(uncertain, "ingredients") ? "is-uncertain" : undefined}
-      >
-        Ingredients
-        <textarea
-          rows={6}
-          value={draft.ingredientsText}
-          onChange={(event) => onChange({ ...draft, ingredientsText: event.target.value })}
-          required
-        />
-      </label>
-      <label className={isUncertainReviewField(uncertain, "steps") ? "is-uncertain" : undefined}>
-        Steps
-        <textarea
-          rows={6}
-          value={draft.stepsText}
-          onChange={(event) => onChange({ ...draft, stepsText: event.target.value })}
-          required
-        />
-      </label>
+      <div className="review-field">
+        <label
+          className={isUncertainReviewField(uncertain, "ingredients") ? "is-uncertain" : undefined}
+        >
+          Ingredients
+          <textarea
+            rows={6}
+            value={draft.ingredientsText}
+            onChange={(event) => onChange({ ...draft, ingredientsText: event.target.value })}
+            aria-describedby={ingredientsNote ? "photo-note-ingredients" : undefined}
+            required
+          />
+        </label>
+        {ingredientsNote ? (
+          <span id="photo-note-ingredients" className="field-note">
+            {ingredientsNote}
+          </span>
+        ) : null}
+      </div>
+      <div className="review-field">
+        <label className={isUncertainReviewField(uncertain, "steps") ? "is-uncertain" : undefined}>
+          Steps
+          <textarea
+            rows={6}
+            value={draft.stepsText}
+            onChange={(event) => onChange({ ...draft, stepsText: event.target.value })}
+            aria-describedby={stepsNote ? "photo-note-steps" : undefined}
+            required
+          />
+        </label>
+        {stepsNote ? (
+          <span id="photo-note-steps" className="field-note">
+            {stepsNote}
+          </span>
+        ) : null}
+      </div>
       {error ? <p className="muted">{error}</p> : null}
       {pending ? (
         <p className="muted" role="status" aria-live="polite">
@@ -316,7 +374,13 @@ export function PhotoImportDialog({
       {phase === "review" && draft ? (
         <PhotoReviewForm
           draft={draft}
-          heroSrc={job?.previewUrl || draft.images[0] || null}
+          heroSrc={
+            job?.previewUrl ||
+            (draft.images[0]?.startsWith("data:") || draft.images[0]?.startsWith("blob:")
+              ? draft.images[0]
+              : null) ||
+            null
+          }
           pending={pending}
           error={saveError}
           onChange={setDraft}

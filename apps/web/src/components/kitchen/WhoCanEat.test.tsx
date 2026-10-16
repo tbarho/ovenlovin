@@ -69,4 +69,13 @@ describe("WhoCanEat", () => {
     await user.click(screen.getByRole("button", { name: /try this swap/i }));
     expect(screen.getByTestId(`mark-${child.id}`)).toHaveAttribute("data-mark", "ok");
   });
+
+  it("does not show loves or all-clear chips when a recipe has no ingredients", () => {
+    render(<WhoCanEat people={[parent, child]} rules={[treeNut]} ingredients={[]} />);
+
+    expect(screen.getByTestId("who-incomplete")).toHaveTextContent(/no ingredients/i);
+    expect(screen.queryByText("OK")).not.toBeInTheDocument();
+    expect(screen.queryByText("Can't eat")).not.toBeInTheDocument();
+    expect(screen.queryByText(/loves this/i)).not.toBeInTheDocument();
+  });
 });
