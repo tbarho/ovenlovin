@@ -18,7 +18,9 @@ describe("PlanStatusActions", () => {
       method: "PATCH",
       body: JSON.stringify({ status: "approved" }),
     });
-    expect(screen.getByRole("button", { name: "Mark as final" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Mark as final" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reopen as draft" })).toBeEnabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Plan marked as final.");
   });
 
   it("asks before marking a plan final with an anaphylaxis-risk dinner and pending recheck", async () => {
@@ -47,6 +49,8 @@ describe("PlanStatusActions", () => {
       method: "PATCH",
       body: JSON.stringify({ status: "approved" }),
     });
+    expect(screen.getByRole("button", { name: "Reopen as draft" })).toBeEnabled();
+    expect(screen.getByText("Plan marked as final.")).toBeVisible();
   });
 
   it("clears Saving after a failed mark so the button is not stuck", async () => {
