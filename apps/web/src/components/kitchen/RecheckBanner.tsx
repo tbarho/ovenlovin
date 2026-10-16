@@ -16,7 +16,6 @@ export function RecheckBanner({
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [cleared, setCleared] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
 
@@ -37,7 +36,6 @@ export function RecheckBanner({
   if (cleared) return null;
 
   const detail = recheckBannerDetail({ nights, blockNights });
-  if (cleared) return null;
 
   return (
     <div className="week-recheck" role="status">
