@@ -29,6 +29,19 @@ describe("recipeSafetySummary", () => {
     expect(safety.warnings[0]).toMatch(/pine nuts/i);
     expect(safety.warnings[0]).toMatch(/Child C can't eat this/);
   });
+
+  it("does not treat an ingredient-less recipe as all-clear", () => {
+    const safety = recipeSafetySummary({
+      people: [parent, child],
+      rules: [treeNut],
+      ingredients: [],
+    });
+    expect(safety).toEqual({
+      blockPersonIds: [],
+      warnPersonIds: [],
+      warnings: [],
+    });
+  });
 });
 
 describe("loveTagText", () => {

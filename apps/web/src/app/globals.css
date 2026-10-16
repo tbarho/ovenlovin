@@ -1913,6 +1913,14 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   display: none;
 }
 
+.kitchen-build {
+  margin: 0 auto 8px;
+  max-width: var(--max);
+  padding: 0 var(--gut) 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
 .kitchen-tabbar {
   display: none;
 }
