@@ -195,6 +195,7 @@ export function LandingPage({
           {signedIn ? `${instanceName} · ` : ""}
           OvenLovin
           {signedIn ? ` · ${deploy.instanceHost}` : ""}
+          {deploy.github.commitShort ? ` · ${deploy.github.commitShort}` : ""}
         </span>
         {deploy.github.repoUrl ? (
           <a href={deploy.github.repoUrl} target="_blank" rel="noreferrer">

@@ -64,7 +64,12 @@ export function recipeHaystack(recipe: RecipeLoveFields): string[] {
   ].filter((line) => line.trim().length > 0);
 }
 
+export function recipeHasIngredients(recipe: RecipeLoveFields): boolean {
+  return (recipe.ingredients?.length ?? 0) > 0;
+}
+
 export function recipeMatchesLove(recipe: RecipeLoveFields, value: string): boolean {
+  if (!recipeHasIngredients(recipe)) return false;
   const phrases = matchPhrasesForTarget(value);
   const lines = recipeHaystack(recipe);
   return phrases.some(
@@ -73,6 +78,7 @@ export function recipeMatchesLove(recipe: RecipeLoveFields, value: string): bool
 }
 
 export function lovesForRecipe(recipe: RecipeLoveFields, people: PersonLove[]): LoveHit[] {
+  if (!recipeHasIngredients(recipe)) return [];
   const hits: LoveHit[] = [];
   const seen = new Set<string>();
   for (const person of people) {
@@ -92,6 +98,7 @@ export function lovesForRecipe(recipe: RecipeLoveFields, people: PersonLove[]): 
 }
 
 export function loveScore(recipe: RecipeLoveFields, people: PersonLove[]): number {
+  if (!recipeHasIngredients(recipe)) return 0;
   let score = 0;
   for (const person of people) {
     if (recipeMatchesLove(recipe, person.preference.value)) {

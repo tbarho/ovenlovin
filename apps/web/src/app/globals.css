@@ -1913,6 +1913,14 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   display: none;
 }
 
+.kitchen-build {
+  margin: 0 auto 8px;
+  max-width: var(--max);
+  padding: 0 var(--gut) 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
 .kitchen-tabbar {
   display: none;
 }
@@ -2383,6 +2391,13 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   outline: 2px solid #e3b15a;
   outline-offset: 1px;
   background: #fff8ef;
+}
+
+.photo-review-form .field-note {
+  display: block;
+  margin-top: 6px;
+  color: #8a6a28;
+  font-size: 0.85rem;
 }
 
 .photo-import-banner {

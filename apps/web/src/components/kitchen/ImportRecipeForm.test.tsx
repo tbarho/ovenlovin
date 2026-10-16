@@ -81,6 +81,7 @@ describe("ImportRecipeForm photo import", () => {
 
   afterEach(() => {
     cancelPhotoImportJob();
+    window.sessionStorage.removeItem("ovenlovin.import-toast");
     vi.unstubAllGlobals();
   });
 
@@ -138,6 +139,8 @@ describe("ImportRecipeForm photo import", () => {
       "Ready to review. This photo was hard to read. Check title, ingredient: pasta."
     );
     expect(within(dialog).getByLabelText("Title").closest("label")).toHaveClass("is-uncertain");
+    expect(within(dialog).getByText("This title was hard to read.")).toBeVisible();
+    expect(within(dialog).getByText("pasta was hard to read.")).toBeVisible();
     await typeFullWordAndKeepFocus(user, within(dialog).getByLabelText("Title"), "Garlic");
   });
 
@@ -173,6 +176,55 @@ describe("ImportRecipeForm photo import", () => {
     await user.click(screen.getByRole("button", { name: "Open" }));
     expect(await screen.findByRole("dialog")).toBeVisible();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
+  });
+
+  it("keeps Import in progress after switching to the URL tab", async () => {
+    mockXhr({ hang: true });
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    await user.upload(library, file);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("img", { name: /selected recipe photo/i })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    await user.click(screen.getByRole("tab", { name: "URL" }));
+    expect(screen.getByTestId("photo-import-progress")).toBeVisible();
+    expect(screen.getByText("Import in progress")).toBeVisible();
+    expect(screen.getByRole("img", { name: /selected recipe photo/i })).toBeVisible();
+  });
+
+  it("shows Saving this recipe after Save and stores the import toast", async () => {
+    const user = userEvent.setup();
+    let finishSave: (value: { id: string; title: string; servings: number }) => void = () => {};
+    vi.mocked(api).mockImplementation((path: string) => {
+      if (path === "/api/v1/recipes") {
+        return new Promise((resolve) => {
+          finishSave = resolve;
+        });
+      }
+      return Promise.resolve({ id: "rec-1", images: ["/api/v1/recipes/rec-1/image"] });
+    });
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    await user.upload(library, file);
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
+    await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
+    expect(within(dialog).getByText("Saving this recipe…")).toBeVisible();
+    expect(within(dialog).getByRole("button", { name: "Saving…" })).toBeDisabled();
+    finishSave({ id: "rec-1", title: "Weeknight Tomato Pasta", servings: 4 });
+    await waitFor(() =>
+      expect(JSON.parse(window.sessionStorage.getItem("ovenlovin.import-toast") ?? "null")).toEqual(
+        {
+          title: "Weeknight Tomato Pasta",
+          servings: 4,
+        }
+      )
+    );
   });
 
   it("saves the recipe first, then POSTs a compressed photo separately", async () => {

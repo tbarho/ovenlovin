@@ -37,6 +37,16 @@ export function WhoCanEat({
   const swaps = useMemo(() => swapsForIngredients(ingredients), [ingredients]);
 
   if (people.length === 0) return null;
+  if (ingredients.length === 0) {
+    return (
+      <div className="who-can-eat">
+        <h2 className="who-can-eat-title">Who can eat this</h2>
+        <p className="olp-lead" data-testid="who-incomplete">
+          This recipe has no ingredients yet, so we cannot say who can eat it.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="who-can-eat">

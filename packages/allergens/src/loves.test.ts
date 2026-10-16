@@ -44,9 +44,25 @@ describe("loves ranking", () => {
   });
 
   it("matches cuisine, style, and ingredient lines", () => {
-    expect(recipeMatchesLove({ title: "Veggie tacos", cuisine: "Mexican" }, "mexican")).toBe(true);
     expect(
-      recipeMatchesLove({ title: "Kung pao chicken", description: "spicy stir-fry" }, "spicy")
+      recipeMatchesLove(
+        {
+          title: "Veggie tacos",
+          cuisine: "Mexican",
+          ingredients: [{ rawText: "8 corn tortillas" }],
+        },
+        "mexican"
+      )
+    ).toBe(true);
+    expect(
+      recipeMatchesLove(
+        {
+          title: "Kung pao chicken",
+          description: "spicy stir-fry",
+          ingredients: [{ rawText: "1 lb chicken" }],
+        },
+        "spicy"
+      )
     ).toBe(true);
     expect(
       recipeMatchesLove(
@@ -56,6 +72,13 @@ describe("loves ranking", () => {
     ).toBe(true);
   });
 
+  it("never tags a recipe that has no ingredients", () => {
+    const empty = { title: "Weeknight pesto pasta", cuisine: "Italian" };
+    expect(recipeMatchesLove(empty, "pasta")).toBe(false);
+    expect(lovesForRecipe(empty, [mexican])).toEqual([]);
+    expect(loveScore(empty, [mexican])).toBe(0);
+  });
+
   it("uses the Loves catalog name when a dislike shares the code", () => {
     expect(loveLabel("spicy")).toBe("Spicy");
     expect(loveLabel("mexican")).toBe("Mexican");
@@ -63,7 +86,11 @@ describe("loves ranking", () => {
   });
 
   it("builds a small tag and scores by weight", () => {
-    const tacos = { title: "Veggie tacos", cuisine: "Mexican" };
+    const tacos = {
+      title: "Veggie tacos",
+      cuisine: "Mexican",
+      ingredients: [{ rawText: "8 corn tortillas" }],
+    };
     expect(loveTag("Ty")).toBe("Ty loves this");
     expect(lovesForRecipe(tacos, [mexican])[0]?.tag).toBe("Ty loves this");
     expect(loveScore(tacos, [mexican, spicy])).toBe(2);

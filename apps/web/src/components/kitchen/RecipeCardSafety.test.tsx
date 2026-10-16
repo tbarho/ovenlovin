@@ -84,4 +84,21 @@ describe("RecipeCardSafety", () => {
     expect(screen.queryByText(/loves this - check first/)).not.toBeInTheDocument();
     expect(screen.getByText("Can't eat")).toBeVisible();
   });
+
+  it("does not show loves chips on an ingredient-less recipe card", () => {
+    const recipe = testRecipe({ title: "Weeknight pesto pasta" });
+    render(
+      <RecipesKitchen
+        cookbooks={[]}
+        uncategorized={[recipe]}
+        recipes={[recipe]}
+        lovePeople={pastaLove}
+        safetyByRecipe={{ [recipe.id]: { blockPersonIds: [], warnPersonIds: [], warnings: [] } }}
+      />
+    );
+
+    expect(screen.queryByText("Child C loves this")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("love-tags")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("recipe-card-warnings")).not.toBeInTheDocument();
+  });
 });
