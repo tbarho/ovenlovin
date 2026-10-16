@@ -79,5 +79,11 @@ describe("LandingPage", () => {
     expect(screen.getByText("fix: internal commit visitors must not see")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Project dashboard" })).toBeInTheDocument();
     expect(screen.getByTestId("owner-status")).toBeInTheDocument();
+    expect(screen.getAllByText(/abc1234/).length).toBeGreaterThan(0);
+  });
+
+  it("shows the short build SHA in the footer for testers", () => {
+    render(<LandingPage {...shared} signedIn={false} />);
+    expect(screen.getAllByText(/abc1234/).length).toBeGreaterThan(0);
   });
 });

@@ -28,7 +28,7 @@ export function recipeSafetySummary(opts: {
   rules: PersonRule[];
   ingredients: CheckableIngredient[];
 }): RecipeSafetySummary {
-  if (opts.people.length === 0) return EMPTY_RECIPE_SAFETY;
+  if (opts.people.length === 0 || opts.ingredients.length === 0) return EMPTY_RECIPE_SAFETY;
   return recipeSafetyFromCheck(whoCanEat(opts));
 }
 
