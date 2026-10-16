@@ -200,6 +200,22 @@ describe("ImportRecipeForm url and paste validation", () => {
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(screen.getByText("That doesn't look like a web address")).toBeVisible();
     expect(api).not.toHaveBeenCalled();
+    await user.clear(screen.getByPlaceholderText(/example.com/i));
+    await user.type(screen.getByPlaceholderText(/example.com/i), "https://www.allrecipes.com/x");
+    expect(screen.queryByText("That doesn't look like a web address")).not.toBeInTheDocument();
+  });
+
+  it("does not report example.com as blocked", async () => {
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/example.com/i),
+      "https://example.com/chocolate-chip-cookies"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(screen.getByText(/placeholder/i)).toBeVisible();
+    expect(screen.queryByText(/blocked/i)).not.toBeInTheDocument();
+    expect(api).not.toHaveBeenCalled();
   });
 
   it("shows guessed servings after a paste import", async () => {
