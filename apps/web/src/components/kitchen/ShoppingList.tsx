@@ -135,9 +135,18 @@ export function ShoppingList({
               const done = checkedSet.has(item.key);
               const qty = shopItemQuantity(item);
               return (
-                <li className={`shop-item${done ? " is-done" : ""}`} key={item.key}>
+                <li
+                  className={`shop-item${done ? " is-done" : ""}`}
+                  key={item.key}
+                  data-checked={done ? "true" : "false"}
+                >
                   <label>
-                    <input type="checkbox" checked={done} onChange={() => toggle(item.key)} />
+                    <input
+                      type="checkbox"
+                      checked={done}
+                      aria-checked={done}
+                      onChange={() => toggle(item.key)}
+                    />
                     <span className="shop-item-body">
                       <strong>{item.name}</strong>
                       <span className="muted">

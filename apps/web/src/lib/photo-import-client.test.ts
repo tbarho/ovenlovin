@@ -7,6 +7,7 @@ import {
   PHOTO_IMPORT_TIMEOUT_MESSAGE,
   PHOTO_IMPORT_TIMEOUT_MS,
   classifyPhotoImportProblem,
+  dataUrlPayloadBytes,
   extractPhotoPreviewFromFiles,
   photoImportAnnouncement,
   photoImportErrorMessage,
@@ -104,6 +105,10 @@ describe("photo import copy helpers", () => {
     expect(photoImportErrorMessage(new Error(PHOTO_IMPORT_NOT_RECIPE_MESSAGE))).toBe(
       PHOTO_IMPORT_NOT_RECIPE_MESSAGE
     );
+  });
+
+  it("counts the decoded bytes of a data URL", () => {
+    expect(dataUrlPayloadBytes("data:image/jpeg;base64,aaaa")).toBe(3);
   });
 });
 

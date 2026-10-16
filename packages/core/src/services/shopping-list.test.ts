@@ -439,7 +439,7 @@ describe("ShoppingListService", () => {
       ingredients: [{ name: "acorn squash", quantity: 1 }],
       sections: [{ name: "Produce", items: [{ name: "acorn squash" }] }],
     });
-    expect(service.format(list, "json")).toBe(service.exportAsJSON(list));
+    expect(JSON.parse(service.format(list, "json")).ingredients[0].checked).toBe(false);
   });
 
   it("markdown lists aisle headings instead of a flat Ingredients section", () => {
@@ -454,6 +454,7 @@ describe("ShoppingListService", () => {
     const markdown = service.exportAsMarkdown(list);
     expect(markdown).toContain("## Produce");
     expect(markdown).toContain("1 yellow onion");
+    expect(markdown).toContain("- [ ]");
     expect(markdown).not.toContain("## Ingredients");
   });
 
@@ -471,5 +472,23 @@ describe("ShoppingListService", () => {
     expect(garlic?.displayUnit).toBe("clove");
     expect(service.exportAsMarkdown(list)).toContain("2 cloves garlic");
     expect(JSON.parse(service.exportAsJSON(list)).ingredients[0].key).toBe("garlic::clove");
+  });
+
+  it("marks check-offs in list export", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "pesto", servings: 4 }),
+        recipeTitle: "Weeknight pesto pasta",
+        recipeServings: 4,
+        ingredients: [{ rawText: "2 cloves garlic" }],
+      },
+    ]);
+    const key = list.ingredients[0]?.key ?? "garlic::clove";
+    const markdown = service.format(list, "markdown", { checkedKeys: [key] });
+    expect(markdown).toContain("- [x] 2 cloves garlic");
+    const parsed = JSON.parse(service.format(list, "json", { checkedKeys: [key] })) as {
+      ingredients: Array<{ checked: boolean }>;
+    };
+    expect(parsed.ingredients[0]?.checked).toBe(true);
   });
 });

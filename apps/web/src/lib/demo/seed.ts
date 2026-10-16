@@ -149,7 +149,7 @@ export async function seedDemoKitchen(
       date: entry.date,
       mealSlot: entry.slot,
       recipeId: recipe.id,
-      servings: recipe.servings ?? 4,
+      servings: 4,
       attendees,
       scaleFactor: 1,
     });

@@ -17,6 +17,7 @@ describe("RecheckBanner", () => {
     expect(screen.getByRole("status")).toHaveTextContent("This plan needs a recheck");
     await user.click(screen.getByRole("button", { name: "Recheck now" }));
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1/check", { method: "POST" });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("names the nights that need a fresh check", () => {

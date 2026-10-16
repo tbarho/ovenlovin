@@ -26,6 +26,8 @@ export interface ShoppingListRecipeRef {
 export interface ShoppingListIngredient {
   /** Stable check-off id shared by the kitchen list and MCP/REST export. */
   key: string;
+  /** Set when formatting a trip that already has check-offs. */
+  checked?: boolean;
   name: string;
   quantity?: number;
   unit?: string;
@@ -314,7 +316,7 @@ export class ShoppingListService {
         const display = quantity != null ? toFriendlyMeasure(quantity, item.unit) : undefined;
         return {
           ...item,
-          key: shopItemKey(item.name, display?.displayUnit ?? item.unit),
+          key: shopItemKey(item.name, item.unit),
           quantity,
           displayQuantity: display?.displayQuantity,
           displayUnit: display?.displayUnit,
@@ -378,17 +380,22 @@ export class ShoppingListService {
     }).ingredients;
   }
 
-  format(data: ShoppingListData, format: "json" | "csv" | "markdown" | "text"): string {
+  format(
+    data: ShoppingListData,
+    format: "json" | "csv" | "markdown" | "text",
+    options: { checkedKeys?: string[] } = {}
+  ): string {
+    const marked = withCheckoffs(data, options.checkedKeys);
     switch (format) {
       case "csv":
-        return this.exportAsCSV(data);
+        return this.exportAsCSV(marked);
       case "markdown":
-        return this.exportAsMarkdown(data);
+        return this.exportAsMarkdown(marked);
       case "text":
-        return this.exportAsText(data);
+        return this.exportAsText(marked);
       case "json":
       default:
-        return this.exportAsJSON(data);
+        return this.exportAsJSON(marked);
     }
   }
 
@@ -398,12 +405,13 @@ export class ShoppingListService {
 
   exportAsCSV(data: ShoppingListData): string {
     const lines = [
-      "Name,Quantity,Unit,Aisle,Category,Recipes",
+      "Name,Quantity,Unit,Aisle,Category,Recipes,Checked",
       ...data.ingredients.map((ing) => {
         const recipes = ing.recipes.map((r) => r.recipeTitle).join("; ");
         const quantity = ing.displayQuantity ?? (ing.quantity != null ? String(ing.quantity) : "");
         const unit = ing.displayUnit ?? ing.unit ?? "";
-        return `"${ing.name}","${quantity}","${unit}","${ing.aisle}","${ing.category}","${recipes}"`;
+        const checked = ing.checked ? "yes" : "";
+        return `"${ing.name}","${quantity}","${unit}","${ing.aisle}","${ing.category}","${recipes}","${checked}"`;
       }),
     ];
     return lines.join("\n");
@@ -421,7 +429,8 @@ export class ShoppingListService {
     for (const section of data.sections) {
       lines.push(`## ${section.name}`, ``);
       for (const ing of section.items) {
-        lines.push(`- ${formatItemLine(ing)}`);
+        const mark = ing.checked ? "x" : " ";
+        lines.push(`- [${mark}] ${formatItemLine(ing)}`);
       }
       lines.push(``);
     }
@@ -451,7 +460,8 @@ export class ShoppingListService {
       lines.push(`${section.name}:`, ``);
       for (const ing of section.items) {
         const recipesPart = ing.recipes.map((r) => r.recipeTitle).join(", ");
-        lines.push(`- ${formatItemLine(ing, false)}`);
+        const mark = ing.checked ? "[x]" : "[ ]";
+        lines.push(`- ${mark} ${formatItemLine(ing, false)}`);
         if (recipesPart) lines.push(`  Used in: ${recipesPart}`);
       }
       lines.push(``);
@@ -466,6 +476,22 @@ export class ShoppingListService {
 
     return lines.join("\n").trimEnd() + "\n";
   }
+}
+
+function withCheckoffs(data: ShoppingListData, checkedKeys?: string[]): ShoppingListData {
+  const checked = new Set(checkedKeys ?? []);
+  const mark = <T extends ShoppingListIngredient>(item: T): T => ({
+    ...item,
+    checked: checked.has(item.key),
+  });
+  return {
+    ...data,
+    ingredients: data.ingredients.map(mark),
+    sections: data.sections.map((section) => ({
+      ...section,
+      items: section.items.map(mark),
+    })),
+  };
 }
 
 function formatItemLine(ing: ShoppingListIngredient, includeRecipes = true): string {
