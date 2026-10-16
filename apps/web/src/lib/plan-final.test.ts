@@ -45,7 +45,7 @@ describe("recheckBannerDetail", () => {
 });
 
 describe("plan night helpers", () => {
-  it("lists unfinished recipe nights and block nights", () => {
+  it("lists only unfinished recipe nights and block nights", () => {
     const days = [
       {
         weekday: "Friday",

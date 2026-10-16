@@ -18,6 +18,7 @@ export function RecheckBanner({
   const [pending, setPending] = useState(false);
   const [cleared, setCleared] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cleared, setCleared] = useState(false);
 
   async function recheck() {
     setPending(true);
@@ -32,6 +33,8 @@ export function RecheckBanner({
       setPending(false);
     }
   }
+
+  if (cleared) return null;
 
   const detail = recheckBannerDetail({ nights, blockNights });
   if (cleared) return null;

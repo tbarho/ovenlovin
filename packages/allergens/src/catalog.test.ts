@@ -4,6 +4,7 @@ import {
   catalogForIntent,
   findCatalogEntry,
   humanizeTarget,
+  canonicalizePersonRuleTarget,
   resolveCatalogTarget,
   ruleKindForCatalogGroup,
   searchCatalog,
@@ -76,6 +77,21 @@ describe("resolveCatalogTarget", () => {
 
   it("leaves an unknown custom food alone", () => {
     expect(resolveCatalogTarget("zxqfoodnotincatalog", { kind: "ingredient" })).toBeNull();
+  });
+
+  it("canonicalizes allergen typos like peanutz", () => {
+    expect(resolveCatalogTarget("peanutz", { kind: "allergen" })?.code).toBe("peanut");
+    expect(canonicalizePersonRuleTarget("allergen", "peanutz")).toMatchObject({
+      target: "peanut",
+      resolved: true,
+      canonicalized: true,
+    });
+  });
+
+  it("does not invent a catalog match for xyzzy", () => {
+    expect(resolveCatalogTarget("xyzzy", { kind: "allergen" })).toBeNull();
+    expect(canonicalizePersonRuleTarget("allergen", "xyzzy").resolved).toBe(false);
+    expect(canonicalizePersonRuleTarget("custom", "blueberries").resolved).toBe(false);
   });
 });
 

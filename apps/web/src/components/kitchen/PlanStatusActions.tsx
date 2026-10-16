@@ -5,6 +5,7 @@ import { useState } from "react";
 import { api } from "@/lib/browser-api";
 import { planFinalConfirmCopy, type PlanBlockNight } from "@/lib/plan-final";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { KitchenToast } from "./KitchenToast";
 
 export function PlanStatusActions({
   planId,
@@ -21,18 +22,24 @@ export function PlanStatusActions({
   const [pending, setPending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const final = status === "approved";
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const shownStatus = optimisticStatus ?? status;
+  const final = shownStatus === "approved";
   const confirm = planFinalConfirmCopy({ needsRecheck, blockNights });
 
   async function toggle() {
     setPending(true);
     setError(null);
+    const nextStatus = final ? "draft" : "approved";
     try {
       await api(`/api/v1/meal-plans/${planId}`, {
         method: "PATCH",
-        body: JSON.stringify({ status: final ? "draft" : "approved" }),
+        body: JSON.stringify({ status: nextStatus }),
       });
+      setOptimisticStatus(nextStatus);
       setConfirmOpen(false);
+      setToast(nextStatus === "approved" ? "Plan marked as final." : "Plan reopened as a draft.");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update the plan");
@@ -65,6 +72,7 @@ export function PlanStatusActions({
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => void toggle()}
       />
+      <KitchenToast message={toast} onDismiss={() => setToast(null)} />
     </>
   );
 }
