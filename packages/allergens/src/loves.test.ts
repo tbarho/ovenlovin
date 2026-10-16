@@ -46,7 +46,11 @@ describe("loves ranking", () => {
   it("matches cuisine, style, and ingredient lines", () => {
     expect(
       recipeMatchesLove(
-        { title: "Veggie tacos", cuisine: "Mexican", ingredients: [{ rawText: "8 corn tortillas" }] },
+        {
+          title: "Veggie tacos",
+          cuisine: "Mexican",
+          ingredients: [{ rawText: "8 corn tortillas" }],
+        },
         "mexican"
       )
     ).toBe(true);
