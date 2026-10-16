@@ -148,7 +148,9 @@ export function ImportRecipeForm() {
     const existing = getPhotoImportJob();
     return Boolean(existing && (existing.phase === "uploading" || existing.phase === "reading"));
   });
-  const [photoJob, setPhotoJob] = useState<PhotoImportJobSnapshot | null>(() => getPhotoImportJob());
+  const [photoJob, setPhotoJob] = useState<PhotoImportJobSnapshot | null>(() =>
+    getPhotoImportJob()
+  );
   const [imported, setImported] = useState<{
     id: string;
     notice: string;
@@ -296,14 +298,20 @@ export function ImportRecipeForm() {
               {source === "url" ? (
                 <input
                   value={content}
-                  onChange={(event) => setContent(event.target.value)}
+                  onChange={(event) => {
+                    setContent(event.target.value);
+                    setError(null);
+                  }}
                   placeholder="https://example.com/chocolate-chip-cookies"
                   required
                 />
               ) : (
                 <textarea
                   value={content}
-                  onChange={(event) => setContent(event.target.value)}
+                  onChange={(event) => {
+                    setContent(event.target.value);
+                    setError(null);
+                  }}
                   placeholder={
                     "Weeknight tomato pasta\n\nIngredients\n- 12 oz pasta\n- 1 jar tomatoes\n\nSteps\nBoil pasta. Warm sauce. Combine."
                   }

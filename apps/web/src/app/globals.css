@@ -3082,6 +3082,16 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   color: var(--faint);
 }
 
+.shop-item.is-done {
+  opacity: 0.72;
+}
+
+.shop-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+}
+
 .kitchen-toast {
   position: fixed;
   left: 16px;

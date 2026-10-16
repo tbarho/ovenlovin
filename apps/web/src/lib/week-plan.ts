@@ -191,7 +191,7 @@ export async function loadWeekKitchen(
       shoppingState: emptyShoppingTripState(),
       entries: [],
       recipes: recipePicks,
-      defaultServings: people.length || 4,
+      defaultServings: 4,
     };
   }
 
@@ -317,8 +317,7 @@ export async function loadWeekKitchen(
       attendees: entry.attendees,
     })),
     recipes: recipePicks,
-    defaultServings:
-      entries.find((entry) => entry.servings && entry.servings > 0)?.servings || people.length || 4,
+    defaultServings: 4,
   };
 }
 

@@ -4,6 +4,7 @@ import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { PlanService, planPatchesToWrites, updateMealPlanBodySchema } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -62,6 +63,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       } else {
         const merged = await service.mergeMealPlanEntries(id, body.entries);
         previousEntries = merged.previous;
+      }
+      try {
+        await persistMealPlanCheck(id, householdId);
+      } catch {
+        // Dinner is saved. The recheck banner stays if this check cannot finish.
       }
     }
 
