@@ -467,7 +467,81 @@ export function resolveCatalogTarget(
     const match = searchCatalog(q, { intent, limit: 8 })[0];
     if (match) return match;
   }
-  return null;
+  return fuzzyCatalogMatch(q, group);
+}
+
+export type PersonRuleKind =
+  "allergen" | "ingredient" | "ingredient_category" | "diet" | "tag" | "custom";
+
+export function canonicalizePersonRuleTarget(
+  kind: PersonRuleKind,
+  target: string
+): {
+  kind: PersonRuleKind;
+  target: string;
+  canonicalized: boolean;
+  resolved: boolean;
+} {
+  const resolved = resolveCatalogTarget(target, { kind });
+  if (!resolved) {
+    return { kind, target: target.trim(), canonicalized: false, resolved: false };
+  }
+  const nextKind: PersonRuleKind =
+    kind === "custom" || kind === "tag" || kind === "ingredient_category"
+      ? kind
+      : ruleKindForCatalogGroup(resolved.group);
+  return {
+    kind: nextKind,
+    target: resolved.code,
+    canonicalized: resolved.code !== target.trim() || nextKind !== kind,
+    resolved: true,
+  };
+}
+
+export function unknownRuleTargetMessage(target: string): string {
+  return `We can't check '${target.trim()}' against recipes. Save it only if you meant this exact food.`;
+}
+
+function editDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  const next = new Array<number>(b.length + 1);
+  for (let i = 0; i < a.length; i++) {
+    next[0] = i + 1;
+    for (let j = 0; j < b.length; j++) {
+      const cost = a[i] === b[j] ? 0 : 1;
+      next[j + 1] = Math.min((next[j] ?? 0) + 1, (prev[j + 1] ?? 0) + 1, (prev[j] ?? 0) + cost);
+    }
+    prev.splice(0, prev.length, ...next);
+  }
+  return prev[b.length] ?? Math.max(a.length, b.length);
+}
+
+function fuzzyCatalogMatch(query: string, group?: CatalogGroup): CatalogEntry | null {
+  const q = normalizeSearch(query);
+  if (q.length < 4) return null;
+  const maxDist = q.length <= 5 ? 1 : 2;
+  let best: CatalogEntry | null = null;
+  let bestDist = maxDist + 1;
+  for (const entry of allCatalogEntries()) {
+    if (group && entry.group !== group && group === "allergen" && entry.group !== "allergen") {
+      continue;
+    }
+    const candidates = [entry.code, entry.name, entry.phraseName, ...entry.aliases].map(
+      normalizeSearch
+    );
+    for (const candidate of candidates) {
+      if (!candidate || Math.abs(candidate.length - q.length) > maxDist) continue;
+      const dist = editDistance(q, candidate);
+      if (dist < bestDist && dist <= maxDist) {
+        best = entry;
+        bestDist = dist;
+      }
+    }
+  }
+  return best;
 }
 
 export function findCatalogEntry(code: string, group?: CatalogGroup): CatalogEntry | undefined {
@@ -549,6 +623,11 @@ export function searchCatalog(
   if (!normalized) {
     const featured = ranked.filter((entry) => entry.featured);
     return (featured.length > 0 ? featured : ranked).slice(0, limit);
+  }
+
+  if (ranked.length === 0) {
+    const fuzzy = fuzzyCatalogMatch(normalized);
+    if (fuzzy) return [fuzzy];
   }
 
   return ranked.slice(0, limit);
