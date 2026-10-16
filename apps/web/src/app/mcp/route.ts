@@ -14,12 +14,9 @@ import { ForbiddenError } from "@/lib/api/errors";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { enforceDemoMcpGuards, isSuccessfulImportRecipeCall } from "@/lib/demo/mcp-guard";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
-import { registerRecipePageRenderer } from "@/lib/import-page-render";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-registerRecipePageRenderer();
 
 const SERVER_INFO = {
   name: "ovenlovin-mcp",

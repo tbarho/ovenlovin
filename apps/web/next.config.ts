@@ -19,7 +19,6 @@ const nextConfig: NextConfig = {
     "@ovenlovin/brand",
     "@ovenlovin/importers",
   ],
-  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],
 };
 
 export default nextConfig;
