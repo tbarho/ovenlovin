@@ -131,6 +131,10 @@ describe("ShoppingList", () => {
     );
 
     expect(screen.getByRole("checkbox", { name: /12 oz pasta/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /12 oz pasta/i }).closest("li")).toHaveAttribute(
+      "data-checked",
+      "true"
+    );
     expect(screen.getByText("paper towels")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /paper towels/i })).not.toBeChecked();
   });

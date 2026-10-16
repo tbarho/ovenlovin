@@ -41,8 +41,5 @@ export function wantsDemoEnterJson(input: {
   format: string | null;
   secFetchDest: string | null;
 }): boolean {
-  if (input.format === "json") return true;
-  if (input.secFetchDest === "document") return false;
-  const accept = input.accept ?? "";
-  return accept.includes("application/json") && !accept.includes("text/html");
+  return input.format === "json";
 }

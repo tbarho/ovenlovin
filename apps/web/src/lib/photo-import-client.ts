@@ -2,6 +2,9 @@ import type { PhotoImportPreview } from "./photo-import";
 
 export const PHOTO_IMPORT_TIMEOUT_MS = 60_000;
 export const PHOTO_IMPORT_MAX_EDGE = 1600;
+/** Stay under Vercel's 4.5MB body limit after base64. Demo has no Blob. */
+export const PHOTO_SAVE_MAX_EDGE = 1280;
+export const PHOTO_SAVE_MAX_BYTES = 700_000;
 export const PHOTO_IMPORT_ESTIMATE = "Usually about 15 seconds";
 export const PHOTO_IMPORT_IN_PROGRESS = "Import in progress";
 export const PHOTO_IMPORT_TIMEOUT_MESSAGE =
@@ -110,39 +113,83 @@ export function uploadingStepLabel(percent: number): string {
   return `Uploading ${Math.max(0, Math.min(100, Math.round(percent)))}%`;
 }
 
-export async function preparePhotoFile(file: File): Promise<File> {
-  if (file.size <= 1.5 * 1024 * 1024 || typeof createImageBitmap !== "function") {
+export function dataUrlPayloadBytes(dataUrl: string): number {
+  const payload = dataUrl.split(",")[1] ?? "";
+  return Math.floor((payload.length * 3) / 4);
+}
+
+export async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read that photo"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function resizePhotoFile(
+  file: File,
+  options: { maxEdge: number; quality: number }
+): Promise<File> {
+  if (typeof createImageBitmap !== "function") return file;
+  const bitmap = await createImageBitmap(file);
+  const edge = Math.max(bitmap.width, bitmap.height);
+  const scale = edge > options.maxEdge ? options.maxEdge / edge : 1;
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  if (scale === 1 && file.type === "image/jpeg" && file.size <= PHOTO_SAVE_MAX_BYTES) {
+    bitmap.close();
     return file;
   }
-
-  try {
-    const bitmap = await createImageBitmap(file);
-    const edge = Math.max(bitmap.width, bitmap.height);
-    if (edge <= PHOTO_IMPORT_MAX_EDGE) {
-      bitmap.close();
-      return file;
-    }
-    const scale = PHOTO_IMPORT_MAX_EDGE / edge;
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    if (!context) {
-      bitmap.close();
-      return file;
-    }
-    context.drawImage(bitmap, 0, 0, width, height);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) {
     bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.82)
-    );
-    if (!blob) return file;
-    return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+    return file;
+  }
+  context.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", options.quality)
+  );
+  if (!blob) return file;
+  return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+}
+
+export async function preparePhotoFile(file: File): Promise<File> {
+  if (file.size <= 1.5 * 1024 * 1024) return file;
+  try {
+    return await resizePhotoFile(file, { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: 0.82 });
   } catch {
     return file;
   }
+}
+
+/** Compress a phone photo so Save can POST it without hitting Vercel's 4.5MB cap. */
+export async function compressPhotoForSave(file: File): Promise<string> {
+  let next = file;
+  try {
+    next = await resizePhotoFile(file, { maxEdge: PHOTO_SAVE_MAX_EDGE, quality: 0.72 });
+  } catch {
+    next = file;
+  }
+  if (next.size > PHOTO_SAVE_MAX_BYTES) {
+    try {
+      next = await resizePhotoFile(next, { maxEdge: 960, quality: 0.6 });
+    } catch {
+      // keep the first resize
+    }
+  }
+  if (next.size > PHOTO_SAVE_MAX_BYTES) {
+    throw new Error("That photo is still too large to save. Try a closer crop.");
+  }
+  const dataUrl = await fileToDataUrl(next);
+  if (dataUrlPayloadBytes(dataUrl) > PHOTO_SAVE_MAX_BYTES) {
+    throw new Error("That photo is still too large to save. Try a closer crop.");
+  }
+  return dataUrl;
 }
 
 export function postPhotoImportForm(

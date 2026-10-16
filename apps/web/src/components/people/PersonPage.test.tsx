@@ -203,6 +203,7 @@ describe("PersonPage", () => {
     expect(JSON.parse(String(mockedApi.mock.calls[0]?.[1]?.body))).toMatchObject({
       kind: "ingredient",
       target: "xyzzy",
+      confirmUnknown: true,
     });
   });
 
