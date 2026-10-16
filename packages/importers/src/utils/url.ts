@@ -8,19 +8,14 @@ export {
   RecipeNotFoundError,
   fetchHtml,
   formatLayersTried,
-  getRecipePageRenderer,
   importBlockedMessage,
-  installRecipePageRenderer,
   isUsableRecipeHtml,
   looksLikeBotChallenge,
   looksLikeCompleteDocument,
   looksLikePaywall,
   looksLikeSoftBlock,
-  looksLikeWaybackShell,
   shouldKeepLooking,
   shouldRetryFetchWithBrowserHeaders,
-  waybackMachineUrl,
-  waybackIdentityUrl,
   jinaReaderUrl,
   googleTranslateUrl,
   translateGoogUrl,
@@ -29,10 +24,8 @@ export {
   type FetchHtmlOptions,
   type FetchLayer,
   type FetchResult,
-  type RecipePageRenderer,
 } from "./fetch-html";
 export { extractHtmlRecipe, htmlLooksLikeRecipe } from "./html-recipe";
-export { resolveScrapeService, scrapeRemotePage } from "./scrape-service";
 
 function isRecipeType(value: unknown): boolean {
   if (value === "Recipe") return true;

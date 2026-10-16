@@ -1,23 +1,5 @@
 /* eslint-disable no-undef */
 
-/** Wayback JS playback (rewrite) copy. */
-export function waybackMachineUrl(url: string): string {
-  return `https://web.archive.org/web/2/${url}`;
-}
-
-/** Wayback identity copy: original bytes, no Athena player shell. */
-export function waybackIdentityUrl(url: string): string {
-  return `https://web.archive.org/web/2id_/${url}`;
-}
-
-export function waybackSnapshotIdentityUrl(timestamp: string, url: string): string {
-  return `https://web.archive.org/web/${timestamp}id_/${url}`;
-}
-
-export function waybackAvailableUrl(url: string): string {
-  return `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`;
-}
-
 export function jinaReaderUrl(url: string): string {
   return `https://r.jina.ai/${url}`;
 }
@@ -41,15 +23,13 @@ export type PublicCopy = {
   label: string;
 };
 
-/** Free public copies. No API key. */
+/** Free public copies. No API key. Translate first: it still carries JSON-LD when Jina 451s. */
 export function publicCopyRequests(url: string): PublicCopy[] {
   return [
-    { url: waybackIdentityUrl(url), label: "wayback-identity" },
-    { url: waybackMachineUrl(url), label: "wayback" },
-    { url: jinaReaderUrl(url), headers: { "X-Return-Format": "html" }, label: "jina-html" },
-    { url: jinaReaderUrl(url), label: "jina-markdown" },
     { url: googleTranslateUrl(url), label: "google-translate" },
     { url: translateGoogUrl(url), label: "translate-goog" },
+    { url: jinaReaderUrl(url), headers: { "X-Return-Format": "html" }, label: "jina-html" },
+    { url: jinaReaderUrl(url), label: "jina-markdown" },
   ];
 }
 
@@ -69,18 +49,4 @@ export function relatedRecipeUrls(url: string): string[] {
     return [];
   }
   return [];
-}
-
-export function parseWaybackAvailable(json: string): string | null {
-  try {
-    const data = JSON.parse(json) as {
-      archived_snapshots?: { closest?: { available?: boolean; timestamp?: string; url?: string } };
-    };
-    const closest = data.archived_snapshots?.closest;
-    if (!closest?.available || !closest.timestamp || !closest.url) return null;
-    const original = closest.url.replace(/^https?:\/\/web\.archive\.org\/web\/\d+\//, "");
-    return waybackSnapshotIdentityUrl(closest.timestamp, original);
-  } catch {
-    return null;
-  }
 }

@@ -53,14 +53,7 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 - **OVENLOVIN_VERCEL_TEAM_SLUG** - optional Vercel team/account slug for dashboard links (not the GitHub owner)
 - **OVENLOVIN_VERCEL_PROJECT_SLUG** - optional Vercel project slug if it differs from the git repo name
 - **VERCEL_TOKEN** / **OVENLOVIN_VERCEL_TOKEN** - optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset. Otherwise links fall back to https://vercel.com/dashboard
-- **RECIPE_IMPORT_HEADLESS** - optional; set to `0` to skip headless Chromium on URL import (default: on). Used after public copies fail. On Vercel this can burn the function time budget, so caches run first.
-- **RECIPE_IMPORT_CACHE_FALLBACK** - optional; set to `0` to skip public copies (Wayback identity, Jina Reader, Google Translate). Default: on. No API key.
-- **RECIPE_IMPORT_SCRAPE** - optional; set to `0` to skip a configured remote browser. Default: on when a provider env is set.
-- **BROWSERLESS_URL** / **BROWSERLESS_TOKEN** (or **BROWSERLESS_API_TOKEN**) - optional remote Chromium (Browserless). Not set in this repo; ask before adding to Vercel.
-- **SCRAPINGBEE_API_KEY** - optional ScrapingBee fallback. Not set in this repo; ask before adding to Vercel.
-- **RECIPE_IMPORT_SCRAPE_URL** / **RECIPE_IMPORT_SCRAPE_TOKEN** - optional custom scrape endpoint that accepts `POST { url }` and returns HTML.
-- **RECIPE_IMPORT_CHROME_PATH** / **CHROME_PATH** - optional local Chrome/Chromium binary for non-Vercel hosts. On Vercel, `@sparticuz/chromium-min` downloads a public Chromium pack at runtime.
-- **RECIPE_IMPORT_CHROMIUM_PACK_URL** - optional; override the public `@sparticuz/chromium-min` pack URL (GitHub release tar by default). No paid CDN.
+- **RECIPE_IMPORT_CACHE_FALLBACK** - optional; set to `0` to skip public copies (Google Translate, Jina Reader). Default: on. No API key.
 
 ### Local Development
 
