@@ -31,9 +31,11 @@ interface Importer<TInput> {
 
 ### URL Importer
 
+- Fetch layers: live browser headers, related URLs on 404, public copies (Wayback / Jina / Google Translate), optional remote scrape (Browserless / ScrapingBee), then stealth Chromium
 - schema.org Recipe JSON-LD (primary)
-- Microdata/RDFa fallback
-- Readability + LLM fallback for unstructured pages
+- HTML / markdown recipe-card fallback (Wikibooks, Jina)
+- "No recipe found on this page" when the page loaded but is not a recipe (example.com)
+- "This site blocked the importer (tried ...)" only after every layer failed
 
 ### Pasted Text Importer
 

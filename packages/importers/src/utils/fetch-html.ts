@@ -1,17 +1,30 @@
 /* eslint-disable no-undef */
+import {
+  parseWaybackAvailable,
+  publicCopyRequests,
+  relatedRecipeUrls,
+  waybackAvailableUrl,
+  type PublicCopy,
+} from "./public-copies";
+import { scrapeRemotePage } from "./scrape-service";
+
+export type FetchLayer = "direct" | "related" | "cache" | "scrape" | "headless";
 
 export interface FetchResult {
   html: string;
   url: string;
   finalUrl: string;
-  via: "direct" | "headless" | "cache";
+  via: FetchLayer;
+  layersTried: string[];
 }
 
 export type RecipePageRenderer = (url: string) => Promise<string | null>;
+export type RecipePageScraper = (url: string) => Promise<string | null>;
 
 export type FetchHtmlOptions = {
   fetchImpl?: typeof fetch;
   renderPage?: RecipePageRenderer;
+  scrapePage?: RecipePageScraper;
   env?: Record<string, string | undefined>;
 };
 
@@ -35,7 +48,8 @@ export const FULL_BROWSER_HEADERS: Record<string, string> = {
   "sec-fetch-user": "?1",
 };
 
-const BLOCKED_STATUSES = new Set([401, 402, 403, 406, 429, 503]);
+const BLOCKED_STATUSES = new Set([401, 402, 403, 406, 429, 451, 503]);
+const CACHE_FETCH_MS = 12_000;
 
 let installedRenderer: RecipePageRenderer | undefined;
 
@@ -50,12 +64,27 @@ export function getRecipePageRenderer(): RecipePageRenderer | undefined {
 export class RecipeImportFetchError extends Error {
   readonly status: number;
   readonly url: string;
+  readonly layersTried: string[];
 
-  constructor(url: string, status: number, statusText: string) {
-    super(importBlockedMessage(status, statusText || "Forbidden"));
+  constructor(url: string, status: number, statusText: string, layersTried: string[] = []) {
+    super(importBlockedMessage(layersTried, status, statusText || "Forbidden"));
     this.name = "RecipeImportFetchError";
     this.status = status;
     this.url = url;
+    this.layersTried = layersTried;
+  }
+}
+
+/** Page was fetched, but it is not a recipe. Not a block. */
+export class RecipeNotFoundError extends Error {
+  readonly url: string;
+  readonly layersTried: string[];
+
+  constructor(url: string, layersTried: string[] = []) {
+    super("No recipe found on this page.");
+    this.name = "RecipeNotFoundError";
+    this.url = url;
+    this.layersTried = layersTried;
   }
 }
 
@@ -63,8 +92,17 @@ export function shouldRetryFetchWithBrowserHeaders(status: number): boolean {
   return BLOCKED_STATUSES.has(status);
 }
 
-export function importBlockedMessage(_status?: number, _statusText?: string): string {
-  return "This site blocked the importer. Try importing by pasting the recipe text instead.";
+export function formatLayersTried(layersTried: string[]): string {
+  return layersTried.length > 0 ? layersTried.join(", ") : "direct";
+}
+
+export function importBlockedMessage(
+  layersTried: string[] | number = [],
+  _status?: number,
+  _statusText?: string
+): string {
+  const layers = Array.isArray(layersTried) ? formatLayersTried(layersTried) : "direct";
+  return `This site blocked the importer (tried ${layers}). Try importing by pasting the recipe text instead.`;
 }
 
 export function looksLikeBotChallenge(html: string): boolean {
@@ -79,113 +117,300 @@ export function looksLikeBotChallenge(html: string): boolean {
   );
 }
 
-export function isUsableRecipeHtml(html: string): boolean {
-  if (!html || looksLikeBotChallenge(html)) return false;
-  const compact = html.replace(/\s+/g, " ").trim();
-  if (compact.length < 400) return false;
+/** Wayback Athena / JS playback shell: not the archived article. */
+export function looksLikeWaybackShell(html: string): boolean {
+  const head = html.slice(0, 12_000).toLowerCase();
+  if (head.includes("athena.js") || head.includes("playback.bundle.js")) return true;
+  const titledWayback = /<title>[^<]*wayback machine[^<]*<\/title>/i.test(html.slice(0, 4000));
+  return titledWayback && html.length < 20_000 && !/application\/ld\+json/i.test(html);
+}
+
+export function looksLikeSoftBlock(html: string): boolean {
+  const head = html.slice(0, 8000).toLowerCase();
   return (
-    (/application\/ld\+json/i.test(html) && /Recipe/i.test(html)) ||
-    /itemprop=["']recipe/i.test(html) ||
-    /<(h1|h2|h3|h4)[^>]*>[^<]{0,80}(ingredient|procedure|instruction|direction|method)/i.test(
-      html
-    ) ||
-    /["']Recipe["']/.test(html)
+    /access denied/.test(head) ||
+    /request unsuccessful/.test(head) ||
+    /unusual traffic/.test(head) ||
+    /pardon our interruption/.test(head) ||
+    /are you (a )?robot/.test(head)
   );
 }
 
-export function waybackMachineUrl(url: string): string {
-  return `https://web.archive.org/web/2/${url}`;
+export function looksLikePaywall(html: string): boolean {
+  const head = html.slice(0, 12_000).toLowerCase();
+  return /subscribe to (continue|read)|create a free account to (continue|read)|subscribers only|metered paywall|you have (reached )?the (article )?limit/.test(
+    head
+  );
 }
 
-export function jinaReaderUrl(url: string): string {
-  return `https://r.jina.ai/${url}`;
+export function looksLikeMarkdownRecipe(text: string): boolean {
+  if (!text || looksLikeBotChallenge(text)) return false;
+  const compact = text.replace(/\s+/g, " ").trim();
+  if (compact.length < 400) return false;
+  const hasIngredients =
+    /^#{1,4}\s+ingredients?\b/im.test(text) ||
+    /\bingredients?\b/i.test(text.slice(0, 12_000)) ||
+    /[\u25A0-\u25A3\u25FB-\u25FE\u2610-\u2612]/.test(text);
+  const hasSteps =
+    /^#{1,4}\s+(instructions?|directions?|method|procedure|steps?)\b/im.test(text) ||
+    /\b(instructions?|directions?|method|procedure)\b/i.test(text);
+  return hasIngredients && hasSteps;
 }
 
-export type PublicCopy = {
-  url: string;
-  headers?: Record<string, string>;
-};
-
-/** Free public copies: Wayback first, then Jina Reader HTML (no API key). */
-export function publicCopyRequests(url: string): PublicCopy[] {
-  return [
-    { url: waybackMachineUrl(url) },
-    { url: jinaReaderUrl(url), headers: { "X-Return-Format": "html" } },
-  ];
+export function isUsableRecipeHtml(html: string): boolean {
+  if (!html || looksLikeBotChallenge(html) || looksLikeWaybackShell(html)) return false;
+  const compact = html.replace(/\s+/g, " ").trim();
+  if (compact.length < 400) return false;
+  if (/application\/ld\+json/i.test(html) && /Recipe/i.test(html)) return true;
+  if (/itemprop=["']recipe/i.test(html)) return true;
+  if (/h-ingredient|p-ingredient|ingredient-name/i.test(html)) return true;
+  if (
+    /<(h1|h2|h3|h4)[^>]*>[\s\S]{0,240}(ingredient|procedure|instruction|direction|method)/i.test(
+      html
+    )
+  ) {
+    return true;
+  }
+  if (/["']Recipe["']/.test(html)) return true;
+  return looksLikeMarkdownRecipe(html);
 }
+
+export function looksLikeCompleteDocument(html: string): boolean {
+  if (!html || html.length < 200) return false;
+  if (looksLikeBotChallenge(html) || looksLikeSoftBlock(html) || looksLikeWaybackShell(html)) {
+    return false;
+  }
+  return /<html[\s>]|<body[\s>]|<title[\s>]/i.test(html);
+}
+
+/**
+ * Keep fetching other layers when the response is a challenge, paywall, or empty.
+ * Stop when we have a real page that is not a recipe (example.com).
+ */
+export function shouldKeepLooking(html: string, status: number): boolean {
+  if (!html) return true;
+  if (isUsableRecipeHtml(html)) return false;
+  if (status === 404 || BLOCKED_STATUSES.has(status) || status >= 500) return true;
+  if (looksLikeBotChallenge(html) || looksLikeSoftBlock(html) || looksLikeWaybackShell(html)) {
+    return true;
+  }
+  if (looksLikePaywall(html)) return true;
+  if (looksLikeCompleteDocument(html)) return false;
+  return true;
+}
+
+export {
+  googleTranslateUrl,
+  jinaReaderUrl,
+  publicCopyRequests,
+  relatedRecipeUrls,
+  translateGoogUrl,
+  waybackAvailableUrl,
+  waybackIdentityUrl,
+  waybackMachineUrl,
+  waybackSnapshotIdentityUrl,
+} from "./public-copies";
 
 function cacheFallbackEnabled(env: Record<string, string | undefined>): boolean {
   return env.RECIPE_IMPORT_CACHE_FALLBACK !== "0";
 }
 
+function scrapeFallbackEnabled(env: Record<string, string | undefined>): boolean {
+  return env.RECIPE_IMPORT_SCRAPE !== "0";
+}
+
+function headlessEnabled(env: Record<string, string | undefined>): boolean {
+  return env.RECIPE_IMPORT_HEADLESS !== "0";
+}
+
 async function readResponse(
   fetchImpl: typeof fetch,
   url: string,
-  extraHeaders?: Record<string, string>
+  extraHeaders?: Record<string, string>,
+  timeoutMs = CACHE_FETCH_MS
 ): Promise<{ ok: boolean; status: number; statusText: string; html: string; finalUrl: string }> {
-  const response = await fetchImpl(url, {
-    headers: { ...FULL_BROWSER_HEADERS, ...extraHeaders },
-    redirect: "follow",
-  });
-  const html = await response.text();
-  return {
-    ok: response.ok,
-    status: response.status,
-    statusText: response.statusText,
-    html,
-    finalUrl: response.url || url,
-  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(url, {
+      headers: { ...FULL_BROWSER_HEADERS, ...extraHeaders },
+      redirect: "follow",
+      signal: controller.signal,
+    });
+    const html = await response.text();
+    return {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      html,
+      finalUrl: response.url || url,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 }
+
+type PageHit = {
+  html: string;
+  finalUrl: string;
+  via: FetchLayer;
+  status: number;
+};
 
 /**
  * Layered recipe-page fetch:
- * 1. Direct HTTP with a full browser header set
- * 2. Optional headless Chromium (injected renderer)
- * 3. Public copies: Wayback Machine, then Jina Reader HTML
+ * 1. Direct HTTP with a full browser header set (and related live URLs on 404)
+ * 2. Public copies: Wayback identity, Jina, Google Translate
+ * 3. Optional remote scrape service (Browserless / ScrapingBee)
+ * 4. Optional headless Chromium (injected renderer)
+ *
+ * A live page that is not a recipe (example.com) is returned so extract can
+ * say "no recipe found". "Blocked" is only thrown when every layer failed.
  */
 export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Promise<FetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const env = options.env ?? process.env;
   const renderPage = options.renderPage ?? getRecipePageRenderer();
+  const scrapePage =
+    options.scrapePage ??
+    (scrapeFallbackEnabled(env)
+      ? (target: string) => scrapeRemotePage(target, { fetchImpl, env })
+      : undefined);
 
+  const layersTried: string[] = [];
   let lastStatus = 403;
   let lastStatusText = "Forbidden";
+  const state: { fallback: FetchResult | null } = { fallback: null };
 
-  try {
-    const direct = await readResponse(fetchImpl, url);
-    lastStatus = direct.status;
-    lastStatusText = direct.statusText;
-    if (direct.ok && isUsableRecipeHtml(direct.html)) {
-      return { html: direct.html, url, finalUrl: direct.finalUrl, via: "direct" };
+  const remember = (hit: PageHit): FetchResult | null => {
+    if (isUsableRecipeHtml(hit.html)) {
+      return { html: hit.html, url, finalUrl: hit.finalUrl, via: hit.via, layersTried };
     }
-  } catch {
-    lastStatus = 503;
-    lastStatusText = "Fetch failed";
-  }
+    if (
+      !state.fallback &&
+      (looksLikeCompleteDocument(hit.html) || looksLikePaywall(hit.html)) &&
+      !looksLikeBotChallenge(hit.html) &&
+      !looksLikeSoftBlock(hit.html)
+    ) {
+      state.fallback = {
+        html: hit.html,
+        url,
+        finalUrl: hit.finalUrl,
+        via: hit.via,
+        layersTried,
+      };
+    }
+    return null;
+  };
 
-  if (renderPage) {
+  const tryDirect = async (candidate: string, layer: FetchLayer): Promise<FetchResult | null> => {
+    layersTried.push(layer);
     try {
-      const rendered = await renderPage(url);
-      if (rendered && isUsableRecipeHtml(rendered)) {
-        return { html: rendered, url, finalUrl: url, via: "headless" };
-      }
+      const direct = await readResponse(fetchImpl, candidate);
+      lastStatus = direct.status;
+      lastStatusText = direct.statusText;
+      return remember({
+        html: direct.html,
+        finalUrl: direct.finalUrl,
+        via: layer,
+        status: direct.status,
+      });
     } catch {
-      // fall through to public cache
+      lastStatus = 503;
+      lastStatusText = "Fetch failed";
+      return null;
+    }
+  };
+
+  const found = await tryDirect(url, "direct");
+  if (found) return found;
+
+  if (lastStatus === 404) {
+    for (const related of relatedRecipeUrls(url)) {
+      const relatedHit = await tryDirect(related, "related");
+      if (relatedHit) return relatedHit;
     }
   }
 
-  if (cacheFallbackEnabled(env)) {
-    for (const copy of publicCopyRequests(url)) {
+  const settledPage = state.fallback;
+  const haveSettledPage =
+    settledPage !== null && lastStatus !== 404 && !looksLikePaywall(settledPage.html);
+
+  if (cacheFallbackEnabled(env) && !haveSettledPage) {
+    layersTried.push("cache");
+    const candidates = [url, ...relatedRecipeUrls(url)];
+    for (const candidate of candidates) {
       try {
-        const cached = await readResponse(fetchImpl, copy.url, copy.headers);
-        if (cached.ok && isUsableRecipeHtml(cached.html)) {
-          return { html: cached.html, url, finalUrl: url, via: "cache" };
+        const available = await readResponse(
+          fetchImpl,
+          waybackAvailableUrl(candidate),
+          undefined,
+          8_000
+        );
+        const snapshot = parseWaybackAvailable(available.html);
+        const copies: PublicCopy[] = snapshot
+          ? [{ url: snapshot, label: "wayback-snapshot" }, ...publicCopyRequests(candidate)]
+          : publicCopyRequests(candidate);
+        for (const copy of copies) {
+          try {
+            const cached = await readResponse(fetchImpl, copy.url, copy.headers);
+            const hit = remember({
+              html: cached.html,
+              finalUrl: url,
+              via: "cache",
+              status: cached.ok ? 200 : cached.status,
+            });
+            if (hit) return hit;
+          } catch {
+            // try the next public copy
+          }
         }
       } catch {
-        // try the next public copy
+        for (const copy of publicCopyRequests(candidate)) {
+          try {
+            const cached = await readResponse(fetchImpl, copy.url, copy.headers);
+            const hit = remember({
+              html: cached.html,
+              finalUrl: url,
+              via: "cache",
+              status: cached.ok ? 200 : cached.status,
+            });
+            if (hit) return hit;
+          } catch {
+            // try the next public copy
+          }
+        }
       }
     }
   }
 
-  throw new RecipeImportFetchError(url, lastStatus, lastStatusText);
+  if (scrapePage && !haveSettledPage) {
+    layersTried.push("scrape");
+    try {
+      const scraped = await scrapePage(url);
+      if (scraped) {
+        const hit = remember({ html: scraped, finalUrl: url, via: "scrape", status: 200 });
+        if (hit) return hit;
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  if (renderPage && headlessEnabled(env) && !haveSettledPage) {
+    layersTried.push("headless");
+    try {
+      const rendered = await renderPage(url);
+      if (rendered) {
+        const hit = remember({ html: rendered, finalUrl: url, via: "headless", status: 200 });
+        if (hit) return hit;
+      }
+    } catch {
+      // already tried cheaper layers
+    }
+  }
+
+  if (state.fallback) return state.fallback;
+
+  throw new RecipeImportFetchError(url, lastStatus, lastStatusText, layersTried);
 }
