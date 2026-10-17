@@ -67,6 +67,15 @@ export function requireUserId(context: RequestContext): string {
   return context.userId;
 }
 
+/** Signed-in user, or the household member who minted this API key. */
+export function requireUserOrKeyOwner(context: RequestContext): string {
+  const id = context.userId ?? context.apiKeyCreatedBy;
+  if (!id) {
+    throw new UnauthorizedError("User authentication required");
+  }
+  return id;
+}
+
 export function requireAdminRole(context: RequestContext): void {
   if (context.isBot) return;
   if (!context.membershipRole || !["owner", "admin"].includes(context.membershipRole)) {

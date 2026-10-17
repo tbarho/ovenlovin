@@ -7,7 +7,7 @@ import {
   getRequestContext,
   requireAdminRole,
   requireHouseholdId,
-  requireUserId,
+  requireUserOrKeyOwner,
 } from "@/lib/api/middleware";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
 import { resolveOrigin } from "@/lib/origin";
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const context = await getRequestContext(request);
     requireAdminRole(context);
     const householdId = requireHouseholdId(context);
-    const createdBy = requireUserId(context);
+    const createdBy = requireUserOrKeyOwner(context);
     const input = createInviteInputSchema.parse(await request.json().catch(() => ({})));
     const invite = await new InviteService(getDatabase()).createInvite(householdId, input, {
       userId: createdBy,
