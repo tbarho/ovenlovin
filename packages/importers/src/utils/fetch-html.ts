@@ -16,24 +16,30 @@ export type FetchHtmlOptions = {
   env?: Record<string, string | undefined>;
 };
 
-export const CHROME_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+/** Current Firefox. Food Network 403s an old Chrome UA without Accept-Encoding. */
+export const FIREFOX_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:144.0) Gecko/20100101 Firefox/144.0";
 
-/** Full Chrome document navigation headers, including Client Hints and Fetch Metadata. */
+/** @deprecated Use FIREFOX_USER_AGENT. Kept so existing imports keep working. */
+export const CHROME_USER_AGENT = FIREFOX_USER_AGENT;
+
+/**
+ * One consistent Firefox document navigation set, including Accept-Encoding.
+ * Node 20 fetch decompresses gzip, deflate, and br automatically.
+ * Do not mix Chrome Client Hints with a Firefox UA.
+ */
 export const FULL_BROWSER_HEADERS: Record<string, string> = {
-  "User-Agent": CHROME_USER_AGENT,
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-  "Accept-Language": "en-US,en;q=0.9",
-  "Cache-Control": "max-age=0",
+  "User-Agent": FIREFOX_USER_AGENT,
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.5",
+  "Accept-Encoding": "gzip, deflate, br",
   "Upgrade-Insecure-Requests": "1",
-  "sec-ch-ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-  "sec-ch-ua-mobile": "?0",
-  "sec-ch-ua-platform": '"Windows"',
-  "sec-fetch-dest": "document",
-  "sec-fetch-mode": "navigate",
-  "sec-fetch-site": "none",
-  "sec-fetch-user": "?1",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+  DNT: "1",
+  Connection: "keep-alive",
 };
 
 const BLOCKED_STATUSES = new Set([401, 402, 403, 406, 429, 451, 503]);
@@ -131,7 +137,7 @@ export function isUsableRecipeHtml(html: string): boolean {
   if (!html || looksLikeBotChallenge(html)) return false;
   const compact = html.replace(/\s+/g, " ").trim();
   if (compact.length < 400) return false;
-  if (/application\/ld\+json/i.test(html) && /Recipe/i.test(html)) return true;
+  if (/application\/ld\+json/i.test(html) && /"@type"\s*:\s*"Recipe"/i.test(html)) return true;
   if (/itemprop=["']recipe/i.test(html)) return true;
   if (/h-ingredient|p-ingredient|ingredient-name/i.test(html)) return true;
   if (

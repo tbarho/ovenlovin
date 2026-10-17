@@ -31,7 +31,7 @@ interface Importer<TInput> {
 
 ### URL Importer
 
-- Fetch layers: live browser headers, related URLs on 404, then Google Translate and Jina public copies
+- Fetch layers: live Firefox document headers (including Accept-Encoding so Food Network gzip works), related URLs on 404, then Google Translate and Jina public copies
 - schema.org Recipe JSON-LD (primary)
 - HTML / markdown recipe-card fallback (Wikibooks, Jina)
 - Cheap LLM fallback (`openai/gpt-4o-mini` via Vercel AI Gateway, override with `RK_MODEL_EXTRACT`)
