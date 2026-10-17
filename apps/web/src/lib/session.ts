@@ -1,6 +1,12 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
-import { HouseholdService, InviteService, PeopleService, inviteStatus } from "@ovenlovin/core";
+import {
+  HouseholdService,
+  InviteService,
+  PeopleService,
+  inviteStatus,
+  preferredKitchenId,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { UnauthorizedError } from "@/lib/api/errors";
 import type { RequestContext } from "@/lib/api/middleware";
@@ -8,12 +14,7 @@ import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { getDemoSessionContext } from "@/lib/demo/session";
 import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
 import { getE2eSessionContext } from "@/lib/e2e-kitchen";
-import {
-  HOUSEHOLD_COOKIE,
-  INVITE_COOKIE,
-  isHouseholdId,
-  readInviteToken,
-} from "@/lib/kitchen-cookies";
+import { readKitchenCookies } from "@/lib/kitchen-selection";
 
 export async function getSessionContext(options?: {
   allowRedirect?: boolean;
@@ -48,10 +49,7 @@ export async function getSessionContext(options?: {
     `${userId}@users.clerk.local`;
 
   const cookieStore = await cookies().catch(() => null);
-  const preferredHouseholdId = isHouseholdId(cookieStore?.get(HOUSEHOLD_COOKIE)?.value)
-    ? cookieStore?.get(HOUSEHOLD_COOKIE)?.value
-    : null;
-  const inviteToken = readInviteToken(cookieStore?.get(INVITE_COOKIE)?.value);
+  const { preferredHouseholdId, inviteToken } = readKitchenCookies(cookieStore);
   let pendingInvite: { householdId: string; role: "admin" | "member" | "viewer" } | null = null;
   if (inviteToken) {
     const invite = await new InviteService(db).getInviteByToken(inviteToken);
@@ -66,7 +64,10 @@ export async function getSessionContext(options?: {
     displayName: clerkUser?.fullName ?? clerkUser?.firstName ?? null,
     clerkOrgId: orgId ?? null,
     pendingInvite,
-    preferredHouseholdId,
+    preferredHouseholdId: preferredKitchenId({
+      selectedHouseholdId: preferredHouseholdId,
+      pendingInviteHouseholdId: pendingInvite?.householdId,
+    }),
   });
 
   const people = new PeopleService(db);

@@ -16,7 +16,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("./sandbox", () => ({
   findDemoSandboxById: vi.fn(),
-  sandboxToSession: vi.fn(),
 }));
 
 describe("getDemoSessionContext", () => {
