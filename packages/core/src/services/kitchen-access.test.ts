@@ -88,12 +88,8 @@ describe("kitchen access policy", () => {
 
   it("classifies invite links as pending, expired, or revoked", () => {
     const now = new Date("2026-10-17T12:00:00.000Z");
-    expect(
-      inviteStatus({ expiresAt: "2026-10-18T12:00:00.000Z", now })
-    ).toBe("pending");
-    expect(
-      inviteStatus({ expiresAt: "2026-10-16T12:00:00.000Z", now })
-    ).toBe("expired");
+    expect(inviteStatus({ expiresAt: "2026-10-18T12:00:00.000Z", now })).toBe("pending");
+    expect(inviteStatus({ expiresAt: "2026-10-16T12:00:00.000Z", now })).toBe("expired");
     expect(
       inviteStatus({
         expiresAt: "2026-10-18T12:00:00.000Z",
@@ -101,9 +97,9 @@ describe("kitchen access policy", () => {
         now,
       })
     ).toBe("revoked");
-    expect(() =>
-      assertInviteAcceptable({ expiresAt: "2026-10-16T12:00:00.000Z", now })
-    ).toThrow(/expired/);
+    expect(() => assertInviteAcceptable({ expiresAt: "2026-10-16T12:00:00.000Z", now })).toThrow(
+      /expired/
+    );
   });
 
   it("defaults invite expiry to seven days and clamps to 1-30", () => {
