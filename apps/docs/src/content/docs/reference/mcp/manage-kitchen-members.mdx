@@ -1,0 +1,21 @@
+---
+title: manage_kitchen_members
+description: List kitchen members, change roles, remove a member, or leave
+---
+
+Kitchen members are signed-in users who share one household. They are not the same as People (dietary profiles such as Parent A or Child B).
+
+## Input Schema
+
+| Parameter | Type                                           | Required                       | Default | Description   |
+| --------- | ---------------------------------------------- | ------------------------------ | ------- | ------------- |
+| `action`  | `list` \| `update_role` \| `remove` \| `leave` | Yes                            |         | What to do    |
+| `userId`  | uuid                                           | For `update_role` and `remove` |         | Target member |
+| `role`    | `owner` \| `admin` \| `member` \| `viewer`     | For `update_role`              |         | New role      |
+
+`update_role` and `remove` require the kitchen owner. The last owner cannot leave or be demoted.
+
+## Related
+
+- [manage_kitchen_invites](/docs/reference/mcp/manage-kitchen-invites)
+- [Kitchen invites](/docs/kitchen-invites)

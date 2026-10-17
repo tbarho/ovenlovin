@@ -15,6 +15,16 @@ export class HouseholdAccessError extends Error {
 
 export const INVITEABLE_ROLES: readonly InviteRole[] = ["admin", "member", "viewer"];
 
+export const INVITE_TOKEN_PATTERN = /^olinv_[a-f0-9]{32,128}$/;
+
+export function isInviteToken(token: string): boolean {
+  return INVITE_TOKEN_PATTERN.test(token);
+}
+
+export function invitePath(token: string): string {
+  return `/invite/${token}`;
+}
+
 export function canManageInvites(role: MembershipRole | undefined): boolean {
   return role === "owner" || role === "admin";
 }

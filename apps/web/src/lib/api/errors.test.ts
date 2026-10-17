@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { HouseholdAccessError } from "@ovenlovin/core";
 import {
   handleApiError,
   isNextRedirectError,
@@ -51,5 +52,29 @@ describe("handleApiError", () => {
     expect(body.status).toBe(404);
     expect(body.title).toBe("Not Found");
     expect(body.detail).toMatch(/MealPlan with id x not found/);
+  });
+
+  it("maps household access errors to problem+json status codes", async () => {
+    const forbidden = handleApiError(
+      new HouseholdAccessError(
+        "Owner or admin role is required to manage kitchen invites.",
+        "forbidden"
+      ),
+      "https://ovenlovin-demo.vercel.app/api/v1/households/invites"
+    );
+    expect(forbidden.status).toBe(403);
+    const expired = handleApiError(
+      new HouseholdAccessError("This invite link has expired.", "expired"),
+      "https://ovenlovin-demo.vercel.app/api/v1/invites/olinv_aa/accept"
+    );
+    expect(expired.status).toBe(410);
+    const conflict = handleApiError(
+      new HouseholdAccessError(
+        "The last owner cannot leave. Promote someone else first.",
+        "conflict"
+      ),
+      "https://ovenlovin-demo.vercel.app/api/v1/households/leave"
+    );
+    expect(conflict.status).toBe(409);
   });
 });

@@ -1,0 +1,37 @@
+---
+title: manage_kitchen_invites
+description: Create, list, or revoke shareable kitchen invite links
+---
+
+Create a shareable `/invite/<token>` link so another signed-in user can join this kitchen. Email is not sent.
+
+Owner or admin. API keys for the kitchen may also call this tool.
+
+## Input Schema
+
+| Parameter       | Type                            | Required     | Default  | Description                                        |
+| --------------- | ------------------------------- | ------------ | -------- | -------------------------------------------------- |
+| `action`        | `list` \| `create` \| `revoke`  | Yes          |          | What to do                                         |
+| `role`          | `admin` \| `member` \| `viewer` | No           | `member` | Role granted by `create`. Owner cannot be invited. |
+| `expiresInDays` | number                          | No           | `7`      | 1-30 days                                          |
+| `inviteId`      | uuid                            | For `revoke` |          | Invite to revoke                                   |
+
+## Example Result
+
+```json
+{
+  "invite": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "role": "member",
+    "expiresAt": "2026-10-24T00:00:00.000Z",
+    "token": "olinv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "path": "/invite/olinv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "status": "created"
+}
+```
+
+## Related
+
+- [manage_kitchen_members](/docs/reference/mcp/manage-kitchen-members)
+- [Kitchen invites](/docs/kitchen-invites)

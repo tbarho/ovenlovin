@@ -14,6 +14,8 @@
     "import-recipe-from-image",
     "list-cookbooks",
     "get-cookbook",
-    "manage-cookbook"
+    "manage-cookbook",
+    "manage-kitchen-invites",
+    "manage-kitchen-members"
   ]
 }

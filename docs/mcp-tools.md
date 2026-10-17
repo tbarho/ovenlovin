@@ -20,6 +20,8 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 ## Household and plans
 
 - `get_household_context` - people in household `sortOrder`, plus per-person Loves (never used to hide recipes)
+- `manage_kitchen_invites` - create, list, or revoke shareable kitchen invite links (owner or admin; default role member)
+- `manage_kitchen_members` - list signed-in kitchen members, change roles, remove a member, or leave
 - `get_person_rules` - Can't eat / Doesn't like rules plus Loves
 - `manage_person_rules` - list / add / remove rules. Tree-nut rules accept `treatCoconutAsTreeNut` (default `false`; coconut is not a tree nut unless set)
 - `reorder_people` - persist household people order (`personIds` must list everyone once)
