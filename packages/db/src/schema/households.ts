@@ -29,6 +29,18 @@ export const membership = pgTable("membership", {
   role: membershipRoleEnum("role").notNull().default("member"),
 });
 
+export const householdInvite = pgTable("household_invite", {
+  ...commonFields,
+  ...createdByField,
+  householdId: uuid("household_id")
+    .notNull()
+    .references(() => household.id),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  role: membershipRoleEnum("role").notNull().default("member"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
 export const apiKey = pgTable("api_key", {
   ...commonFields,
   ...createdByField,

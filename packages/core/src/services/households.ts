@@ -1,7 +1,21 @@
 import { eq, and, isNull } from "drizzle-orm";
 import { household, user, membership } from "@ovenlovin/db";
-import type { Household, User, Membership } from "../schemas/households";
+import type {
+  Household,
+  HouseholdMember,
+  InviteRole,
+  Membership,
+  MembershipRole,
+  User,
+  UserHousehold,
+} from "../schemas/households";
 import { BaseService } from "./base";
+import {
+  HouseholdAccessError,
+  assertCanManageMembers,
+  isSoleOwner,
+  selectActiveMembership,
+} from "./kitchen-access";
 
 export class HouseholdService extends BaseService {
   async getHousehold(id: string): Promise<Household | null> {
@@ -110,9 +124,11 @@ export class HouseholdService extends BaseService {
     email: string;
     displayName?: string | null;
     clerkOrgId?: string | null;
+    pendingInvite?: { householdId: string; role: InviteRole } | null;
+    preferredHouseholdId?: string | null;
   }): Promise<{ user: User; household: Household; membership: Membership; created: boolean }> {
-    let existingUser = await this.getUserByClerkId(input.clerkUserId);
-    const user =
+    const existingUser = await this.getUserByClerkId(input.clerkUserId);
+    const userRecord =
       existingUser ??
       (await this.createUser({
         clerkUserId: input.clerkUserId,
@@ -123,48 +139,194 @@ export class HouseholdService extends BaseService {
     if (input.clerkOrgId) {
       const orgHousehold = await this.getHouseholdByClerkOrgId(input.clerkOrgId);
       if (orgHousehold) {
-        const memberships = await this.getMembershipsForUser(user.id);
-        const existing = memberships.find((m) => m.householdId === orgHousehold.id);
-        const member =
-          existing ??
-          (await this.createMembership({
-            userId: user.id,
+        const orgMemberships = await this.getMembershipsForUser(userRecord.id);
+        const existing = orgMemberships.find((item) => item.householdId === orgHousehold.id);
+        if (!existing) {
+          await this.createMembership({
+            userId: userRecord.id,
             householdId: orgHousehold.id,
             role: "member",
-          }));
-        return { user, household: orgHousehold, membership: member, created: !existing };
+          });
+        }
       }
     }
 
-    const memberships = await this.getMembershipsForUser(user.id);
-    const firstMembership = memberships[0];
-    if (firstMembership) {
-      const householdRecord = await this.getHousehold(firstMembership.householdId);
+    if (input.pendingInvite) {
+      const invited = await this.getHousehold(input.pendingInvite.householdId);
+      if (invited) {
+        const memberships = await this.getMembershipsForUser(userRecord.id);
+        const existing = memberships.find((item) => item.householdId === invited.id);
+        const member =
+          existing ??
+          (await this.createMembership({
+            userId: userRecord.id,
+            householdId: invited.id,
+            role: input.pendingInvite.role,
+          }));
+        return { user: userRecord, household: invited, membership: member, created: !existing };
+      }
+    }
+
+    const memberships = await this.getMembershipsForUser(userRecord.id);
+    const selected = selectActiveMembership(memberships, input.preferredHouseholdId);
+    if (selected) {
+      const householdRecord = await this.getHousehold(selected.householdId);
       if (householdRecord) {
-        return { user, household: householdRecord, membership: firstMembership, created: false };
+        return {
+          user: userRecord,
+          household: householdRecord,
+          membership: selected,
+          created: false,
+        };
       }
     }
 
     const name = `${input.displayName?.trim() || "Your"} Kitchen`;
-    const slug = `kitchen-${user.id.replace(/-/g, "").slice(0, 16)}`;
+    const slug = `kitchen-${userRecord.id.replace(/-/g, "").slice(0, 16)}`;
     const createdHousehold = await this.createHousehold({
       name,
       slug,
       clerkOrgId: input.clerkOrgId ?? null,
-      createdBy: user.id,
+      createdBy: userRecord.id,
     });
     const createdMembership = await this.createMembership({
-      userId: user.id,
+      userId: userRecord.id,
       householdId: createdHousehold.id,
       role: "owner",
     });
 
     return {
-      user,
+      user: userRecord,
       household: createdHousehold,
       membership: createdMembership,
       created: true,
     };
+  }
+
+  async listMembers(householdId: string): Promise<HouseholdMember[]> {
+    const rows = await this._db
+      .select({
+        membershipId: membership.id,
+        userId: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: membership.role,
+        createdAt: membership.createdAt,
+      })
+      .from(membership)
+      .innerJoin(user, eq(membership.userId, user.id))
+      .where(
+        and(
+          eq(membership.householdId, householdId),
+          isNull(membership.deletedAt),
+          isNull(user.deletedAt)
+        )
+      );
+
+    return rows
+      .map((row) => ({
+        membershipId: row.membershipId,
+        userId: row.userId,
+        email: row.email,
+        displayName: row.displayName ?? null,
+        role: row.role,
+        createdAt: row.createdAt.toISOString(),
+      }))
+      .sort((a, b) => {
+        const created = a.createdAt.localeCompare(b.createdAt);
+        if (created !== 0) return created;
+        return a.userId.localeCompare(b.userId);
+      });
+  }
+
+  async listHouseholdsForUser(userId: string): Promise<UserHousehold[]> {
+    const memberships = await this.getMembershipsForUser(userId);
+    const result: UserHousehold[] = [];
+    for (const member of memberships) {
+      const householdRecord = await this.getHousehold(member.householdId);
+      if (householdRecord) {
+        result.push({ household: householdRecord, membership: member });
+      }
+    }
+    return result.sort((a, b) => {
+      const created = a.membership.createdAt.localeCompare(b.membership.createdAt);
+      if (created !== 0) return created;
+      return a.household.id.localeCompare(b.household.id);
+    });
+  }
+
+  async updateMemberRole(input: {
+    householdId: string;
+    targetUserId: string;
+    role: MembershipRole;
+    actorUserId: string;
+    actorRole: MembershipRole;
+  }): Promise<Membership> {
+    assertCanManageMembers(input.actorRole);
+    const members = await this.getMemberships(input.householdId);
+    const target = members.find((item) => item.userId === input.targetUserId);
+    if (!target) {
+      throw new HouseholdAccessError("Kitchen member not found.", "not_found");
+    }
+    if (target.role === "owner" && input.role !== "owner" && isSoleOwner(members, target.userId)) {
+      throw new HouseholdAccessError(
+        "The last owner cannot be demoted. Promote someone else first.",
+        "conflict"
+      );
+    }
+    const [updated] = await this._db
+      .update(membership)
+      .set({ role: input.role, updatedAt: new Date() })
+      .where(and(eq(membership.id, target.id), isNull(membership.deletedAt)))
+      .returning();
+    if (!updated) {
+      throw new HouseholdAccessError("Kitchen member not found.", "not_found");
+    }
+    return this.mapMembership(updated);
+  }
+
+  async removeMember(input: {
+    householdId: string;
+    targetUserId: string;
+    actorUserId: string;
+    actorRole: MembershipRole;
+  }): Promise<void> {
+    if (input.targetUserId === input.actorUserId) {
+      throw new HouseholdAccessError("Use leave to remove yourself from a kitchen.", "invalid");
+    }
+    assertCanManageMembers(input.actorRole);
+    const members = await this.getMemberships(input.householdId);
+    const target = members.find((item) => item.userId === input.targetUserId);
+    if (!target) {
+      throw new HouseholdAccessError("Kitchen member not found.", "not_found");
+    }
+    if (isSoleOwner(members, target.userId)) {
+      throw new HouseholdAccessError("The last owner cannot be removed.", "conflict");
+    }
+    await this.softDeleteMembership(target.id);
+  }
+
+  async leaveHousehold(input: { householdId: string; userId: string }): Promise<void> {
+    const members = await this.getMemberships(input.householdId);
+    const target = members.find((item) => item.userId === input.userId);
+    if (!target) {
+      throw new HouseholdAccessError("You are not a member of this kitchen.", "not_found");
+    }
+    if (isSoleOwner(members, input.userId)) {
+      throw new HouseholdAccessError(
+        "The last owner cannot leave. Promote someone else first.",
+        "conflict"
+      );
+    }
+    await this.softDeleteMembership(target.id);
+  }
+
+  async softDeleteMembership(membershipId: string): Promise<void> {
+    const now = new Date();
+    await this._db
+      .update(membership)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(and(eq(membership.id, membershipId), isNull(membership.deletedAt)));
   }
 
   async createMembership(

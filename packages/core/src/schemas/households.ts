@@ -59,10 +59,56 @@ export const publicApiKeyWithPlaintextSchema = publicApiKeySchema.extend({
   plaintext: z.string(),
 });
 
+export const inviteRoleSchema = z.enum(["admin", "member", "viewer"]);
+
+export const inviteStatusSchema = z.enum(["pending", "expired", "revoked"]);
+
+export const householdInviteSchema = baseEntitySchema.merge(createdBySchema).extend({
+  householdId: uuidSchema,
+  token: z.string().min(16).max(255),
+  role: inviteRoleSchema,
+  expiresAt: z.string().datetime(),
+  revokedAt: z.string().datetime().nullable().optional(),
+});
+
+export const createInviteInputSchema = z.object({
+  role: inviteRoleSchema.optional().default("member"),
+  expiresInDays: z.number().int().min(1).max(30).optional().default(7),
+});
+
+export const householdMemberSchema = z.object({
+  membershipId: uuidSchema,
+  userId: uuidSchema,
+  email: z.string().email(),
+  displayName: z.string().max(255).nullable(),
+  role: membershipRoleSchema,
+  createdAt: z.string().datetime(),
+});
+
+export const householdInvitePreviewSchema = z.object({
+  householdId: uuidSchema,
+  householdName: z.string(),
+  role: inviteRoleSchema,
+  expiresAt: z.string().datetime(),
+  status: inviteStatusSchema,
+});
+
+export const userHouseholdSchema = z.object({
+  household: householdSchema,
+  membership: membershipSchema,
+});
+
 export type MembershipRole = z.infer<typeof membershipRoleSchema>;
+export type InviteRole = z.infer<typeof inviteRoleSchema>;
+export type InviteStatus = z.infer<typeof inviteStatusSchema>;
 export type Household = z.infer<typeof householdSchema>;
 export type User = z.infer<typeof userSchema>;
 export type Membership = z.infer<typeof membershipSchema>;
+export type HouseholdInvite = z.infer<typeof householdInviteSchema>;
+export type CreateInviteInput = z.infer<typeof createInviteInputSchema>;
+export type HouseholdMember = z.infer<typeof householdMemberSchema>;
+export type HouseholdInvitePreview = z.infer<typeof householdInvitePreviewSchema>;
+export type UserHousehold = z.infer<typeof userHouseholdSchema>;
 export type ApiKeyScope = z.infer<typeof apiKeyScopeSchema>;
 export type ApiKey = z.infer<typeof apiKeySchema>;
 export type CreateApiKeyInput = z.infer<typeof createApiKeyInputSchema>;
