@@ -36,7 +36,7 @@ The endpoint needs the page HTML or JSON-LD. When the site blocks OvenLovin's se
 
 `POST /api/v1/recipes/import/page`
 
-Authenticated with a Clerk session (bookmarklet form POST) or `Authorization: ApiKey rkapi_...`.
+Authenticated with a Clerk session (capture page POST) or `Authorization: ApiKey rkapi_...`.
 
 JSON body:
 

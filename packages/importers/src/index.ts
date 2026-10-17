@@ -6,7 +6,6 @@ export * from "./utils/models";
 export * from "./utils/uncertain-fields";
 export * from "./utils/classify-allergens";
 export * from "./importers/url";
-export { buildImportBookmarklet, importBookmarkletTitle } from "./utils/bookmarklet";
 export * from "./importers/paste";
 export * from "./importers/photo";
 export * from "./photo-pipeline";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildImportBookmarklet, importBookmarkletTitle } from "./bookmarklet";
+import { buildImportBookmarklet, importBookmarkletTitle } from "./import-bookmarklet";
 
 describe("import bookmarklet", () => {
   it("sends JSON-LD or HTML to the same-origin capture page", () => {

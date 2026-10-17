@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { buildImportBookmarklet, importBookmarkletTitle } from "@ovenlovin/importers";
+import { buildImportBookmarklet, importBookmarkletTitle } from "@/lib/import-bookmarklet";
 
 export function ImportBookmarklet({ origin }: { origin?: string }) {
   const host =
