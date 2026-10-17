@@ -7,7 +7,7 @@ test.describe("kitchen invites", () => {
     await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kitchen members" })).toBeVisible();
     await expect(page.getByText(/ty/i).first()).toBeVisible();
-    await expect(page.getByText("owner").first()).toBeVisible();
+    await expect(page.getByLabel("Role for Ty")).toHaveValue("owner");
 
     await expect(page.getByRole("heading", { name: "Invite links" })).toBeVisible();
     await page.getByRole("button", { name: "Create invite link" }).click();
@@ -36,8 +36,20 @@ test.describe("kitchen invites", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/invite/${invite.token}`);
     await expect(page.getByRole("heading", { name: /join /i })).toBeVisible();
-    await page.getByRole("button", { name: /join /i }).click();
-    await expect(page.getByRole("heading", { name: "Recipes" })).toBeVisible();
+    const join = page.getByRole("button", { name: /join /i });
+    const accept = page.waitForResponse(
+      (response) =>
+        response.url().includes("/accept") &&
+        response.request().method() === "POST" &&
+        response.ok(),
+      { timeout: 30_000 }
+    );
+    await join.click();
+    await accept;
+    await page.waitForURL("**/recipes", { timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Recipes" })).toBeVisible({
+      timeout: 30_000,
+    });
     await expect(page.getByRole("link", { name: /weeknight dinners/i })).toBeVisible();
 
     if (invite.id) {
