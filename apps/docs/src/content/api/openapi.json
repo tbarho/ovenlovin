@@ -47,6 +47,52 @@
       }
     },
     "schemas": {
+      "ConfigStatus": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["demo", "product"]
+          },
+          "commitSha": {
+            "type": "string",
+            "nullable": true,
+            "description": "VERCEL_GIT_COMMIT_SHA for this deploy, or null when not on Vercel."
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "enum": ["database", "clerk", "aiGateway", "blob"]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "configured": {
+                  "type": "boolean"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "reachable": {
+                  "type": "boolean"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "label", "configured", "required", "detail"]
+            }
+          }
+        },
+        "required": ["ready", "mode", "commitSha", "checks"]
+      },
       "Recipe": {
         "type": "object",
         "properties": {
@@ -65,6 +111,10 @@
             "type": "string"
           },
           "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
             "type": "string",
             "nullable": true
           },
@@ -109,6 +159,122 @@
           }
         },
         "required": ["id", "householdId", "title", "slug", "images", "status"]
+      },
+      "PhotoImportPreview": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "servings": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "prepTimeMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cookTimeMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalTimeMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rawText": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "quantityMin": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "quantityMax": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "unit": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": ["rawText"]
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": ["text"]
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overallConfidence": {
+            "type": "number"
+          },
+          "needsReview": {
+            "type": "boolean"
+          },
+          "uncertainFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allergenClassifications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ingredientText": {
+                  "type": "string"
+                },
+                "allergenCode": {
+                  "type": "string"
+                },
+                "allergenName": {
+                  "type": "string"
+                },
+                "relation": {
+                  "type": "string"
+                }
+              },
+              "required": ["ingredientText", "allergenCode", "allergenName", "relation"]
+            }
+          }
+        },
+        "required": [
+          "title",
+          "ingredients",
+          "steps",
+          "images",
+          "overallConfidence",
+          "needsReview",
+          "uncertainFields",
+          "allergenClassifications"
+        ]
       },
       "CookbookCard": {
         "allOf": [
@@ -254,9 +420,39 @@
           },
           "needsRecheck": {
             "type": "boolean"
+          },
+          "shoppingState": {
+            "$ref": "#/components/schemas/ShoppingTripState"
           }
         },
         "required": ["id", "householdId", "weekStart", "status", "needsRecheck"]
+      },
+      "ShoppingTripState": {
+        "type": "object",
+        "properties": {
+          "checkedKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "extras": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": ["key", "name"]
+            }
+          }
+        },
+        "required": ["checkedKeys", "extras"]
       },
       "MealPlanDetail": {
         "allOf": [
@@ -271,6 +467,13 @@
                 "items": {
                   "$ref": "#/components/schemas/MealPlanEntry"
                 }
+              },
+              "previousEntries": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MealPlanEntry"
+                },
+                "description": "Nights this PATCH changed, as they were before the edit. Use to revert."
               }
             },
             "required": ["entries"]
@@ -295,6 +498,10 @@
             "nullable": true,
             "format": "uuid"
           },
+          "freeformMeal": {
+            "type": "string",
+            "nullable": true
+          },
           "servings": {
             "type": "integer",
             "nullable": true,
@@ -314,15 +521,210 @@
           }
         },
         "required": ["id", "date", "mealSlot", "attendees"]
+      },
+      "HouseholdSchedule": {
+        "type": "object",
+        "properties": {
+          "weeklyTemplate": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dayOfWeek": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 6
+                },
+                "day": {
+                  "type": "string"
+                },
+                "meal": {
+                  "type": "string"
+                },
+                "busyLevel": {
+                  "type": "string",
+                  "enum": ["low", "medium", "high"]
+                },
+                "timeBudgetMinutes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "exclusiveMinimum": true
+                },
+                "cooking": {
+                  "type": "boolean"
+                },
+                "attendees": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "constraints": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "dayOfWeek",
+                "day",
+                "meal",
+                "busyLevel",
+                "timeBudgetMinutes",
+                "cooking",
+                "attendees",
+                "constraints"
+              ]
+            }
+          },
+          "overrides": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "meal": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": ["date", "meal", "note"]
+            }
+          }
+        },
+        "required": ["weeklyTemplate", "overrides"]
+      },
+      "KitchenMember": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/MembershipRole"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["membershipId", "userId", "email", "displayName", "role", "createdAt"]
+      },
+      "MembershipRole": {
+        "type": "string",
+        "enum": ["owner", "admin", "member", "viewer"]
+      },
+      "KitchenInvite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "householdId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "token": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/InviteRole"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "householdId", "token", "role", "expiresAt", "createdAt"]
+      },
+      "InviteRole": {
+        "type": "string",
+        "enum": ["admin", "member", "viewer"]
+      },
+      "KitchenInvitePreview": {
+        "type": "object",
+        "properties": {
+          "householdId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "householdName": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/InviteRole"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "expired", "revoked"]
+          }
+        },
+        "required": ["householdId", "householdName", "role", "expiresAt", "status"]
       }
     },
     "parameters": {}
   },
   "paths": {
+    "/status": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Instance configuration and deploy SHA",
+        "description": "Reports integration readiness and the Vercel git commit SHA (`VERCEL_GIT_COMMIT_SHA`). Unauthenticated.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Config status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/recipes": {
       "get": {
         "tags": ["recipes"],
         "summary": "List recipes",
+        "description": "`images` is a thumbnail URL only. Photo imports never inline `data:` bytes here; fetch `GET /recipes/{id}/image` when Blob is not configured.",
         "parameters": [
           {
             "schema": {
@@ -354,6 +756,16 @@
           {
             "schema": {
               "type": "string",
+              "description": "Comma-separated person IDs. Recipes that hit a block rule for any attendee are omitted from items and listed in hidden with hiddenCount."
+            },
+            "required": false,
+            "description": "Comma-separated person IDs. Recipes that hit a block rule for any attendee are omitted from items and listed in hidden with hiddenCount.",
+            "name": "forAttendees",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "format": "uuid"
             },
             "required": false,
@@ -372,7 +784,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Recipe page",
+            "description": "Recipe page. When forAttendees is set, also returns hiddenCount and hidden.",
             "content": {
               "application/json": {
                 "schema": {
@@ -382,6 +794,46 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Recipe"
+                      }
+                    },
+                    "hiddenCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "hidden": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "reasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "personId": {
+                                  "type": "string"
+                                },
+                                "personName": {
+                                  "type": "string"
+                                },
+                                "ingredientName": {
+                                  "type": "string"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["personId", "personName", "ingredientName", "message"]
+                            }
+                          }
+                        },
+                        "required": ["id", "title", "reasons"]
                       }
                     }
                   },
@@ -405,6 +857,9 @@
                     "type": "string"
                   },
                   "description": {
+                    "type": "string"
+                  },
+                  "notes": {
                     "type": "string"
                   },
                   "servings": {
@@ -477,7 +932,7 @@
     "/recipes/{id}": {
       "get": {
         "tags": ["recipes"],
-        "summary": "Get a recipe with ingredients, steps, times, images, and source",
+        "summary": "Get a recipe with ingredients, steps, times, notes, images, and source",
         "parameters": [
           {
             "schema": {
@@ -526,6 +981,10 @@
                     "type": "string"
                   },
                   "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "notes": {
                     "type": "string",
                     "nullable": true
                   },
@@ -626,6 +1085,64 @@
         }
       }
     },
+    "/recipes/{id}/image": {
+      "get": {
+        "tags": ["recipes"],
+        "summary": "Main recipe photo (thumbnail URL from list/search)",
+        "description": "Returns the stored main photo. List and search never inline image bytes: they expose this URL (or a Blob URL) instead of data: URLs. Requires the same household auth as GET /recipes/{id}.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image bytes"
+          },
+          "302": {
+            "description": "Redirect to a Blob or remote URL"
+          },
+          "404": {
+            "description": "Recipe or image not found"
+          }
+        }
+      }
+    },
+    "/recipes/{id}/restore": {
+      "post": {
+        "tags": ["recipes"],
+        "summary": "Restore a soft-deleted recipe",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/recipes/import": {
       "post": {
         "tags": ["recipes"],
@@ -656,6 +1173,124 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipes/import/photo": {
+      "post": {
+        "tags": ["recipes"],
+        "summary": "Extract a recipe from one or more photos (review by default). Multipart upload or a Blob/image URL. Saves only the first photo as the main image.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "imageUrls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "imageBase64": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "base64": {
+                          "type": "string"
+                        },
+                        "mimeType": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "isHandwritten": {
+                    "type": "boolean"
+                  },
+                  "save": {
+                    "type": "boolean"
+                  },
+                  "cookbookId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "description": "Recipe photo file (repeatable as images/file)"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "isHandwritten": {
+                    "type": "string"
+                  },
+                  "save": {
+                    "type": "string"
+                  },
+                  "cookbookId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extracted draft for review (save omitted or false)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoImportPreview"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Saved recipe when save=true",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PhotoImportPreview"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "recipe": {
+                          "$ref": "#/components/schemas/Recipe"
+                        }
+                      },
+                      "required": ["recipe"]
+                    }
+                  ]
                 }
               }
             }
@@ -1411,6 +2046,11 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "freeformMeal": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
                         "servings": {
                           "type": "integer",
                           "minimum": 0,
@@ -1484,6 +2124,7 @@
       "patch": {
         "tags": ["meal-plans"],
         "summary": "Update a meal plan",
+        "description": "`entries` default to **merge** by date+meal: send one night to set, swap, or `{ clear: true }` to remove it. Other nights are left alone. Pass `entriesMode: replace` to rewrite the whole week. The response includes `previousEntries` for the nights this request changed.",
         "parameters": [
           {
             "schema": {
@@ -1525,9 +2166,17 @@
                           "minLength": 1,
                           "maxLength": 50
                         },
+                        "clear": {
+                          "type": "boolean"
+                        },
                         "recipeId": {
                           "type": "string",
                           "format": "uuid"
+                        },
+                        "freeformMeal": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
                         },
                         "servings": {
                           "type": "integer",
@@ -1539,8 +2188,7 @@
                           "items": {
                             "type": "string",
                             "format": "uuid"
-                          },
-                          "default": []
+                          }
                         },
                         "prepAheadNotes": {
                           "type": "string"
@@ -1549,6 +2197,46 @@
                       "required": ["date", "meal"],
                       "additionalProperties": false
                     }
+                  },
+                  "entriesMode": {
+                    "type": "string",
+                    "enum": ["merge", "replace"],
+                    "description": "How `entries` are applied. Default `merge` upserts by date+meal (use clear:true to remove a night). `replace` rewrites the whole week."
+                  },
+                  "shoppingState": {
+                    "type": "object",
+                    "properties": {
+                      "checkedKeys": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "maxItems": 500
+                      },
+                      "extras": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 160
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            }
+                          },
+                          "required": ["key", "name"]
+                        },
+                        "maxItems": 100
+                      }
+                    },
+                    "required": ["checkedKeys", "extras"]
                   }
                 },
                 "additionalProperties": false
@@ -1590,10 +2278,58 @@
         }
       }
     },
+    "/meal-plans/{id}/undo": {
+      "post": {
+        "tags": ["meal-plans"],
+        "summary": "Undo the last entries edit",
+        "description": "Restores the previous week snapshot recorded on merge/replace PATCH. Returns the plan plus previousEntries (the state that was undone).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored plan"
+          },
+          "404": {
+            "description": "Plan or revision not found"
+          }
+        }
+      }
+    },
+    "/meal-plans/{id}/history": {
+      "get": {
+        "tags": ["meal-plans"],
+        "summary": "List recent meal-plan entry snapshots (newest first)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revision list"
+          }
+        }
+      }
+    },
     "/meal-plans/{id}/check": {
       "get": {
         "tags": ["meal-plans"],
-        "summary": "Check a meal plan against per-person rules. Not medical advice.",
+        "summary": "Check a meal plan against per-person rules and schedule time budgets. Not medical advice.",
         "parameters": [
           {
             "schema": {
@@ -1608,12 +2344,15 @@
         "responses": {
           "200": {
             "description": "Check report"
+          },
+          "404": {
+            "description": "Meal plan not found (including a malformed id)"
           }
         }
       },
       "post": {
         "tags": ["meal-plans"],
-        "summary": "Check a meal plan against per-person rules. Same as GET; POST is kept for existing clients.",
+        "summary": "Recheck a meal plan, store the report, and clear needsRecheck. GET is a dry run.",
         "parameters": [
           {
             "schema": {
@@ -1628,6 +2367,9 @@
         "responses": {
           "200": {
             "description": "Check report"
+          },
+          "404": {
+            "description": "Meal plan not found (including a malformed id)"
           }
         }
       }
@@ -1654,11 +2396,107 @@
             "required": false,
             "name": "format",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["aisle", "recipe", "category"]
+            },
+            "required": false,
+            "name": "groupBy",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "description": "Include kitchen staples such as salt, pepper, and oil. Distinct from the pantry food-taxonomy category (flour, canned goods). Alias: includePantryItems."
+            },
+            "required": false,
+            "description": "Include kitchen staples such as salt, pepper, and oil. Distinct from the pantry food-taxonomy category (flour, canned goods). Alias: includePantryItems.",
+            "name": "includeStaples",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "description": "Deprecated alias for includeStaples."
+            },
+            "required": false,
+            "description": "Deprecated alias for includeStaples.",
+            "name": "includePantryItems",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
             "description": "Shopping list"
+          }
+        }
+      }
+    },
+    "/meal-plans/{id}/shopping-list/state": {
+      "get": {
+        "tags": ["meal-plans"],
+        "summary": "Get saved check-offs and extras for this plan week",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved shopping trip state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingTripState"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["meal-plans"],
+        "summary": "Save check-offs and extras for this plan week",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingTripState"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved shopping trip state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingTripState"
+                }
+              }
+            }
           }
         }
       }
@@ -1670,6 +2508,80 @@
         "responses": {
           "200": {
             "description": "Household"
+          }
+        }
+      }
+    },
+    "/households/schedule": {
+      "get": {
+        "tags": ["households"],
+        "summary": "Get the household weekly availability and busy-night schedule",
+        "responses": {
+          "200": {
+            "description": "Weekly schedule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdSchedule"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["households"],
+        "summary": "Replace the household weekly availability and busy-night schedule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "week": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "dayOfWeek": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 6
+                        },
+                        "day": {
+                          "type": "string"
+                        },
+                        "busyLevel": {
+                          "type": "string",
+                          "enum": ["low", "medium", "high"]
+                        },
+                        "timeBudgetMinutes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        },
+                        "cooking": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": ["week"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated schedule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdSchedule"
+                }
+              }
+            }
           }
         }
       }
@@ -1732,6 +2644,266 @@
         "responses": {
           "204": {
             "description": "Revoked"
+          }
+        }
+      }
+    },
+    "/households/mine": {
+      "get": {
+        "tags": ["households"],
+        "summary": "List kitchens the signed-in user belongs to",
+        "responses": {
+          "200": {
+            "description": "Kitchens"
+          }
+        }
+      }
+    },
+    "/households/select": {
+      "post": {
+        "tags": ["households"],
+        "summary": "Switch the active kitchen for this browser session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "householdId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": ["householdId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Selected kitchen"
+          }
+        }
+      }
+    },
+    "/households/members": {
+      "get": {
+        "tags": ["households"],
+        "summary": "List kitchen members (signed-in users, not People)",
+        "responses": {
+          "200": {
+            "description": "Members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/KitchenMember"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/households/members/{userId}": {
+      "patch": {
+        "tags": ["households"],
+        "summary": "Change a kitchen member role (owner only)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "$ref": "#/components/schemas/MembershipRole"
+                  }
+                },
+                "required": ["role"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated membership"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["households"],
+        "summary": "Remove a kitchen member (owner only)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          }
+        }
+      }
+    },
+    "/households/leave": {
+      "post": {
+        "tags": ["households"],
+        "summary": "Leave the active kitchen",
+        "responses": {
+          "200": {
+            "description": "Left kitchen"
+          }
+        }
+      }
+    },
+    "/households/invites": {
+      "get": {
+        "tags": ["households"],
+        "summary": "List pending kitchen invite links (owner or admin)",
+        "responses": {
+          "200": {
+            "description": "Pending invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/KitchenInvite"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["households"],
+        "summary": "Create a shareable kitchen invite link (owner or admin)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "$ref": "#/components/schemas/InviteRole"
+                  },
+                  "expiresInDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created invite with url"
+          }
+        }
+      }
+    },
+    "/households/invites/{id}": {
+      "delete": {
+        "tags": ["households"],
+        "summary": "Revoke a kitchen invite link (owner or admin)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked invite"
+          }
+        }
+      }
+    },
+    "/invites/{token}": {
+      "get": {
+        "tags": ["households"],
+        "summary": "Preview a kitchen invite link (no auth)",
+        "security": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitchenInvitePreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invites/{token}/accept": {
+      "post": {
+        "tags": ["households"],
+        "summary": "Accept a kitchen invite for the signed-in user",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Joined kitchen"
           }
         }
       }

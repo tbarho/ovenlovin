@@ -9,7 +9,9 @@ import {
   canManageInvites,
   canManageMembers,
   defaultInviteExpiry,
+  invitePath,
   inviteStatus,
+  isInviteToken,
   isSoleOwner,
   selectActiveMembership,
 } from "./kitchen-access";
@@ -107,5 +109,12 @@ describe("kitchen access policy", () => {
     expect(defaultInviteExpiry(now).toISOString()).toBe("2026-10-24T00:00:00.000Z");
     expect(defaultInviteExpiry(now, 1).toISOString()).toBe("2026-10-18T00:00:00.000Z");
     expect(defaultInviteExpiry(now, 99).toISOString()).toBe("2026-11-16T00:00:00.000Z");
+  });
+
+  it("recognizes invite tokens and builds the public path", () => {
+    const token = "olinv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    expect(isInviteToken(token)).toBe(true);
+    expect(isInviteToken("not-an-invite")).toBe(false);
+    expect(invitePath(token)).toBe(`/invite/${token}`);
   });
 });

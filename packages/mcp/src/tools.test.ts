@@ -27,6 +27,8 @@ import {
   managePeopleTool,
   managePersonRulesTool,
   manageHouseholdScheduleTool,
+  manageKitchenInvitesTool,
+  manageKitchenMembersTool,
   canonicalizePersonRuleTarget,
 } from "./index.js";
 
@@ -504,6 +506,42 @@ describe("MCP Tool Schemas", () => {
           action: "set",
         }).success
       ).toBe(false);
+    });
+  });
+
+  describe("kitchen invites and members", () => {
+    it("validates manage_kitchen_invites", () => {
+      expect(manageKitchenInvitesTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
+      expect(
+        manageKitchenInvitesTool.inputSchema.safeParse({
+          action: "create",
+          role: "member",
+          expiresInDays: 7,
+        }).success
+      ).toBe(true);
+      expect(
+        manageKitchenInvitesTool.inputSchema.safeParse({
+          action: "revoke",
+          inviteId: "550e8400-e29b-41d4-a716-446655440000",
+        }).success
+      ).toBe(true);
+      expect(
+        manageKitchenInvitesTool.inputSchema.safeParse({ action: "create", role: "owner" }).success
+      ).toBe(false);
+    });
+
+    it("validates manage_kitchen_members", () => {
+      expect(manageKitchenMembersTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
+      expect(manageKitchenMembersTool.inputSchema.safeParse({ action: "leave" }).success).toBe(
+        true
+      );
+      expect(
+        manageKitchenMembersTool.inputSchema.safeParse({
+          action: "update_role",
+          userId: "550e8400-e29b-41d4-a716-446655440000",
+          role: "admin",
+        }).success
+      ).toBe(true);
     });
   });
 });

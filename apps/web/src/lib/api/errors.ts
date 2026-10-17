@@ -1,3 +1,4 @@
+import { HouseholdAccessError } from "@ovenlovin/core";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -157,6 +158,45 @@ export function isNextRedirectError(error: unknown): boolean {
 }
 
 export function handleApiError(error: unknown, instance?: string): NextResponse {
+  if (error instanceof HouseholdAccessError) {
+    const status =
+      error.code === "forbidden"
+        ? 403
+        : error.code === "not_found"
+          ? 404
+          : error.code === "conflict"
+            ? 409
+            : error.code === "expired"
+              ? 410
+              : 400;
+    const title =
+      status === 403
+        ? "Forbidden"
+        : status === 404
+          ? "Not Found"
+          : status === 409
+            ? "Conflict"
+            : status === 410
+              ? "Gone"
+              : "Bad Request";
+    const type =
+      status === 403
+        ? "forbidden"
+        : status === 404
+          ? "not-found"
+          : status === 409
+            ? "conflict"
+            : status === 410
+              ? "gone"
+              : "bad-request";
+    return new ApiError(
+      status,
+      `https://your-app.vercel.app/problems/${type}`,
+      title,
+      error.message
+    ).toResponse(instance);
+  }
+
   if (error instanceof ApiError) {
     return error.toResponse(instance);
   }

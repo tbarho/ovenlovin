@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { HouseholdService, PeopleService } from "@ovenlovin/core";
+import { cookies } from "next/headers";
+import { HouseholdService, InviteService, PeopleService, inviteStatus } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { UnauthorizedError } from "@/lib/api/errors";
 import type { RequestContext } from "@/lib/api/middleware";
@@ -7,6 +8,12 @@ import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { getDemoSessionContext } from "@/lib/demo/session";
 import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
 import { getE2eSessionContext } from "@/lib/e2e-kitchen";
+import {
+  HOUSEHOLD_COOKIE,
+  INVITE_COOKIE,
+  isHouseholdId,
+  readInviteToken,
+} from "@/lib/kitchen-cookies";
 
 export async function getSessionContext(options?: {
   allowRedirect?: boolean;
@@ -40,11 +47,26 @@ export async function getSessionContext(options?: {
     clerkUser?.emailAddresses[0]?.emailAddress ??
     `${userId}@users.clerk.local`;
 
+  const cookieStore = await cookies().catch(() => null);
+  const preferredHouseholdId = isHouseholdId(cookieStore?.get(HOUSEHOLD_COOKIE)?.value)
+    ? cookieStore?.get(HOUSEHOLD_COOKIE)?.value
+    : null;
+  const inviteToken = readInviteToken(cookieStore?.get(INVITE_COOKIE)?.value);
+  let pendingInvite: { householdId: string; role: "admin" | "member" | "viewer" } | null = null;
+  if (inviteToken) {
+    const invite = await new InviteService(db).getInviteByToken(inviteToken);
+    if (invite && inviteStatus(invite) === "pending") {
+      pendingInvite = { householdId: invite.householdId, role: invite.role };
+    }
+  }
+
   const bootstrapped = await households.ensureHouseholdForClerkUser({
     clerkUserId: userId,
     email,
     displayName: clerkUser?.fullName ?? clerkUser?.firstName ?? null,
     clerkOrgId: orgId ?? null,
+    pendingInvite,
+    preferredHouseholdId,
   });
 
   const people = new PeopleService(db);
