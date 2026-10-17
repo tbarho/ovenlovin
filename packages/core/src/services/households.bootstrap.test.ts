@@ -71,4 +71,61 @@ describe("HouseholdService.ensureHouseholdForClerkUser", () => {
     expect(result.household.name).toBe("Parent A Kitchen");
     expect(result.membership.role).toBe("owner");
   });
+
+  it("joins an existing Clerk org household as member, not owner", async () => {
+    const userRow = {
+      id: "11111111-1111-4111-8111-111111111111",
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      deletedAt: null,
+      clerkUserId: "user_spouse",
+      email: "parent-b@example.com",
+      displayName: "Parent B",
+    };
+    const householdRow = {
+      id: "22222222-2222-4222-8222-222222222222",
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      deletedAt: null,
+      createdBy: "00000000-0000-4000-8000-000000000000",
+      name: "Parent A Kitchen",
+      slug: "kitchen-parent-a",
+      clerkOrgId: "org_family",
+    };
+    const membershipRow = {
+      id: "33333333-3333-4333-8333-333333333333",
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      deletedAt: null,
+      userId: userRow.id,
+      householdId: householdRow.id,
+      role: "member",
+    };
+
+    db.select
+      .mockReturnValueOnce(chain([]))
+      .mockReturnValueOnce(chain([householdRow]))
+      .mockReturnValueOnce(chain([]));
+    db.insert.mockReturnValueOnce(chain([userRow])).mockReturnValueOnce(chain([membershipRow]));
+
+    const result = await service.ensureHouseholdForClerkUser({
+      clerkUserId: "user_spouse",
+      email: "parent-b@example.com",
+      displayName: "Parent B",
+      clerkOrgId: "org_family",
+    });
+
+    expect(result.created).toBe(true);
+    expect(result.household.id).toBe(householdRow.id);
+    expect(result.membership.role).toBe("member");
+    expect(db.insert).toHaveBeenCalledTimes(2);
+    const membershipInsert = db.insert.mock.results[1]?.value as {
+      values: { mock: { calls: Array<[Record<string, unknown>]> } };
+    };
+    expect(membershipInsert.values.mock.calls[0]?.[0]).toMatchObject({
+      userId: userRow.id,
+      householdId: householdRow.id,
+      role: "member",
+    });
+  });
 });
