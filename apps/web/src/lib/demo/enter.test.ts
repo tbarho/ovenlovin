@@ -27,6 +27,7 @@ describe("demo enter helpers", () => {
     expect(shouldRedirectToDemoEnter("/mcp", undefined)).toBe(false);
     expect(shouldRedirectToDemoEnter("/docs", undefined)).toBe(false);
     expect(shouldRedirectToDemoEnter("/docs/connect-your-agent", undefined)).toBe(false);
+    expect(shouldRedirectToDemoEnter("/invite/olinv_aa", undefined)).toBe(false);
     expect(shouldRedirectToDemoEnter("/llms.txt", undefined)).toBe(false);
     expect(shouldRedirectToDemoEnter("/demo-kitchen/pesto.svg", undefined)).toBe(false);
   });

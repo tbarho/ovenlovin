@@ -23,6 +23,7 @@ const PUBLIC_PREFIXES = [
   "/brand",
   "/sign-in",
   "/sign-up",
+  "/invite",
   "/_next",
   "/demo-kitchen",
   "/prototype",

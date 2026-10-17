@@ -1851,6 +1851,130 @@ select {
   color: var(--faint);
 }
 
+.kitchen-panel {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 28px;
+  min-width: 0;
+}
+
+.kitchen-panel h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+}
+
+.kitchen-switcher label,
+.invite-create label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.kitchen-switcher select,
+.invite-create select,
+.invite-create input,
+.member-actions select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: #fff;
+  max-width: 100%;
+}
+
+.invite-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.invite-create .btn {
+  min-height: 44px;
+}
+
+.member-list,
+.invite-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.member-row,
+.invite-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  min-width: 0;
+}
+
+.member-identity,
+.invite-row > div {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.member-identity p,
+.invite-row p {
+  margin: 4px 0 0;
+}
+
+.member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.member-role {
+  text-transform: capitalize;
+  font-size: 14px;
+}
+
+.invite-page {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+
+.invite-auth,
+.invite-accept {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 430px) {
+  .member-row,
+  .invite-row,
+  .invite-create {
+    align-items: stretch;
+  }
+
+  .member-actions,
+  .invite-create {
+    flex-direction: column;
+  }
+
+  .member-actions .btn,
+  .invite-row .btn,
+  .invite-create .btn,
+  .invite-auth .btn {
+    width: 100%;
+  }
+}
+
 @media (max-width: 860px) {
   input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
       [type="button"]

@@ -1,6 +1,9 @@
 import { headers } from "next/headers";
 import { ImportBookmarklet } from "@/components/kitchen/ImportBookmarklet";
 import { ApiKeyManager } from "@/components/settings/ApiKeyManager";
+import { KitchenInvites } from "@/components/settings/KitchenInvites";
+import { KitchenMembers } from "@/components/settings/KitchenMembers";
+import { KitchenSwitcher } from "@/components/settings/KitchenSwitcher";
 import { DemoAgentPanel } from "@/components/demo/DemoAgentPanel";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { findDemoSandboxByHousehold } from "@/lib/demo/sandbox";
@@ -15,6 +18,7 @@ export default async function SettingsPage() {
   const sandbox = demo ? await findDemoSandboxByHousehold(context.householdId) : null;
   const origin = resolveOrigin(await headers());
   const buildSha = shortBuildSha();
+  const canManageInvites = context.membershipRole === "owner" || context.membershipRole === "admin";
 
   return (
     <>
@@ -28,11 +32,14 @@ export default async function SettingsPage() {
           <p className="muted">
             {demo
               ? "Sandbox MCP URL and API key for this demo visit. Resets daily."
-              : "API keys for Grok, Claude, ChatGPT, and other MCP clients."}
+              : "Invite family into this kitchen, then add API keys for Grok, Claude, ChatGPT, and other MCP clients."}
             {buildSha ? ` Build ${buildSha}.` : ""}
           </p>
         </div>
       </div>
+      <KitchenSwitcher />
+      <KitchenMembers currentUserId={context.userId} currentRole={context.membershipRole} />
+      <KitchenInvites canManage={canManageInvites} />
       <ImportBookmarklet origin={origin} />
       {demo && sandbox ? (
         <DemoAgentPanel origin={origin} apiKey={sandbox.apiKeyPlaintext} />

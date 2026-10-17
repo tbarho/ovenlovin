@@ -3,12 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { clerkUnavailableCopy } from "@/lib/clerk-unavailable";
+import { safeAuthRedirect } from "@/lib/auth-redirect";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 
-export default function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect_url?: string }>;
+}) {
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const demo = isDemoModeEnabled();
   const unavailable = clerkUnavailableCopy(demo);
+  const redirectUrl = safeAuthRedirect((await searchParams).redirect_url);
 
   return (
     <div className="shell">
@@ -19,7 +25,7 @@ export default function SignInPage() {
         </Link>
         <h1>{clerkEnabled && !demo ? "Sign in" : unavailable.title}</h1>
         {clerkEnabled && !demo ? (
-          <SignIn fallbackRedirectUrl="/recipes" />
+          <SignIn fallbackRedirectUrl={redirectUrl} />
         ) : (
           <>
             <p className="empty-note">{unavailable.body}</p>
