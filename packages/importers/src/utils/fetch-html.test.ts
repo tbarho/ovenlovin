@@ -94,7 +94,7 @@ describe("page classification", () => {
 
   it("lists tried layers in the blocked message", () => {
     expect(importBlockedMessage(["direct", "google-translate", "jina"])).toBe(
-      "This site blocked the importer (tried direct, google-translate, jina). Try importing by pasting the recipe text instead."
+      "This site blocked the importer (tried direct, google-translate, jina). Use the bookmarklet on Import or Settings, or paste the recipe text instead."
     );
   });
 });

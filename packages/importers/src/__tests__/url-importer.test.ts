@@ -298,6 +298,45 @@ describe("URL Importer", () => {
       expect(raw.rawData.name).toBe("Pancake");
     });
 
+    it("extracts captured JSON-LD without fetching the URL", async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      const importer = createUrlImporter();
+      const raw = await importer.extract({
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        jsonLd: {
+          "@type": "Recipe",
+          name: "Beef Stroganoff",
+          recipeIngredient: ["1 lb beef", "8 oz noodles"],
+          recipeInstructions: [
+            { "@type": "HowToStep", text: "Brown the beef and stir in noodles." },
+          ],
+        },
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(raw.rawData.name).toBe("Beef Stroganoff");
+      expect(raw.sourceUrl).toBe("https://www.budgetbytes.com/beef-stroganoff/");
+      expect(raw.extractorVersion).toBe("0.1.0");
+    });
+
+    it("extracts captured HTML without fetching the URL", async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      const html = `<html><body>
+        <h1>Weeknight Tomato Pasta</h1>
+        <h2>Ingredients</h2>
+        <ul><li>12 oz pasta</li><li>1 can tomatoes</li><li>2 Tbsp olive oil</li></ul>
+        <h2>Instructions</h2>
+        <ol><li>Boil the pasta.</li><li>Warm the tomatoes.</li><li>Combine and serve.</li></ol>
+      </body></html>`;
+      const raw = await createUrlImporter().extract({
+        url: "https://example-blog.test/weeknight-tomato-pasta/",
+        html,
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(String(raw.rawData.name)).toMatch(/tomato pasta/i);
+    });
+
     it("uses the LLM when JSON-LD and HTML extract miss", async () => {
       vi.stubGlobal(
         "fetch",

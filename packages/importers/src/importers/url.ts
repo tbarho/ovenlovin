@@ -48,8 +48,16 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
     },
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
-      const { html, finalUrl, layersTried } = await fetchHtml(input.url);
-      const jsonLd = extractJsonLd(html);
+      const captured = Boolean(input.html?.trim() || input.jsonLd);
+      const { html, finalUrl, layersTried } = captured
+        ? { html: input.html ?? "", finalUrl: input.url, layersTried: ["device"] }
+        : await fetchHtml(input.url);
+      const jsonLd =
+        (input.jsonLd
+          ? extractJsonLd(
+              `<script type="application/ld+json">${JSON.stringify(input.jsonLd)}</script>`
+            )
+          : null) ?? extractJsonLd(html);
       const htmlRecipe = jsonLd ? null : extractHtmlRecipe(html);
       const structured =
         jsonLd ??

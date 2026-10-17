@@ -23,6 +23,7 @@ export function isDemoUploadPath(pathname: string): boolean {
 export function isDemoImportPath(pathname: string): boolean {
   return (
     pathname === "/api/v1/recipes/import" ||
+    pathname === "/api/v1/recipes/import/page" ||
     pathname === "/api/v1/recipes/import/photo" ||
     pathname.includes("import_recipe") ||
     pathname.includes("import_recipe_from_image")

@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { ImportBookmarklet } from "@/components/kitchen/ImportBookmarklet";
 import { ApiKeyManager } from "@/components/settings/ApiKeyManager";
 import { DemoAgentPanel } from "@/components/demo/DemoAgentPanel";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
@@ -32,6 +33,7 @@ export default async function SettingsPage() {
           </p>
         </div>
       </div>
+      <ImportBookmarklet origin={origin} />
       {demo && sandbox ? (
         <DemoAgentPanel origin={origin} apiKey={sandbox.apiKeyPlaintext} />
       ) : (

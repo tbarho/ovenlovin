@@ -278,6 +278,33 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     },
   });
 
+  registry.registerPath({
+    method: "post",
+    path: "/recipes/import/page",
+    tags: ["recipes"],
+    summary:
+      "Import a recipe from HTML or JSON-LD captured on the user's device (bookmarklet or iOS Shortcut)",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              url: z.string().url(),
+              html: z.string().optional(),
+              jsonLd: z.unknown().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Imported recipe",
+        content: { "application/json": { schema: recipeSchema } },
+      },
+    },
+  });
+
   const photoImportPreview = z
     .object({
       title: z.string(),
