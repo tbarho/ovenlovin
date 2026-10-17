@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { RecipeDetails } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
-import { BadRequestError } from "@/lib/api/errors";
-import { parseCaptureHash } from "@/lib/import-page";
+import { parseCaptureHash } from "@/lib/import-captured";
 
 export function CaptureFromDevice() {
   const router = useRouter();
@@ -31,13 +30,7 @@ export function CaptureFromDevice() {
         router.replace(`/recipes/${recipe.id}`);
         router.refresh();
       } catch (err) {
-        const message =
-          err instanceof BadRequestError
-            ? (err.detail ?? err.message)
-            : err instanceof Error
-              ? err.message
-              : "Could not import recipe";
-        setError(message);
+        setError(err instanceof Error ? err.message : "Could not import recipe");
       }
     }
 
