@@ -1,4 +1,13 @@
 {
   "title": "Documentation",
-  "pages": ["index", "quickstart", "demo", "connect-your-agent", "concepts", "agents", "reference"]
+  "pages": [
+    "index",
+    "quickstart",
+    "demo",
+    "connect-your-agent",
+    "concepts",
+    "kitchen-invites",
+    "agents",
+    "reference"
+  ]
 }

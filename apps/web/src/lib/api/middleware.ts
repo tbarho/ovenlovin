@@ -73,3 +73,10 @@ export function requireAdminRole(context: RequestContext): void {
     throw new ForbiddenError("Admin or owner role required");
   }
 }
+
+export function requireOwnerRole(context: RequestContext): void {
+  if (context.isBot) return;
+  if (context.membershipRole !== "owner") {
+    throw new ForbiddenError("Owner role required");
+  }
+}

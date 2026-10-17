@@ -113,9 +113,20 @@ All errors follow problem+json format:
 
 ### Households
 
-- `GET /households` - List households (user must be a member)
-- `POST /households` - Create a new household
-- `GET /households/{id}` - Get household details
+- `GET /households` - Get the authenticated household
+- `GET /households/mine` - List kitchens the signed-in user belongs to
+- `POST /households/select` - Switch the active kitchen
+- `GET /households/members` - List kitchen members
+- `PATCH /households/members/{userId}` - Change a member role (owner)
+- `DELETE /households/members/{userId}` - Remove a member (owner)
+- `POST /households/leave` - Leave the active kitchen
+- `GET /households/invites` - List pending invite links (owner or admin)
+- `POST /households/invites` - Create an invite link (owner or admin)
+- `DELETE /households/invites/{id}` - Revoke an invite (owner or admin)
+- `GET /invites/{token}` - Preview an invite (no auth)
+- `POST /invites/{token}/accept` - Accept an invite
+
+See [Kitchen invites](/docs/kitchen-invites).
 
 ## Pagination
 
@@ -126,10 +137,12 @@ GET /recipes?limit=20&cursor=<cursor-token>
 ```
 
 Parameters:
+
 - `limit`: Number of items per page (default: 20, max: 100)
 - `cursor`: Continuation token from previous response
 
 Response includes:
+
 - `items`: Array of results
 - `nextCursor`: Token for next page (null if no more results)
 - `hasMore`: Boolean indicating more results available
@@ -139,11 +152,13 @@ Response includes:
 Many endpoints support filtering:
 
 ### Recipes
+
 ```bash
 GET /recipes?search=chicken&status=published
 ```
 
 ### Meal Plans
+
 ```bash
 GET /meal-plans?weekStart=2024-01-15&weekEnd=2024-01-21
 ```
@@ -162,6 +177,7 @@ curl -X POST \
 ```
 
 Idempotency keys:
+
 - Must be UUIDs
 - Prevent duplicate operations
 - Cached for 24 hours
@@ -186,11 +202,11 @@ curl https://your-app.vercel.app/api/v1/openapi.json
 ### TypeScript (Fetch)
 
 ```typescript
-const response = await fetch('https://your-app.vercel.app/api/v1/recipes', {
+const response = await fetch("https://your-app.vercel.app/api/v1/recipes", {
   headers: {
-    'Authorization': `Bearer ${jwtToken}`,
-    'Content-Type': 'application/json'
-  }
+    Authorization: `Bearer ${jwtToken}`,
+    "Content-Type": "application/json",
+  },
 });
 
 const data = await response.json();

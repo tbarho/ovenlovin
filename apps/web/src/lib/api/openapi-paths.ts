@@ -1115,4 +1115,177 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: { 204: { description: "Revoked" } },
   });
+
+  const inviteRoleDoc = z.enum(["admin", "member", "viewer"]).openapi("InviteRole");
+  const membershipRoleDoc = z
+    .enum(["owner", "admin", "member", "viewer"])
+    .openapi("MembershipRole");
+  const kitchenMemberDoc = z
+    .object({
+      membershipId: z.string().uuid(),
+      userId: z.string().uuid(),
+      email: z.string().email(),
+      displayName: z.string().nullable(),
+      role: membershipRoleDoc,
+      createdAt: z.string().datetime(),
+    })
+    .openapi("KitchenMember");
+  const kitchenInviteDoc = z
+    .object({
+      id: z.string().uuid(),
+      householdId: z.string().uuid(),
+      token: z.string(),
+      url: z.string().optional(),
+      role: inviteRoleDoc,
+      expiresAt: z.string().datetime(),
+      revokedAt: z.string().datetime().nullable().optional(),
+      createdAt: z.string().datetime(),
+    })
+    .openapi("KitchenInvite");
+  const kitchenInvitePreviewDoc = z
+    .object({
+      householdId: z.string().uuid(),
+      householdName: z.string(),
+      role: inviteRoleDoc,
+      expiresAt: z.string().datetime(),
+      status: z.enum(["pending", "expired", "revoked"]),
+    })
+    .openapi("KitchenInvitePreview");
+
+  registry.registerPath({
+    method: "get",
+    path: "/households/mine",
+    tags: ["households"],
+    summary: "List kitchens the signed-in user belongs to",
+    responses: { 200: { description: "Kitchens" } },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/households/select",
+    tags: ["households"],
+    summary: "Switch the active kitchen for this browser session",
+    request: {
+      body: {
+        content: {
+          "application/json": { schema: z.object({ householdId: z.string().uuid() }) },
+        },
+      },
+    },
+    responses: { 200: { description: "Selected kitchen" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/households/members",
+    tags: ["households"],
+    summary: "List kitchen members (signed-in users, not People)",
+    responses: {
+      200: {
+        description: "Members",
+        content: {
+          "application/json": { schema: z.object({ items: z.array(kitchenMemberDoc) }) },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "patch",
+    path: "/households/members/{userId}",
+    tags: ["households"],
+    summary: "Change a kitchen member role (owner only)",
+    request: {
+      params: z.object({ userId: z.string().uuid() }),
+      body: {
+        content: { "application/json": { schema: z.object({ role: membershipRoleDoc }) } },
+      },
+    },
+    responses: { 200: { description: "Updated membership" } },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/households/members/{userId}",
+    tags: ["households"],
+    summary: "Remove a kitchen member (owner only)",
+    request: { params: z.object({ userId: z.string().uuid() }) },
+    responses: { 204: { description: "Removed" } },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/households/leave",
+    tags: ["households"],
+    summary: "Leave the active kitchen",
+    responses: { 200: { description: "Left kitchen" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/households/invites",
+    tags: ["households"],
+    summary: "List pending kitchen invite links (owner or admin)",
+    responses: {
+      200: {
+        description: "Pending invites",
+        content: {
+          "application/json": { schema: z.object({ items: z.array(kitchenInviteDoc) }) },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/households/invites",
+    tags: ["households"],
+    summary: "Create a shareable kitchen invite link (owner or admin)",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              role: inviteRoleDoc.optional(),
+              expiresInDays: z.number().int().min(1).max(30).optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: { 201: { description: "Created invite with url" } },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/households/invites/{id}",
+    tags: ["households"],
+    summary: "Revoke a kitchen invite link (owner or admin)",
+    request: { params: z.object({ id: z.string().uuid() }) },
+    responses: { 200: { description: "Revoked invite" } },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/invites/{token}",
+    tags: ["households"],
+    summary: "Preview a kitchen invite link (no auth)",
+    security: [],
+    request: { params: z.object({ token: z.string() }) },
+    responses: {
+      200: {
+        description: "Invite preview",
+        content: { "application/json": { schema: kitchenInvitePreviewDoc } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/invites/{token}/accept",
+    tags: ["households"],
+    summary: "Accept a kitchen invite for the signed-in user",
+    request: { params: z.object({ token: z.string() }) },
+    responses: { 200: { description: "Joined kitchen" } },
+  });
 }
