@@ -130,7 +130,7 @@ export class HouseholdService extends BaseService {
           (await this.createMembership({
             userId: user.id,
             householdId: orgHousehold.id,
-            role: "owner",
+            role: "member",
           }));
         return { user, household: orgHousehold, membership: member, created: !existing };
       }
