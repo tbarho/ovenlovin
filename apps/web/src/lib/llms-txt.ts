@@ -43,6 +43,7 @@ export function buildLlmsTxt(origin: string): string {
     `- GET/POST /api/v1/recipes`,
     `- GET/PATCH/DELETE /api/v1/recipes/{id}`,
     `- POST /api/v1/recipes/import`,
+    `- POST /api/v1/recipes/import/page`,
     `- GET/POST /api/v1/people`,
     `- GET/POST /api/v1/people/{id}/rules`,
     `- GET/POST /api/v1/people/{id}/preferences`,

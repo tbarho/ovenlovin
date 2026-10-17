@@ -80,7 +80,7 @@ export function importBlockedMessage(
   _statusText?: string
 ): string {
   const layers = Array.isArray(layersTried) ? formatLayersTried(layersTried) : "direct";
-  return `This site blocked the importer (tried ${layers}). Try importing by pasting the recipe text instead.`;
+  return `This site blocked the importer (tried ${layers}). Use the bookmarklet on Import or Settings, or paste the recipe text instead.`;
 }
 
 export function looksLikeBotChallenge(html: string): boolean {

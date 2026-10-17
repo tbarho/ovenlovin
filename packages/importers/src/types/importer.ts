@@ -142,6 +142,10 @@ export interface Importer<TInput> {
  */
 export interface UrlImportInput {
   url: string;
+  /** Page HTML captured on the user's device. Skips the server fetch. */
+  html?: string;
+  /** schema.org Recipe JSON captured on the user's device. */
+  jsonLd?: Record<string, unknown>;
 }
 
 export interface PasteImportInput {

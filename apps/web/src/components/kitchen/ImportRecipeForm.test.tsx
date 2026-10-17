@@ -301,7 +301,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(screen.getByText("No recipe found on this page.")).toBeVisible();
-    expect(screen.queryByText(/blocked/i)).not.toBeInTheDocument();
+    expect(document.querySelector(".import-error")?.textContent).not.toMatch(/blocked/i);
     expect(api).not.toHaveBeenCalled();
   });
 

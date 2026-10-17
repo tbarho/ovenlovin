@@ -19,6 +19,7 @@ import {
 } from "@/lib/photo-import-job";
 import { isImageFile } from "@/lib/photo-import-review";
 import { PhotoImportDialog } from "./PhotoImportDialog";
+import { ImportBookmarklet } from "./ImportBookmarklet";
 
 function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -336,6 +337,7 @@ export function ImportRecipeForm() {
         ) : null}
       </form>
       <PhotoImportDialog open={photoOpen} onClose={closePhoto} onTypeOrPaste={typeOrPaste} />
+      <ImportBookmarklet />
     </>
   );
 }
