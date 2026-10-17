@@ -120,9 +120,7 @@ describe("InviteService", () => {
 
   it("previews an invite and accepts it for a new member", async () => {
     const pending = inviteRow();
-    db.select
-      .mockReturnValueOnce(chain([pending]))
-      .mockReturnValueOnce(chain([householdRow]));
+    db.select.mockReturnValueOnce(chain([pending])).mockReturnValueOnce(chain([householdRow]));
 
     const preview = await service.previewInvite(pending.token, new Date("2026-10-17"));
     expect(preview).toMatchObject({
@@ -182,9 +180,7 @@ describe("InviteService", () => {
   });
 
   it("rejects expired and revoked links", async () => {
-    db.select.mockReturnValueOnce(
-      chain([inviteRow({ expiresAt: new Date("2026-01-01") })])
-    );
+    db.select.mockReturnValueOnce(chain([inviteRow({ expiresAt: new Date("2026-01-01") })]));
     await expect(
       service.acceptInvite(
         "olinv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -193,9 +189,7 @@ describe("InviteService", () => {
       )
     ).rejects.toThrow(/expired/);
 
-    db.select.mockReturnValueOnce(
-      chain([inviteRow({ revokedAt: new Date("2026-10-02") })])
-    );
+    db.select.mockReturnValueOnce(chain([inviteRow({ revokedAt: new Date("2026-10-02") })]));
     await expect(
       service.acceptInvite(
         "olinv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

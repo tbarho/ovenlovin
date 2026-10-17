@@ -137,7 +137,12 @@ export class InviteService extends BaseService {
     token: string,
     userId: string,
     now = new Date()
-  ): Promise<{ membership: Membership; alreadyMember: boolean; householdId: string; role: InviteRole }> {
+  ): Promise<{
+    membership: Membership;
+    alreadyMember: boolean;
+    householdId: string;
+    role: InviteRole;
+  }> {
     const invite = await this.getInviteByToken(token);
     if (!invite) {
       throw new HouseholdAccessError("Invite not found.", "not_found");
