@@ -13,6 +13,7 @@ import {
   inviteStatus,
   isInviteToken,
   isSoleOwner,
+  preferredKitchenId,
   selectActiveMembership,
 } from "./kitchen-access";
 
@@ -57,6 +58,20 @@ describe("kitchen access policy", () => {
     expect(isSoleOwner(members, "parent-a")).toBe(true);
     expect(isSoleOwner(members, "parent-b")).toBe(false);
     expect(isSoleOwner([...members, { role: "owner", userId: "other" }], "parent-a")).toBe(false);
+  });
+
+  it("prefers a pending invite kitchen over the last selected kitchen", () => {
+    expect(
+      preferredKitchenId({
+        selectedHouseholdId: "hhhhhhh1-1111-4111-8111-111111111111",
+        pendingInviteHouseholdId: "hhhhhhh2-1111-4111-8111-111111111111",
+      })
+    ).toBe("hhhhhhh2-1111-4111-8111-111111111111");
+    expect(
+      preferredKitchenId({
+        selectedHouseholdId: "hhhhhhh1-1111-4111-8111-111111111111",
+      })
+    ).toBe("hhhhhhh1-1111-4111-8111-111111111111");
   });
 
   it("selects a preferred kitchen when the user belongs to it", () => {
