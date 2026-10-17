@@ -6,7 +6,7 @@ import { KitchenMembers } from "@/components/settings/KitchenMembers";
 import { KitchenSwitcher } from "@/components/settings/KitchenSwitcher";
 import { DemoAgentPanel } from "@/components/demo/DemoAgentPanel";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
-import { findDemoSandboxByHousehold } from "@/lib/demo/sandbox";
+import { getDemoSandboxForSession } from "@/lib/demo/session";
 import { shortBuildSha } from "@/lib/build-sha";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { resolveOrigin } from "@/lib/origin";
@@ -15,7 +15,7 @@ export default async function SettingsPage() {
   const context = await requireKitchenContext();
 
   const demo = isDemoModeEnabled();
-  const sandbox = demo ? await findDemoSandboxByHousehold(context.householdId) : null;
+  const sandbox = demo ? await getDemoSandboxForSession() : null;
   const origin = resolveOrigin(await headers());
   const buildSha = shortBuildSha();
   const canManageInvites = context.membershipRole === "owner" || context.membershipRole === "admin";

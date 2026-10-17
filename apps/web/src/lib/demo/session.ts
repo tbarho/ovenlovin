@@ -1,10 +1,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { HouseholdService, InviteService, inviteStatus, preferredKitchenId } from "@ovenlovin/core";
+import { getDatabase } from "@ovenlovin/db";
 import { UnauthorizedError } from "@/lib/api/errors";
 import type { RequestContext } from "@/lib/api/middleware";
+import { readKitchenCookies } from "@/lib/kitchen-selection";
 import { DEMO_ENTER_PATH, safeDemoEnterNext } from "./enter";
 import { DEMO_COOKIE_NAME } from "./fixture";
-import { findDemoSandboxById, sandboxToSession } from "./sandbox";
+import { resolveSandboxSession } from "./resolve-kitchen";
+import { findDemoSandboxById, type DemoSandboxRecord } from "./sandbox";
 
 export async function getDemoSessionContext(options?: {
   allowRedirect?: boolean;
@@ -18,17 +22,52 @@ export async function getDemoSessionContext(options?: {
     }
     redirect(`${DEMO_ENTER_PATH}?next=${encodeURIComponent(safeDemoEnterNext("/recipes"))}`);
   }
-  return sandboxToSession(sandbox);
+
+  const db = getDatabase();
+  const households = new HouseholdService(db);
+  const { preferredHouseholdId, inviteToken } = readKitchenCookies(store);
+  let pendingInviteHouseholdId: string | null = null;
+  if (inviteToken) {
+    const invite = await new InviteService(db).getInviteByToken(inviteToken);
+    if (invite && inviteStatus(invite) === "pending") {
+      const invited = await households.getHousehold(invite.householdId);
+      if (invited) {
+        pendingInviteHouseholdId = invite.householdId;
+        const memberships = await households.getMembershipsForUser(sandbox.userId);
+        if (!memberships.some((item) => item.householdId === invite.householdId)) {
+          await households.createMembership({
+            userId: sandbox.userId,
+            householdId: invite.householdId,
+            role: invite.role,
+          });
+        }
+      }
+    }
+  }
+
+  const memberships = await households.getMembershipsForUser(sandbox.userId);
+  return resolveSandboxSession({
+    sandbox,
+    memberships,
+    preferredHouseholdId: preferredKitchenId({
+      selectedHouseholdId: preferredHouseholdId,
+      pendingInviteHouseholdId,
+    }),
+  });
+}
+
+export async function getDemoSandboxForSession(): Promise<DemoSandboxRecord | null> {
+  const store = await cookies();
+  const cookieId = store.get(DEMO_COOKIE_NAME)?.value;
+  if (!cookieId) return null;
+  return findDemoSandboxById(cookieId);
 }
 
 export async function getDemoAgentCredentials(): Promise<{
   apiKey: string;
   expiresAt: string;
 } | null> {
-  const store = await cookies();
-  const cookieId = store.get(DEMO_COOKIE_NAME)?.value;
-  if (!cookieId) return null;
-  const sandbox = await findDemoSandboxById(cookieId);
+  const sandbox = await getDemoSandboxForSession();
   if (!sandbox) return null;
   return {
     apiKey: sandbox.apiKeyPlaintext,

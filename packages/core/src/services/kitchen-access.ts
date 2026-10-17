@@ -72,6 +72,14 @@ export function isSoleOwner(
   return owners.length === 1 && owners[0]?.userId === userId;
 }
 
+/** A pending invite kitchen wins so accept lands there; otherwise the last selected kitchen. */
+export function preferredKitchenId(input: {
+  selectedHouseholdId?: string | null;
+  pendingInviteHouseholdId?: string | null;
+}): string | null {
+  return input.pendingInviteHouseholdId ?? input.selectedHouseholdId ?? null;
+}
+
 export function selectActiveMembership(
   memberships: Membership[],
   preferredHouseholdId?: string | null
