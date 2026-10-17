@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 
 export {
   CHROME_USER_AGENT,
+  FIREFOX_USER_AGENT,
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
   RecipeNotFoundError,

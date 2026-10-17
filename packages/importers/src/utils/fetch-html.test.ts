@@ -82,6 +82,16 @@ describe("page classification", () => {
     expect(looksLikeBotChallenge(EXAMPLE_COM)).toBe(false);
   });
 
+  it("does not treat a Food Network 404 chrome page as a recipe", () => {
+    const notFound = `<!DOCTYPE HTML><html lang="en"><head>
+      <title>Page Not Found | Food Network</title>
+      <script type="application/ld+json">[{"@type":"WebSite","name":"Food Network"}]</script>
+      </head><body><h1>Page Not Found</h1>
+      <p>The Recipe you are looking for has been moved. Browse more recipes on Food Network.</p>
+      </body></html>`;
+    expect(isUsableRecipeHtml(notFound)).toBe(false);
+  });
+
   it("lists tried layers in the blocked message", () => {
     expect(importBlockedMessage(["direct", "google-translate", "jina"])).toBe(
       "This site blocked the importer (tried direct, google-translate, jina). Use the bookmarklet on Import or Settings, or paste the recipe text instead."
@@ -111,11 +121,12 @@ describe("fetchHtml layers", () => {
     expect(result.layersTried).toEqual(["direct"]);
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
     const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
-    expect(headers["User-Agent"]).toMatch(/Mozilla\/5.0/);
-    expect(headers["sec-ch-ua"]).toMatch(/Chromium/);
-    expect(headers["sec-fetch-mode"]).toBe("navigate");
+    expect(headers["User-Agent"]).toMatch(/Firefox\/144/);
+    expect(headers["Accept-Encoding"]).toMatch(/gzip/);
+    expect(headers["Sec-Fetch-Mode"]).toBe("navigate");
     expect(headers["Accept-Language"]).toMatch(/en-US/);
-    expect(FULL_BROWSER_HEADERS["sec-fetch-dest"]).toBe("document");
+    expect(headers["sec-ch-ua"]).toBeUndefined();
+    expect(FULL_BROWSER_HEADERS["Sec-Fetch-Dest"]).toBe("document");
   });
 
   it("returns example.com HTML instead of calling it blocked", async () => {
