@@ -55,4 +55,4 @@ Public / accept:
 - `manage_kitchen_invites` - `list`, `create`, `revoke`
 - `manage_kitchen_members` - `list`, `update_role`, `remove`, `leave`
 
-API keys are household-scoped and can manage invites for that kitchen. Share the returned `path` (`/invite/<token>`); the server does not send email.
+API keys are household-scoped. They may list, create, and revoke invite links for the kitchen they belong to (same as MCP `manage_kitchen_invites`). They cannot accept an invite, switch kitchens, leave, or change members: those need a signed-in user. Share the returned `path` (`/invite/<token>`); the server does not send email.

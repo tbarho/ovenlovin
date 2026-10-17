@@ -1180,6 +1180,46 @@
         }
       }
     },
+    "/recipes/import/page": {
+      "post": {
+        "tags": ["recipes"],
+        "summary": "Import a recipe from HTML or JSON-LD captured on the user's device (bookmarklet or iOS Shortcut)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "html": {
+                    "type": "string"
+                  },
+                  "jsonLd": {
+                    "nullable": true
+                  }
+                },
+                "required": ["url"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Imported recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/recipes/import/photo": {
       "post": {
         "tags": ["recipes"],
@@ -2784,7 +2824,7 @@
     "/households/invites": {
       "get": {
         "tags": ["households"],
-        "summary": "List pending kitchen invite links (owner or admin)",
+        "summary": "List pending kitchen invite links (owner, admin, or API key)",
         "responses": {
           "200": {
             "description": "Pending invites",
@@ -2809,7 +2849,7 @@
       },
       "post": {
         "tags": ["households"],
-        "summary": "Create a shareable kitchen invite link (owner or admin)",
+        "summary": "Create a shareable kitchen invite link (owner, admin, or API key)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2839,7 +2879,7 @@
     "/households/invites/{id}": {
       "delete": {
         "tags": ["households"],
-        "summary": "Revoke a kitchen invite link (owner or admin)",
+        "summary": "Revoke a kitchen invite link (owner, admin, or API key)",
         "parameters": [
           {
             "schema": {

@@ -1225,7 +1225,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "get",
     path: "/households/invites",
     tags: ["households"],
-    summary: "List pending kitchen invite links (owner or admin)",
+    summary: "List pending kitchen invite links (owner, admin, or API key)",
     responses: {
       200: {
         description: "Pending invites",
@@ -1240,7 +1240,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "post",
     path: "/households/invites",
     tags: ["households"],
-    summary: "Create a shareable kitchen invite link (owner or admin)",
+    summary: "Create a shareable kitchen invite link (owner, admin, or API key)",
     request: {
       body: {
         content: {
@@ -1260,7 +1260,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "delete",
     path: "/households/invites/{id}",
     tags: ["households"],
-    summary: "Revoke a kitchen invite link (owner or admin)",
+    summary: "Revoke a kitchen invite link (owner, admin, or API key)",
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: { 200: { description: "Revoked invite" } },
   });
