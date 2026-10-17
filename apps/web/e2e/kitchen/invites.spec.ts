@@ -9,14 +9,16 @@ test.describe("kitchen invites", () => {
     await expect(page.getByText(/ty/i).first()).toBeVisible();
     await expect(page.getByLabel("Role for Ty")).toHaveValue("owner");
 
-    await expect(page.getByRole("heading", { name: "Invite links" })).toBeVisible();
-    await page.getByRole("button", { name: "Create invite link" }).click();
-    await expect(page.getByText("Copy this link and send it yourself")).toBeVisible();
-    const revoke = page.getByRole("button", { name: "Revoke" }).first();
-    await expect(revoke).toBeVisible();
+    const invitePanel = page.locator('[aria-labelledby="kitchen-invites-heading"]');
+    await expect(invitePanel.getByRole("heading", { name: "Invite links" })).toBeVisible();
+    await invitePanel.getByRole("button", { name: "Create invite link" }).click();
+    await expect(invitePanel.getByText("Copy this link and send it yourself")).toBeVisible();
+    const revoke = invitePanel.getByRole("button", { name: "Revoke" });
+    await expect(revoke).toHaveCount(1);
     page.once("dialog", (dialog) => dialog.accept());
     await revoke.click();
-    await expect(page.getByRole("button", { name: "Revoke" })).toHaveCount(0);
+    await expect(invitePanel.getByRole("button", { name: "Revoke" })).toHaveCount(0);
+    await expect(invitePanel.getByText("No pending invite links.")).toBeVisible();
   });
 
   test("invite link preview and accept land in the same kitchen", async ({ page, request }) => {
