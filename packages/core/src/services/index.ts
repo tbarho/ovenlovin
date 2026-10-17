@@ -1,5 +1,7 @@
 export * from "./base";
 export * from "./households";
+export * from "./kitchen-access";
+export * from "./invites";
 export * from "./people";
 export * from "./plans";
 export * from "./recipes";
