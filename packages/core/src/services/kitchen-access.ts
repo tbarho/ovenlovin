@@ -1,6 +1,7 @@
 import type { InviteRole, InviteStatus, Membership, MembershipRole } from "../schemas/households";
 
-export type HouseholdAccessErrorCode = "forbidden" | "not_found" | "conflict" | "expired" | "invalid";
+export type HouseholdAccessErrorCode =
+  "forbidden" | "not_found" | "conflict" | "expired" | "invalid";
 
 export class HouseholdAccessError extends Error {
   readonly code: HouseholdAccessErrorCode;
