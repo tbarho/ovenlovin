@@ -1,0 +1,47 @@
+import { expect, test } from "@playwright/test";
+
+test.describe("kitchen invites", () => {
+  test("settings lists members and can create then revoke an invite", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kitchen members" })).toBeVisible();
+    await expect(page.getByText(/ty/i).first()).toBeVisible();
+    await expect(page.getByText("owner").first()).toBeVisible();
+
+    await expect(page.getByRole("heading", { name: "Invite links" })).toBeVisible();
+    await page.getByRole("button", { name: "Create invite link" }).click();
+    await expect(page.getByText("Copy this link and send it yourself")).toBeVisible();
+    const revoke = page.getByRole("button", { name: "Revoke" }).first();
+    await expect(revoke).toBeVisible();
+    page.once("dialog", (dialog) => dialog.accept());
+    await revoke.click();
+    await expect(page.getByRole("button", { name: "Revoke" })).toHaveCount(0);
+  });
+
+  test("invite link preview and accept land in the same kitchen", async ({ page, request }) => {
+    const created = await request.post("/api/v1/households/invites", {
+      data: { role: "member", expiresInDays: 7 },
+    });
+    expect(created.status(), await created.text()).toBe(201);
+    const invite = (await created.json()) as { id?: string; token?: string };
+    expect(invite.token).toMatch(/^olinv_[a-f0-9]+$/);
+
+    const preview = await request.get(`/api/v1/invites/${invite.token}`);
+    expect(preview.status()).toBe(200);
+    const body = (await preview.json()) as { householdName?: string; status?: string };
+    expect(body.status).toBe("pending");
+    expect(body.householdName).toMatch(/kitchen/i);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/invite/${invite.token}`);
+    await expect(page.getByRole("heading", { name: /join /i })).toBeVisible();
+    await page.getByRole("button", { name: /join /i }).click();
+    await expect(page.getByRole("heading", { name: "Recipes" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /weeknight dinners/i })).toBeVisible();
+
+    if (invite.id) {
+      await request.delete(`/api/v1/households/invites/${invite.id}`);
+    }
+  });
+});

@@ -244,6 +244,8 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kitchen members" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Invite links" })).toBeVisible();
   await expect(page.getByText(/grok kitchen key/i)).toBeVisible();
   await shot(page, width, "settings");
 }

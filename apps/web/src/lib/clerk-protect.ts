@@ -11,6 +11,7 @@ export function isClerkProtectExempt(pathname: string): boolean {
   const prefixes = [
     "/sign-in",
     "/sign-up",
+    "/invite",
     "/api/v1",
     "/api/cron",
     "/api/demo",
