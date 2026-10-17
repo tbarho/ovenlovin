@@ -172,7 +172,12 @@ export class HouseholdService extends BaseService {
     if (selected) {
       const householdRecord = await this.getHousehold(selected.householdId);
       if (householdRecord) {
-        return { user: userRecord, household: householdRecord, membership: selected, created: false };
+        return {
+          user: userRecord,
+          household: householdRecord,
+          membership: selected,
+          created: false,
+        };
       }
     }
 
