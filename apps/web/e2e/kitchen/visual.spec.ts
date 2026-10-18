@@ -114,6 +114,17 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto("/recipes");
   await expect(page.getByRole("heading", { name: "Recipes" })).toBeVisible();
+  if (width === 390 || width === 1440) {
+    const firstCard = page.locator("a.recipe-card").first();
+    await expect(firstCard).toBeVisible();
+    const box = await firstCard.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box && viewport).toBeTruthy();
+    if (box && viewport) {
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeLessThan(viewport.height);
+    }
+  }
   await shot(page, width, "recipes-list");
   if (width === 390) {
     await page.getByRole("button", { name: "Open kitchen menu" }).click();
