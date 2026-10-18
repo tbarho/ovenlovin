@@ -3,6 +3,7 @@
 import { useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useSheetOpenEffects } from "@/components/sheet/useSheetOpenEffects";
+import { useSheetSwipeDismiss } from "@/components/sheet/useSheetSwipeDismiss";
 import { useSheetViewport } from "@/components/sheet/useSheetViewport";
 
 export function BottomSheet({
@@ -11,12 +12,18 @@ export function BottomSheet({
   onClose,
   children,
   layout = "sheet",
+  id,
+  className,
+  swipeToDismiss = false,
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
   layout?: "sheet" | "picker";
+  id?: string;
+  className?: string;
+  swipeToDismiss?: boolean;
 }) {
   const titleId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -24,14 +31,20 @@ export function BottomSheet({
 
   useSheetOpenEffects({ open, onClose, panelRef });
   useSheetViewport({ open, rootRef, panelRef });
+  useSheetSwipeDismiss({ open, onClose, panelRef, enabled: swipeToDismiss });
 
   if (!open) return null;
 
   const tree = (
-    <div ref={rootRef} className="sheet-root" data-sheet={layout}>
+    <div
+      ref={rootRef}
+      className={["sheet-root", className].filter(Boolean).join(" ")}
+      data-sheet={layout}
+    >
       <button type="button" className="sheet-backdrop" aria-label="Close" onClick={onClose} />
       <div
         ref={panelRef}
+        id={id}
         className="sheet-panel"
         role="dialog"
         aria-modal="true"

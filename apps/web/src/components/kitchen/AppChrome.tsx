@@ -5,6 +5,7 @@ import { brandPublicPath } from "@ovenlovin/brand";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { shortBuildSha } from "@/lib/build-sha";
 import { DemoBanner } from "@/components/demo/DemoBanner";
+import { KitchenMenu } from "./KitchenMenu";
 import { KitchenNav } from "./KitchenNav";
 import { KitchenPageTitle } from "./KitchenPageTitle";
 
@@ -18,9 +19,10 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 function Account() {
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) return null;
   return (
     <div className="nav-user">
-      {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? <UserButton /> : null}
+      <UserButton />
     </div>
   );
 }
@@ -41,6 +43,9 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <Brand />
           <KitchenPageTitle />
           <KitchenNav />
+          <KitchenMenu>
+            <Account />
+          </KitchenMenu>
           <Account />
         </div>
       </header>
@@ -50,7 +55,6 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           Build {buildSha}
         </p>
       ) : null}
-      <KitchenNav variant="tabs" />
     </div>
   );
 }

@@ -11,16 +11,19 @@ test.describe("mobile kitchen chrome", () => {
       await page.goto("/recipes");
       await page.waitForLoadState("networkidle");
 
-      const tabbar = page.locator(".kitchen-tabbar");
+      const menu = page.getByRole("button", { name: "Open kitchen menu" });
       const topbar = page.locator(".kitchen-topbar");
-      const inKitchen = await tabbar.count();
+      const inKitchen = await menu.count();
 
       if (inKitchen > 0) {
-        await expect(tabbar).toBeVisible();
+        await expect(page.locator(".kitchen-tabbar")).toHaveCount(0);
+        await expect(menu).toBeVisible();
         await expect(page.locator(".kitchen-shell .kitchen-nav")).toBeHidden();
         await expect(topbar.getByRole("link", { name: "OvenLovin" })).toBeVisible();
         await expect(topbar.locator(".brand-wordmark")).toBeHidden();
         await expect(topbar.locator(".brand img")).toBeVisible();
+        await menu.click();
+        await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
         await expect(page.getByRole("navigation", { name: "Kitchen" })).toBeVisible();
       } else {
         await expect(page.getByRole("heading", { name: /sign in|recipes/i }).first()).toBeVisible();

@@ -78,4 +78,32 @@ describe("BottomSheet", () => {
       within(screen.getByRole("dialog")).getByRole("button", { name: "Close" })
     );
   });
+
+  it("traps Tab inside the dialog and restores focus on close", async () => {
+    const user = userEvent.setup();
+    function RestoreHarness() {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Open details
+          </button>
+          <BottomSheet open={open} title="Edit details" onClose={() => setOpen(false)}>
+            <label>
+              Title
+              <input defaultValue="Pasta" />
+            </label>
+          </BottomSheet>
+        </>
+      );
+    }
+    render(<RestoreHarness />);
+    const dialog = screen.getByRole("dialog");
+    const title = screen.getByLabelText("Title");
+    expect(title).toHaveFocus();
+    await user.tab();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

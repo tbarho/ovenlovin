@@ -15,10 +15,6 @@
   background: transparent;
 }
 
-.kitchen-shell:has(.olp-sheet-root) .kitchen-tabbar {
-  display: none;
-}
-
 /* Tokens stay; do not inherit the page-shell layout onto a portaled overlay. */
 .olp.olp-sheet-root {
   z-index: 80;

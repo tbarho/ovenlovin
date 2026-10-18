@@ -115,6 +115,12 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await page.goto("/recipes");
   await expect(page.getByRole("heading", { name: "Recipes" })).toBeVisible();
   await shot(page, width, "recipes-list");
+  if (width === 390) {
+    await page.getByRole("button", { name: "Open kitchen menu" }).click();
+    await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
+    await shot(page, width, "sheet-kitchen-menu");
+    await closeSheet(page);
+  }
   await openSheet(page, /new cookbook/i);
   await shot(page, width, "sheet-new-cookbook");
   await closeSheet(page);
