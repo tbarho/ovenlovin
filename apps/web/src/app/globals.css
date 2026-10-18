@@ -2201,6 +2201,49 @@ select {
   font-size: var(--text-sm);
 }
 
+.kitchen-shell .recipes-index-head {
+  margin-bottom: var(--space-2);
+}
+
+.kitchen-shell .recipes-index-head .recipe-actions {
+  align-items: center;
+}
+
+.kitchen-shell .cookbook-shelf {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 10px;
+  margin: 0 0 var(--space-3);
+  padding: 0 0 4px;
+  scrollbar-width: thin;
+}
+
+.kitchen-shell .cookbook-shelf .cookbook-card {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  flex: 0 0 220px;
+  min-width: 200px;
+  padding: 8px;
+  gap: 10px;
+}
+
+.kitchen-shell .cookbook-shelf .mosaic {
+  width: 64px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+}
+
+.kitchen-shell .cookbook-shelf .cookbook-card h2 {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.kitchen-shell .cookbook-shelf .muted {
+  font-size: 12px;
+}
+
 .recipe-grid,
 .cookbook-grid {
   grid-template-columns: 1fr;

@@ -104,10 +104,13 @@ export function RecipesKitchen({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<"unfiled" | "all">(cookbooks.length > 0 ? "unfiled" : "all");
+  const [scope, setScope] = useState<"unfiled" | "all">("all");
   const [deleted, setDeleted] = useState<RecipeDeleteToast | null>(null);
   const close = useCallback(() => setOpen(false), []);
+  const emptyKitchen = recipes.length === 0;
+  const showImport = emptyKitchen || importOpen;
 
   useEffect(() => {
     setDeleted(readRecipeDeleteToast());
@@ -132,59 +135,78 @@ export function RecipesKitchen({
 
   return (
     <>
-      <KitchenTour />
-      <div className="kitchen-head">
+      {emptyKitchen ? <KitchenTour /> : null}
+      <div className="kitchen-head recipes-index-head">
         <div>
           <h1>Recipes</h1>
           <p className="muted">
-            Import a recipe. Add it to a cookbook later if you want it on a shelf.
+            {emptyKitchen
+              ? "Import a recipe. Add it to a cookbook later if you want it on a shelf."
+              : "Search your recipes, or add another."}
           </p>
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
+          <button
+            className="btn primary"
+            type="button"
+            aria-expanded={showImport}
+            aria-controls="add-recipe-panel"
+            onClick={() => {
+              if (!emptyKitchen) setImportOpen((current) => !current);
+            }}
+          >
+            Add recipe
+          </button>
           <button className="btn" type="button" onClick={() => setOpen(true)}>
             New cookbook
           </button>
         </div>
       </div>
-      <ImportRecipeForm />
+      {showImport ? (
+        <div id="add-recipe-panel">
+          <ImportRecipeForm />
+        </div>
+      ) : null}
 
-      <div className="recipe-browse">
-        <label className="field">
-          <span className="field-label">Search recipes</span>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Pesto, soup, cookies…"
-          />
-        </label>
-        {cookbooks.length > 0 ? (
-          <div className="tabs recipe-scope" role="tablist" aria-label="Recipe shelf">
-            <button
-              type="button"
-              className="tab"
-              role="tab"
-              aria-selected={scope === "unfiled"}
-              onClick={() => setScope("unfiled")}
-            >
-              Unfiled
-            </button>
-            <button
-              type="button"
-              className="tab"
-              role="tab"
-              aria-selected={scope === "all"}
-              onClick={() => setScope("all")}
-            >
-              All recipes
-            </button>
-          </div>
-        ) : null}
-      </div>
+      {emptyKitchen ? null : (
+        <div className="recipe-browse">
+          <label className="field">
+            <span className="field-label">Search recipes</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Pesto, soup, cookies…"
+            />
+          </label>
+          {cookbooks.length > 0 ? (
+            <div className="tabs recipe-scope" role="tablist" aria-label="Recipe shelf">
+              <button
+                type="button"
+                className="tab"
+                role="tab"
+                aria-selected={scope === "unfiled"}
+                onClick={() => setScope("unfiled")}
+              >
+                Unfiled
+              </button>
+              <button
+                type="button"
+                className="tab"
+                role="tab"
+                aria-selected={scope === "all"}
+                onClick={() => setScope("all")}
+              >
+                All recipes
+              </button>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {cookbooks.length > 0 ? (
         <>
           <p className="section-label">Cookbooks</p>
-          <div className="cookbook-grid">
+          <div className="cookbook-grid cookbook-shelf">
             {cookbooks.map((cookbook) => (
               <Link
                 className="cookbook-card"
@@ -205,13 +227,15 @@ export function RecipesKitchen({
       ) : null}
 
       {listed.length === 0 ? (
-        <p className="empty-note">
-          {query.trim()
-            ? "No recipes match that search."
-            : cookbooks.length > 0
-              ? "Recipes not in a cookbook yet will show up here. Import another, or open a book above."
-              : "No recipes yet. Import one above to start cooking."}
-        </p>
+        emptyKitchen && !query.trim() ? null : (
+          <p className="empty-note">
+            {query.trim()
+              ? "No recipes match that search."
+              : cookbooks.length > 0
+                ? "Recipes not in a cookbook yet will show up here. Import another, or open a book above."
+                : "No recipes yet. Import one above to start cooking."}
+          </p>
+        )
       ) : (
         <>
           <p className="section-label">{sectionLabel}</p>
