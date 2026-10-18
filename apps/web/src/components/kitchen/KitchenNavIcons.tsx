@@ -63,3 +63,22 @@ export function SettingsIcon() {
     </svg>
   );
 }
+
+export function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M5 6.25h14v1.9H5v-1.9Zm0 4.8h14v1.9H5v-1.9Zm0 4.8h14v1.9H5v-1.9Z"
+      />
+    </svg>
+  );
+}
+
+export const kitchenNavIcons = {
+  Recipes: RecipesIcon,
+  Plan: PlanIcon,
+  List: ListIcon,
+  People: PeopleIcon,
+  Settings: SettingsIcon,
+} as const;

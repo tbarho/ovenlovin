@@ -2030,13 +2030,6 @@ select {
   }
 }
 
-body:has(.sheet-root) .kitchen-tabbar,
-body:has(.olp-sheet-root) .kitchen-tabbar,
-.kitchen-shell:has(.sheet-root) .kitchen-tabbar,
-.kitchen-shell:has(.olp-sheet-root) .kitchen-tabbar {
-  display: none;
-}
-
 .kitchen-build {
   margin: 0 auto 8px;
   max-width: var(--max);
@@ -2045,13 +2038,17 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
   font-size: 12px;
 }
 
-.kitchen-tabbar {
+.kitchen-menu {
   display: none;
 }
 
 @media (max-width: 860px) {
   .kitchen-shell .kitchen-nav {
     display: none;
+  }
+
+  .kitchen-topbar {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .kitchen-topbar .nav-inner {
@@ -2078,76 +2075,99 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     margin-right: auto;
   }
 
-  .kitchen-shell .kitchen {
-    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  .kitchen-topbar .nav-user {
+    display: none;
   }
 
-  .kitchen-tabbar {
+  .kitchen-menu {
     display: block;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 25;
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: saturate(180%) blur(16px);
-    -webkit-backdrop-filter: saturate(180%) blur(16px);
-    border-top: 1px solid var(--line);
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    margin-left: auto;
   }
 
-  .kitchen-tabbar-pending {
-    margin: 0;
-    padding: 2px 8px 0;
-    text-align: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--orange-deep);
-  }
-
-  .kitchen-tabbar a[aria-busy="true"] {
-    color: var(--orange-deep);
-  }
-
-  .kitchen-tabbar ul {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-    max-width: var(--max);
-    margin: 0 auto;
-    padding: 0;
-    list-style: none;
-  }
-
-  .kitchen-tabbar a {
-    display: flex;
-    flex-direction: column;
+  .kitchen-menu-trigger {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    min-height: 48px;
-    padding: 6px 4px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
     border-radius: 12px;
-    color: var(--faint);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    line-height: 1.1;
-  }
-
-  .kitchen-tabbar a:hover {
+    background: transparent;
     color: var(--ink);
+    cursor: pointer;
+  }
+
+  .kitchen-menu-trigger:hover {
     background: var(--cream);
   }
 
-  .kitchen-tabbar a[aria-current="page"] {
-    color: var(--orange-deep);
-    background: var(--cream);
+  .kitchen-shell .kitchen {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   }
+}
 
-  .kitchen-tabbar svg {
-    display: block;
-  }
+.kitchen-menu-nav ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kitchen-menu-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.kitchen-menu-nav a:hover {
+  color: var(--ink);
+  background: var(--cream);
+}
+
+.kitchen-menu-nav a[aria-current="page"] {
+  color: var(--orange-deep);
+  background: var(--cream);
+}
+
+.kitchen-menu-nav svg {
+  display: block;
+  flex: none;
+}
+
+.kitchen-menu-sheet .sheet-panel {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+.kitchen-menu-sheet .sheet-close {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.kitchen-menu-account {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding-top: 8px;
+  border-top: 1px solid #eaeaea;
+}
+
+.kitchen-menu-account:not(:has(*)) {
+  display: none;
+}
+
+.kitchen-menu-sheet .kitchen-switcher {
+  padding-top: 4px;
 }
 
 /* Signed-in kitchen: Vercel-white shell, grids, and recipe layout. */
@@ -2732,8 +2752,7 @@ body:has(.olp-sheet-root) .kitchen-tabbar,
     padding: 16px 8px 4px;
   }
 
-  .kitchen-topbar,
-  .kitchen-shell .kitchen-tabbar {
+  .kitchen-topbar {
     display: none;
   }
 

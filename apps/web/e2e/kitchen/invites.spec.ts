@@ -6,7 +6,6 @@ test.describe("kitchen invites", () => {
     await page.goto("/settings");
     await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kitchen members" })).toBeVisible();
-    await expect(page.getByText(/ty/i).first()).toBeVisible();
     await expect(page.getByLabel("Role for Ty")).toHaveValue("owner");
 
     const invitePanel = page.locator('[aria-labelledby="kitchen-invites-heading"]');
