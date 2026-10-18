@@ -83,9 +83,19 @@ describe("KitchenMenu", () => {
     expect(trigger).toHaveFocus();
 
     await user.click(trigger);
-    const people = screen.getByRole("link", { name: "People" });
-    people.addEventListener("click", (event) => event.preventDefault());
-    await user.click(people);
+    const recipes = screen.getByRole("link", { name: "Recipes" });
+    recipes.addEventListener("click", (event) => event.preventDefault());
+    await user.click(recipes);
+    expect(screen.queryByRole("dialog", { name: "Menu" })).not.toBeInTheDocument();
+  });
+
+  it("closes after the route changes", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<KitchenMenu />);
+    await user.click(screen.getByRole("button", { name: "Open kitchen menu" }));
+    expect(screen.getByRole("dialog", { name: "Menu" })).toBeVisible();
+    pathname.mockReturnValue("/people");
+    rerender(<KitchenMenu />);
     expect(screen.queryByRole("dialog", { name: "Menu" })).not.toBeInTheDocument();
   });
 

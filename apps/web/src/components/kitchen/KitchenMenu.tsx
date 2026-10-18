@@ -61,7 +61,7 @@ export function KitchenMenu({ children }: { children?: ReactNode }) {
                   <Link
                     href={link.href}
                     aria-current={current ? "page" : undefined}
-                    onClick={close}
+                    onClick={current ? close : undefined}
                   >
                     <Icon />
                     <span>{link.label}</span>
