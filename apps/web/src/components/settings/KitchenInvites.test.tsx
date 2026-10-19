@@ -21,7 +21,7 @@ describe("KitchenInvites", () => {
 
   it("shows the empty invite state in the panel after revoke succeeds", async () => {
     const user = userEvent.setup();
-    let items: typeof pendingInvite[] = [];
+    let items: (typeof pendingInvite)[] = [];
     let holdReload: Promise<void> | undefined;
     let releaseReload: (() => void) | undefined;
 

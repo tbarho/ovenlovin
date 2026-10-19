@@ -1,10 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("kitchen invites", () => {
-  test("settings lists members and can create then revoke an invite", async ({
-    page,
-    request,
-  }) => {
+  test("settings lists members and can create then revoke an invite", async ({ page, request }) => {
     test.setTimeout(90_000);
     const pending = await request.get("/api/v1/households/invites");
     expect(pending.ok(), await pending.text()).toBeTruthy();
