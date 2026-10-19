@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { UnauthorizedError } from "./errors";
-import { requireUserId, requireUserOrKeyOwner } from "./middleware";
+import { ForbiddenError, UnauthorizedError } from "./errors";
+import { requireAdminRole, requireUserId, requireUserOrKeyOwner } from "./middleware";
+
+describe("requireAdminRole", () => {
+  it("rejects members and viewers, allows owner, admin, and API keys", () => {
+    expect(() => requireAdminRole({ membershipRole: "member" })).toThrow(ForbiddenError);
+    expect(() => requireAdminRole({ membershipRole: "viewer" })).toThrow(ForbiddenError);
+    expect(() => requireAdminRole({})).toThrow(ForbiddenError);
+    expect(() => requireAdminRole({ membershipRole: "owner" })).not.toThrow();
+    expect(() => requireAdminRole({ membershipRole: "admin" })).not.toThrow();
+    expect(() => requireAdminRole({ isBot: true })).not.toThrow();
+  });
+});
 
 describe("invite actor helpers", () => {
   it("lets an API key create invites as the key owner, but not accept them", () => {

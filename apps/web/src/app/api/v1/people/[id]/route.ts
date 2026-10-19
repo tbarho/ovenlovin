@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import { getRequestContext, requireAdminRole, requireHouseholdId } from "@/lib/api/middleware";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { assertPersonHousehold } from "@/lib/api/people";
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
+    requireAdminRole(context);
     const householdId = requireHouseholdId(context);
 
     const { id } = await params;
@@ -57,6 +58,7 @@ export async function DELETE(
 ) {
   try {
     const context = await getRequestContext(request);
+    requireAdminRole(context);
     const householdId = requireHouseholdId(context);
 
     const { id } = await params;

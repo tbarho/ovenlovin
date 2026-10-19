@@ -391,6 +391,21 @@ describe("MCP Tool Schemas", () => {
       expect(resolved.canonicalized).toBe(true);
     });
 
+    it("rejects manage_people update and delete for non-admin members", async () => {
+      const personId = "550e8400-e29b-41d4-a716-446655440000";
+      const member = {
+        householdId: "550e8400-e29b-41d4-a716-446655440001",
+        membershipRole: "member" as const,
+        scopes: [],
+      };
+      await expect(
+        managePeopleTool.handler({ action: "delete", personId }, member)
+      ).rejects.toMatchObject({ code: "forbidden" });
+      await expect(
+        managePeopleTool.handler({ action: "update", personId, displayName: "Parent A" }, member)
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
     it("validates manage_people and manage_person_rules", () => {
       expect(managePeopleTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
       expect(managePeopleTool.inputSchema.safeParse({ action: "create" }).success).toBe(false);
