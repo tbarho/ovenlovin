@@ -2685,6 +2685,61 @@ select {
   gap: 8px;
 }
 
+.import-device {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 var(--space-3);
+}
+
+.import-disclose {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.import-disclose summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.import-disclose ol {
+  margin: 10px 0 0;
+  padding-left: 1.25em;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.import-disclose li + li {
+  margin-top: 6px;
+}
+
+.import-disclose code {
+  font-size: 12px;
+}
+
+.import-advanced {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.import-advanced p {
+  margin: 0;
+}
+
+.import-blocked {
+  display: grid;
+  gap: 8px;
+}
+
+.import-blocked-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .import-warn {
   margin: 0;
   padding: 10px 12px;

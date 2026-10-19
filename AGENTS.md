@@ -110,7 +110,7 @@ The seed (`apps/web/src/lib/e2e-kitchen.ts`) is the one fixture allowed to use t
 - Jake has **severe** peanut and tree nut `block` rules (descendants + shared facility)
 - Eight recipes with images, including pesto pasta (pine nuts) and kung pao (peanuts)
 - Cookbooks: Weeknight dinners, Weekend treats
-- A draft meal plan for the week of 2026-10-12
+- A draft meal plan for the current Monday week (so /plans "This week" has pesto)
 - One API key so Settings is not empty
 
 Other tests and docs still use generic names ("Parent A", "Child B"). This kitchen is visual UAT only.

@@ -65,6 +65,8 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
     setError(null);
     try {
       await api(`/api/v1/households/invites/${id}`, { method: "DELETE" });
+      setInvites((current) => current.filter((invite) => invite.id !== id));
+      setCreatedUrl(null);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not revoke this invite");

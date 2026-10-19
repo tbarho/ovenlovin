@@ -5,6 +5,7 @@ import {
   E2E_TY_CANT_EAT,
   E2E_TY_DOESNT_LIKE,
   E2E_TY_LOVES,
+  e2eKitchenWeekStart,
 } from "./e2e-kitchen";
 
 describe("e2e kitchen fixture", () => {
@@ -35,6 +36,12 @@ describe("e2e kitchen fixture", () => {
     expect(E2E_TY_LOVES.length).toBeGreaterThanOrEqual(6);
     expect(E2E_TY_CANT_EAT.filter((item) => item.kind === "allergen").length).toBeGreaterThan(1);
     expect(E2E_TY_LOVES[0]).toBe("salmon");
+  });
+
+  it("places the draft plan on the current Monday week so This week has pesto", () => {
+    expect(e2eKitchenWeekStart("2026-10-19")).toBe("2026-10-19");
+    expect(e2eKitchenWeekStart("2026-10-18")).toBe("2026-10-12");
+    expect(e2eKitchenWeekStart()).toBe(e2eKitchenWeekStart(new Date().toISOString().slice(0, 10)));
   });
 
   it("includes a peanut dish and a pine-nut pesto so Jake's rules fire", () => {

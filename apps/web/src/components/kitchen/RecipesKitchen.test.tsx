@@ -17,6 +17,7 @@ describe("RecipesKitchen add recipe", () => {
     expect(
       screen.queryByRole("heading", { name: "Save from your browser" })
     ).not.toBeInTheDocument();
+    expect(screen.queryByText("Save from Safari on iPhone")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Search recipes")).toBeVisible();
     expect(screen.getByRole("tab", { name: "All recipes" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Weeknight pesto pasta" })).toBeVisible();
@@ -27,7 +28,11 @@ describe("RecipesKitchen add recipe", () => {
     expect(screen.getByRole("tab", { name: "URL" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Paste" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Photo" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Save from your browser" })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Save from your browser" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Save from Safari on iPhone")).toBeVisible();
+    expect(screen.getByText("Advanced")).toBeVisible();
   });
 
   it("shows import methods immediately when the kitchen has no recipes", () => {
@@ -37,7 +42,10 @@ describe("RecipesKitchen add recipe", () => {
     expect(screen.getByRole("tab", { name: "URL" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Paste" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Photo" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Save from your browser" })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Save from your browser" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Save from Safari on iPhone")).toBeVisible();
     expect(screen.getByRole("region", { name: "Getting started" })).toBeVisible();
     expect(screen.queryByLabelText("Search recipes")).not.toBeInTheDocument();
   });

@@ -11,7 +11,7 @@ Open-source recipe box and meal planner for families and their AI agents. Per-pe
 
 ## Shipped
 
-- Recipes and cookbooks (URL / paste import, plus a [bookmarklet and iOS Shortcut](import-from-device.md) when a site blocks the server)
+- Recipes and cookbooks (URL / paste / photo import, plus [Safari and Advanced save](import-from-device.md) when a site blocks the server)
 - People with Can't eat / Doesn't like / Loves
 - Who-can-eat checks with named per-person findings
 - REST + OpenAPI, MCP, `/llms.txt`

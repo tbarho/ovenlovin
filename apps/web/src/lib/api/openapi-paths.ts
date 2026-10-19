@@ -283,7 +283,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/recipes/import/page",
     tags: ["recipes"],
     summary:
-      "Import a recipe from HTML or JSON-LD captured on the user's device (bookmarklet or iOS Shortcut)",
+      "Import a recipe from HTML or JSON-LD captured on the user's device (Safari shortcut or browser bookmark)",
     request: {
       body: {
         content: {

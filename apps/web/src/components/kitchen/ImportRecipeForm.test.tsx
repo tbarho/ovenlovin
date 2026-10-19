@@ -305,6 +305,53 @@ describe("ImportRecipeForm url and paste validation", () => {
     expect(api).not.toHaveBeenCalled();
   });
 
+  it("offers paste and photo when a site blocks the URL importer", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValue(
+      new Error("This site blocked the importer (tried direct, google-translate, jina).")
+    );
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/example.com/i),
+      "https://www.budgetbytes.com/beef-stroganoff/"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("That site would not let us read its recipe.")).toBeVisible();
+    expect(screen.queryByText(/bookmarklet/i)).not.toBeInTheDocument();
+    const pasteHelp = screen.getByRole("button", { name: "Paste the recipe text" });
+    const photoHelp = screen.getByRole("button", { name: "Add a photo" });
+    expect(pasteHelp.compareDocumentPosition(photoHelp) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+
+    await user.click(pasteHelp);
+    expect(screen.getByRole("tab", { name: "Paste" })).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.queryByText("That site would not let us read its recipe.")
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "URL" }));
+    expect(screen.getByPlaceholderText(/example.com/i)).toHaveValue(
+      "https://www.budgetbytes.com/beef-stroganoff/"
+    );
+  });
+
+  it("keeps the typed URL when Add a photo is used after a block", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValue(new Error("This site blocked the importer (tried direct)."));
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/example.com/i),
+      "https://www.foodnetwork.com/recipes/alton-brown/baked-macaroni-and-cheese-recipe-1939524"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    await user.click(await screen.findByRole("button", { name: "Add a photo" }));
+    expect(screen.getByRole("tab", { name: "Photo" })).toHaveAttribute("aria-selected", "true");
+    await user.click(screen.getByRole("tab", { name: "URL" }));
+    expect(screen.getByPlaceholderText(/example.com/i)).toHaveValue(
+      "https://www.foodnetwork.com/recipes/alton-brown/baked-macaroni-and-cheese-recipe-1939524"
+    );
+  });
+
   it("shows guessed servings after a paste import", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockResolvedValue({

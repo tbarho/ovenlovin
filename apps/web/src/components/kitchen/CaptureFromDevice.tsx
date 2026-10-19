@@ -35,7 +35,7 @@ export function CaptureFromDevice() {
     }
 
     void run();
-    // One shot when the bookmarklet lands on this page.
+    // One shot when a captured page lands here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

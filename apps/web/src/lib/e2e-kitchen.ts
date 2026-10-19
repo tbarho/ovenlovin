@@ -19,6 +19,11 @@ export const E2E_USER_EMAIL = "kitchen@e2e.ovenlovin.local";
 export const E2E_HOUSEHOLD_SLUG = "e2e-kitchen";
 export const E2E_HOUSEHOLD_NAME = "Ty's kitchen";
 
+/** Draft plan lands on the current Monday week so /plans "This week" has pesto. */
+export function e2eKitchenWeekStart(todayIso?: string): string {
+  return startOfWeekMonday(todayIso);
+}
+
 export const E2E_PEOPLE = [
   { displayName: "Ty", emoji: "🧑‍🍳", color: "#e07a3d" },
   { displayName: "Bec", emoji: "👩", color: "#db5a9a" },
@@ -461,22 +466,22 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
       }
       createdRecipes.push(details);
     }
-
-    const existingKeys = await keys.listForHousehold(household.id);
-    if (existingKeys.length === 0) {
-      await keys.create(
-        {
-          householdId: household.id,
-          name: "Grok kitchen key",
-          scopes: ["recipes:read", "recipes:write", "people:read", "plans:read"],
-        },
-        user.id
-      );
-    }
   }
 
+  const existingKeys = await keys.listForHousehold(household.id);
+  if (!existingKeys.some((key) => /grok kitchen key/i.test(key.name))) {
+    await keys.create(
+      {
+        householdId: household.id,
+        name: "Grok kitchen key",
+        scopes: ["recipes:read", "recipes:write", "people:read", "plans:read"],
+      },
+      user.id
+    );
+  }
+
+  const weekStart = e2eKitchenWeekStart();
   const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 40 } });
-  const weekStart = startOfWeekMonday();
   if (!existingPlans.items.some((plan) => plan.weekStart === weekStart)) {
     const dinnerRecipes = await recipes.listRecipes(household.id, { pagination: { limit: 40 } });
     const dinner = dinnerRecipes.items.filter((recipe) =>

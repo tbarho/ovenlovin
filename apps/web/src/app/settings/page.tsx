@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { ImportBookmarklet } from "@/components/kitchen/ImportBookmarklet";
 import { ApiKeyManager } from "@/components/settings/ApiKeyManager";
 import { KitchenInvites } from "@/components/settings/KitchenInvites";
 import { KitchenMembers } from "@/components/settings/KitchenMembers";
@@ -42,7 +41,6 @@ export default async function SettingsPage() {
       <DefaultServingsSettings />
       <KitchenMembers currentUserId={context.userId} currentRole={context.membershipRole} />
       <KitchenInvites canManage={canManageInvites} />
-      <ImportBookmarklet origin={origin} />
       {demo && sandbox ? (
         <DemoAgentPanel origin={origin} apiKey={sandbox.apiKeyPlaintext} />
       ) : (
