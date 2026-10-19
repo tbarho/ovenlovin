@@ -194,7 +194,7 @@ The app will be available at `http://localhost:3000`.
 
 ## Talk to this instance
 
-Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have an OvenLovin kitchen (open the app in the browser once; MCP does not create one). Optional `X-Kitchen-Id` selects a kitchen you belong to when you have more than one. API keys stay bound to the kitchen that minted them.
+Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have an OvenLovin kitchen (open the app in the browser once; MCP does not create one). On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. API keys stay bound to the kitchen that minted them.
 
 REST lives at `/api/v1`. Meal-plan checks are POST.
 
