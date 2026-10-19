@@ -133,6 +133,24 @@ describe("PeopleService rule dedupe", () => {
     expect(db.insert).toHaveBeenCalled();
   });
 
+  it("dedupes a REST-style block that omits check settings onto MCP block defaults", async () => {
+    db.select.mockReturnValueOnce(selectChain([existingRow]));
+    const sparse = {
+      personId: PERSON_ID,
+      kind: "allergen" as const,
+      target: "peanut",
+      severity: "block" as const,
+      setBy: existingRow.setBy,
+      createdBy: existingRow.createdBy,
+    };
+
+    const created = await service.createRule(sparse as typeof createPayload);
+
+    expect(created.created).toBe(false);
+    expect(created.rule.id).toBe(RULE_ID);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
   it("inserts when may-contain differs from the existing peanut block", async () => {
     db.select.mockReturnValueOnce(selectChain([existingRow]));
     db.insert.mockReturnValueOnce(insertChain([{ ...existingRow, id: NEW_RULE_ID }]));

@@ -13,6 +13,7 @@ function dateKey(value: string | Date | null | undefined): string | null {
 }
 
 function ruleCheckIdentity(rule: {
+  severity: PersonRule["severity"];
   includeMayContain?: boolean | null;
   includeCrossContact?: boolean | null;
   sharedFacility?: PersonRule["sharedFacility"] | null;
@@ -22,10 +23,11 @@ function ruleCheckIdentity(rule: {
   activeFrom?: string | Date | null;
   activeUntil?: string | Date | null;
 }): string {
+  const block = rule.severity === "block";
   return JSON.stringify({
-    includeMayContain: rule.includeMayContain ?? false,
-    includeCrossContact: rule.includeCrossContact ?? false,
-    sharedFacility: rule.sharedFacility ?? "ignore",
+    includeMayContain: rule.includeMayContain ?? block,
+    includeCrossContact: rule.includeCrossContact ?? block,
+    sharedFacility: rule.sharedFacility ?? (block ? "block" : "ignore"),
     includeUnmappedIngredients: rule.includeUnmappedIngredients ?? false,
     includeDescendants: rule.includeDescendants ?? true,
     treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut ?? false,
@@ -237,9 +239,9 @@ export class PeopleService extends BaseService {
         kind: data.kind,
         target: data.target,
         severity: data.severity,
-        includeMayContain: data.includeMayContain ?? false,
-        includeCrossContact: data.includeCrossContact ?? false,
-        sharedFacility: data.sharedFacility ?? "ignore",
+        includeMayContain: data.includeMayContain ?? data.severity === "block",
+        includeCrossContact: data.includeCrossContact ?? data.severity === "block",
+        sharedFacility: data.sharedFacility ?? (data.severity === "block" ? "block" : "ignore"),
         includeUnmappedIngredients: data.includeUnmappedIngredients ?? false,
         includeDescendants: data.includeDescendants ?? true,
         treatCoconutAsTreeNut: data.treatCoconutAsTreeNut ?? false,
