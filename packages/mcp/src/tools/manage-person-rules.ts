@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireAdminRole } from "../auth/index";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
 import {
   ambiguousRuleTargetMessage,
@@ -70,6 +71,9 @@ export const managePersonRulesSchema = z
   });
 
 async function handler(input: z.infer<typeof managePersonRulesSchema>, context: AuthContext) {
+  if (input.action !== "list") {
+    requireAdminRole(context);
+  }
   const db = createDbClient(process.env.DATABASE_URL!);
   const people = new PeopleService(db);
   const person = await people.getPerson(input.personId);
