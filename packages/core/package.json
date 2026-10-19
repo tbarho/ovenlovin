@@ -10,7 +10,7 @@
     "./onboarding": "./src/onboarding/index.ts",
     "./media": "./src/media/recipe-images.ts",
     "./parsing": "./src/parsing/ingredient-line.ts",
-    "./scaling": "./src/scaling/servings.ts",
+    "./scaling": "./src/scaling/index.ts",
     "./aisles": "./src/services/shopping-aisles.ts",
     "./people-order": "./src/services/people-order.ts"
   },

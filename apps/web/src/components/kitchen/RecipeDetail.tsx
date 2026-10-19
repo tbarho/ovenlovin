@@ -4,12 +4,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
-import type { Cookbook, Person, PersonRule, RecipeDetails } from "@ovenlovin/core";
+import type {
+  Cookbook,
+  HouseholdServingsSettings,
+  Person,
+  PersonRule,
+  RecipeDetails,
+} from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import {
   clampServings,
+  defaultDisplayedServings,
   formatDurationMinutes,
+  recipeYieldServings,
   scaleIngredientDisplay,
+  scaledServingsNote,
 } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
@@ -44,6 +53,7 @@ export function RecipeDetail({
   rules = [],
   lovePeople = EMPTY_LOVE_PEOPLE,
   plannedDates = [],
+  servingsSettings = null,
   backHref = "/recipes",
   backLabel = "Recipes",
 }: {
@@ -53,12 +63,22 @@ export function RecipeDetail({
   rules?: PersonRule[];
   lovePeople?: PersonLove[];
   plannedDates?: string[];
+  servingsSettings?: HouseholdServingsSettings | null;
   backHref?: string;
   backLabel?: string;
 }) {
   const router = useRouter();
-  const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
-  const [servings, setServings] = useState(storedServings);
+  const storedServings = recipeYieldServings(recipe.servings);
+  const familySize = servingsSettings?.familySize ?? people.length;
+  const servingsMode = servingsSettings?.mode ?? "family";
+  const fixedServings = servingsSettings?.servings ?? null;
+  const autoServings = defaultDisplayedServings({
+    recipeServings: storedServings,
+    familySize,
+    mode: servingsMode,
+    fixedServings,
+  });
+  const [servings, setServings] = useState(autoServings);
   const [sheet, setSheet] = useState<
     null | "details" | "image" | "ingredients" | "steps" | "cookbook"
   >(null);
@@ -124,6 +144,23 @@ export function RecipeDetail({
       })),
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );
+  const scaleNote = scaledServingsNote({
+    displayed: servings,
+    recipeServings: storedServings,
+    mode: servingsMode,
+    familySize,
+    fixedServings,
+  });
+  function applyStoredServings(nextStored: number) {
+    setServings(
+      defaultDisplayedServings({
+        recipeServings: nextStored,
+        familySize,
+        mode: servingsMode,
+        fixedServings,
+      })
+    );
+  }
 
   return (
     <>
@@ -243,8 +280,25 @@ export function RecipeDetail({
               </button>
             </div>
             <p className="muted">
-              1-24 servings. Scales from {recipe.servings ?? storedServings} stored servings. Units
-              stay as written.
+              {scaleNote ? (
+                <span data-testid="scaled-servings-note">
+                  {scaleNote}.{" "}
+                  {servings !== storedServings ? (
+                    <button
+                      type="button"
+                      className="servings-reset"
+                      onClick={() => setServings(storedServings)}
+                    >
+                      Reset to {storedServings}
+                    </button>
+                  ) : null}
+                </span>
+              ) : (
+                <>
+                  1-24 servings. Scales from {storedServings} stored servings. Units stay as
+                  written.
+                </>
+              )}
             </p>
           </div>
 
@@ -304,7 +358,7 @@ export function RecipeDetail({
         recipe={recipe}
         open={sheet === "details"}
         onClose={closeSheet}
-        onSavedServings={setServings}
+        onSavedServings={applyStoredServings}
       />
       <PhotosSheet recipe={recipe} open={sheet === "image"} onClose={closeSheet} />
       <IngredientsSheet recipe={recipe} open={sheet === "ingredients"} onClose={closeSheet} />

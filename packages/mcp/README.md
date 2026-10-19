@@ -77,7 +77,7 @@ Import a recipe from a photo URL or base64. Extra pages go in `images[]`. The fi
 
 ### `get_household_context`
 
-Get household schedule, people, rules, preferences, and recent meals.
+Get household schedule, Default servings, people, rules, preferences, and recent meals.
 
 ```json
 {

@@ -20,7 +20,13 @@ Get comprehensive household context including weekly schedule, member informatio
 {
   household: {
     id: string,
-    name: string
+    name: string,
+    servingsSettings: {
+      mode: "family" | "fixed" | "recipe",
+      servings: number | null,
+      familySize: number,
+      defaultCookFor: number
+    }
   },
   schedule?: {
     weeklyTemplate: Array<{

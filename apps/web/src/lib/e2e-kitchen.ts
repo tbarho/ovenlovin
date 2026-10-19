@@ -10,6 +10,7 @@ import {
 import { getDatabase, type DbClient } from "@ovenlovin/db";
 import type { RequestContext } from "@/lib/api/middleware";
 import { writePersonNotes } from "@/lib/person-appearance";
+import { addDays, startOfWeekMonday } from "@/lib/week-plan-view";
 
 export const E2E_CLERK_USER_ID = "user_e2e_kitchen_ty";
 export const E2E_USER_EMAIL = "kitchen@e2e.ovenlovin.local";
@@ -470,8 +471,9 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
     }
   }
 
-  const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 5 } });
-  if (existingPlans.items.length === 0) {
+  const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 40 } });
+  const weekStart = startOfWeekMonday();
+  if (!existingPlans.items.some((plan) => plan.weekStart === weekStart)) {
     const dinnerRecipes = await recipes.listRecipes(household.id, { pagination: { limit: 40 } });
     const dinner = dinnerRecipes.items.filter((recipe) =>
       ["weeknight-pesto-pasta", "sheet-pan-salmon", "veggie-tacos"].includes(recipe.slug)
@@ -479,7 +481,7 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
     if (dinner.length > 0) {
       const plan = await plans.createMealPlan({
         householdId: household.id,
-        weekStart: "2026-10-12",
+        weekStart,
         status: "draft",
         acknowledgedWarnings: [],
         needsRecheck: false,
@@ -488,7 +490,7 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
       const attendees = (await people.listPeopleByHousehold(household.id, { limit: 40 })).items.map(
         (person) => person.id
       );
-      const dates = ["2026-10-12", "2026-10-13", "2026-10-14"];
+      const dates = [weekStart, addDays(weekStart, 1), addDays(weekStart, 2)];
       for (const [index, recipe] of dinner.entries()) {
         const date = dates[index];
         if (!date) continue;

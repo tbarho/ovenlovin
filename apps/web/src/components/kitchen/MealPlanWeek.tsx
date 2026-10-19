@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type DefaultServingsMode } from "@ovenlovin/core";
+import { planEntryServings } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -317,6 +319,7 @@ export function MealPlanWeek({
   entries = EMPTY_ENTRIES,
   recipes = EMPTY_RECIPES,
   defaultServings = 4,
+  defaultServingsMode = "family",
 }: {
   days: WeekDay[];
   planId?: string | null;
@@ -324,6 +327,7 @@ export function MealPlanWeek({
   entries?: PlanEntryDraft[];
   recipes?: PlanRecipePick[];
   defaultServings?: number;
+  defaultServingsMode?: DefaultServingsMode;
 }) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -418,9 +422,20 @@ export function MealPlanWeek({
     const previousDays = daysView;
     const previous = entriesView;
     const cleared = next.recipeId === null && next.freeformMeal === null;
+    const recipe = next.recipeId ? recipes.find((item) => item.id === next.recipeId) : undefined;
+    const nextServings =
+      next.servings ??
+      dinnerEntryForDate(entriesView, date)?.servings ??
+      (recipe
+        ? planEntryServings({
+            recipeServings: recipe.servings,
+            cookFor: servings,
+            mode: defaultServingsMode,
+          })
+        : servings);
     const nextEntries = applyDinnerToEntries(entriesView, date, {
       ...next,
-      servings: next.servings ?? dinnerEntryForDate(entriesView, date)?.servings ?? servings,
+      servings: nextServings,
     });
     const nextDinner = dinnerEntryForDate(nextEntries, date);
     const nightPatch = cleared
@@ -484,7 +499,7 @@ export function MealPlanWeek({
             disabled={pending}
             onChange={(event) => applyServings(Number(event.target.value))}
           >
-            {Array.from({ length: 12 }, (_, index) => index + 1).map((count) => (
+            {Array.from({ length: 24 }, (_, index) => index + 1).map((count) => (
               <option key={count} value={count}>
                 {count}
               </option>

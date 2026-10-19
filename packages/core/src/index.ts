@@ -6,6 +6,7 @@ export * from "./services";
 export * from "./parsing/ingredient-line";
 export * from "./parsing/plain-import";
 export * from "./scaling/servings";
+export * from "./scaling/default-servings";
 export * from "./media/recipe-images";
 export * from "./plans/merge-entries";
 export * from "./onboarding/instance";

@@ -6,7 +6,14 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { CookbookService, RecipeService, backfillParsedIngredient } from "@ovenlovin/core";
+import {
+  CookbookService,
+  HouseholdService,
+  PeopleService,
+  RecipeService,
+  backfillParsedIngredient,
+  recipeServingsPresentation,
+} from "@ovenlovin/core";
 import { mcpRecipeImages } from "../media";
 import {
   createDbClient,
@@ -33,6 +40,8 @@ export interface GetRecipeOutput {
   yieldQuantity?: number;
   yieldUnit?: string;
   servings?: number;
+  displayServings: number;
+  scaledNote: string | null;
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
   totalTimeMinutes?: number;
@@ -166,6 +175,26 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     }
   }
 
+  const households = new HouseholdService(db);
+  const household = await households.getHousehold(context.householdId);
+  const people = await new PeopleService(db).listPeopleByHousehold(context.householdId, {
+    limit: 40,
+  });
+  const servingsSettings = household
+    ? households.servingsSettingsFor(household, people.items.length)
+    : {
+        mode: "family" as const,
+        servings: null,
+        familySize: people.items.length,
+        defaultCookFor: people.items.length || 4,
+      };
+  const presentation = recipeServingsPresentation({
+    recipeServings: recipe.servings,
+    familySize: servingsSettings.familySize,
+    mode: servingsSettings.mode,
+    fixedServings: servingsSettings.servings,
+  });
+
   const cookbooks = await new CookbookService(db).listCookbooksForRecipe(input.id);
 
   let source: GetRecipeOutput["source"] = undefined;
@@ -193,6 +222,8 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     yieldQuantity: recipe.yieldQuantity ?? undefined,
     yieldUnit: recipe.yieldUnit ?? undefined,
     servings: recipe.servings ?? undefined,
+    displayServings: presentation.displayServings,
+    scaledNote: presentation.scaledNote,
     prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
     totalTimeMinutes: recipe.totalTimeMinutes ?? undefined,
@@ -214,7 +245,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
 export const getRecipeTool = {
   name: "get_recipe",
   description:
-    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL.",
+    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL. servings is the stored card yield; displayServings applies the kitchen Default servings setting (family = max(yield, people count)).",
   inputSchema: getRecipeSchema,
   handler,
 } as const;

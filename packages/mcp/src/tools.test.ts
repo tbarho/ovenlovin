@@ -27,6 +27,7 @@ import {
   managePeopleTool,
   managePersonRulesTool,
   manageHouseholdScheduleTool,
+  manageHouseholdSettingsTool,
   manageKitchenInvitesTool,
   manageKitchenMembersTool,
   canonicalizePersonRuleTarget,
@@ -418,6 +419,23 @@ describe("MCP Tool Schemas", () => {
         manageHouseholdScheduleTool.inputSchema.safeParse({
           action: "replace",
           week: [{ day: "friday", busyLevel: "high", cooking: false }],
+        }).success
+      ).toBe(true);
+    });
+
+    it("validates manage_household_settings", () => {
+      expect(manageHouseholdSettingsTool.inputSchema.safeParse({}).success).toBe(true);
+      expect(
+        manageHouseholdSettingsTool.inputSchema.safeParse({
+          action: "update",
+          mode: "fixed",
+          servings: 8,
+        }).success
+      ).toBe(true);
+      expect(
+        manageHouseholdSettingsTool.inputSchema.safeParse({
+          action: "update",
+          mode: "family",
         }).success
       ).toBe(true);
     });
