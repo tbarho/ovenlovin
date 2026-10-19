@@ -102,6 +102,14 @@ describe("toFriendlyMeasure", () => {
     expect(toFriendlyMeasure(5, "tbsp")).toEqual({ displayQuantity: "5", displayUnit: "tbsp" });
     expect(toFriendlyMeasure(0.5, "tsp")).toEqual({ displayQuantity: "1/2", displayUnit: "tsp" });
   });
+
+  it("keeps small spoon amounts as tbsp instead of 1/8 cup", () => {
+    expect(toFriendlyMeasure(2, "tbsp")).toEqual({ displayQuantity: "2", displayUnit: "tbsp" });
+    expect(toFriendlyMeasure(0.125, "cup")).toEqual({ displayQuantity: "2", displayUnit: "tbsp" });
+    expect(toFriendlyMeasure(6, "tsp")).toEqual({ displayQuantity: "2", displayUnit: "tbsp" });
+    expect(formatMeasureText(2, "tbsp")).toBe("2 tbsp");
+    expect(formatMeasureText(0.125, "cup")).toBe("2 tbsp");
+  });
 });
 
 describe("scaleIngredientDisplay", () => {
@@ -131,7 +139,18 @@ describe("scaleIngredientDisplay", () => {
   });
 
   it("scales 2/3 celery to a mixed number", () => {
-    expect(scaleIngredientDisplay(DECIMAL_TWO_THIRDS_CELERY, 4, 8)).toBe("1 1/3 cup celery");
+    expect(scaleIngredientDisplay(DECIMAL_TWO_THIRDS_CELERY, 4, 8)).toBe("1 1/3 cups celery");
+  });
+
+  it("singularizes cups when a 2-cup line scales down to 1", () => {
+    expect(
+      scaleIngredientDisplay(
+        { rawText: "2 cups shredded mozzarella", quantityMin: 2, unit: "cup" },
+        8,
+        4
+      )
+    ).toBe("1 cup shredded mozzarella");
+    expect(pluralizeUnit("1", "cups")).toBe("1 cup");
   });
 });
 

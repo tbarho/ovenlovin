@@ -127,6 +127,24 @@ export function splitLeadingQuantity(text: string): {
   return consumeLeadingQuantity(text.trim());
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const UNIT_ALIASES_BY_LENGTH = [...UNIT_ALIASES].sort((a, b) => b.match.length - a.match.length);
+
+/** Peel a leading unit word (`cups`, `clove`) off the rest of an ingredient line. */
+export function splitLeadingUnit(text: string): { unit: string | null; rest: string } {
+  const trimmed = text.trim();
+  if (!trimmed) return { unit: null, rest: "" };
+  for (const alias of UNIT_ALIASES_BY_LENGTH) {
+    const pattern = new RegExp(`^${escapeRegExp(alias.match)}(?=\\s|$|\\b)`, "i");
+    if (!pattern.test(trimmed)) continue;
+    return { unit: alias.unit, rest: trimmed.slice(alias.match.length).trim() };
+  }
+  return { unit: null, rest: trimmed };
+}
+
 function consumeLeadingQuantity(text: string): {
   min: number | null;
   max: number | null;

@@ -75,6 +75,23 @@ export function planEntryServings(input: {
   return cookFor;
 }
 
+/**
+ * Shared kitchen copy for recipe pages and plan cards.
+ * When the card yield differs from cook-for, name both; otherwise "{n} servings".
+ */
+export function cookForServingsLabel(input: {
+  cookFor: number;
+  recipeServings?: number | null;
+}): string {
+  const cookFor = clampServings(input.cookFor);
+  const recipeMakes =
+    input.recipeServings && input.recipeServings > 0 ? input.recipeServings : null;
+  if (recipeMakes != null && recipeMakes !== cookFor) {
+    return `Recipe makes ${recipeMakes} · cooking for ${cookFor}`;
+  }
+  return `${cookFor} ${cookFor === 1 ? "serving" : "servings"}`;
+}
+
 export function scaledServingsNote(input: {
   displayed: number;
   recipeServings: number;

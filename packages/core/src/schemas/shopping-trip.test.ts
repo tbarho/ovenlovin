@@ -4,6 +4,7 @@ import {
   parseShoppingTripState,
   shopItemKey,
   shoppingTripStateSchema,
+  shoppingTripStateWriteSchema,
 } from "./shopping-trip";
 
 describe("shopping trip state", () => {
@@ -38,5 +39,16 @@ describe("shopping trip state", () => {
       name: "paper towels",
     }));
     expect(shoppingTripStateSchema.safeParse({ checkedKeys: [], extras }).success).toBe(false);
+  });
+
+  it("rejects unknown PATCH keys instead of stripping them", () => {
+    const withExtra = {
+      checkedKeys: ["eggs"],
+      extras: [],
+      alsoMark: true,
+    };
+    expect(shoppingTripStateWriteSchema.safeParse(withExtra).success).toBe(false);
+    expect(shoppingTripStateSchema.safeParse(withExtra).success).toBe(true);
+    expect(parseShoppingTripState(withExtra).checkedKeys).toEqual(["eggs"]);
   });
 });

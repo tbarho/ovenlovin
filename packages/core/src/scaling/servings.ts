@@ -1,4 +1,8 @@
-import { parseIngredientLine, splitLeadingQuantity } from "../parsing/ingredient-line";
+import {
+  parseIngredientLine,
+  splitLeadingQuantity,
+  splitLeadingUnit,
+} from "../parsing/ingredient-line";
 
 /**
  * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
@@ -135,8 +139,11 @@ function candidateScore(
   if (quantity < 0.125) score += 4;
   if (quantity > 24) score += (quantity - 24) * 0.05;
   if (quantity < 1 && unit !== originalUnit) {
-    const niceCup = unit === "cup" && delta <= 0.04 && quantity >= 0.125;
+    const niceCup = unit === "cup" && delta <= 0.04 && quantity >= 0.25;
     if (!niceCup) score += 1.5;
+  }
+  if (unit === "cup" && quantity > 0 && quantity < 0.25) {
+    score += 3;
   }
   if (cookingFractionDelta(originalQuantity) <= 0.02 && unit !== originalUnit && delta > 0.01) {
     score += 6;
@@ -214,16 +221,40 @@ function quantityValue(amount: string): number {
   return total;
 }
 
+export function inflectedUnit(amount: string, unit: string): string {
+  const trimmed = unit.trim();
+  if (!trimmed) return "";
+  const formatted = pluralizeUnit(amount, trimmed);
+  const prefix = `${amount} `;
+  return formatted.startsWith(prefix) ? formatted.slice(prefix.length) : trimmed;
+}
+
 export function pluralizeUnit(amount: string, unit: string): string {
   const trimmed = unit.trim();
   if (!trimmed) return amount;
   const quantity = quantityValue(amount);
-  if (quantity > 0 && quantity <= 1) return `${amount} ${trimmed}`;
-  const lower = trimmed.toLowerCase();
-  const plural = UNIT_PLURALS[lower] ?? (trimmed.endsWith("s") ? trimmed : `${trimmed}s`);
+  const canonical = canonicalUnit(trimmed);
+  if (quantity > 0 && quantity <= 1) return `${amount} ${canonical}`;
+  const lower = canonical.toLowerCase();
+  const plural = UNIT_PLURALS[lower] ?? (canonical.endsWith("s") ? canonical : `${canonical}s`);
   const cased =
-    trimmed[0] === trimmed[0]?.toUpperCase() ? plural[0]?.toUpperCase() + plural.slice(1) : plural;
+    canonical[0] === canonical[0]?.toUpperCase()
+      ? plural[0]?.toUpperCase() + plural.slice(1)
+      : plural;
   return `${amount} ${cased}`;
+}
+
+function canonicalUnit(unit: string): string {
+  const lower = unit.trim().toLowerCase();
+  for (const [singular, plural] of Object.entries(UNIT_PLURALS)) {
+    if (lower === singular || lower === plural.toLowerCase()) {
+      return unit[0] === unit[0]?.toUpperCase()
+        ? singular[0]?.toUpperCase() + singular.slice(1)
+        : singular;
+    }
+  }
+  if (lower.endsWith("s") && lower.length > 1) return unit.slice(0, -1);
+  return unit.trim();
 }
 
 export function formatMeasureText(quantity: number, unit?: string | null): string {
@@ -267,13 +298,21 @@ export function scaleIngredientDisplay(
   const qty = max ? `${min}-${max}` : min;
 
   if (leading.min != null) {
+    const parsed = parseIngredientLine(ingredient.rawText);
+    const leadingUnit = splitLeadingUnit(leading.rest);
+    const unit = ingredient.unit ?? parsed.unit ?? leadingUnit.unit;
+    if (unit) {
+      const rest = leadingUnit.unit ? leadingUnit.rest : leading.rest;
+      return rest ? `${pluralizeUnit(qty, unit)} ${rest}` : pluralizeUnit(qty, unit);
+    }
     return leading.rest ? `${qty} ${leading.rest}` : qty;
   }
 
   const parsed = parseIngredientLine(ingredient.rawText);
   const unit = ingredient.unit ?? parsed.unit;
   const name = parsed.name;
-  return `${qty}${unit ? ` ${unit}` : ""}${name ? ` ${name}` : ""}`.trim();
+  const measure = unit ? pluralizeUnit(qty, unit) : qty;
+  return `${measure}${name ? ` ${name}` : ""}`.trim();
 }
 
 export function clampServings(value: number, min = 1, max = 24): number {

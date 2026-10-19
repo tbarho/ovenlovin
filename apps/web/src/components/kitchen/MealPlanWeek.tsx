@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DefaultServingsMode } from "@ovenlovin/core";
-import { planEntryServings } from "@ovenlovin/core/scaling";
+import { cookForServingsLabel, planEntryServings } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -99,10 +99,9 @@ function servingsCopy(meal: WeekMeal, cookFor: number): string | null {
   const recipeMakes =
     meal.recipeServings ?? (meal.servings && meal.servings !== cookFor ? meal.servings : null);
   if (recipeMakes && recipeMakes !== cookFor) {
-    return `Recipe makes ${recipeMakes} · cooking for ${cookFor}`;
+    return cookForServingsLabel({ cookFor, recipeServings: recipeMakes });
   }
-  if (meal.servings) return `${meal.servings} servings`;
-  return `Cooking for ${cookFor}`;
+  return cookForServingsLabel({ cookFor: meal.servings ?? cookFor });
 }
 
 function MealCopy({ meal, cookFor }: { meal: WeekMeal; cookFor: number }) {

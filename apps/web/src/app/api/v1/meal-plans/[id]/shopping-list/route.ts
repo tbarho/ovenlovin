@@ -5,7 +5,9 @@ import {
   PlanService,
   RecipeService,
   ShoppingListService,
+  applyShoppingTrip,
   collectShoppingListEntries,
+  parseIanaTimeZone,
   parseShoppingTripState,
   planEntriesForWeek,
   resolveIncludeStaples,
@@ -25,6 +27,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const url = new URL(request.url);
     const format = url.searchParams.get("format") || "json";
     const groupBy = (url.searchParams.get("groupBy") || "aisle") as ShoppingListGroupBy;
+    const timeZoneParam = url.searchParams.get("timeZone");
+    let timeZone: string | undefined;
+    if (timeZoneParam) {
+      const parsed = parseIanaTimeZone(timeZoneParam);
+      if (!parsed) {
+        throw new BadRequestError("Invalid timeZone. Use an IANA name such as America/Chicago.");
+      }
+      timeZone = parsed;
+    }
     const includeStaples = resolveIncludeStaples({
       includeStaples: url.searchParams.has("includeStaples")
         ? url.searchParams.get("includeStaples") === "true"
@@ -76,9 +87,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const trip = parseShoppingTripState(plan.shoppingState);
     const output = shoppingListService.format(
-      shoppingList,
+      applyShoppingTrip(shoppingList, trip),
       format as "json" | "csv" | "markdown" | "text",
-      { checkedKeys: trip.checkedKeys }
+      { timeZone }
     );
     const contentType =
       format === "csv"

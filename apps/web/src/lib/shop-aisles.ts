@@ -7,6 +7,7 @@ const AISLE_ORDER = [
   "Meat",
   "Seafood",
   "Dairy",
+  "Refrigerated",
   "Grains",
   "Canned goods",
   "Condiments",

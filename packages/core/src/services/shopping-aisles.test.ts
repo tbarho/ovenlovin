@@ -24,7 +24,19 @@ describe("assignAisle", () => {
   it("uses protein for meat and seafood, and distinct store aisles", () => {
     expect(assignAisle("chicken thighs")).toMatchObject({ aisle: "Meat", category: "protein" });
     expect(assignAisle("salmon")).toMatchObject({ aisle: "Seafood", category: "protein" });
-    expect(assignAisle("tofu")).toMatchObject({ aisle: "Produce", category: "protein" });
+    expect(assignAisle("tofu")).toMatchObject({ aisle: "Refrigerated", category: "protein" });
+    expect(assignAisle("extra-firm tofu")).toMatchObject({
+      aisle: "Refrigerated",
+      category: "protein",
+    });
+    expect(assignAisle("kalamata olives")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
+    expect(assignAisle("1/2 cup kalamata olives")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
   });
 
   it("does not put black pepper in produce", () => {

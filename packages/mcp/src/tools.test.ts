@@ -242,6 +242,13 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(false);
     });
 
+    it("documents check-offs, extras, and the canonical staple field", () => {
+      expect(exportShoppingListTool.description).toMatch(/check-off/i);
+      expect(exportShoppingListTool.description).toMatch(/extras/);
+      expect(exportShoppingListTool.description).toMatch(/isStaple/);
+      expect(exportShoppingListTool.description).toMatch(/includeStaples/);
+    });
+
     it("accepts includeStaples and the includePantryItems alias", () => {
       const canonical = exportShoppingListTool.inputSchema.safeParse({
         planId: "550e8400-e29b-41d4-a716-446655440000",
@@ -261,6 +268,14 @@ describe("MCP Tool Schemas", () => {
         expect(alias.data.includePantryItems).toBe(true);
         expect(alias.data.includeStaples).toBeUndefined();
       }
+    });
+
+    it("accepts an IANA timeZone for the Generated label", () => {
+      const result = exportShoppingListTool.inputSchema.safeParse({
+        planId: "550e8400-e29b-41d4-a716-446655440000",
+        timeZone: "America/Chicago",
+      });
+      expect(result.success).toBe(true);
     });
   });
 

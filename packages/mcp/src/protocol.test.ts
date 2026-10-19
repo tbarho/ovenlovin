@@ -56,6 +56,7 @@ describe("MCP JSON schemas", () => {
     expect(shopping?.inputSchema.required ?? []).toEqual(["planId"]);
     expect(shopping?.inputSchema.properties).toHaveProperty("includeStaples");
     expect(shopping?.inputSchema.properties).toHaveProperty("includePantryItems");
+    expect(shopping?.inputSchema.properties).toHaveProperty("timeZone");
     expect(shopping?.inputSchema.required ?? []).not.toEqual(
       expect.arrayContaining([
         "format",
