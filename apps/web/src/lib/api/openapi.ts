@@ -27,7 +27,7 @@ export function generateOpenApiDocument(origin?: string): oas30.OpenAPIObject {
     scheme: "bearer",
     bearerFormat: "API key or Clerk JWT",
     description:
-      "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. Clerk MCP uses a kitchen you belong to; send `X-Kitchen-Id` when you belong to more than one.",
+      "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to.",
   });
 
   const generator = new OpenApiGeneratorV3(registry.definitions);
