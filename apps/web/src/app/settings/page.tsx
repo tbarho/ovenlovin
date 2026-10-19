@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { ApiKeyManager } from "@/components/settings/ApiKeyManager";
 import { KitchenInvites } from "@/components/settings/KitchenInvites";
 import { KitchenMembers } from "@/components/settings/KitchenMembers";
+import { DefaultServingsSettings } from "@/components/settings/DefaultServingsSettings";
 import { KitchenSwitcher } from "@/components/settings/KitchenSwitcher";
 import { DemoAgentPanel } from "@/components/demo/DemoAgentPanel";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
@@ -37,6 +38,7 @@ export default async function SettingsPage() {
         </div>
       </div>
       <KitchenSwitcher />
+      <DefaultServingsSettings />
       <KitchenMembers currentUserId={context.userId} currentRole={context.membershipRole} />
       <KitchenInvites canManage={canManageInvites} />
       {demo && sandbox ? (

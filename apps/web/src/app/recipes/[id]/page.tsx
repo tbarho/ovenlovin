@@ -1,5 +1,11 @@
 import { notFound } from "next/navigation";
-import { CookbookService, PeopleService, PlanService, RecipeService } from "@ovenlovin/core";
+import {
+  CookbookService,
+  HouseholdService,
+  PeopleService,
+  PlanService,
+  RecipeService,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { RecipeDetail } from "@/components/kitchen/RecipeDetail";
 import { householdLovePeople } from "@/lib/household-loves";
@@ -31,6 +37,11 @@ export default async function RecipeDetailPage({
     "love"
   );
   const plannedDates = await new PlanService(db).listPlannedDatesForRecipe(context.householdId, id);
+  const households = new HouseholdService(db);
+  const household = await households.getHousehold(context.householdId);
+  const servingsSettings = household
+    ? households.servingsSettingsFor(household, people.items.length)
+    : null;
 
   return (
     <RecipeDetail
@@ -40,6 +51,7 @@ export default async function RecipeDetailPage({
       rules={rules}
       lovePeople={householdLovePeople(people.items, preferences)}
       plannedDates={plannedDates}
+      servingsSettings={servingsSettings}
       backHref={fromBook ? `/recipes?cookbook=${fromBook.id}` : "/recipes"}
       backLabel={fromBook ? fromBook.name : "Recipes"}
     />

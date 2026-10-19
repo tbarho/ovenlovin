@@ -50,4 +50,11 @@ describe("e2e kitchen fixture", () => {
     expect(pesto?.ingredients.some((item) => /pesto/i.test(item.rawText))).toBe(true);
     expect(kungPao?.ingredients.some((item) => /peanut/i.test(item.rawText))).toBe(true);
   });
+
+  it("stores schema.org-style 2/3 decimals on tomato soup so display can format them", () => {
+    const soup = E2E_RECIPES.find((recipe) => recipe.slug === "tomato-soup");
+    expect(soup?.servings).toBe(5);
+    expect(soup?.ingredients.some((item) => item.rawText === "0.6666666667 cup celery")).toBe(true);
+    expect(soup?.ingredients.some((item) => item.rawText === "0.6666666667 cup carrot")).toBe(true);
+  });
 });

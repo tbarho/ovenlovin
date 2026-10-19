@@ -1230,6 +1230,18 @@ select {
   align-items: center;
 }
 
+.servings-reset {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--orange);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .section-head {
   display: flex;
   flex-wrap: wrap;
@@ -1862,6 +1874,54 @@ select {
   margin: 0;
   font-size: 1.15rem;
   letter-spacing: -0.03em;
+}
+
+.default-servings-options {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.default-servings-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-height: 44px;
+}
+
+.default-servings-option input {
+  margin-top: 4px;
+}
+
+.default-servings-option span {
+  display: grid;
+  gap: 2px;
+}
+
+.default-servings-option em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.default-servings-count {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.default-servings-count input {
+  min-height: 44px;
+  max-width: 8rem;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: #fff;
 }
 
 .kitchen-switcher label,

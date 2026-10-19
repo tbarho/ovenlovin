@@ -6,7 +6,15 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { CookbookService, RecipeService, backfillParsedIngredient } from "@ovenlovin/core";
+import {
+  CookbookService,
+  HouseholdService,
+  PeopleService,
+  RecipeService,
+  backfillParsedIngredient,
+  recipeServingsPresentation,
+  scaleIngredientDisplay,
+} from "@ovenlovin/core";
 import { mcpRecipeImages } from "../media";
 import {
   createDbClient,
@@ -33,6 +41,8 @@ export interface GetRecipeOutput {
   yieldQuantity?: number;
   yieldUnit?: string;
   servings?: number;
+  displayServings: number;
+  scaledNote: string | null;
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
   totalTimeMinutes?: number;
@@ -48,6 +58,7 @@ export interface GetRecipeOutput {
     groupName?: string;
     order: number;
     rawText: string;
+    displayText: string;
     name: string;
     quantity?: { min: number; max?: number };
     unit?: string;
@@ -102,34 +113,6 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     .where(and(eq(recipeIngredient.recipeId, input.id), isNull(recipeIngredient.deletedAt)))
     .orderBy(asc(recipeIngredient.order));
 
-  const ingredients = ingredientRows.map((ing) => {
-    const parsed = backfillParsedIngredient({
-      rawText: ing.rawText,
-      quantityMin: ing.quantityMin ? Number(ing.quantityMin) : null,
-      quantityMax: ing.quantityMax ? Number(ing.quantityMax) : null,
-      unit: ing.unit ?? null,
-    });
-    return {
-      id: ing.id,
-      groupName: ing.groupId ?? undefined,
-      order: ing.order,
-      rawText: ing.rawText,
-      name: parsed.name,
-      quantity:
-        parsed.quantityMin != null
-          ? {
-              min: parsed.quantityMin,
-              max: parsed.quantityMax ?? undefined,
-            }
-          : undefined,
-      unit: parsed.unit ?? undefined,
-      ingredientName: parsed.name,
-      preparation: ing.preparation ?? undefined,
-      isOptional: ing.isOptional ?? false,
-      substitutionNotes: ing.substitutionNotes ?? undefined,
-    };
-  });
-
   // Fetch steps
   const stepRows = await db
     .select()
@@ -166,6 +149,64 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     }
   }
 
+  const households = new HouseholdService(db);
+  const household = await households.getHousehold(context.householdId);
+  const people = await new PeopleService(db).listPeopleByHousehold(context.householdId, {
+    limit: 40,
+  });
+  const servingsSettings = household
+    ? households.servingsSettingsFor(household, people.items.length)
+    : {
+        mode: "family" as const,
+        servings: null,
+        familySize: people.items.length,
+        defaultCookFor: people.items.length || 4,
+      };
+  const presentation = recipeServingsPresentation({
+    recipeServings: recipe.servings,
+    familySize: servingsSettings.familySize,
+    mode: servingsSettings.mode,
+    fixedServings: servingsSettings.servings,
+  });
+
+  const ingredients = ingredientRows.map((ing) => {
+    const parsed = backfillParsedIngredient({
+      rawText: ing.rawText,
+      quantityMin: ing.quantityMin ? Number(ing.quantityMin) : null,
+      quantityMax: ing.quantityMax ? Number(ing.quantityMax) : null,
+      unit: ing.unit ?? null,
+    });
+    return {
+      id: ing.id,
+      groupName: ing.groupId ?? undefined,
+      order: ing.order,
+      rawText: ing.rawText,
+      displayText: scaleIngredientDisplay(
+        {
+          rawText: ing.rawText,
+          quantityMin: parsed.quantityMin,
+          quantityMax: parsed.quantityMax,
+          unit: parsed.unit,
+        },
+        recipe.servings,
+        presentation.displayServings
+      ),
+      name: parsed.name,
+      quantity:
+        parsed.quantityMin != null
+          ? {
+              min: parsed.quantityMin,
+              max: parsed.quantityMax ?? undefined,
+            }
+          : undefined,
+      unit: parsed.unit ?? undefined,
+      ingredientName: parsed.name,
+      preparation: ing.preparation ?? undefined,
+      isOptional: ing.isOptional ?? false,
+      substitutionNotes: ing.substitutionNotes ?? undefined,
+    };
+  });
+
   const cookbooks = await new CookbookService(db).listCookbooksForRecipe(input.id);
 
   let source: GetRecipeOutput["source"] = undefined;
@@ -193,6 +234,8 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     yieldQuantity: recipe.yieldQuantity ?? undefined,
     yieldUnit: recipe.yieldUnit ?? undefined,
     servings: recipe.servings ?? undefined,
+    displayServings: presentation.displayServings,
+    scaledNote: presentation.scaledNote,
     prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
     totalTimeMinutes: recipe.totalTimeMinutes ?? undefined,
@@ -214,7 +257,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
 export const getRecipeTool = {
   name: "get_recipe",
   description:
-    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL.",
+    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL. servings is the stored card yield; displayServings applies the kitchen Default servings setting (family = max(yield, people count)). ingredients.displayText is the cooking-fraction line at displayServings; rawText is the stored import string.",
   inputSchema: getRecipeSchema,
   handler,
 } as const;

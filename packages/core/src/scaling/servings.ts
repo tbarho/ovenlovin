@@ -1,4 +1,4 @@
-import { parseIngredientLine } from "../parsing/ingredient-line";
+import { parseIngredientLine, splitLeadingQuantity } from "../parsing/ingredient-line";
 
 /**
  * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
@@ -37,6 +37,7 @@ const COOKING_FRACTIONS: Array<[number, number]> = [
   [5, 8],
   [2, 3],
   [3, 4],
+  [5, 6],
   [7, 8],
 ];
 
@@ -216,7 +217,8 @@ function quantityValue(amount: string): number {
 export function pluralizeUnit(amount: string, unit: string): string {
   const trimmed = unit.trim();
   if (!trimmed) return amount;
-  if (quantityValue(amount) === 1) return `${amount} ${trimmed}`;
+  const quantity = quantityValue(amount);
+  if (quantity > 0 && quantity <= 1) return `${amount} ${trimmed}`;
   const lower = trimmed.toLowerCase();
   const plural = UNIT_PLURALS[lower] ?? (trimmed.endsWith("s") ? trimmed : `${trimmed}s`);
   const cased =
@@ -251,30 +253,27 @@ export function scaleIngredientDisplay(
   fromServings: number | null | undefined,
   toServings: number
 ): string {
-  const base = fromServings && fromServings > 0 ? fromServings : null;
-  if (!base || base === toServings) return ingredient.rawText;
+  const canScale = Boolean(fromServings && fromServings > 0 && toServings > 0);
+  const from = canScale && fromServings ? fromServings : 1;
+  const to = canScale ? toServings : 1;
 
-  const parsed =
-    ingredient.quantityMin != null
-      ? {
-          quantityMin: ingredient.quantityMin,
-          quantityMax: ingredient.quantityMax ?? null,
-          unit: ingredient.unit ?? null,
-          name: parseIngredientLine(ingredient.rawText).name,
-        }
-      : parseIngredientLine(ingredient.rawText);
+  const leading = splitLeadingQuantity(ingredient.rawText);
+  const quantityMin = ingredient.quantityMin ?? leading.min;
+  const quantityMax = ingredient.quantityMax ?? leading.max;
+  if (quantityMin == null) return ingredient.rawText;
 
-  if (parsed.quantityMin == null) return ingredient.rawText;
-
-  const min = formatQuantity(scaleQuantity(parsed.quantityMin, base, toServings));
-  const max =
-    parsed.quantityMax != null
-      ? formatQuantity(scaleQuantity(parsed.quantityMax, base, toServings))
-      : null;
+  const min = formatQuantity(scaleQuantity(quantityMin, from, to));
+  const max = quantityMax != null ? formatQuantity(scaleQuantity(quantityMax, from, to)) : null;
   const qty = max ? `${min}-${max}` : min;
-  const unit = parsed.unit ? ` ${parsed.unit}` : "";
-  const name = parsed.name ? ` ${parsed.name}` : "";
-  return `${qty}${unit}${name}`.trim();
+
+  if (leading.min != null) {
+    return leading.rest ? `${qty} ${leading.rest}` : qty;
+  }
+
+  const parsed = parseIngredientLine(ingredient.rawText);
+  const unit = ingredient.unit ?? parsed.unit;
+  const name = parsed.name;
+  return `${qty}${unit ? ` ${unit}` : ""}${name ? ` ${name}` : ""}`.trim();
 }
 
 export function clampServings(value: number, min = 1, max = 24): number {

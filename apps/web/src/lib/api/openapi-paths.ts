@@ -1010,6 +1010,55 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: { 200: { description: "Household" } },
   });
 
+  const householdServingsSettingsSchema = z
+    .object({
+      mode: z.enum(["family", "fixed", "recipe"]),
+      servings: z.number().int().min(1).max(24).nullable(),
+      familySize: z.number().int().nonnegative(),
+      defaultCookFor: z.number().int().min(1).max(24),
+    })
+    .openapi("HouseholdServingsSettings");
+
+  registry.registerPath({
+    method: "get",
+    path: "/households/settings",
+    tags: ["households"],
+    summary: "Get kitchen Default servings",
+    description:
+      "family matches max(recipe yield, People count). fixed uses servings. recipe keeps the card yield.",
+    responses: {
+      200: {
+        description: "Default servings setting",
+        content: { "application/json": { schema: householdServingsSettingsSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "patch",
+    path: "/households/settings",
+    tags: ["households"],
+    summary: "Update kitchen Default servings",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              mode: z.enum(["family", "fixed", "recipe"]),
+              servings: z.number().int().min(1).max(24).optional().nullable(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Updated Default servings setting",
+        content: { "application/json": { schema: householdServingsSettingsSchema } },
+      },
+    },
+  });
+
   const weeklyNightSchema = z.object({
     dayOfWeek: z.number().int().min(0).max(6),
     day: z.string(),

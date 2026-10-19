@@ -1,0 +1,34 @@
+---
+title: manage_household_settings
+description: Get or update kitchen Default servings
+---
+
+Kitchen Default servings controls how recipes open and how new meal-plan entries store servings. Family size is the People (dietary profiles) count, not signed-in kitchen members.
+
+## Input Schema
+
+| Parameter | Type                               | Required       | Default | Description                                      |
+| --------- | ---------------------------------- | -------------- | ------- | ------------------------------------------------ |
+| `action`  | `get` \| `update`                  | No             | `get`   | Read or save the setting                         |
+| `mode`    | `family` \| `fixed` \| `recipe`    | For `update`   |         | How recipes scale                                |
+| `servings`| number                             | When `fixed`   |         | 1-24. Required when `mode` is `fixed`            |
+
+- `family` (default): display `max(recipe yield, people count)`
+- `fixed`: always use `servings`
+- `recipe`: keep the stored card yield
+
+## Example Result
+
+```json
+{
+  "mode": "family",
+  "servings": null,
+  "familySize": 8,
+  "defaultCookFor": 8
+}
+```
+
+## Related
+
+- [get_household_context](/docs/reference/mcp/get-household-context)
+- [get_recipe](/docs/reference/mcp/get-recipe)

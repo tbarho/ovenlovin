@@ -37,4 +37,17 @@ describe("shopItemQuantity", () => {
       })
     ).toBe("1 2/3 tbsp");
   });
+
+  it("formats a numeric quantity as a cooking fraction when displayQuantity is missing", () => {
+    expect(
+      shopItemQuantity({
+        key: "celery",
+        name: "celery",
+        quantity: 0.6666666667,
+        unit: "cup",
+        recipes: [],
+        warnings: [],
+      })
+    ).toBe("2/3 cup");
+  });
 });

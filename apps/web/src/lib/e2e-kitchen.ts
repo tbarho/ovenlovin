@@ -1,6 +1,8 @@
 import {
   ApiKeyService,
   CookbookService,
+  DECIMAL_TWO_THIRDS_CARROT,
+  DECIMAL_TWO_THIRDS_CELERY,
   HouseholdService,
   PeopleService,
   PlanService,
@@ -218,7 +220,7 @@ export const E2E_RECIPES: KitchenRecipe[] = [
       slug: "tomato-soup",
       title: "Tomato soup",
       description: "A blender soup for a cold night.",
-      servings: 4,
+      servings: 5,
       prepTimeMinutes: 10,
       cookTimeMinutes: 30,
       cuisine: "American",
@@ -226,6 +228,8 @@ export const E2E_RECIPES: KitchenRecipe[] = [
       ingredients: [
         { rawText: "2 cans crushed tomatoes" },
         { rawText: "1 yellow onion" },
+        { rawText: DECIMAL_TWO_THIRDS_CELERY.rawText },
+        { rawText: DECIMAL_TWO_THIRDS_CARROT.rawText },
         { rawText: "2 cups vegetable broth" },
         { rawText: "1/2 cup cream" },
         { rawText: "2 tbsp butter" },
@@ -477,9 +481,8 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
   }
 
   const weekStart = e2eKitchenWeekStart();
-  const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 20 } });
-  const hasThisWeek = existingPlans.items.some((plan) => plan.weekStart === weekStart);
-  if (!hasThisWeek) {
+  const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 40 } });
+  if (!existingPlans.items.some((plan) => plan.weekStart === weekStart)) {
     const dinnerRecipes = await recipes.listRecipes(household.id, { pagination: { limit: 40 } });
     const dinner = dinnerRecipes.items.filter((recipe) =>
       ["weeknight-pesto-pasta", "sheet-pan-salmon", "veggie-tacos"].includes(recipe.slug)

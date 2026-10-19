@@ -118,6 +118,15 @@ function parseNumberToken(token: string): number | null {
   return null;
 }
 
+/** Split a stored ingredient line into a leading amount and the remaining text. */
+export function splitLeadingQuantity(text: string): {
+  min: number | null;
+  max: number | null;
+  rest: string;
+} {
+  return consumeLeadingQuantity(text.trim());
+}
+
 function consumeLeadingQuantity(text: string): {
   min: number | null;
   max: number | null;

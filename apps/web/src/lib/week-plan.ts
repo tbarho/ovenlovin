@@ -1,5 +1,6 @@
 import { attendingPeopleForEntry, sanitizeWarningCopy } from "@ovenlovin/allergens";
 import {
+  HouseholdService,
   PeopleService,
   PlanService,
   RecipeService,
@@ -8,6 +9,8 @@ import {
   parseShoppingTripState,
   planEntriesForWeek,
   shopItemKey,
+  weekDefaultServings,
+  type DefaultServingsMode,
   type MealPlan,
   type MealPlanEntry,
   type Person,
@@ -65,6 +68,7 @@ export type WeekKitchen = {
   entries: PlanEntryDraft[];
   recipes: PlanRecipePick[];
   defaultServings: number;
+  defaultServingsMode: DefaultServingsMode;
 };
 
 export function findingsFromCheck(check: WhoCanEatResult): WeekFinding[] {
@@ -178,6 +182,16 @@ export async function loadWeekKitchen(
   const householdPeople = await peopleService.listPeopleByHousehold(householdId, { limit: 40 });
   const people = householdPeople.items;
   const rules = await peopleService.getRulesForPeople(people.map((person) => person.id));
+  const households = new HouseholdService(db);
+  const household = await households.getHousehold(householdId);
+  const servingsSettings = household
+    ? households.servingsSettingsFor(household, people.length)
+    : {
+        mode: "family" as const,
+        servings: null,
+        familySize: people.length,
+        defaultCookFor: weekDefaultServings({ familySize: people.length, mode: "family" }),
+      };
 
   if (!plan) {
     const catalog = await recipes.listRecipes(householdId, { pagination: { limit: 80 } });
@@ -191,7 +205,8 @@ export async function loadWeekKitchen(
       shoppingState: emptyShoppingTripState(),
       entries: [],
       recipes: recipePicks,
-      defaultServings: 4,
+      defaultServings: servingsSettings.defaultCookFor,
+      defaultServingsMode: servingsSettings.mode,
     };
   }
 
@@ -317,7 +332,8 @@ export async function loadWeekKitchen(
       attendees: entry.attendees,
     })),
     recipes: recipePicks,
-    defaultServings: 4,
+    defaultServings: servingsSettings.defaultCookFor,
+    defaultServingsMode: servingsSettings.mode,
   };
 }
 

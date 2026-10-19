@@ -1,4 +1,4 @@
-import { pgTable, varchar, uuid, pgEnum, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, varchar, uuid, pgEnum, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { commonFields, createdByField } from "./common";
 
 export const membershipRoleEnum = pgEnum("membership_role", ["owner", "admin", "member", "viewer"]);
@@ -9,6 +9,8 @@ export const household = pgTable("household", {
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   clerkOrgId: varchar("clerk_org_id", { length: 255 }).unique(),
+  defaultServingsMode: varchar("default_servings_mode", { length: 16 }).notNull().default("family"),
+  defaultServingsCount: integer("default_servings_count"),
 });
 
 export const user = pgTable("user", {

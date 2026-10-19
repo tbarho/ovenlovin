@@ -27,6 +27,7 @@ import {
   managePeopleTool,
   managePersonRulesTool,
   manageHouseholdScheduleTool,
+  manageHouseholdSettingsTool,
   manageKitchenInvitesTool,
   manageKitchenMembersTool,
   canonicalizePersonRuleTarget,
@@ -64,6 +65,11 @@ describe("MCP Tool Schemas", () => {
   });
 
   describe("get_recipe", () => {
+    it("documents cooking-fraction displayText at displayServings", () => {
+      expect(getRecipeTool.description).toMatch(/displayText/);
+      expect(getRecipeTool.description).toMatch(/displayServings/);
+    });
+
     it("validates correct UUID", () => {
       const result = getRecipeTool.inputSchema.safeParse({
         id: "550e8400-e29b-41d4-a716-446655440000",
@@ -418,6 +424,23 @@ describe("MCP Tool Schemas", () => {
         manageHouseholdScheduleTool.inputSchema.safeParse({
           action: "replace",
           week: [{ day: "friday", busyLevel: "high", cooking: false }],
+        }).success
+      ).toBe(true);
+    });
+
+    it("validates manage_household_settings", () => {
+      expect(manageHouseholdSettingsTool.inputSchema.safeParse({}).success).toBe(true);
+      expect(
+        manageHouseholdSettingsTool.inputSchema.safeParse({
+          action: "update",
+          mode: "fixed",
+          servings: 8,
+        }).success
+      ).toBe(true);
+      expect(
+        manageHouseholdSettingsTool.inputSchema.safeParse({
+          action: "update",
+          mode: "family",
         }).success
       ).toBe(true);
     });

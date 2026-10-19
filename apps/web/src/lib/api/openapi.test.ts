@@ -31,6 +31,7 @@ describe("generateOpenApiDocument", () => {
         "/meal-plans/{id}/shopping-list",
         "/meal-plans/{id}/shopping-list/state",
         "/households",
+        "/households/settings",
         "/households/schedule",
         "/households/mine",
         "/households/members",

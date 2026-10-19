@@ -21,6 +21,7 @@ import { deleteMealPlanTool } from "./delete-meal-plan";
 import { managePeopleTool } from "./manage-people";
 import { managePersonRulesTool } from "./manage-person-rules";
 import { manageHouseholdScheduleTool } from "./manage-household-schedule";
+import { manageHouseholdSettingsTool } from "./manage-household-settings";
 import { manageKitchenInvitesTool } from "./manage-kitchen-invites";
 import { manageKitchenMembersTool } from "./manage-kitchen-members";
 
@@ -34,6 +35,7 @@ export const MCP_TOOLS = [
   deleteRecipeTool,
   getHouseholdContextTool,
   manageHouseholdScheduleTool,
+  manageHouseholdSettingsTool,
   manageKitchenInvitesTool,
   manageKitchenMembersTool,
   getPersonRulesTool,
