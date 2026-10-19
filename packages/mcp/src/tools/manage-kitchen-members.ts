@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { HouseholdService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
@@ -43,6 +44,7 @@ async function handler(input: z.infer<typeof manageKitchenMembersSchema>, contex
     return { status: "left" as const, householdId: context.householdId };
   }
 
+  requireWriteRole(context);
   if (!input.userId) throw new Error("userId is required");
 
   if (input.action === "update_role") {

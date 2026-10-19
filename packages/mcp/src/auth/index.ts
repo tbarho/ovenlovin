@@ -6,9 +6,8 @@ import {
   HouseholdService,
   apiKeyMembershipRole,
   canWriteKitchen,
+  selectActiveMembership,
 } from "@ovenlovin/core";
-import { eq } from "drizzle-orm";
-import { household } from "@ovenlovin/db/schema";
 import { parseAuthorizationHeader } from "./authorization";
 
 /**
@@ -47,7 +46,7 @@ export async function authenticateRequest(headers: Record<string, string>): Prom
     if (scheme.kind === "apiKey") {
       return parseApiKey(scheme.token);
     }
-    return parseClerkToken(scheme.token);
+    return parseClerkToken(scheme.token, headers);
   } catch (error) {
     if (error && typeof error === "object" && "code" in error) {
       throw error;
@@ -59,7 +58,13 @@ export async function authenticateRequest(headers: Record<string, string>): Prom
   }
 }
 
-async function parseClerkToken(token: string): Promise<AuthContext> {
+const CLERK_NO_KITCHEN =
+  "Open OvenLovin once in the browser to set up your kitchen, or use an API key.";
+
+async function parseClerkToken(
+  token: string,
+  headers: Record<string, string>
+): Promise<AuthContext> {
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) {
     throw {
@@ -80,40 +85,49 @@ async function parseClerkToken(token: string): Promise<AuthContext> {
       } as AuthError;
     }
 
-    const userId = verifiedToken.sub;
-
-    const orgId = (verifiedToken as Record<string, unknown>).org_id as string | undefined;
-    const orgRole = (verifiedToken as Record<string, unknown>).org_role as string | undefined;
-
-    if (!orgId) {
-      throw {
-        code: "unauthorized",
-        message: "Organization membership required",
-      } as AuthError;
-    }
-
     const db = getDatabase();
-    const [householdRecord] = await db
-      .select()
-      .from(household)
-      .where(eq(household.clerkOrgId, orgId))
-      .limit(1);
-
-    if (!householdRecord) {
+    const households = new HouseholdService(db);
+    const userRecord = await households.getUserByClerkId(verifiedToken.sub);
+    if (!userRecord) {
       throw {
         code: "unauthorized",
-        message: "Household not found for organization",
+        message: CLERK_NO_KITCHEN,
       } as AuthError;
     }
 
-    const role = orgRole as "owner" | "admin" | "member" | "viewer" | undefined;
-    const scopes = deriveScopes(role ?? "member");
+    const memberships = await households.getMembershipsForUser(userRecord.id);
+    const orgId = (verifiedToken as Record<string, unknown>).org_id;
+    let membership = null;
+    if (typeof orgId === "string" && orgId) {
+      const orgHousehold = await households.getHouseholdByClerkOrgId(orgId);
+      membership = orgHousehold
+        ? (memberships.find((item) => item.householdId === orgHousehold.id) ?? null)
+        : null;
+    }
+
+    if (!membership) {
+      const preferred = headers["x-kitchen-id"] ?? headers["X-Kitchen-Id"];
+      if (preferred && !memberships.some((item) => item.householdId === preferred)) {
+        throw {
+          code: "unauthorized",
+          message: "Kitchen membership required",
+        } as AuthError;
+      }
+      membership = selectActiveMembership(memberships, preferred);
+    }
+
+    if (!membership) {
+      throw {
+        code: "unauthorized",
+        message: CLERK_NO_KITCHEN,
+      } as AuthError;
+    }
 
     return {
-      householdId: householdRecord.id,
-      userId,
-      scopes,
-      membershipRole: role ?? "member",
+      householdId: membership.householdId,
+      userId: userRecord.id,
+      scopes: deriveScopes(membership.role),
+      membershipRole: membership.role,
     };
   } catch (error) {
     if (error && typeof error === "object" && "code" in error) {

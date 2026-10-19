@@ -434,17 +434,123 @@ describe("MCP Tool Schemas", () => {
       ).rejects.toMatchObject({ code: "forbidden" });
     });
 
-    it("rejects manage_people create for a viewer", async () => {
-      await expect(
-        managePeopleTool.handler(
-          { action: "create", displayName: "Parent A" },
-          {
-            householdId: "550e8400-e29b-41d4-a716-446655440001",
-            membershipRole: "viewer",
-            scopes: [],
-          }
-        )
-      ).rejects.toMatchObject({ code: "forbidden" });
+    const viewer = {
+      householdId: "550e8400-e29b-41d4-a716-446655440001",
+      membershipRole: "viewer" as const,
+      scopes: [],
+    };
+
+    it.each([
+      ["create_recipe", () => createRecipeTool.handler({ title: "Toast" }, viewer)],
+      [
+        "import_recipe",
+        () =>
+          importRecipeTool.handler(
+            { source: "url", content: "https://example.com/recipe", skipReview: false },
+            viewer
+          ),
+      ],
+      [
+        "import_recipe_from_image",
+        () =>
+          importRecipeFromImageTool.handler(
+            { imageUrl: "https://example.com/photo.jpg", skipReview: false },
+            viewer
+          ),
+      ],
+      [
+        "delete_recipe",
+        () => deleteRecipeTool.handler({ id: "550e8400-e29b-41d4-a716-446655440000" }, viewer),
+      ],
+      [
+        "save_meal_plan",
+        () =>
+          saveMealPlanTool.handler(
+            {
+              weekStart: "2026-10-12",
+              entries: [],
+              checkReportJson: {},
+              status: "draft",
+            },
+            viewer
+          ),
+      ],
+      [
+        "edit_meal_plan",
+        () =>
+          editMealPlanTool.handler(
+            { planId: "550e8400-e29b-41d4-a716-446655440000", action: "undo", meal: "dinner" },
+            viewer
+          ),
+      ],
+      [
+        "delete_meal_plan",
+        () => deleteMealPlanTool.handler({ id: "550e8400-e29b-41d4-a716-446655440000" }, viewer),
+      ],
+      [
+        "manage_cookbook",
+        () => manageCookbookTool.handler({ action: "create", name: "Weeknights" }, viewer),
+      ],
+      [
+        "reorder_people",
+        () =>
+          reorderPeopleTool.handler(
+            { personIds: ["550e8400-e29b-41d4-a716-446655440000"] },
+            viewer
+          ),
+      ],
+      [
+        "manage_people",
+        () => managePeopleTool.handler({ action: "create", displayName: "Parent A" }, viewer),
+      ],
+      [
+        "manage_person_rules",
+        () =>
+          managePersonRulesTool.handler(
+            {
+              action: "add",
+              personId: "550e8400-e29b-41d4-a716-446655440000",
+              kind: "allergen",
+              target: "peanut",
+              severity: "block",
+            },
+            viewer
+          ),
+      ],
+      [
+        "manage_person_loves",
+        () =>
+          managePersonLovesTool.handler(
+            { action: "add", personId: "550e8400-e29b-41d4-a716-446655440000", value: "salmon" },
+            viewer
+          ),
+      ],
+      [
+        "manage_household_schedule",
+        () => manageHouseholdScheduleTool.handler({ action: "replace", week: [] }, viewer),
+      ],
+      [
+        "manage_household_settings",
+        () => manageHouseholdSettingsTool.handler({ action: "update", mode: "family" }, viewer),
+      ],
+      [
+        "manage_kitchen_invites",
+        () => manageKitchenInvitesTool.handler({ action: "create" }, viewer),
+      ],
+      [
+        "manage_kitchen_members",
+        () =>
+          manageKitchenMembersTool.handler(
+            {
+              action: "update_role",
+              userId: "550e8400-e29b-41d4-a716-446655440000",
+              role: "member",
+            },
+            viewer
+          ),
+      ],
+    ] as const)("%s forbids a viewer", async (_name, run) => {
+      await expect(run()).rejects.toMatchObject({ code: "forbidden" });
     });
 
     it("rejects manage_people update and delete for members, including a member's API key", async () => {
