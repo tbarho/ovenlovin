@@ -152,6 +152,16 @@ describe("scaleIngredientDisplay", () => {
     ).toBe("1 cup shredded mozzarella");
     expect(pluralizeUnit("1", "cups")).toBe("1 cup");
   });
+
+  it("does not prepend a stored unit when it is not right after the quantity", () => {
+    expect(
+      scaleIngredientDisplay(
+        { rawText: "2 (14 oz) cans diced tomatoes", quantityMin: 2, unit: "can" },
+        4,
+        4
+      )
+    ).toBe("2 (14 oz) cans diced tomatoes");
+  });
 });
 
 describe("formatDurationMinutes", () => {

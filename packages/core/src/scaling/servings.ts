@@ -298,12 +298,11 @@ export function scaleIngredientDisplay(
   const qty = max ? `${min}-${max}` : min;
 
   if (leading.min != null) {
-    const parsed = parseIngredientLine(ingredient.rawText);
     const leadingUnit = splitLeadingUnit(leading.rest);
-    const unit = ingredient.unit ?? parsed.unit ?? leadingUnit.unit;
-    if (unit) {
-      const rest = leadingUnit.unit ? leadingUnit.rest : leading.rest;
-      return rest ? `${pluralizeUnit(qty, unit)} ${rest}` : pluralizeUnit(qty, unit);
+    if (leadingUnit.unit) {
+      return leadingUnit.rest
+        ? `${pluralizeUnit(qty, leadingUnit.unit)} ${leadingUnit.rest}`
+        : pluralizeUnit(qty, leadingUnit.unit);
     }
     return leading.rest ? `${qty} ${leading.rest}` : qty;
   }
