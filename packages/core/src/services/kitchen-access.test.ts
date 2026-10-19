@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Membership, MembershipRole } from "../schemas/households";
 import {
+  API_KEY_CREATOR_NOT_A_MEMBER,
   HouseholdAccessError,
+  apiKeyMembershipRole,
   assertCanManageInvites,
   assertCanManageMembers,
   assertInviteAcceptable,
@@ -81,6 +83,22 @@ describe("kitchen access policy", () => {
         selectedHouseholdId: "hhhhhhh1-1111-4111-8111-111111111111",
       })
     ).toBe("hhhhhhh1-1111-4111-8111-111111111111");
+  });
+
+  it("uses the key creator's role in this kitchen, not another household", () => {
+    const kitchenId = "22222222-2222-4222-8222-222222222222";
+    expect(
+      apiKeyMembershipRole(
+        [
+          { householdId: "55555555-5555-4555-8555-555555555555", role: "owner" },
+          { householdId: kitchenId, role: "admin" },
+        ],
+        kitchenId
+      )
+    ).toBe("admin");
+    expect(apiKeyMembershipRole([], kitchenId)).toBeUndefined();
+    expect(API_KEY_CREATOR_NOT_A_MEMBER).toMatch(/no longer a member of this kitchen/);
+    expect(API_KEY_CREATOR_NOT_A_MEMBER).not.toMatch(/[\u2013\u2014]/);
   });
 
   it("selects a preferred kitchen when the user belongs to it", () => {
