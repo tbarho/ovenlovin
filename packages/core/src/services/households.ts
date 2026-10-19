@@ -81,11 +81,8 @@ export class HouseholdService extends BaseService {
     householdId: string;
     name: string;
     actorRole?: MembershipRole;
-    isBot?: boolean;
   }): Promise<Household> {
-    if (!input.isBot) {
-      assertCanRenameKitchen(input.actorRole);
-    }
+    assertCanRenameKitchen(input.actorRole);
     const { name } = updateHouseholdNameSchema.parse({ name: input.name });
     const now = new Date();
     const [updated] = await this._db

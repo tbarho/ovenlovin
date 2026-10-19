@@ -108,6 +108,9 @@ describe("plan risk confirm copy", () => {
       warning: "Contains peanuts, so Child B can't eat this. Anaphylaxis risk",
     });
     expect(recipeNeedsPlanConfirm(kungPao)).toBe(true);
+    expect(
+      recipeNeedsPlanConfirm(pick({ id: "scan", title: "Photo import", safety: "unknown" }))
+    ).toBe(true);
     expect(recipeNeedsPlanConfirm(pick({ id: "tacos", title: "Veggie tacos" }))).toBe(false);
     const copy = planRiskConfirmCopy(kungPao, "Sunday");
     expect(copy.title).toContain("Kung pao chicken");

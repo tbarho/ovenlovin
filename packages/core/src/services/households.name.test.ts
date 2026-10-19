@@ -53,7 +53,14 @@ describe("HouseholdService.updateHouseholdName", () => {
     expect(db.update).toHaveBeenCalled();
   });
 
-  it("blocks members from renaming", async () => {
+  it("blocks admins and members from renaming", async () => {
+    await expect(
+      service.updateHouseholdName({
+        householdId: householdRow.id,
+        name: "Stolen name",
+        actorRole: "admin",
+      })
+    ).rejects.toBeInstanceOf(HouseholdAccessError);
     await expect(
       service.updateHouseholdName({
         householdId: householdRow.id,

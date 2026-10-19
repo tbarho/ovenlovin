@@ -17,7 +17,6 @@ import {
   DEMO_RECIPES,
   DEMO_SHOPPING_ITEMS,
   DEMO_WEEK_START,
-  distinctDemoKitchenName,
 } from "./fixture";
 
 export type DemoKitchenSeed = {
@@ -200,6 +199,5 @@ export async function seedDemoKitchenDefault(): Promise<DemoKitchenSeed> {
     clerkUserId: "user_demo_preview",
     householdSlug: "demo-preview",
     email: "demo-preview@demo.ovenlovin.local",
-    householdName: distinctDemoKitchenName("demo-preview"),
   });
 }
