@@ -42,13 +42,17 @@ async function parseApiKey(apiKey: string): Promise<RequestContext> {
   }
 
   const memberships = await new HouseholdService(db).getMembershipsForUser(result.key.createdBy);
+  const membershipRole = apiKeyMembershipRole(memberships, result.key.householdId);
+  if (!membershipRole) {
+    throw new UnauthorizedError("Invalid or expired API key");
+  }
 
   return {
     clientId: result.key.id,
     householdId: result.key.householdId,
     isBot: true,
     apiKeyCreatedBy: result.key.createdBy,
-    membershipRole: apiKeyMembershipRole(memberships, result.key.householdId),
+    membershipRole,
   };
 }
 
