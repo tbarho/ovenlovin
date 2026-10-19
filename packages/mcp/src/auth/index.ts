@@ -96,24 +96,27 @@ async function parseClerkToken(
     }
 
     const memberships = await households.getMembershipsForUser(userRecord.id);
-    const orgId = (verifiedToken as Record<string, unknown>).org_id;
+    const preferred = headers["x-kitchen-id"] ?? headers["X-Kitchen-Id"];
     let membership = null;
-    if (typeof orgId === "string" && orgId) {
-      const orgHousehold = await households.getHouseholdByClerkOrgId(orgId);
-      membership = orgHousehold
-        ? (memberships.find((item) => item.householdId === orgHousehold.id) ?? null)
-        : null;
-    }
-
-    if (!membership) {
-      const preferred = headers["x-kitchen-id"] ?? headers["X-Kitchen-Id"];
-      if (preferred && !memberships.some((item) => item.householdId === preferred)) {
+    if (preferred) {
+      membership = memberships.find((item) => item.householdId === preferred) ?? null;
+      if (!membership) {
         throw {
           code: "unauthorized",
-          message: "Kitchen membership required",
+          message: "You are not a member of that kitchen. Check X-Kitchen-Id.",
         } as AuthError;
       }
-      membership = selectActiveMembership(memberships, preferred);
+    } else {
+      const orgId = (verifiedToken as Record<string, unknown>).org_id;
+      if (typeof orgId === "string" && orgId) {
+        const orgHousehold = await households.getHouseholdByClerkOrgId(orgId);
+        membership = orgHousehold
+          ? (memberships.find((item) => item.householdId === orgHousehold.id) ?? null)
+          : null;
+      }
+      if (!membership) {
+        membership = selectActiveMembership(memberships);
+      }
     }
 
     if (!membership) {

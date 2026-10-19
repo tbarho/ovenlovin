@@ -133,6 +133,24 @@ describe("Clerk Bearer kitchen role", () => {
       })
     ).rejects.toMatchObject({
       code: "unauthorized",
+      message: "You are not a member of that kitchen. Check X-Kitchen-Id.",
+    });
+  });
+
+  it("lets X-Kitchen-Id win when org_id maps to a different kitchen", async () => {
+    fixtures.orgId = "org_123";
+    fixtures.orgHouseholdId = kitchenA;
+    fixtures.memberships = [
+      membership(kitchenA, "member", "mem_a", "2026-01-01T00:00:00.000Z"),
+      membership(kitchenB, "admin", "mem_b", "2026-02-01T00:00:00.000Z"),
+    ];
+    const context = await authenticateRequest({
+      ...bearer,
+      "X-Kitchen-Id": kitchenB,
+    });
+    expect(context).toMatchObject({
+      householdId: kitchenB,
+      membershipRole: "admin",
     });
   });
 });
