@@ -3,6 +3,7 @@ import { PeopleService } from "./people";
 
 const PERSON_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const RULE_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const NEW_RULE_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 const existingRow = {
   id: RULE_ID,
@@ -28,12 +29,33 @@ const existingRow = {
   createdByApiKeyId: null,
 };
 
+const createPayload = {
+  personId: PERSON_ID,
+  kind: "allergen" as const,
+  target: "peanut",
+  severity: "block" as const,
+  includeMayContain: true,
+  includeCrossContact: true,
+  sharedFacility: "block" as const,
+  includeUnmappedIngredients: false,
+  includeDescendants: true,
+  treatCoconutAsTreeNut: false,
+  label: null,
+  note: null,
+  activeFrom: null,
+  activeUntil: null,
+  setBy: existingRow.setBy,
+  createdBy: existingRow.createdBy,
+  createdByApiKeyId: null,
+};
+
 function selectChain(result: unknown[]) {
+  const promise = Promise.resolve(result);
   const self = {
     from: vi.fn(() => self),
     where: vi.fn(() => self),
-    limit: vi.fn(async () => result),
-    orderBy: vi.fn(async () => result),
+    limit: vi.fn(() => self),
+    then: promise.then.bind(promise),
   };
   return self;
 }
@@ -60,59 +82,48 @@ describe("PeopleService rule dedupe", () => {
   it("returns the existing peanut/block rule instead of inserting a duplicate", async () => {
     db.select.mockReturnValueOnce(selectChain([existingRow]));
 
+    const created = await service.createRule(createPayload);
+
+    expect(created.created).toBe(false);
+    expect(created.rule.id).toBe(RULE_ID);
+    expect(created.rule.target).toBe("peanut");
+    expect(created.rule.severity).toBe("block");
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("inserts a permanent peanut block when only a timed one exists", async () => {
+    db.select.mockReturnValueOnce(selectChain([{ ...existingRow, activeUntil: "2026-11-01" }]));
+    db.insert.mockReturnValueOnce(insertChain([{ ...existingRow, id: NEW_RULE_ID }]));
+
+    const created = await service.createRule(createPayload);
+
+    expect(created.created).toBe(true);
+    expect(created.rule.id).toBe(NEW_RULE_ID);
+    expect(db.insert).toHaveBeenCalled();
+  });
+
+  it("inserts when may-contain differs from the existing peanut block", async () => {
+    db.select.mockReturnValueOnce(selectChain([existingRow]));
+    db.insert.mockReturnValueOnce(insertChain([{ ...existingRow, id: NEW_RULE_ID }]));
+
     const created = await service.createRule({
-      personId: PERSON_ID,
-      kind: "allergen",
-      target: "peanut",
-      severity: "block",
-      includeMayContain: true,
-      includeCrossContact: true,
-      sharedFacility: "block",
-      includeUnmappedIngredients: false,
-      includeDescendants: true,
-      treatCoconutAsTreeNut: false,
-      label: null,
-      note: null,
-      activeFrom: null,
-      activeUntil: null,
-      setBy: existingRow.setBy,
-      createdBy: existingRow.createdBy,
-      createdByApiKeyId: null,
+      ...createPayload,
+      includeMayContain: false,
     });
 
-    expect(created.id).toBe(RULE_ID);
-    expect(created.target).toBe("peanut");
-    expect(created.severity).toBe("block");
-    expect(db.insert).not.toHaveBeenCalled();
+    expect(created.created).toBe(true);
+    expect(created.rule.id).toBe(NEW_RULE_ID);
+    expect(db.insert).toHaveBeenCalled();
   });
 
   it("inserts when no matching rule exists", async () => {
     db.select.mockReturnValueOnce(selectChain([]));
-    db.insert.mockReturnValueOnce(
-      insertChain([{ ...existingRow, id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd" }])
-    );
+    db.insert.mockReturnValueOnce(insertChain([{ ...existingRow, id: NEW_RULE_ID }]));
 
-    const created = await service.createRule({
-      personId: PERSON_ID,
-      kind: "allergen",
-      target: "peanut",
-      severity: "block",
-      includeMayContain: true,
-      includeCrossContact: true,
-      sharedFacility: "block",
-      includeUnmappedIngredients: false,
-      includeDescendants: true,
-      treatCoconutAsTreeNut: false,
-      label: null,
-      note: null,
-      activeFrom: null,
-      activeUntil: null,
-      setBy: existingRow.setBy,
-      createdBy: existingRow.createdBy,
-      createdByApiKeyId: null,
-    });
+    const created = await service.createRule(createPayload);
 
-    expect(created.id).toBe("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
+    expect(created.created).toBe(true);
+    expect(created.rule.id).toBe(NEW_RULE_ID);
     expect(db.insert).toHaveBeenCalled();
   });
 });

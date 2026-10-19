@@ -9,6 +9,7 @@ import {
   ruleKindForCatalogGroup,
   searchCatalog,
   unknownRuleTargetMessage,
+  ambiguousRuleTargetMessage,
 } from "./catalog";
 
 describe("allergenCatalog", () => {
@@ -109,6 +110,25 @@ describe("resolveCatalogTarget", () => {
     expect(canonicalizePersonRuleTarget("allergen", "tree nuts").target).toBe("tree_nut");
     expect(canonicalizePersonRuleTarget("allergen", "cow's milk").target).toBe("milk");
     expect(canonicalizePersonRuleTarget("allergen", "wheat flour").target).toBe("wheat");
+  });
+
+  it("does not auto-pick peanut or tree_nut for nuts", () => {
+    expect(resolveCatalogTarget("nuts", { kind: "allergen" })).toBeNull();
+    const canonical = canonicalizePersonRuleTarget("allergen", "nuts");
+    expect(canonical.resolved).toBe(false);
+    expect(canonical.ambiguous).toEqual(expect.arrayContaining(["peanut", "tree_nut"]));
+    expect(canonical.ambiguous).toHaveLength(2);
+    expect(canonicalizePersonRuleTarget("allergen", "nut").ambiguous).toEqual(
+      expect.arrayContaining(["peanut", "tree_nut"])
+    );
+    expect(canonicalizePersonRuleTarget("allergen", "all nuts").ambiguous).toEqual(
+      expect.arrayContaining(["peanut", "tree_nut"])
+    );
+    expect(ambiguousRuleTargetMessage("nuts", canonical.ambiguous ?? [])).toMatch(/peanut/);
+    expect(ambiguousRuleTargetMessage("nuts", canonical.ambiguous ?? [])).toMatch(/tree_nut/);
+    expect(ambiguousRuleTargetMessage("nuts", canonical.ambiguous ?? [])).not.toMatch(
+      /confirmUnknown/
+    );
   });
 
   it("does not invent a catalog match for xyzzy", () => {

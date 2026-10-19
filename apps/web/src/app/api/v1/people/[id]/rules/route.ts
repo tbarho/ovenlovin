@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { BadRequestError, handleApiError, NotFoundError } from "@/lib/api/errors";
+import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { jsonResponse, createdResponse } from "@/lib/api/response";
 import {
   getRequestContext,
@@ -9,16 +9,18 @@ import {
 } from "@/lib/api/middleware";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
 import {
+  ambiguousRuleTargetMessage,
   canonicalizePersonRuleTarget,
   unknownRuleTargetMessage,
   type PersonRuleKind,
 } from "@ovenlovin/allergens";
 import { getDatabase } from "@ovenlovin/db";
+import { assertPersonHousehold } from "@/lib/api/people";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId } = await params;
 
@@ -26,9 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const rules = await service.getRulesForPerson(personId);
 
@@ -52,9 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const actor = resolveWriteActor({
       userId: context.userId,
@@ -66,24 +64,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const kind = (body.kind ?? "allergen") as PersonRuleKind;
     const target = String(body.target ?? "");
     const canonical = canonicalizePersonRuleTarget(kind, target);
+    if (canonical.ambiguous?.length) {
+      throw new BadRequestError(ambiguousRuleTargetMessage(target, canonical.ambiguous));
+    }
     if (kind === "allergen" && !canonical.resolved && !confirmUnknown) {
       throw new BadRequestError(unknownRuleTargetMessage(target));
     }
 
     const rest = { ...body };
     delete rest.confirmUnknown;
-    if (typeof rest.severity === "string") {
-      const existing = await service.findMatchingRule({
-        personId,
-        kind: canonical.kind,
-        target: canonical.target,
-        severity: rest.severity,
-      });
-      if (existing) {
-        return jsonResponse(existing);
-      }
-    }
-    const rule = await service.createRule({
+    const { rule, created } = await service.createRule({
       ...rest,
       personId,
       kind: canonical.kind,
@@ -93,6 +83,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       createdByApiKeyId: actor.createdByApiKeyId,
     });
 
+    if (!created) return jsonResponse(rule);
     return createdResponse(rule, `/api/v1/people/${personId}/rules/${rule.id}`);
   } catch (error) {
     return handleApiError(error, request.url);

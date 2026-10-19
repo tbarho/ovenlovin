@@ -488,10 +488,15 @@ function entryMatchesPhrase(entry: CatalogEntry, query: string): boolean {
   });
 }
 
-function findCatalogEntryByPhrase(query: string, group?: CatalogGroup): CatalogEntry | undefined {
-  const matches = catalogPools(group).filter((entry) => entryMatchesPhrase(entry, query));
-  if (matches.length === 0) return undefined;
-  return matches.find((entry) => entry.featured) ?? matches[0];
+function uniquePhraseMatches(query: string, group?: CatalogGroup): CatalogEntry[] {
+  const matches: CatalogEntry[] = [];
+  const seen = new Set<string>();
+  for (const entry of catalogPools(group)) {
+    if (!entryMatchesPhrase(entry, query) || seen.has(entry.code)) continue;
+    seen.add(entry.code);
+    matches.push(entry);
+  }
+  return matches;
 }
 
 /**
@@ -514,9 +519,10 @@ export function resolveCatalogTarget(
     findCatalogEntry(q);
   if (exact) return exact;
 
-  const phrase =
-    findCatalogEntryByPhrase(q, group) ?? (group ? findCatalogEntryByPhrase(q) : undefined);
-  if (phrase) return phrase;
+  let phraseMatches = uniquePhraseMatches(q, group);
+  if (phraseMatches.length === 0 && group) phraseMatches = uniquePhraseMatches(q);
+  if (phraseMatches.length > 1) return null;
+  if (phraseMatches[0]) return phraseMatches[0];
 
   const primary = intentForRuleKind(options.kind);
   const intents: RuleIntent[] = [];
@@ -541,7 +547,19 @@ export function canonicalizePersonRuleTarget(
   target: string;
   canonicalized: boolean;
   resolved: boolean;
+  ambiguous?: string[];
 } {
+  const group = catalogGroupForRuleKind(kind);
+  const phraseMatches = uniquePhraseMatches(target.trim(), group);
+  if (phraseMatches.length > 1) {
+    return {
+      kind,
+      target: target.trim(),
+      canonicalized: false,
+      resolved: false,
+      ambiguous: phraseMatches.map((entry) => entry.code),
+    };
+  }
   const resolved = resolveCatalogTarget(target, { kind });
   if (!resolved) {
     return { kind, target: target.trim(), canonicalized: false, resolved: false };
@@ -560,6 +578,10 @@ export function canonicalizePersonRuleTarget(
 
 export function unknownRuleTargetMessage(target: string): string {
   return `We can't check '${target.trim()}' against recipes. If you meant this exact food, retry with confirmUnknown: true.`;
+}
+
+export function ambiguousRuleTargetMessage(target: string, codes: string[]): string {
+  return `'${target.trim()}' matches ${codes.join(" and ")}. Use one of those, or add a rule for each.`;
 }
 
 function editDistance(a: string, b: string): number {

@@ -7,6 +7,33 @@ import { PeopleOrderError, orderedPersonIds } from "./people-order";
 
 export { PeopleOrderError, movePersonId, orderedPersonIds } from "./people-order";
 
+function dateKey(value: string | Date | null | undefined): string | null {
+  if (value == null || value === "") return null;
+  return String(value).slice(0, 10);
+}
+
+function ruleCheckIdentity(rule: {
+  includeMayContain?: boolean | null;
+  includeCrossContact?: boolean | null;
+  sharedFacility?: PersonRule["sharedFacility"] | null;
+  includeUnmappedIngredients?: boolean | null;
+  includeDescendants?: boolean | null;
+  treatCoconutAsTreeNut?: boolean | null;
+  activeFrom?: string | Date | null;
+  activeUntil?: string | Date | null;
+}): string {
+  return JSON.stringify({
+    includeMayContain: rule.includeMayContain ?? false,
+    includeCrossContact: rule.includeCrossContact ?? false,
+    sharedFacility: rule.sharedFacility ?? "ignore",
+    includeUnmappedIngredients: rule.includeUnmappedIngredients ?? false,
+    includeDescendants: rule.includeDescendants ?? true,
+    treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut ?? false,
+    activeFrom: dateKey(rule.activeFrom),
+    activeUntil: dateKey(rule.activeUntil),
+  });
+}
+
 export class PeopleService extends BaseService {
   async getPerson(id: string): Promise<Person | null> {
     const [result] = await this._db
@@ -162,13 +189,14 @@ export class PeopleService extends BaseService {
     return result ? this.mapPersonRule(result) : null;
   }
 
-  async findMatchingRule(input: {
-    personId: string;
-    kind: PersonRule["kind"];
-    target: string;
-    severity: PersonRule["severity"];
-  }): Promise<PersonRule | null> {
-    const [result] = await this._db
+  async findMatchingRule(
+    input: Omit<
+      PersonRule,
+      "id" | "createdAt" | "updatedAt" | "deletedAt" | "createdBy" | "setBy"
+    > &
+      Partial<Pick<PersonRule, "createdBy" | "setBy">>
+  ): Promise<PersonRule | null> {
+    const results = await this._db
       .select()
       .from(personRule)
       .where(
@@ -179,22 +207,21 @@ export class PeopleService extends BaseService {
           eq(personRule.severity, input.severity),
           isNull(personRule.deletedAt)
         )
-      )
-      .limit(1);
+      );
 
-    return result ? this.mapPersonRule(result) : null;
+    const want = ruleCheckIdentity(input);
+    return (
+      results
+        .map((row) => this.mapPersonRule(row))
+        .find((row) => ruleCheckIdentity(row) === want) ?? null
+    );
   }
 
   async createRule(
     data: Omit<PersonRule, "id" | "createdAt" | "updatedAt" | "deletedAt">
-  ): Promise<PersonRule> {
-    const existing = await this.findMatchingRule({
-      personId: data.personId,
-      kind: data.kind,
-      target: data.target,
-      severity: data.severity,
-    });
-    if (existing) return existing;
+  ): Promise<{ rule: PersonRule; created: boolean }> {
+    const existing = await this.findMatchingRule(data);
+    if (existing) return { rule: existing, created: false };
 
     const [created] = await this._db
       .insert(personRule)
@@ -220,7 +247,7 @@ export class PeopleService extends BaseService {
       .returning();
 
     if (!created) throw new Error("Failed to create rule");
-    return this.mapPersonRule(created);
+    return { rule: this.mapPersonRule(created), created: true };
   }
 
   async updateRule(

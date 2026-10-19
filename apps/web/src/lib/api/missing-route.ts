@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isClerkProtectExempt } from "@/lib/clerk-protect";
 
 export function missingApiMessage(pathname: string): string {
   return `${pathname} is not an API route. Use /api/v1/{resource}, or mint a demo key with /api/demo/enter?format=json.`;
@@ -9,7 +10,8 @@ export function isApiOrMcpPath(pathname: string): boolean {
     pathname === "/api" ||
     pathname.startsWith("/api/") ||
     pathname === "/mcp" ||
-    pathname.startsWith("/mcp/")
+    pathname.startsWith("/mcp/") ||
+    isClerkProtectExempt(pathname)
   );
 }
 
@@ -35,13 +37,7 @@ export function isApiShapedRequest(input: {
 export function missingApiResponse(request: NextRequest): NextResponse {
   const pathname = request.nextUrl.pathname;
   const instance = request.url;
-  let origin = "https://your-app.vercel.app";
-  try {
-    origin = new URL(instance).origin;
-  } catch {
-    const configured = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-    if (configured) origin = configured;
-  }
+  const origin = new URL(instance).origin;
   return NextResponse.json(
     {
       type: `${origin}/problems/not-found`,

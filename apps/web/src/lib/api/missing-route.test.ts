@@ -49,6 +49,10 @@ describe("missing API routes", () => {
     expect(isApiOrMcpPath("/api/recipes")).toBe(true);
     expect(isApiOrMcpPath("/api/v1/recipes")).toBe(true);
     expect(isApiOrMcpPath("/mcp")).toBe(true);
+    expect(isApiOrMcpPath("/llms.txt")).toBe(true);
+    expect(isApiOrMcpPath("/docs")).toBe(true);
+    expect(isApiOrMcpPath("/docs/connect-your-agent")).toBe(true);
+    expect(isApiOrMcpPath("/robots.txt")).toBe(true);
   });
 
   it("returns problem+json 404 for a wrong base path an agent would follow", async () => {

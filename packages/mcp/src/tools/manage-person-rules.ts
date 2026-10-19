@@ -1,7 +1,11 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
-import { canonicalizePersonRuleTarget, unknownRuleTargetMessage } from "@ovenlovin/allergens";
+import {
+  ambiguousRuleTargetMessage,
+  canonicalizePersonRuleTarget,
+  unknownRuleTargetMessage,
+} from "@ovenlovin/allergens";
 import { createDbClient } from "@ovenlovin/db";
 import { McpInvalidParamsError } from "../json-rpc";
 
@@ -100,29 +104,15 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
       throw new McpInvalidParamsError("kind, target, and severity are required to add a rule");
     }
     const canonical = canonicalizePersonRuleTarget(input.kind, input.target);
+    if (canonical.ambiguous?.length) {
+      throw new McpInvalidParamsError(
+        ambiguousRuleTargetMessage(input.target, canonical.ambiguous)
+      );
+    }
     if (input.kind === "allergen" && !canonical.resolved && !input.confirmUnknown) {
       throw new McpInvalidParamsError(unknownRuleTargetMessage(input.target));
     }
-    const existing = await people.findMatchingRule({
-      personId: person.id,
-      kind: canonical.kind,
-      target: canonical.target,
-      severity: input.severity,
-    });
-    if (existing) {
-      return {
-        personId: person.id,
-        status: "exists" as const,
-        rule: {
-          id: existing.id,
-          kind: existing.kind,
-          target: existing.target,
-          severity: existing.severity,
-        },
-        canonicalizedFrom: canonical.canonicalized ? input.target : undefined,
-      };
-    }
-    const created = await people.createRule({
+    const { rule, created } = await people.createRule({
       personId: person.id,
       kind: canonical.kind,
       target: canonical.target,
@@ -141,12 +131,12 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
     });
     return {
       personId: person.id,
-      status: "added" as const,
+      status: created ? ("added" as const) : ("exists" as const),
       rule: {
-        id: created.id,
-        kind: created.kind,
-        target: created.target,
-        severity: created.severity,
+        id: rule.id,
+        kind: rule.kind,
+        target: rule.target,
+        severity: rule.severity,
       },
       canonicalizedFrom: canonical.canonicalized ? input.target : undefined,
     };
