@@ -116,7 +116,7 @@ describe("dispatchMcpRequest", () => {
       id: 10,
       error: { code: JsonRpcErrorCode.invalidParams },
     });
-    expect(JSON.stringify(response)).toMatch(/displayName/);
+    expect(response && "error" in response ? response.error.message : "").toMatch(/displayName/);
     expect(response && "error" in response ? response.error.code : 0).not.toBe(
       JsonRpcErrorCode.internal
     );
@@ -144,7 +144,7 @@ describe("dispatchMcpRequest", () => {
     expect(response).toMatchObject({
       error: { code: JsonRpcErrorCode.invalidParams },
     });
-    expect(JSON.stringify(response)).toMatch(/target/);
+    expect(response && "error" in response ? response.error.message : "").toMatch(/target/);
   });
 
   it("does not use a stub household on tools/call", async () => {
