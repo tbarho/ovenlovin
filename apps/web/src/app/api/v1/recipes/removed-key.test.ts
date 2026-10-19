@@ -38,5 +38,6 @@ describe("removed member API keys", () => {
       })
     );
     expect(response.status).toBe(401);
+    expect(response.headers.get("content-type")).toContain("application/problem+json");
   });
 });
