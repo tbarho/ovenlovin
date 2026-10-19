@@ -28,7 +28,7 @@ describe("KitchenMembers", () => {
   });
 
   it("shows a newly joined member after a refresh without a full reload", async () => {
-    let items: typeof owner[] | Array<typeof owner | typeof joiner> = [owner];
+    let items: (typeof owner)[] | Array<typeof owner | typeof joiner> = [owner];
     vi.mocked(api).mockImplementation(async () => ({ items }));
 
     render(<KitchenMembers currentUserId="user-a" currentRole="owner" />);
