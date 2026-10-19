@@ -4,29 +4,26 @@ import * as schema from "./schema";
 
 type DbClient = PostgresJsDatabase<typeof schema> & { $client: Sql };
 
-let dbInstance: DbClient | null = null;
+const clients = new Map<string, DbClient>();
 
 export function getDatabase(): DbClient {
-  if (!dbInstance) {
-    // eslint-disable-next-line no-undef
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error(
-        "DATABASE_URL environment variable is not set. See .env.example for setup instructions."
-      );
-    }
-    const client = postgres(connectionString);
-    dbInstance = drizzle(client, { schema }) as DbClient;
+  // eslint-disable-next-line no-undef
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL environment variable is not set. See .env.example for setup instructions."
+    );
   }
-  return dbInstance;
+  return createDbClient(connectionString);
 }
 
 export function createDbClient(connectionString: string): DbClient {
-  // shortcut: one process-wide pool, when a tool needs a second database
-  if (dbInstance) return dbInstance;
+  const existing = clients.get(connectionString);
+  if (existing) return existing;
   const client = postgres(connectionString);
-  dbInstance = drizzle(client, { schema }) as DbClient;
-  return dbInstance;
+  const db = drizzle(client, { schema }) as DbClient;
+  clients.set(connectionString, db);
+  return db;
 }
 
 export type { DbClient };
