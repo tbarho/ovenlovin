@@ -80,6 +80,28 @@ describe("weekDefaultServings and planEntryServings", () => {
     expect(effectivePlanServings({ entryServings: 6, defaultCookFor: 5 })).toBe(6);
     expect(effectivePlanServings({ defaultCookFor: 5 })).toBe(5);
   });
+
+  it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
+    expect(
+      effectivePlanServings({
+        entryServings: null,
+        defaultCookFor: 5,
+        recipeServings: 4,
+        scaleFactor: 2,
+      })
+    ).toBe(8);
+  });
+
+  it("uses recipe yield in recipe mode when the entry has no servings", () => {
+    expect(
+      effectivePlanServings({
+        entryServings: null,
+        defaultCookFor: 4,
+        mode: "recipe",
+        recipeServings: 6,
+      })
+    ).toBe(6);
+  });
 });
 
 describe("notes and settings", () => {

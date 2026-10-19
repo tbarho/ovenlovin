@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DefaultServingsMode } from "@ovenlovin/core";
-import { planEntryServings } from "@ovenlovin/core/scaling";
+import { effectivePlanServings, planEntryServings } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -94,9 +94,14 @@ function mealThumb(title: string, image: string | null) {
   );
 }
 
-function servingsCopy(meal: WeekMeal, cookFor: number): string | null {
+function servingsCopy(meal: WeekMeal, cookFor: number, mode: DefaultServingsMode): string | null {
   if (meal.isNoCook) return null;
-  const cookingFor = meal.servings && meal.servings > 0 ? meal.servings : cookFor;
+  const cookingFor = effectivePlanServings({
+    entryServings: meal.servings,
+    defaultCookFor: cookFor,
+    mode,
+    recipeServings: meal.recipeServings,
+  });
   const recipeMakes = meal.recipeServings;
   if (recipeMakes && recipeMakes !== cookingFor) {
     return `Recipe makes ${recipeMakes} · cooking for ${cookingFor}`;
@@ -105,8 +110,16 @@ function servingsCopy(meal: WeekMeal, cookFor: number): string | null {
   return `Cooking for ${cookFor}`;
 }
 
-function MealCopy({ meal, cookFor }: { meal: WeekMeal; cookFor: number }) {
-  const servings = servingsCopy(meal, cookFor);
+function MealCopy({
+  meal,
+  cookFor,
+  mode,
+}: {
+  meal: WeekMeal;
+  cookFor: number;
+  mode: DefaultServingsMode;
+}) {
+  const servings = servingsCopy(meal, cookFor, mode);
   return (
     <div className="week-meal-copy">
       <p className="week-slot">{meal.isNoCook ? "Night off" : slotLabel(meal.mealSlot)}</p>
@@ -542,7 +555,7 @@ export function MealPlanWeek({
                       {day.meals.map((meal) => (
                         <div className="week-meal-link" key={meal.entryId}>
                           {mealThumb(meal.title, meal.image)}
-                          <MealCopy meal={meal} cookFor={servings} />
+                          <MealCopy meal={meal} cookFor={servings} mode={defaultServingsMode} />
                         </div>
                       ))}
                     </div>

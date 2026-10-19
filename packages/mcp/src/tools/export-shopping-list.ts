@@ -147,6 +147,7 @@ async function handler(
   const servingsSettings = household
     ? households.servingsSettingsFor(household, householdPeople.items.length)
     : {
+        mode: "family" as const,
         defaultCookFor: weekDefaultServings({
           familySize: householdPeople.items.length,
           mode: "family",
@@ -161,6 +162,7 @@ async function handler(
     includeStaples: resolveIncludeStaples(input),
     warnings,
     defaultCookFor: servingsSettings.defaultCookFor,
+    mode: servingsSettings.mode,
   });
 
   return {

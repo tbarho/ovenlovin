@@ -271,6 +271,9 @@ export async function loadWeekKitchen(
       servings: effectivePlanServings({
         entryServings: entry.servings,
         defaultCookFor: servingsSettings.defaultCookFor,
+        mode: servingsSettings.mode,
+        recipeServings: recipe?.servings ?? null,
+        scaleFactor: entry.scaleFactor,
       }),
       recipeServings: recipe?.servings ?? null,
       isNoCook,
@@ -295,7 +298,8 @@ export async function loadWeekKitchen(
         })),
       };
     }),
-    servingsSettings.defaultCookFor
+    servingsSettings.defaultCookFor,
+    servingsSettings.mode
   );
 
   const shopItems: ShopItem[] = aggregated.map((item) => {

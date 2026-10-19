@@ -75,6 +75,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       groupBy,
       includeStaples,
       defaultCookFor: servingsSettings.defaultCookFor,
+      mode: servingsSettings.mode,
     });
 
     const trip = parseShoppingTripState(plan.shoppingState);

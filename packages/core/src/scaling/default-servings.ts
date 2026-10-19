@@ -75,14 +75,24 @@ export function planEntryServings(input: {
 }
 
 /**
- * Servings used for a plan card and shopping line. An explicit entry value
- * wins; otherwise the household Default servings cook-for (not recipe yield).
+ * Servings used for a plan card and shopping line.
+ * Entry servings win; otherwise a stored scaleFactor other than 1; otherwise
+ * recipe yield in recipe mode; otherwise household cook-for.
  */
 export function effectivePlanServings(input: {
   entryServings?: number | null;
   defaultCookFor: number;
+  mode?: DefaultServingsMode;
+  recipeServings?: number | null;
+  scaleFactor?: number | null;
 }): number {
   if (input.entryServings && input.entryServings > 0) return clampServings(input.entryServings);
+  const yieldServings = recipeYieldServings(input.recipeServings);
+  // shortcut: stored 1 is identity, treat as unset until entries omit it
+  if (input.scaleFactor && input.scaleFactor > 0 && Math.abs(input.scaleFactor - 1) > 1e-9) {
+    return clampServings(input.scaleFactor * yieldServings);
+  }
+  if (input.mode === "recipe") return clampServings(yieldServings);
   return clampServings(input.defaultCookFor);
 }
 

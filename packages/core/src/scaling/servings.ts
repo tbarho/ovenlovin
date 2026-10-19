@@ -1,4 +1,6 @@
 import { parseIngredientLine, splitLeadingQuantity } from "../parsing/ingredient-line";
+import type { DefaultServingsMode } from "../schemas/households";
+import { effectivePlanServings } from "./default-servings";
 
 /**
  * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
@@ -9,24 +11,23 @@ export const DEFAULT_RECIPE_SERVINGS = 4;
 /**
  * Persistable scale for a meal-plan entry: entry servings / recipe servings.
  * Matches shopping-list scaling so the stored value and the list agree.
- * When the entry has no servings, `defaultCookFor` (household Default servings)
- * is used instead of treating the line as 1x recipe yield.
  */
 export function scaleFactorForPlanEntry(
   entryServings?: number | null,
   recipeServings?: number | null,
   scaleFactor?: number | null,
-  defaultCookFor?: number | null
+  defaultCookFor?: number | null,
+  mode?: DefaultServingsMode
 ): number {
   const base = recipeServings && recipeServings > 0 ? recipeServings : DEFAULT_RECIPE_SERVINGS;
-  if (entryServings && entryServings > 0) {
-    return roundScaleFactor(entryServings / base);
-  }
-  if (defaultCookFor && defaultCookFor > 0) {
-    return roundScaleFactor(defaultCookFor / base);
-  }
-  if (scaleFactor && scaleFactor > 0) return roundScaleFactor(scaleFactor);
-  return 1;
+  const servings = effectivePlanServings({
+    entryServings,
+    defaultCookFor: defaultCookFor && defaultCookFor > 0 ? defaultCookFor : base,
+    mode,
+    recipeServings,
+    scaleFactor,
+  });
+  return roundScaleFactor(servings / base);
 }
 
 function roundScaleFactor(value: number): number {

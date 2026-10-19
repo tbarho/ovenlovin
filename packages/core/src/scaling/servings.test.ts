@@ -38,6 +38,14 @@ describe("scaleFactorForPlanEntry", () => {
     expect(scaleFactorForPlanEntry(undefined, 6, 1, 5)).toBe(0.8333);
     expect(scaleFactorForPlanEntry(5, 6, 1, 8)).toBe(0.8333);
   });
+
+  it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 4, 2, 5)).toBe(2);
+  });
+
+  it("uses recipe yield in recipe mode when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 6, 1, 4, "recipe")).toBe(1);
+  });
 });
 
 describe("scaleQuantity", () => {

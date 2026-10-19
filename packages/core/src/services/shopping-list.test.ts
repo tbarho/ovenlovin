@@ -72,6 +72,14 @@ describe("servingsScale", () => {
   it("uses household Default servings before recipe yield when the entry has no servings", () => {
     expect(servingsScale(null, 6, 1, 5)).toBe(0.8333);
   });
+
+  it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
+    expect(servingsScale(null, 4, 2, 5)).toBe(2);
+  });
+
+  it("uses recipe yield in recipe mode when the entry has no servings", () => {
+    expect(servingsScale(null, 6, 1, 4, "recipe")).toBe(1);
+  });
 });
 
 describe("ShoppingListService", () => {
