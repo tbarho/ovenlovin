@@ -85,6 +85,13 @@
       "when": 1792800000000,
       "tag": "0011_default_servings",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792900000000,
+      "tag": "0012_person_rule_block_defaults",
+      "breakpoints": true
     }
   ]
 }
