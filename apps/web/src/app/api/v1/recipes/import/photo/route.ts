@@ -23,6 +23,8 @@ import {
   conflictFromImportResult,
   importDuplicateDetail,
   isIdempotentReplay,
+  nearPhotoDuplicateConflict,
+  possibleDuplicateOf,
   recipeFromPersist,
   saveImportedRecipe,
   withDemoImportQuota,
@@ -46,18 +48,6 @@ async function rejectExistingPhoto(householdId: string, blob: string | undefined
       recipeUrl: `/recipes/${exact.id}`,
     });
   }
-  const phash = perceptualHashFromImageBlob(blob);
-  if (!phash) return;
-  const near = await service.findPhotoNearDuplicate(householdId, phash);
-  if (near) {
-    throw new ConflictError(importDuplicateDetail("photo_near", near.title), {
-      code: "import_duplicate",
-      match: "photo_near",
-      recipeId: near.id,
-      title: near.title,
-      recipeUrl: `/recipes/${near.id}`,
-    });
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -75,6 +65,16 @@ export async function POST(request: NextRequest) {
 
     const input = await readPhotoImportRequest(request);
     await rejectExistingPhoto(householdId, input.images[0]?.blob);
+
+    const first = input.images[0]?.blob;
+    const phash = first ? perceptualHashFromImageBlob(first) : null;
+    const near = phash
+      ? await new RecipeService(getDatabase()).findPhotoNearDuplicate(householdId, phash)
+      : null;
+    const possibleDuplicate = near ? possibleDuplicateOf(near) : undefined;
+    if (near && input.save && !input.allowDuplicate) {
+      throw nearPhotoDuplicateConflict(near);
+    }
 
     const preview = await extractPhotoPreview(input.images, {
       householdId,
@@ -96,7 +96,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!input.save) {
-      return jsonResponse(presentPhotoImportPreview(preview));
+      return jsonResponse({
+        ...presentPhotoImportPreview(preview),
+        saved: false,
+        preview: true,
+        possibleDuplicate,
+      });
     }
 
     const { result, quota } = await saveImportedRecipe(draftFromPhotoPreview(preview), {

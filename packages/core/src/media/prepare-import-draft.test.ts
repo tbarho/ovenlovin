@@ -49,7 +49,21 @@ describe("prepareImportDraft", () => {
     expect(importDedupeKeys(prepared, "key-1")).toEqual([
       { kind: "idempotency", key: "key-1" },
       { kind: "photo_sha", key: "sha256:abc" },
-      { kind: "photo_phash", key: "aa".repeat(8) },
     ]);
+  });
+
+  it("does not treat a manual create with source.url as a URL import lock", () => {
+    const prepared = prepareImportDraft(
+      draft({
+        source: {
+          type: "manual",
+          url: "https://example.com/already-imported",
+          importerName: "rest-create",
+          importerVersion: "1",
+          rawExtractionJson: {},
+        },
+      })
+    );
+    expect(importDedupeKeys(prepared)).toEqual([]);
   });
 });

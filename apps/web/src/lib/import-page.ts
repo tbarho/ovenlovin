@@ -3,10 +3,16 @@ import {
   RecipeImportFetchError,
   RecipeNotFoundError,
 } from "@ovenlovin/importers";
-import { copyRemoteImages, keepMainRecipeImages } from "@ovenlovin/core";
+import {
+  copyRemoteImages,
+  keepMainRecipeImages,
+  prepareImportDraft,
+  RecipeService,
+} from "@ovenlovin/core";
+import { getDatabase } from "@ovenlovin/db";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { BadRequestError } from "@/lib/api/errors";
-import { recipeFromPersist, saveImportedRecipe } from "@/lib/import-save";
+import { conflictFromImportResult, recipeFromPersist, saveImportedRecipe } from "@/lib/import-save";
 import {
   parseCapturedPage as parseCapturedPageInput,
   parseCaptureHash as parseCaptureHashInput,
@@ -43,7 +49,15 @@ export async function importCapturedPage(
       html: input.html,
       jsonLd: input.jsonLd,
     });
-    const draft = await importer.toDraft(raw);
+    const draft = prepareImportDraft(await importer.toDraft(raw));
+    const existing = await new RecipeService(getDatabase()).findImportDuplicate(householdId, draft);
+    if (existing) {
+      throw conflictFromImportResult({
+        outcome: "existing",
+        recipe: existing.recipe,
+        match: existing.match,
+      });
+    }
     draft.images = await copyRemoteImages(
       keepMainRecipeImages(draft.images),
       createVercelImagePut(),

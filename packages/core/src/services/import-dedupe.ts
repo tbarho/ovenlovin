@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, lte, ne, or } from "drizzle-orm";
 import { importDedupe } from "@ovenlovin/db";
 import type { ImportDedupeKind } from "../media/prepare-import-draft";
 import { BaseService } from "./base";
@@ -65,7 +65,7 @@ export class ImportDedupeService extends BaseService {
       return { status: "in_flight" };
     }
 
-    await this._db
+    const stolen = await this._db
       .update(importDedupe)
       .set({
         status: "in_flight",
@@ -73,7 +73,19 @@ export class ImportDedupeService extends BaseService {
         expiresAt,
         updatedAt: now,
       })
-      .where(eq(importDedupe.id, row.id));
+      .where(
+        and(
+          eq(importDedupe.id, row.id),
+          or(
+            isNull(importDedupe.expiresAt),
+            lte(importDedupe.expiresAt, now),
+            ne(importDedupe.status, "in_flight")
+          ),
+          or(ne(importDedupe.status, "completed"), isNull(importDedupe.recipeId))
+        )
+      )
+      .returning();
+    if (!stolen[0]) return { status: "in_flight" };
     return { status: "claimed" };
   }
 

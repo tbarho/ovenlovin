@@ -32,7 +32,7 @@ export function importDuplicateDetail(
     return `This photo was already imported as ${named}. Open that recipe instead of importing again.`;
   }
   if (match === "photo_near") {
-    return `A nearly identical photo was already imported as ${named}. Open that recipe instead of importing again.`;
+    return `A similar PNG photo was already imported as ${named}. Near-duplicate checks use a perceptual hash of PNG bytes only. Send allowDuplicate:true to save this recipe anyway.`;
   }
   if (match === "source_url") {
     return `This URL was already imported as ${named}. Open that recipe instead of importing again.`;
@@ -59,6 +59,20 @@ export function conflictFromImportResult(result: PersistImportedDraftResult): Co
     recipeId: result.recipe.id,
     title: result.recipe.title,
     recipeUrl: `/recipes/${result.recipe.id}`,
+    ...(result.match === "photo_near"
+      ? { possibleDuplicate: possibleDuplicateOf(result.recipe) }
+      : {}),
+  });
+}
+
+export function nearPhotoDuplicateConflict(recipe: { id: string; title: string }): ConflictError {
+  return new ConflictError(importDuplicateDetail("photo_near", recipe.title), {
+    code: "import_near_duplicate",
+    match: "photo_near",
+    recipeId: recipe.id,
+    title: recipe.title,
+    recipeUrl: `/recipes/${recipe.id}`,
+    possibleDuplicate: possibleDuplicateOf(recipe),
   });
 }
 
@@ -97,8 +111,16 @@ export async function saveImportedRecipe(
   return { result, quota: await demoImportQuota(input.householdId) };
 }
 
+export type PossibleDuplicate = { recipeId: string; title: string };
+
+export function possibleDuplicateOf(recipe: { id: string; title: string }): PossibleDuplicate {
+  return { recipeId: recipe.id, title: recipe.title };
+}
+
 export function presentImportPreview(draft: RecipeImportDraft) {
   return {
+    saved: false as const,
+    preview: true as const,
     title: draft.title,
     description: draft.description,
     notes: draft.notes,

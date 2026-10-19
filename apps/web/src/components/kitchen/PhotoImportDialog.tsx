@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/browser-api";
+import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_STEPS,
@@ -82,6 +82,8 @@ function PhotoReviewForm({
   heroSrc,
   pending,
   error,
+  existingRecipeUrl,
+  possibleDuplicate,
   savedRecipeId,
   onOpenSaved,
   onChange,
@@ -91,6 +93,8 @@ function PhotoReviewForm({
   heroSrc: string | null;
   pending: boolean;
   error: string | null;
+  existingRecipeUrl: string | null;
+  possibleDuplicate: { recipeId: string; title: string } | null;
   savedRecipeId: string | null;
   onOpenSaved: () => void;
   onChange: (next: PhotoReviewDraft) => void;
@@ -111,6 +115,13 @@ function PhotoReviewForm({
           </li>
         ))}
       </ol>
+      {possibleDuplicate ? (
+        <p className="import-warn">
+          Similar to{" "}
+          <a href={`/recipes/${possibleDuplicate.recipeId}`}>{possibleDuplicate.title}</a>. Saving
+          will keep both recipes.
+        </p>
+      ) : null}
       {uncertain.length > 0 ? (
         <p className="import-warn" role="status" aria-live="polite">
           Ready to review. This photo was hard to read. Check {uncertain.join(", ")}.
@@ -251,7 +262,17 @@ function PhotoReviewForm({
           </span>
         ) : null}
       </div>
-      {error ? <p className="import-warn">{error}</p> : null}
+      {error ? (
+        <p className="import-warn">
+          {error}
+          {existingRecipeUrl ? (
+            <>
+              {" "}
+              <a href={existingRecipeUrl}>Open that recipe</a>
+            </>
+          ) : null}
+        </p>
+      ) : null}
       {pending ? (
         <p className="muted" role="status" aria-live="polite">
           Saving this recipe…
@@ -284,6 +305,7 @@ export function PhotoImportDialog({
   const [draft, setDraft] = useState<PhotoReviewDraft | null>(null);
   const [pending, setPending] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [existingRecipeUrl, setExistingRecipeUrl] = useState<string | null>(null);
   const [savedRecipe, setSavedRecipe] = useState<{
     id: string;
     title?: string;
@@ -329,6 +351,7 @@ export function PhotoImportDialog({
     if (!draft || !job) return;
     setPending(true);
     setSaveError(null);
+    setExistingRecipeUrl(null);
     try {
       const body = recipeCreateBodyFromReview(draft);
       let recipe = savedRecipe;
@@ -359,6 +382,7 @@ export function PhotoImportDialog({
       finishSaved(recipe);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Could not save recipe");
+      setExistingRecipeUrl(apiErrorRecipeUrl(err));
       setPending(false);
     }
   }
@@ -419,6 +443,8 @@ export function PhotoImportDialog({
           }
           pending={pending}
           error={saveError}
+          existingRecipeUrl={existingRecipeUrl}
+          possibleDuplicate={job?.preview?.possibleDuplicate ?? null}
           savedRecipeId={savedRecipe?.id ?? null}
           onOpenSaved={() => savedRecipe && finishSaved(savedRecipe)}
           onChange={setDraft}

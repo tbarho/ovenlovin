@@ -18,7 +18,6 @@ import {
   importDedupeKeys,
   matchFromDedupeKind,
   photoFingerprintFromDraft,
-  photoPerceptualHashFromDraft,
   prepareImportDraft,
   sourceUrlFromDraft,
   type ImportDuplicateMatch,
@@ -625,14 +624,6 @@ export class RecipeService extends BaseService {
         if (details) return { recipe: details, match: "photo" };
       }
     }
-    const phash = photoPerceptualHashFromDraft(prepared);
-    if (phash) {
-      const near = await this.findPhotoNearDuplicate(householdId, phash);
-      if (near) {
-        const details = await this.getRecipeDetails(near.id);
-        if (details) return { recipe: details, match: "photo_near" };
-      }
-    }
     const sourceUrl = sourceUrlFromDraft(prepared);
     if (sourceUrl) {
       const existing = await this.findSourceUrlDuplicate(householdId, sourceUrl);
@@ -655,6 +646,7 @@ export class RecipeService extends BaseService {
     const dedupe = new ImportDedupeService(this._db);
     const keys = importDedupeKeys(prepared, input.idempotencyKey);
     const claimed: typeof keys = [];
+    let created: RecipeDetails | undefined;
     try {
       for (const key of keys) {
         const claim = await dedupe.claim(input.householdId, key.kind, key.key);
@@ -674,16 +666,17 @@ export class RecipeService extends BaseService {
         claimed.push(key);
       }
 
-      const created = await this.createRecipeFromDraft(prepared, input);
+      created = await this.createRecipeFromDraft(prepared, input);
       for (const key of claimed) {
         await dedupe.complete(input.householdId, key.kind, key.key, created.id);
       }
       return { outcome: "created", recipe: created };
-    } catch (error) {
-      for (const key of claimed) {
-        await dedupe.release(input.householdId, key.kind, key.key);
+    } finally {
+      if (!created) {
+        for (const key of claimed) {
+          await dedupe.release(input.householdId, key.kind, key.key);
+        }
       }
-      throw error;
     }
   }
 

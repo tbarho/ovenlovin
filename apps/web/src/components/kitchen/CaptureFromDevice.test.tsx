@@ -5,6 +5,11 @@ import { CaptureFromDevice } from "./CaptureFromDevice";
 
 vi.mock("@/lib/browser-api", () => ({
   api: vi.fn(),
+  apiErrorRecipeUrl: (error: unknown) => {
+    if (!error || typeof error !== "object") return null;
+    const url = (error as { recipeUrl?: unknown }).recipeUrl;
+    return typeof url === "string" && url.startsWith("/") ? url : null;
+  },
 }));
 
 describe("CaptureFromDevice", () => {
@@ -39,6 +44,28 @@ describe("CaptureFromDevice", () => {
     expect(
       JSON.parse(window.sessionStorage.getItem("ovenlovin.import-toast") ?? "{}")
     ).toMatchObject({ title: "Beef Stroganoff", servings: 4 });
+  });
+
+  it("links to the existing recipe when import/page returns 409", async () => {
+    const hash = `#${encodeURIComponent(
+      JSON.stringify({
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        jsonLd: { "@type": "Recipe", name: "Beef Stroganoff" },
+      })
+    )}`;
+    window.history.replaceState(null, "", `/recipes/import/capture${hash}`);
+    vi.mocked(api).mockRejectedValue(
+      Object.assign(new Error('This URL was already imported as "Beef Stroganoff".'), {
+        recipeUrl: "/recipes/00000000-0000-4000-8000-000000000021",
+      })
+    );
+
+    render(<CaptureFromDevice />);
+    expect(await screen.findByText(/already imported/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open that recipe" })).toHaveAttribute(
+      "href",
+      "/recipes/00000000-0000-4000-8000-000000000021"
+    );
   });
 
   it("explains an empty hash", async () => {

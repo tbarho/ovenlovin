@@ -10,6 +10,7 @@ export type PhotoImportRequest = {
   images: PhotoImageInput[];
   isHandwritten: boolean;
   save: boolean;
+  allowDuplicate: boolean;
   cookbookId?: string;
 };
 
@@ -52,6 +53,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
       images,
       isHandwritten: asBoolean(form.get("isHandwritten")),
       save: asBoolean(form.get("save")),
+      allowDuplicate: asBoolean(form.get("allowDuplicate")),
       cookbookId:
         typeof cookbookId === "string" && cookbookId.trim() ? cookbookId.trim() : undefined,
     };
@@ -65,6 +67,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
     images?: Array<{ url?: string; base64?: string; mimeType?: string }>;
     isHandwritten?: boolean;
     save?: boolean;
+    allowDuplicate?: boolean;
     cookbookId?: string;
   };
 
@@ -79,6 +82,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
     images,
     isHandwritten: Boolean(body.isHandwritten),
     save: Boolean(body.save),
+    allowDuplicate: Boolean(body.allowDuplicate),
     cookbookId: body.cookbookId,
   };
 }

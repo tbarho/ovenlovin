@@ -68,6 +68,33 @@ describe("photo perceptual hash", () => {
     expect(isNearDuplicatePhotoHash(a!, b!)).toBe(true);
   });
 
+  it("matches two different text-heavy screenshots as a near duplicate", () => {
+    const pasta = fillRgb(48, 48, 248, 248, 246);
+    const cookies = Buffer.from(pasta);
+    for (let y = 6; y < 42; y += 3) {
+      for (let x = 6; x < 42; x++) {
+        if ((x + y) % 5 < 2) {
+          const i = (y * 48 + x) * 3;
+          pasta[i] = 28;
+          pasta[i + 1] = 28;
+          pasta[i + 2] = 28;
+        }
+        if ((x * 2 + y) % 7 < 2) {
+          const i = (y * 48 + x) * 3;
+          cookies[i] = 36;
+          cookies[i + 1] = 32;
+          cookies[i + 2] = 24;
+        }
+      }
+    }
+    const a = perceptualHashFromImageBytes(encodeRgbPng(48, 48, pasta), "image/png");
+    const b = perceptualHashFromImageBytes(encodeRgbPng(48, 48, cookies), "image/png");
+    expect(a).toBeTruthy();
+    expect(b).toBeTruthy();
+    expect(Buffer.compare(pasta, cookies)).not.toBe(0);
+    expect(isNearDuplicatePhotoHash(a!, b!)).toBe(true);
+  });
+
   it("does not match clearly different photos", () => {
     const left = fillRgb(16, 16, 200, 80, 40);
     const right = fillRgb(16, 16, 20, 180, 220);

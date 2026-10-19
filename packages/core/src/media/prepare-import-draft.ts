@@ -54,12 +54,9 @@ export function importDedupeKeys(
   if (typeof raw.photoFingerprint === "string" && raw.photoFingerprint.trim()) {
     keys.push({ kind: "photo_sha", key: raw.photoFingerprint.trim().slice(0, 512) });
   }
-  if (typeof raw.photoPerceptualHash === "string" && raw.photoPerceptualHash.trim()) {
-    keys.push({ kind: "photo_phash", key: raw.photoPerceptualHash.trim().slice(0, 512) });
-  }
 
   const url = normalizeSourceUrl(draft.source.canonicalUrl ?? draft.source.url ?? "");
-  if (url && (draft.source.type === "url" || Boolean(draft.source.url))) {
+  if (url && draft.source.type === "url") {
     keys.push({ kind: "source_url", key: url.slice(0, 512) });
   }
   return keys;
@@ -76,6 +73,7 @@ export function photoPerceptualHashFromDraft(draft: RecipeImportDraft): string |
 }
 
 export function sourceUrlFromDraft(draft: RecipeImportDraft): string | null {
+  if (draft.source.type !== "url") return null;
   return (
     normalizeSourceUrl(
       String(draft.source.rawExtractionJson?.sourceUrlNormalized ?? "") ||

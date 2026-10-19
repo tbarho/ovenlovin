@@ -23,6 +23,9 @@ export const PHOTO_IMPORT_MIME_TYPES = new Set([
 export type PhotoImageInput = { blob: string; filename?: string };
 
 export type PhotoImportPreview = {
+  saved?: boolean;
+  preview?: boolean;
+  possibleDuplicate?: { recipeId: string; title: string };
   title: string;
   description?: string;
   notes?: string;

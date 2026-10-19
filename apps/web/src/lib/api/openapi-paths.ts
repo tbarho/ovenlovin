@@ -262,7 +262,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     tags: ["recipes"],
     summary: "Import a recipe from a URL or pasted text",
     description:
-      "Preview by default (`save` omitted or false). Persist only when `save=true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
+      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
     request: {
       body: {
         content: {
@@ -360,7 +360,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/recipes/import/photo",
     tags: ["recipes"],
     summary:
-      "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact and near-duplicate photos return 409 with the existing recipeId. Send Idempotency-Key on save so retries do not create a second recipe.",
+      "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact SHA matches return 409 with the existing recipeId. Near-duplicate PNG photos (perceptual hash of PNG bytes only) are a warning: preview includes possibleDuplicate {recipeId,title}; save:true without allowDuplicate:true returns 409 with the same field. Send allowDuplicate:true to persist anyway. Send Idempotency-Key on save so retries do not create a second recipe.",
     request: {
       body: {
         content: {
@@ -381,6 +381,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
                 .optional(),
               isHandwritten: z.boolean().optional(),
               save: z.boolean().optional(),
+              allowDuplicate: z
+                .boolean()
+                .optional()
+                .describe("When true, persist even if a similar PNG photo already exists."),
               cookbookId: z.string().uuid().optional(),
             }),
           },
@@ -393,6 +397,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
               imageUrl: z.string().optional(),
               isHandwritten: z.string().optional(),
               save: z.string().optional(),
+              allowDuplicate: z.string().optional(),
               cookbookId: z.string().uuid().optional(),
             }),
           },

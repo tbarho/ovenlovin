@@ -57,7 +57,10 @@ describe("generateOpenApiDocument", () => {
     expect(spec.paths?.["/recipes"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/import"]?.post).toBeTruthy();
     expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("save");
+    expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("saved:false");
     expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("Idempotency-Key");
+    expect(JSON.stringify(spec.paths?.["/recipes/import/photo"]?.post)).toContain("allowDuplicate");
+    expect(JSON.stringify(spec.paths?.["/recipes/import/photo"]?.post)).toContain("PNG");
     expect(spec.paths?.["/recipes/import/page"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/import/photo"]?.post).toBeTruthy();
     const photoPreview = spec.components?.schemas?.PhotoImportPreview as {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   countsAsDemoImport,
   importDuplicateDetail,
+  possibleDuplicateOf,
   presentImportPreview,
   wantsPersist,
 } from "./import-save";
@@ -15,13 +16,15 @@ describe("import save helpers", () => {
     expect(wantsPersist("true")).toBe(true);
   });
 
-  it("names the existing recipe on a near-duplicate photo", () => {
-    expect(importDuplicateDetail("photo_near", "Weeknight Tomato Pasta")).toContain(
-      "Weeknight Tomato Pasta"
-    );
-    expect(importDuplicateDetail("photo_near", "Weeknight Tomato Pasta")).toContain(
-      "nearly identical"
-    );
+  it("names the existing recipe on a near-duplicate PNG and allows override", () => {
+    const detail = importDuplicateDetail("photo_near", "Weeknight Tomato Pasta");
+    expect(detail).toContain("Weeknight Tomato Pasta");
+    expect(detail).toContain("PNG");
+    expect(detail).toContain("allowDuplicate");
+    expect(possibleDuplicateOf({ id: "rec-1", title: "Weeknight Tomato Pasta" })).toEqual({
+      recipeId: "rec-1",
+      title: "Weeknight Tomato Pasta",
+    });
   });
 
   it("counts only url, photo, and paste sources as demo imports", () => {
@@ -47,5 +50,7 @@ describe("import save helpers", () => {
     });
     expect(preview.reviewReasons).toHaveLength(1);
     expect(preview.uncertainFields).toEqual(["servings"]);
+    expect(preview.saved).toBe(false);
+    expect(preview.preview).toBe(true);
   });
 });

@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { RecipeDetails } from "@ovenlovin/core";
-import { api } from "@/lib/browser-api";
+import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import { parseCaptureHash } from "@/lib/import-captured";
 
 export function CaptureFromDevice() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [existingRecipeUrl, setExistingRecipeUrl] = useState<string | null>(null);
   const started = useRef(false);
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export function CaptureFromDevice() {
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not import recipe");
+        setExistingRecipeUrl(apiErrorRecipeUrl(err));
       }
     }
 
@@ -45,9 +47,17 @@ export function CaptureFromDevice() {
       {error ? (
         <>
           <p className="muted import-error">{error}</p>
-          <p className="muted">
-            Stay signed in to OvenLovin, then tap Save to OvenLovin on the recipe page again.
-          </p>
+          {existingRecipeUrl ? (
+            <p>
+              <Link className="btn primary" href={existingRecipeUrl}>
+                Open that recipe
+              </Link>
+            </p>
+          ) : (
+            <p className="muted">
+              Stay signed in to OvenLovin, then tap Save to OvenLovin on the recipe page again.
+            </p>
+          )}
           <p>
             <Link className="btn" href="/recipes">
               Back to recipes

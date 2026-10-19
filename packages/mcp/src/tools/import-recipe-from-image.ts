@@ -129,23 +129,6 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
       message: `This photo was already imported as "${exact.title}" (${exact.id}). Open that recipe instead of importing again.`,
     };
   }
-  if (perceptualHash) {
-    const near = await recipeService.findPhotoNearDuplicate(context.householdId, perceptualHash);
-    if (near) {
-      return {
-        recipeId: near.id,
-        created: false,
-        duplicate: true,
-        match: "photo_near",
-        status: near.status,
-        title: near.title,
-        notes: near.notes ?? null,
-        images: mcpRecipeImages(near.id, near.images),
-        message: `A nearly identical photo was already imported as "${near.title}" (${near.id}). Open that recipe instead of importing again.`,
-      };
-    }
-  }
-
   const extracted = await runPhotoImport({ images, isHandwritten: input.isHandwritten }, {});
   const draft = extracted.draft;
   draft.images = await persistMainPhoto(first, context.householdId);

@@ -376,6 +376,36 @@ describe("ImportRecipeForm url and paste validation", () => {
     );
   });
 
+  it("does not reuse an Idempotency-Key after the URL changes", async () => {
+    const user = userEvent.setup();
+    let n = 0;
+    vi.stubGlobal("crypto", {
+      ...crypto,
+      randomUUID: () => `import-key-${++n}`,
+    });
+    vi.mocked(api).mockRejectedValueOnce(new Error("Connection lost")).mockResolvedValueOnce({
+      id: "00000000-0000-4000-8000-000000000088",
+      title: "Cookies",
+      servings: 4,
+    });
+    render(<ImportRecipeForm />);
+    const field = screen.getByPlaceholderText(/example.com/i);
+    await user.type(field, "https://www.budgetbytes.com/pasta");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("Connection lost")).toBeVisible();
+    await user.clear(field);
+    await user.type(field, "https://www.budgetbytes.com/cookies");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    const keys = vi.mocked(api).mock.calls.map((call) => {
+      const headers = call[1]?.headers as Record<string, string> | undefined;
+      return headers?.["Idempotency-Key"];
+    });
+    expect(keys[0]).toBe("import-key-1");
+    expect(keys[1]).toBe("import-key-2");
+    vi.unstubAllGlobals();
+  });
+
   it("shows guessed servings after a paste import", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockResolvedValue({
