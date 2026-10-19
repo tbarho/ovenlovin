@@ -31,7 +31,7 @@ export const managePeopleSchema = z
 
 async function handler(input: z.infer<typeof managePeopleSchema>, context: AuthContext) {
   if (input.action === "update" || input.action === "delete") {
-    if (!context.apiKeyId) requireAdminRole(context);
+    requireAdminRole(context);
   }
   const db = createDbClient(process.env.DATABASE_URL!);
   const people = new PeopleService(db);

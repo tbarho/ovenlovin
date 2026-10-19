@@ -1,6 +1,6 @@
 import { verifyToken } from "@clerk/backend";
 import { getDatabase } from "@ovenlovin/db";
-import { ApiKeyService } from "@ovenlovin/core";
+import { ApiKeyService, HouseholdService } from "@ovenlovin/core";
 import { eq } from "drizzle-orm";
 import { household } from "@ovenlovin/db/schema";
 import { parseAuthorizationHeader } from "./authorization";
@@ -140,11 +140,14 @@ async function parseApiKey(apiKey: string): Promise<AuthContext> {
     } as AuthError;
   }
 
+  const memberships = await new HouseholdService(db).getMembershipsForUser(result.key.createdBy);
+
   return {
     householdId: result.key.householdId,
     scopes: result.key.scopes,
     apiKeyId: result.key.id,
     apiKeyCreatedBy: result.key.createdBy,
+    membershipRole: memberships.find((item) => item.householdId === result.key.householdId)?.role,
   };
 }
 
