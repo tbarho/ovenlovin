@@ -1,4 +1,5 @@
 import { assignAisle } from "@ovenlovin/core/aisles";
+import { formatQuantity } from "@ovenlovin/core/scaling";
 import type { ShopItem } from "@/lib/week-plan";
 
 const AISLE_ORDER = [
@@ -99,6 +100,6 @@ export function shopItemQuantity(item: ShopItem): string | null {
       : item.displayQuantity;
   }
   if (item.quantity == null) return null;
-  const amount = Number.isInteger(item.quantity) ? String(item.quantity) : item.quantity.toFixed(2);
+  const amount = formatQuantity(item.quantity);
   return item.unit ? pluralizeShopUnit(amount, item.unit) : amount;
 }

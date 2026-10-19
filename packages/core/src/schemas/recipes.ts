@@ -53,6 +53,8 @@ export const recipeIngredientSchema = baseEntitySchema.extend({
   groupId: uuidSchema.nullable().optional(),
   order: z.number().int().nonnegative(),
   rawText: z.string().min(1),
+  /** Cooking-fraction line for UI / REST / MCP. Stored `rawText` stays as imported. */
+  displayText: z.string().optional(),
   name: z.string().min(1).optional(),
   quantityMin: z.number().nonnegative().nullable().optional(),
   quantityMax: z.number().positive().nullable().optional(),

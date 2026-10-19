@@ -10,6 +10,7 @@ import type {
 } from "../schemas/recipes";
 import { recipeMethodTagSchema, slugifyTitle } from "../schemas/recipes";
 import { backfillParsedIngredient, parseIngredientLine } from "../parsing/ingredient-line";
+import { DEFAULT_RECIPE_SERVINGS, scaleIngredientDisplay } from "../scaling/servings";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
 import { CookbookService } from "./cookbooks";
@@ -333,6 +334,16 @@ export class RecipeService extends BaseService {
           quantityMax: row.quantityMax ? Number(row.quantityMax) : null,
           unit: row.unit ?? null,
         }),
+        displayText: scaleIngredientDisplay(
+          {
+            rawText: row.rawText,
+            quantityMin: row.quantityMin ? Number(row.quantityMin) : null,
+            quantityMax: row.quantityMax ? Number(row.quantityMax) : null,
+            unit: row.unit ?? null,
+          },
+          found.servings,
+          found.servings ?? DEFAULT_RECIPE_SERVINGS
+        ),
         originalUnit: row.originalUnit ?? null,
         ingredientId: row.ingredientId ?? null,
         preparation: row.preparation ?? null,

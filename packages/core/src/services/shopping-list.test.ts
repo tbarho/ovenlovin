@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MealPlanEntry } from "../schemas/plans";
+import { DECIMAL_TWO_THIRDS_CELERY } from "../scaling/quantity-display.fixture";
 import {
   KITCHEN_STAPLES_SECTION,
   ShoppingListService,
@@ -331,11 +332,45 @@ describe("ShoppingListService", () => {
       name: "salt",
       quantity: 1.8333,
       unit: "tbsp",
-      displayQuantity: "5 1/2",
-      displayUnit: "tsp",
+      displayQuantity: "1 5/6",
+      displayUnit: "tbsp",
     });
-    expect(service.exportAsMarkdown(list)).toContain("5 1/2 tsp salt");
+    expect(service.exportAsMarkdown(list)).toContain("1 5/6 tbsp salt");
     expect(service.exportAsMarkdown(list)).not.toContain("1.8333");
+  });
+
+  it("shows schema.org 2/3 celery as a cooking fraction, including when scaled", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "soup", servings: 4 }),
+        recipeTitle: "Tomato soup",
+        recipeServings: 4,
+        ingredients: [DECIMAL_TWO_THIRDS_CELERY],
+      },
+    ]);
+    expect(list.ingredients[0]).toMatchObject({
+      name: "celery",
+      displayQuantity: "2/3",
+      displayUnit: "cup",
+    });
+    expect(service.exportAsMarkdown(list)).toContain("2/3 cup celery");
+    expect(service.exportAsMarkdown(list)).not.toContain("0.666");
+    expect(service.exportAsCSV(list)).toContain("2/3");
+    expect(service.exportAsCSV(list)).not.toContain("0.666");
+
+    const doubled = build([
+      {
+        entry: entry({ recipeId: "soup", servings: 8 }),
+        recipeTitle: "Tomato soup",
+        recipeServings: 4,
+        ingredients: [DECIMAL_TWO_THIRDS_CELERY],
+      },
+    ]);
+    expect(doubled.ingredients[0]).toMatchObject({
+      name: "celery",
+      displayQuantity: "1 1/3",
+      displayUnit: "cup",
+    });
   });
 
   it("S2: groupBy recipe keeps per-recipe sections", () => {

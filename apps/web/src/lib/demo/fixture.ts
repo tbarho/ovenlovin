@@ -1,4 +1,8 @@
-import type { RecipeImportDraft } from "@ovenlovin/core";
+import {
+  DECIMAL_TWO_THIRDS_CARROT,
+  DECIMAL_TWO_THIRDS_CELERY,
+  type RecipeImportDraft,
+} from "@ovenlovin/core";
 
 export const DEMO_HOUSEHOLD_NAME = "Sample kitchen";
 export const DEMO_COOKIE_NAME = "ol_demo_sandbox";
@@ -225,7 +229,7 @@ export const DEMO_RECIPES: DemoRecipe[] = [
     cookbook: "weeknight",
     title: "Tomato soup",
     description: "A blender soup for a cold night.",
-    servings: 4,
+    servings: 5,
     prepTimeMinutes: 10,
     cookTimeMinutes: 30,
     cuisine: "American",
@@ -233,6 +237,8 @@ export const DEMO_RECIPES: DemoRecipe[] = [
     ingredients: [
       { rawText: "2 cans crushed tomatoes" },
       { rawText: "1 yellow onion" },
+      { rawText: DECIMAL_TWO_THIRDS_CELERY.rawText },
+      { rawText: DECIMAL_TWO_THIRDS_CARROT.rawText },
       { rawText: "2 cups vegetable broth" },
       { rawText: "1/2 cup cream" },
       { rawText: "2 tbsp butter" },

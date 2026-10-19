@@ -3,7 +3,7 @@ title: get_recipe
 description: Get full recipe details including ingredients, steps, and nutrition
 ---
 
-Get complete recipe details including ingredient list with quantities, step-by-step instructions, nutrition facts, and optional source attribution.
+Get complete recipe details including ingredient list with quantities, step-by-step instructions, nutrition facts, and optional source attribution. `ingredients.displayText` is the cooking-fraction line scaled to `displayServings`. `rawText` is the stored import string and may still contain long decimals.
 
 ## Input Schema
 
@@ -40,6 +40,7 @@ Get complete recipe details including ingredient list with quantities, step-by-s
     groupName?: string,
     order: number,
     rawText: string,
+    displayText: string,
     quantity?: { min: number, max?: number },
     unit?: string,
     ingredientName?: string,
@@ -104,6 +105,7 @@ Get complete recipe details including ingredient list with quantities, step-by-s
       "id": "ing-001",
       "order": 1,
       "rawText": "2 cans (28 oz each) crushed tomatoes",
+      "displayText": "2 cans (28 oz each) crushed tomatoes",
       "quantity": { "min": 2 },
       "unit": "can",
       "ingredientName": "crushed tomatoes",
@@ -113,6 +115,7 @@ Get complete recipe details including ingredient list with quantities, step-by-s
       "id": "ing-002",
       "order": 2,
       "rawText": "4 cloves garlic, minced",
+      "displayText": "4 cloves garlic, minced",
       "quantity": { "min": 4 },
       "unit": "clove",
       "ingredientName": "garlic",
@@ -123,6 +126,7 @@ Get complete recipe details including ingredient list with quantities, step-by-s
       "id": "ing-003",
       "order": 3,
       "rawText": "1/4 cup olive oil",
+      "displayText": "1/4 cup olive oil",
       "quantity": { "min": 0.25 },
       "unit": "cup",
       "ingredientName": "olive oil",

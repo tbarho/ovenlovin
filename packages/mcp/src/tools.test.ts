@@ -65,6 +65,11 @@ describe("MCP Tool Schemas", () => {
   });
 
   describe("get_recipe", () => {
+    it("documents cooking-fraction displayText at displayServings", () => {
+      expect(getRecipeTool.description).toMatch(/displayText/);
+      expect(getRecipeTool.description).toMatch(/displayServings/);
+    });
+
     it("validates correct UUID", () => {
       const result = getRecipeTool.inputSchema.safeParse({
         id: "550e8400-e29b-41d4-a716-446655440000",

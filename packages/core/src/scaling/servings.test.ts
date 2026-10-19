@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DECIMAL_TWO_THIRDS_CARROT, DECIMAL_TWO_THIRDS_CELERY } from "./quantity-display.fixture";
 import {
   clampServings,
   formatDurationMinutes,
@@ -43,20 +44,45 @@ describe("formatQuantity", () => {
     expect(formatQuantity(0.5)).toBe("1/2");
     expect(formatQuantity(2.25)).toBe("2 1/4");
     expect(formatQuantity(1 / 3)).toBe("1/3");
+    expect(formatQuantity(2 / 3)).toBe("2/3");
     expect(formatQuantity(2)).toBe("2");
+    expect(formatQuantity(1 + 1 / 3)).toBe("1 1/3");
+    expect(formatQuantity(0.125)).toBe("1/8");
+    expect(formatQuantity(0.25)).toBe("1/4");
+    expect(formatQuantity(0.75)).toBe("3/4");
+  });
+
+  it("formats 2/3 scaled by 2 as a mixed number", () => {
+    expect(formatQuantity((2 / 3) * 2)).toBe("1 1/3");
+  });
+
+  it("rounds odd scaled values onto nearby cooking fractions", () => {
+    expect(formatQuantity((2 / 3) * (5 / 4))).toBe("5/6");
+    expect(formatQuantity((1 / 3) * 2)).toBe("2/3");
+  });
+
+  it("snaps floating-point noise and stored decimal leftovers to fractions", () => {
+    expect(formatQuantity(0.6666666667)).toBe("2/3");
+    expect(formatQuantity(0.3333333333)).toBe("1/3");
+    expect(formatQuantity(0.6667)).toBe("2/3");
+    expect(formatQuantity(Number("0.6666666666666666"))).toBe("2/3");
+    expect(formatQuantity(2 / 3 + Number.EPSILON)).toBe("2/3");
+    expect(formatQuantity(1 / 3 + Number.EPSILON)).toBe("1/3");
+    expect(formatQuantity(1.3333333333)).toBe("1 1/3");
   });
 });
 
 describe("toFriendlyMeasure", () => {
   it("converts ugly spoon amounts into a shoppable fraction", () => {
     expect(toFriendlyMeasure(1.8333, "tbsp")).toEqual({
-      displayQuantity: "5 1/2",
-      displayUnit: "tsp",
+      displayQuantity: "1 5/6",
+      displayUnit: "tbsp",
     });
-    expect(formatMeasureText(1.8333, "tbsp")).toBe("5 1/2 tsp");
+    expect(formatMeasureText(1.8333, "tbsp")).toBe("1 5/6 tbsp");
     expect(formatMeasureText(2, "clove")).toBe("2 cloves");
     expect(pluralizeUnit("2", "clove")).toBe("2 cloves");
     expect(pluralizeUnit("1", "clove")).toBe("1 clove");
+    expect(pluralizeUnit("2/3", "cup")).toBe("2/3 cup");
   });
 
   it("keeps a third-cup instead of 0.33 cup", () => {
@@ -86,7 +112,7 @@ describe("scaleIngredientDisplay", () => {
         4,
         8
       )
-    ).toBe("4 1/2 cup all-purpose flour");
+    ).toBe("4 1/2 cups all-purpose flour");
   });
 
   it("leaves unquantified lines unchanged", () => {
@@ -95,6 +121,17 @@ describe("scaleIngredientDisplay", () => {
 
   it("parses raw text when structured quantity is missing", () => {
     expect(scaleIngredientDisplay({ rawText: "1 tsp salt" }, 4, 2)).toBe("1/2 tsp salt");
+  });
+
+  it("formats schema.org 2/3 decimals at 1x without rewriting storage", () => {
+    expect(scaleIngredientDisplay(DECIMAL_TWO_THIRDS_CELERY, 8, 8)).toBe("2/3 cup celery");
+    expect(scaleIngredientDisplay(DECIMAL_TWO_THIRDS_CARROT, 4, 4)).toBe("2/3 cup carrot");
+    expect(DECIMAL_TWO_THIRDS_CELERY.rawText).toBe("0.6666666667 cup celery");
+    expect(DECIMAL_TWO_THIRDS_CARROT.rawText).toBe("0.6666666667 cup carrot");
+  });
+
+  it("scales 2/3 celery to a mixed number", () => {
+    expect(scaleIngredientDisplay(DECIMAL_TWO_THIRDS_CELERY, 4, 8)).toBe("1 1/3 cup celery");
   });
 });
 
