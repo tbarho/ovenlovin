@@ -1,8 +1,4 @@
-import {
-  DECIMAL_TWO_THIRDS_CARROT,
-  DECIMAL_TWO_THIRDS_CELERY,
-  type RecipeImportDraft,
-} from "@ovenlovin/core";
+import type { RecipeImportDraft } from "@ovenlovin/core";
 
 export const DEMO_HOUSEHOLD_NAME = "Sample kitchen";
 export const DEMO_COOKIE_NAME = "ol_demo_sandbox";
@@ -237,8 +233,8 @@ export const DEMO_RECIPES: DemoRecipe[] = [
     ingredients: [
       { rawText: "2 cans crushed tomatoes" },
       { rawText: "1 yellow onion" },
-      { rawText: DECIMAL_TWO_THIRDS_CELERY.rawText },
-      { rawText: DECIMAL_TWO_THIRDS_CARROT.rawText },
+      { rawText: "0.6666666667 cup celery" },
+      { rawText: "0.6666666667 cup carrot" },
       { rawText: "2 cups vegetable broth" },
       { rawText: "1/2 cup cream" },
       { rawText: "2 tbsp butter" },
