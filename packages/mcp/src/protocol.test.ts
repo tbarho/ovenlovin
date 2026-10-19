@@ -122,6 +122,26 @@ describe("dispatchMcpRequest", () => {
     );
   });
 
+  it("returns invalid params when personId is missing", async () => {
+    const response = await dispatchMcpRequest(
+      {
+        jsonrpc: "2.0",
+        id: 12,
+        method: "tools/call",
+        params: {
+          name: "manage_person_rules",
+          arguments: { action: "list" },
+        },
+      },
+      { householdId: "11111111-1111-4111-8111-111111111111", scopes: [] },
+      serverInfo
+    );
+    expect(response && "error" in response ? response.error.code : 0).toBe(
+      JsonRpcErrorCode.invalidParams
+    );
+    expect(response && "error" in response ? response.error.message : "").toMatch(/^personId:/);
+  });
+
   it("returns invalid params when a rule is missing target", async () => {
     const response = await dispatchMcpRequest(
       {

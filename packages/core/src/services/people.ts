@@ -221,7 +221,14 @@ export class PeopleService extends BaseService {
     data: Omit<PersonRule, "id" | "createdAt" | "updatedAt" | "deletedAt">
   ): Promise<{ rule: PersonRule; created: boolean }> {
     const existing = await this.findMatchingRule(data);
-    if (existing) return { rule: existing, created: false };
+    if (existing) {
+      const patch: Partial<Pick<PersonRule, "label" | "note">> = {};
+      if (data.label != null && data.label !== existing.label) patch.label = data.label;
+      if (data.note != null && data.note !== existing.note) patch.note = data.note;
+      if (Object.keys(patch).length === 0) return { rule: existing, created: false };
+      const updated = await this.updateRule(existing.id, patch);
+      return { rule: updated ?? existing, created: false };
+    }
 
     const [created] = await this._db
       .insert(personRule)

@@ -57,10 +57,13 @@ async function callTool(params: Record<string, unknown>, authContext: AuthContex
   const parsed = tool.inputSchema.safeParse(args);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
+    const path = (issue?.path ?? []).map(String).join(".");
     throw jsonRpcError(
       id,
       JsonRpcErrorCode.invalidParams,
-      issue?.message ?? "Invalid tool arguments",
+      path
+        ? `${path}: ${issue?.message ?? "Invalid tool arguments"}`
+        : (issue?.message ?? "Invalid tool arguments"),
       parsed.error.issues
     );
   }

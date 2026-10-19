@@ -31,6 +31,13 @@ describe("people catalog search", () => {
     expect(loves.some((entry) => entry.code === "mexican")).toBe(true);
   });
 
+  it("keeps wheat and shrimp as themselves in the kitchen add form", () => {
+    expect(resolveFoodAdd("wheat", { mode: "cant_eat" })?.entry.code).toBe("wheat");
+    expect(resolveFoodAdd("shrimp", { mode: "cant_eat" })?.entry.code).toBe("shrimp");
+    expect(resolveFoodAdd("crab", { mode: "cant_eat" })?.entry.code).toBe("crab");
+    expect(resolveFoodAdd("lobster", { mode: "cant_eat" })?.entry.code).toBe("lobster");
+  });
+
   it("resolves sesame seeds to the sesame allergen", () => {
     expect(resolveFoodAdd("sesame seeds", { mode: "cant_eat" })?.entry.code).toBe("sesame");
     expect(resolveFoodAdd("Sesame Seeds", { mode: "cant_eat" })?.entry.code).toBe("sesame");

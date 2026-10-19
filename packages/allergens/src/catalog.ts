@@ -549,19 +549,20 @@ export function canonicalizePersonRuleTarget(
   resolved: boolean;
   ambiguous?: string[];
 } {
-  const group = catalogGroupForRuleKind(kind);
-  const phraseMatches = uniquePhraseMatches(target.trim(), group);
-  if (phraseMatches.length > 1) {
-    return {
-      kind,
-      target: target.trim(),
-      canonicalized: false,
-      resolved: false,
-      ambiguous: phraseMatches.map((entry) => entry.code),
-    };
-  }
   const resolved = resolveCatalogTarget(target, { kind });
   if (!resolved) {
+    const group = catalogGroupForRuleKind(kind);
+    let phraseMatches = uniquePhraseMatches(target.trim(), group);
+    if (phraseMatches.length === 0 && group) phraseMatches = uniquePhraseMatches(target.trim());
+    if (phraseMatches.length > 1) {
+      return {
+        kind,
+        target: target.trim(),
+        canonicalized: false,
+        resolved: false,
+        ambiguous: phraseMatches.map((entry) => entry.code),
+      };
+    }
     return { kind, target: target.trim(), canonicalized: false, resolved: false };
   }
   const nextKind: PersonRuleKind =

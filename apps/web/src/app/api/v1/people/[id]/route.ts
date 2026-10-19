@@ -4,11 +4,12 @@ import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { assertPersonHousehold } from "@/lib/api/people";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id } = await params;
 
@@ -16,10 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const service = new PeopleService(db);
 
     const person = await service.getPerson(id);
-
-    if (!person) {
-      throw new NotFoundError("Person", id);
-    }
+    assertPersonHousehold(person, householdId, id);
 
     return jsonResponse(person);
   } catch (error) {
@@ -30,13 +28,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id } = await params;
     const body = await request.json();
 
     const db = getDatabase();
     const service = new PeopleService(db);
+
+    const existing = await service.getPerson(id);
+    assertPersonHousehold(existing, householdId, id);
 
     const person = await service.updatePerson(id, body);
 
@@ -56,12 +57,15 @@ export async function DELETE(
 ) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id } = await params;
 
     const db = getDatabase();
     const service = new PeopleService(db);
+
+    const existing = await service.getPerson(id);
+    assertPersonHousehold(existing, householdId, id);
 
     const deleted = await service.deletePerson(id);
 

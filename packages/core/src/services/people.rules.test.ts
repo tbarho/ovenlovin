@@ -68,10 +68,20 @@ function insertChain(result: unknown[]) {
   return self;
 }
 
+function updateChain(result: unknown[]) {
+  const self = {
+    set: vi.fn(() => self),
+    where: vi.fn(() => self),
+    returning: vi.fn(async () => result),
+  };
+  return self;
+}
+
 describe("PeopleService rule dedupe", () => {
   const db = {
     select: vi.fn(),
     insert: vi.fn(),
+    update: vi.fn(),
   };
   const service = new PeopleService(db as never);
 
@@ -89,6 +99,27 @@ describe("PeopleService rule dedupe", () => {
     expect(created.rule.target).toBe("peanut");
     expect(created.rule.severity).toBe("block");
     expect(db.insert).not.toHaveBeenCalled();
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it("updates label and note on an existing matching rule", async () => {
+    db.select.mockReturnValueOnce(selectChain([existingRow]));
+    db.update.mockReturnValueOnce(
+      updateChain([{ ...existingRow, label: "School lunch note", note: "Keep epi-pen" }])
+    );
+
+    const created = await service.createRule({
+      ...createPayload,
+      label: "School lunch note",
+      note: "Keep epi-pen",
+    });
+
+    expect(created.created).toBe(false);
+    expect(created.rule.id).toBe(RULE_ID);
+    expect(created.rule.label).toBe("School lunch note");
+    expect(created.rule.note).toBe("Keep epi-pen");
+    expect(db.insert).not.toHaveBeenCalled();
+    expect(db.update).toHaveBeenCalled();
   });
 
   it("inserts a permanent peanut block when only a timed one exists", async () => {

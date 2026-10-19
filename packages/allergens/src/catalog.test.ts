@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   allergenCatalog,
+  allCatalogEntries,
   catalogForIntent,
   findCatalogEntry,
   humanizeTarget,
@@ -110,6 +111,22 @@ describe("resolveCatalogTarget", () => {
     expect(canonicalizePersonRuleTarget("allergen", "tree nuts").target).toBe("tree_nut");
     expect(canonicalizePersonRuleTarget("allergen", "cow's milk").target).toBe("milk");
     expect(canonicalizePersonRuleTarget("allergen", "wheat flour").target).toBe("wheat");
+  });
+
+  it("resolves every catalog code to itself, including wheat and shrimp", () => {
+    for (const entry of allCatalogEntries()) {
+      const kind = ruleKindForCatalogGroup(entry.group);
+      const canonical = canonicalizePersonRuleTarget(kind, entry.code);
+      expect({
+        code: entry.code,
+        target: canonical.target,
+        resolved: canonical.resolved,
+      }).toEqual({ code: entry.code, target: entry.code, resolved: true });
+    }
+    expect(canonicalizePersonRuleTarget("allergen", "wheat").target).toBe("wheat");
+    expect(canonicalizePersonRuleTarget("allergen", "shrimp").target).toBe("shrimp");
+    expect(canonicalizePersonRuleTarget("allergen", "crab").target).toBe("crab");
+    expect(canonicalizePersonRuleTarget("allergen", "lobster").target).toBe("lobster");
   });
 
   it("does not auto-pick peanut or tree_nut for nuts", () => {
