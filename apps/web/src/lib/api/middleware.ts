@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { getDatabase } from "@ovenlovin/db";
-import { ApiKeyService, HouseholdService } from "@ovenlovin/core";
+import {
+  API_KEY_CREATOR_NOT_A_MEMBER,
+  ApiKeyService,
+  HouseholdService,
+  apiKeyMembershipRole,
+} from "@ovenlovin/core";
 import { enforceDemoRequestGuards } from "@/lib/demo/enforce";
 import { getSessionContext } from "@/lib/session";
 import { ForbiddenError, UnauthorizedError } from "./errors";
@@ -44,7 +49,7 @@ async function parseApiKey(apiKey: string): Promise<RequestContext> {
   const memberships = await new HouseholdService(db).getMembershipsForUser(result.key.createdBy);
   const membershipRole = apiKeyMembershipRole(memberships, result.key.householdId);
   if (!membershipRole) {
-    throw new UnauthorizedError("Invalid or expired API key");
+    throw new UnauthorizedError(API_KEY_CREATOR_NOT_A_MEMBER);
   }
 
   return {
@@ -54,14 +59,6 @@ async function parseApiKey(apiKey: string): Promise<RequestContext> {
     apiKeyCreatedBy: result.key.createdBy,
     membershipRole,
   };
-}
-
-/** Creator's current role in the key's kitchen - not a role from another household. */
-export function apiKeyMembershipRole(
-  memberships: Array<{ householdId: string; role: NonNullable<RequestContext["membershipRole"]> }>,
-  householdId: string
-): RequestContext["membershipRole"] {
-  return memberships.find((item) => item.householdId === householdId)?.role;
 }
 
 export function getIdempotencyKey(request: NextRequest): string | undefined {
