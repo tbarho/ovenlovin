@@ -1,6 +1,11 @@
 import { verifyToken } from "@clerk/backend";
 import { getDatabase } from "@ovenlovin/db";
-import { ApiKeyService, HouseholdService } from "@ovenlovin/core";
+import {
+  API_KEY_CREATOR_NOT_A_MEMBER,
+  ApiKeyService,
+  HouseholdService,
+  apiKeyMembershipRole,
+} from "@ovenlovin/core";
 import { eq } from "drizzle-orm";
 import { household } from "@ovenlovin/db/schema";
 import { parseAuthorizationHeader } from "./authorization";
@@ -44,8 +49,7 @@ export async function authenticateRequest(headers: Record<string, string>): Prom
     return parseClerkToken(scheme.token);
   } catch (error) {
     if (error && typeof error === "object" && "code" in error) {
-      const message = error instanceof Error ? error.message : "Unauthorized";
-      throw { code: "unauthorized", message } as AuthError;
+      throw error;
     }
     throw {
       code: "unauthorized",
@@ -141,13 +145,20 @@ async function parseApiKey(apiKey: string): Promise<AuthContext> {
   }
 
   const memberships = await new HouseholdService(db).getMembershipsForUser(result.key.createdBy);
+  const membershipRole = apiKeyMembershipRole(memberships, result.key.householdId);
+  if (!membershipRole) {
+    throw {
+      code: "unauthorized",
+      message: API_KEY_CREATOR_NOT_A_MEMBER,
+    } as AuthError;
+  }
 
   return {
     householdId: result.key.householdId,
     scopes: result.key.scopes,
     apiKeyId: result.key.id,
     apiKeyCreatedBy: result.key.createdBy,
-    membershipRole: memberships.find((item) => item.householdId === result.key.householdId)?.role,
+    membershipRole,
   };
 }
 

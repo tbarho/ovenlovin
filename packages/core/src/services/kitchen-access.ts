@@ -109,6 +109,17 @@ export function preferredKitchenId(input: {
   return input.pendingInviteHouseholdId ?? input.selectedHouseholdId ?? null;
 }
 
+/** Creator's current role in the key's kitchen - not a role from another household. */
+export function apiKeyMembershipRole(
+  memberships: Array<{ householdId: string; role: MembershipRole }>,
+  householdId: string
+): MembershipRole | undefined {
+  return memberships.find((item) => item.householdId === householdId)?.role;
+}
+
+export const API_KEY_CREATOR_NOT_A_MEMBER =
+  "This API key's creator is no longer a member of this kitchen.";
+
 export function selectActiveMembership(
   memberships: Membership[],
   preferredHouseholdId?: string | null

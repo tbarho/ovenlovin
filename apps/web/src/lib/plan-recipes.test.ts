@@ -118,6 +118,12 @@ describe("plan risk confirm copy", () => {
     expect(copy.body).toContain("Child B");
     expect(copy.body).toContain("peanuts");
     expect(copy.body).toContain("warning stays on Sunday");
+    const unknownCopy = planRiskConfirmCopy(
+      pick({ id: "scan", title: "Photo import", safety: "unknown" }),
+      "Monday"
+    );
+    expect(unknownCopy.body).toContain("We couldn't check this recipe's ingredients.");
+    expect(unknownCopy.body).not.toMatch(/[\u2013\u2014]/);
   });
 });
 
