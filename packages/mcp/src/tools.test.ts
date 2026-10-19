@@ -574,6 +574,20 @@ describe("MCP Tool Schemas", () => {
       ).toBe(false);
     });
 
+    it("rejects manage_kitchen_invites create for a member's API key", async () => {
+      await expect(
+        manageKitchenInvitesTool.handler(
+          { action: "create", role: "member" },
+          {
+            householdId: "550e8400-e29b-41d4-a716-446655440001",
+            membershipRole: "member",
+            apiKeyId: "33333333-3333-4333-8333-333333333333",
+            scopes: [],
+          }
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
     it("validates manage_kitchen_members", () => {
       expect(manageKitchenMembersTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
       expect(manageKitchenMembersTool.inputSchema.safeParse({ action: "leave" }).success).toBe(
