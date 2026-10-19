@@ -205,13 +205,40 @@ const PHRASE_NAMES: Record<string, string> = {
 const EXTRA_ALIASES: Record<string, string[]> = {
   peanut: ["peanuts", "groundnut", "groundnuts", "nut", "nuts", "all nuts"],
   tree_nut: ["tree nuts", "nut", "nuts", "all nuts", "tree nut"],
-  milk: ["dairy", "cow milk", "lactose", "cheese", "butter", "cream"],
-  egg: ["eggs", "albumin"],
+  milk: [
+    "dairy",
+    "cow milk",
+    "cows milk",
+    "cow's milk",
+    "lactose",
+    "cheese",
+    "butter",
+    "cream",
+    "dairy products",
+    "milk products",
+  ],
+  egg: ["eggs", "albumin", "chicken egg", "chicken eggs"],
+  fish: ["finned fish", "fishes"],
   shellfish: ["shrimp", "crab", "lobster", "shell fish"],
+  soy: ["soya", "soybean", "soybeans", "soy bean", "soy beans", "soya bean", "edamame"],
+  wheat: ["wheat flour", "wheats"],
+  sesame: ["sesame seeds", "sesame seed", "sesame oil", "tahini", "tahina", "benne", "benne seed"],
   gluten: ["gluten free", "celiac", "wheat"],
+  mustard: ["mustard seed", "mustard seeds"],
+  celery: ["celeriac", "celery root"],
+  lupin: ["lupine", "lupini", "lupins"],
+  sulfite: ["sulfites", "sulphite", "sulphites", "sulfur dioxide"],
   coconut: ["cocoanut"],
-  hazelnut: ["filbert", "filberts"],
-  pine_nut: ["pignoli", "pinon", "piñon"],
+  almond: ["almonds"],
+  cashew: ["cashews"],
+  pecan: ["pecans"],
+  walnut: ["walnuts"],
+  pistachio: ["pistachios"],
+  hazelnut: ["filbert", "filberts", "hazelnuts"],
+  macadamia: ["macadamias", "macadamia nut", "macadamia nuts"],
+  brazil_nut: ["brazil nuts", "brazil nut"],
+  pine_nut: ["pignoli", "pinon", "piñon", "pine nuts", "pine nut"],
+  chestnut: ["chestnuts"],
 };
 
 function humanizeCode(code: string): string {
@@ -438,10 +465,44 @@ export function ruleKindForCatalogGroup(group: CatalogGroup): "allergen" | "diet
   return "ingredient";
 }
 
+function catalogPools(group?: CatalogGroup): CatalogEntry[] {
+  if (group === "diet") return dietCatalogEntries();
+  if (group === "allergen") return allergenCatalog();
+  if (group === "ingredient") {
+    return [...dislikeCatalog, ...loveCatalog.filter((entry) => entry.group === "ingredient")];
+  }
+  if (group === "cuisine" || group === "style") {
+    return loveCatalog.filter((entry) => entry.group === group);
+  }
+  return allCatalogEntries();
+}
+
+function entryMatchesPhrase(entry: CatalogEntry, query: string): boolean {
+  const q = normalizeSearch(query);
+  const slug = slugCatalogCode(query);
+  if (!q && !slug) return false;
+  const phrases = [entry.code, entry.name, entry.phraseName, ...entry.aliases];
+  return phrases.some((phrase) => {
+    if (normalizeSearch(phrase) === q) return true;
+    return Boolean(slug) && slugCatalogCode(phrase) === slug;
+  });
+}
+
+function uniquePhraseMatches(query: string, group?: CatalogGroup): CatalogEntry[] {
+  const matches: CatalogEntry[] = [];
+  const seen = new Set<string>();
+  for (const entry of catalogPools(group)) {
+    if (!entryMatchesPhrase(entry, query) || seen.has(entry.code)) continue;
+    seen.add(entry.code);
+    matches.push(entry);
+  }
+  return matches;
+}
+
 /**
  * Canonicalize a typed allergen/diet/ingredient the same way the People UI
- * does (`resolveFoodAdd`): exact catalog codes win, then searchCatalog typos
- * such as "pean" → peanut.
+ * does (`resolveFoodAdd`): exact catalog codes win, then common phrases
+ * ("sesame seeds"), then searchCatalog typos such as "pean" → peanut.
  */
 export function resolveCatalogTarget(
   query: string,
@@ -457,6 +518,11 @@ export function resolveCatalogTarget(
     findCatalogEntry(q, group) ??
     findCatalogEntry(q);
   if (exact) return exact;
+
+  let phraseMatches = uniquePhraseMatches(q, group);
+  if (phraseMatches.length === 0 && group) phraseMatches = uniquePhraseMatches(q);
+  if (phraseMatches.length > 1) return null;
+  if (phraseMatches[0]) return phraseMatches[0];
 
   const primary = intentForRuleKind(options.kind);
   const intents: RuleIntent[] = [];
@@ -481,9 +547,22 @@ export function canonicalizePersonRuleTarget(
   target: string;
   canonicalized: boolean;
   resolved: boolean;
+  ambiguous?: string[];
 } {
   const resolved = resolveCatalogTarget(target, { kind });
   if (!resolved) {
+    const group = catalogGroupForRuleKind(kind);
+    let phraseMatches = uniquePhraseMatches(target.trim(), group);
+    if (phraseMatches.length === 0 && group) phraseMatches = uniquePhraseMatches(target.trim());
+    if (phraseMatches.length > 1) {
+      return {
+        kind,
+        target: target.trim(),
+        canonicalized: false,
+        resolved: false,
+        ambiguous: phraseMatches.map((entry) => entry.code),
+      };
+    }
     return { kind, target: target.trim(), canonicalized: false, resolved: false };
   }
   const nextKind: PersonRuleKind =
@@ -499,7 +578,11 @@ export function canonicalizePersonRuleTarget(
 }
 
 export function unknownRuleTargetMessage(target: string): string {
-  return `We can't check '${target.trim()}' against recipes. Save it only if you meant this exact food.`;
+  return `We can't check '${target.trim()}' against recipes. If you meant this exact food, retry with confirmUnknown: true.`;
+}
+
+export function ambiguousRuleTargetMessage(target: string, codes: string[]): string {
+  return `'${target.trim()}' matches ${codes.join(" and ")}. Use one of those, or add a rule for each.`;
 }
 
 function editDistance(a: string, b: string): number {
@@ -545,17 +628,7 @@ function fuzzyCatalogMatch(query: string, group?: CatalogGroup): CatalogEntry | 
 }
 
 export function findCatalogEntry(code: string, group?: CatalogGroup): CatalogEntry | undefined {
-  const pools =
-    group === "diet"
-      ? dietCatalogEntries()
-      : group === "allergen"
-        ? allergenCatalog()
-        : group === "ingredient"
-          ? [...dislikeCatalog, ...loveCatalog.filter((entry) => entry.group === "ingredient")]
-          : group === "cuisine" || group === "style"
-            ? loveCatalog.filter((entry) => entry.group === group)
-            : allCatalogEntries();
-  return pools.find((entry) => entry.code === code);
+  return catalogPools(group).find((entry) => entry.code === code);
 }
 
 export function matchPhrasesForTarget(target: string, kind?: string): string[] {

@@ -381,6 +381,188 @@ test.describe("REST + MCP with a real API key", () => {
     }
   });
 
+  test("API-shaped requests to the wrong base path get JSON 404, not a demo redirect", async ({
+    request,
+  }) => {
+    const key = await createKitchenKey(request);
+    const headers = {
+      Authorization: `ApiKey ${key}`,
+      Accept: "application/json",
+    };
+    for (const path of ["/recipes", "/meal-plans", "/v1/recipes", "/meal-plans/x/check"]) {
+      const get = await request.get(path, { headers, maxRedirects: 0 });
+      expect(get.status(), `${path} GET ${await get.text()}`).toBe(404);
+      expect(get.headers()["location"] ?? "").not.toMatch(/\/api\/demo\/enter/);
+      expect(get.headers()["content-type"] ?? "").toMatch(/problem\+json|json/);
+      const body = (await get.json()) as { status?: number; detail?: string };
+      expect(body.status).toBe(404);
+      expect(body.detail).toMatch(/\/api\/v1\//);
+    }
+    const posted = await request.post("/meal-plans", {
+      headers: { ...headers, "Content-Type": "application/json" },
+      data: { title: "should not mint a sandbox" },
+      maxRedirects: 0,
+    });
+    expect(posted.status(), await posted.text()).toBe(404);
+    expect(posted.headers()["location"] ?? "").not.toMatch(/\/api\/demo\/enter/);
+
+    const apiRecipes = await request.get("/api/recipes", { headers, maxRedirects: 0 });
+    expect(apiRecipes.status(), await apiRecipes.text()).toBe(404);
+  });
+
+  test("API keys can list their kitchen and cannot accept invites", async ({ request }) => {
+    const key = await createKitchenKey(request);
+    const headers = { Authorization: `ApiKey ${key}` };
+
+    const mine = await request.get("/api/v1/households/mine", { headers });
+    expect(mine.status(), await mine.text()).toBe(200);
+    const listed = (await mine.json()) as {
+      items?: Array<{ household?: { id?: string }; active?: boolean }>;
+      activeHouseholdId?: string | null;
+    };
+    expect(listed.items?.length).toBe(1);
+    expect(listed.items?.[0]?.active).toBe(true);
+    expect(listed.items?.[0]?.household?.id).toBe(listed.activeHouseholdId);
+
+    const switched = await request.post("/api/v1/households/select", {
+      headers,
+      data: { householdId: listed.activeHouseholdId },
+    });
+    expect(switched.status(), await switched.text()).toBe(401);
+    const switchProblem = (await switched.json()) as { detail?: string };
+    expect(switchProblem.detail).toMatch(/\/api\/v1\/households\/mine/);
+
+    const created = await request.post("/api/v1/households/invites", {
+      headers,
+      data: { role: "member", expiresInDays: 7 },
+    });
+    expect(created.status(), await created.text()).toBe(201);
+    const invite = (await created.json()) as { id?: string; token?: string };
+    expect(invite.token).toMatch(/^olinv_/);
+
+    try {
+      const accepted = await request.post(`/api/v1/invites/${invite.token}/accept`, { headers });
+      expect(accepted.status(), await accepted.text()).toBe(401);
+      const problem = (await accepted.json()) as { detail?: string };
+      expect(problem.detail).toMatch(/signed-in person must open/i);
+      expect(problem.detail).toContain(`/invite/${invite.token}`);
+    } finally {
+      if (invite.id) {
+        await request.delete(`/api/v1/households/invites/${invite.id}`, { headers });
+      }
+    }
+  });
+
+  test("canonicalizes sesame seeds and dedupes identical person rules", async ({ request }) => {
+    const key = await createKitchenKey(request);
+    const headers = { Authorization: `ApiKey ${key}` };
+    let personId: string | undefined;
+
+    try {
+      const createdPerson = await mcp(request, key, 20, "tools/call", {
+        name: "manage_people",
+        arguments: { action: "create", displayName: "Parent A" },
+      });
+      expect(createdPerson.status(), await createdPerson.text()).toBe(200);
+      personId = parseMcpToolJson<{ person?: { id?: string } }>(await createdPerson.json()).person
+        ?.id;
+      expect(personId).toBeTruthy();
+
+      const sesame = await request.post(`/api/v1/people/${personId}/rules`, {
+        headers,
+        data: { kind: "allergen", target: "Sesame Seeds", severity: "block" },
+      });
+      expect(sesame.status(), await sesame.text()).toBe(201);
+      const sesameBody = (await sesame.json()) as { id?: string; target?: string };
+      expect(sesameBody.target).toBe("sesame");
+
+      const first = await request.post(`/api/v1/people/${personId}/rules`, {
+        headers,
+        data: { kind: "allergen", target: "peanutz", severity: "block" },
+      });
+      expect(first.status(), await first.text()).toBe(201);
+      const firstBody = (await first.json()) as { id?: string; target?: string };
+      expect(firstBody.target).toBe("peanut");
+
+      const second = await request.post(`/api/v1/people/${personId}/rules`, {
+        headers,
+        data: { kind: "allergen", target: "peanut", severity: "block" },
+      });
+      expect(second.status(), await second.text()).toBe(200);
+      const secondBody = (await second.json()) as { id?: string; target?: string };
+      expect(secondBody.id).toBe(firstBody.id);
+
+      const third = await mcp(request, key, 21, "tools/call", {
+        name: "manage_person_rules",
+        arguments: {
+          action: "add",
+          personId,
+          kind: "allergen",
+          target: "Peanut",
+          severity: "block",
+        },
+      });
+      expect(third.status(), await third.text()).toBe(200);
+      const thirdPayload = parseMcpToolJson<{
+        status?: string;
+        rule?: { id?: string; target?: string };
+      }>(await third.json());
+      expect(thirdPayload.status).toBe("exists");
+      expect(thirdPayload.rule?.id).toBe(firstBody.id);
+
+      const listed = await request.get(`/api/v1/people/${personId}/rules`, { headers });
+      expect(listed.status()).toBe(200);
+      const rules = (await listed.json()) as Array<{ target?: string; severity?: string }>;
+      expect(
+        rules.filter((rule) => rule.target === "peanut" && rule.severity === "block")
+      ).toHaveLength(1);
+    } finally {
+      if (personId) {
+        await mcp(request, key, 92, "tools/call", {
+          name: "manage_people",
+          arguments: { action: "delete", personId },
+        });
+      }
+    }
+  });
+
+  test("MCP user mistakes are invalid params, not internal errors", async ({ request }) => {
+    const key = await createKitchenKey(request);
+    const missing = await mcp(request, key, 30, "tools/call", {
+      name: "manage_people",
+      arguments: { action: "create" },
+    });
+    expect(missing.status(), await missing.text()).toBe(200);
+    const missingBody = (await missing.json()) as {
+      error?: { code?: number; message?: string };
+    };
+    expect(missingBody.error?.code).toBe(-32602);
+    expect(missingBody.error?.message ?? JSON.stringify(missingBody)).toMatch(/displayName/);
+
+    const people = await request.get("/api/v1/people", {
+      headers: { Authorization: `ApiKey ${key}` },
+    });
+    const personId = ((await people.json()) as { items: Array<{ id: string }> }).items[0]?.id;
+    expect(personId).toBeTruthy();
+
+    const unknown = await mcp(request, key, 31, "tools/call", {
+      name: "manage_person_rules",
+      arguments: {
+        action: "add",
+        personId,
+        kind: "allergen",
+        target: "xyzzy",
+        severity: "block",
+      },
+    });
+    expect(unknown.status(), await unknown.text()).toBe(200);
+    const unknownBody = (await unknown.json()) as {
+      error?: { code?: number; message?: string };
+    };
+    expect(unknownBody.error?.code).toBe(-32602);
+    expect(unknownBody.error?.message).toContain("confirmUnknown: true");
+  });
+
   test("deletes a TEST Olive Cookbook if one exists in this kitchen", async ({ request }) => {
     const key = await createKitchenKey(request);
     const headers = { Authorization: `ApiKey ${key}` };

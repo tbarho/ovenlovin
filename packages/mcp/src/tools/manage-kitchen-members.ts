@@ -10,7 +10,6 @@ export const manageKitchenMembersSchema = z.object({
 });
 
 function actorRole(context: AuthContext) {
-  if (context.apiKeyId) return "owner" as const;
   return context.membershipRole ?? "member";
 }
 

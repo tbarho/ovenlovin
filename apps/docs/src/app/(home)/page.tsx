@@ -3,30 +3,9 @@ import { CodeSample } from "@/components/code-sample";
 import { VERCEL_DEPLOY_URL } from "@ovenlovin/brand";
 import { BookOpen, Bot, Code, Shield, Users, Zap } from "lucide-react";
 import Link from "next/link";
+import { MCP_SAMPLE, REST_SAMPLE } from "./examples";
 
 const DEPLOY_URL = VERCEL_DEPLOY_URL;
-
-const MCP_SAMPLE = `{
-  "mcpServers": {
-    "ovenlovin": {
-      "url": "https://your-app.vercel.app/mcp",
-      "apiKey": "your-api-key"
-    }
-  }
-}`;
-
-const REST_SAMPLE = `const res = await fetch("/api/v1/recipes", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    title: "Chocolate Chip Cookies",
-    servings: 24,
-    ingredients: [/* ... */],
-  }),
-});
-
-const check = await fetch(\`/api/v1/meal-plans/\${id}/check\`);
-// per-person block / warn / prefer-avoid findings`;
 
 export default function HomePage(): React.ReactElement {
   return (

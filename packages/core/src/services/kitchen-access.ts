@@ -25,6 +25,25 @@ export function invitePath(token: string): string {
   return `/invite/${token}`;
 }
 
+export function inviteAcceptLink(origin: string, token: string): string {
+  return `${origin.replace(/\/$/, "")}${invitePath(token)}`;
+}
+
+export function inviteNeedsSignedInUserMessage(
+  origin: string,
+  token: string,
+  viaApiKey: boolean
+): string {
+  const link = inviteAcceptLink(origin, token);
+  if (viaApiKey) {
+    return `An API key cannot accept a kitchen invite or join another kitchen. A signed-in person must open ${link}.`;
+  }
+  return `User authentication required. A signed-in person must open ${link}.`;
+}
+
+export const API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE =
+  "An API key is bound to one kitchen and cannot switch. A signed-in person can switch kitchens. Use GET /api/v1/households/mine to see this key's kitchen.";
+
 export function canManageInvites(role: MembershipRole | undefined): boolean {
   return role === "owner" || role === "admin";
 }
