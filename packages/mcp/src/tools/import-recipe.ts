@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import {
   copyRemoteImages,
   draftFromPlainText,
@@ -64,6 +65,7 @@ async function handler(
   input: ImportRecipeInput,
   context: AuthContext
 ): Promise<ImportRecipeOutput> {
+  requireWriteRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
 

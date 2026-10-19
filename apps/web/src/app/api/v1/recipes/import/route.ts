@@ -10,7 +10,7 @@ import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
+import { getRequestContext, requireWritableHousehold, requireUserId } from "@/lib/api/middleware";
 import { looksLikeHttpUrl } from "@/lib/import-input";
 import { draftFromPlainText } from "@/lib/plain-import";
 import { createVercelImagePut } from "@/lib/blob-store";
@@ -22,7 +22,7 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const createdBy = context.userId || context.clientId;
     if (!createdBy) {
       requireUserId(context);

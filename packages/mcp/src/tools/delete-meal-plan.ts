@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { PlanService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
@@ -8,6 +9,7 @@ export const deleteMealPlanSchema = z.object({
 });
 
 async function handler(input: z.infer<typeof deleteMealPlanSchema>, context: AuthContext) {
+  requireWriteRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const plans = new PlanService(db);
   const existing = await plans.getMealPlan(input.id);

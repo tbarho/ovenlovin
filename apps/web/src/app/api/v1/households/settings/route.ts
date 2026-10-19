@@ -7,7 +7,11 @@ import {
 import { getDatabase } from "@ovenlovin/db";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+} from "@/lib/api/middleware";
 
 async function settingsForHousehold(householdId: string) {
   const db = getDatabase();
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const body = updateHouseholdServingsSettingsSchema.parse(await request.json());
     await new HouseholdService(getDatabase()).updateServingsSettings(householdId, body);
     return jsonResponse(await settingsForHousehold(householdId));

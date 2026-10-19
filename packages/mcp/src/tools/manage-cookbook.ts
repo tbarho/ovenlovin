@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { CookbookService, RecipeService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
@@ -14,6 +15,7 @@ export const manageCookbookSchema = z.object({
 export type ManageCookbookInput = z.infer<typeof manageCookbookSchema>;
 
 async function handler(input: ManageCookbookInput, context: AuthContext) {
+  requireWriteRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const cookbooks = new CookbookService(db);
 

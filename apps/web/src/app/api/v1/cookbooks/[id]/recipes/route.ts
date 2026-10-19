@@ -3,7 +3,11 @@ import { CookbookService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+} from "@/lib/api/middleware";
 import { assertRecipeHousehold } from "@/lib/api/recipes";
 
 async function loadOwnedCookbook(id: string, householdId: string) {
@@ -18,7 +22,7 @@ async function loadOwnedCookbook(id: string, householdId: string) {
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const { id } = await params;
     await loadOwnedCookbook(id, householdId);
     const body = (await request.json()) as { recipeId?: string };
@@ -41,7 +45,7 @@ export async function DELETE(
 ) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const { id } = await params;
     await loadOwnedCookbook(id, householdId);
     const url = new URL(request.url);

@@ -4,7 +4,7 @@ import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/co
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, ConflictError, handleApiError } from "@/lib/api/errors";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
+import { getRequestContext, requireWritableHousehold, requireUserId } from "@/lib/api/middleware";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { readPhotoImportRequest } from "@/lib/photo-import-request";
@@ -22,7 +22,7 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const createdBy = context.userId || context.clientId;
     if (!createdBy) {
       requireUserId(context);
