@@ -403,18 +403,25 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const COMPILED_ALIASES: CompiledAlias[] = AISLE_RULES.flatMap((rule) =>
-  rule.aliases.map((alias) => {
+const COMPILED_ALIASES: CompiledAlias[] = AISLE_RULES.flatMap((rule) => {
+  const normalizedAliases = rule.aliases.map((alias) => normalizeIngredientName(alias));
+  return rule.aliases.flatMap((alias) => {
     const normalized = normalizeIngredientName(alias);
-    return {
-      alias: normalized,
-      pattern: new RegExp(`(?:^| )${escapeRegExp(normalized)}s?(?: |$)`),
-      aisle: rule.aisle,
-      category: rule.category,
-      canonical: rule.canonical,
-    };
-  })
-).sort((a, b) => b.alias.length - a.alias.length);
+    const singular =
+      normalized.endsWith("s") && !normalized.endsWith("ss") ? normalized.slice(0, -1) : null;
+    if (singular && normalizedAliases.includes(singular)) return [];
+    const pluralSuffix = normalized.endsWith("s") ? "" : "s?";
+    return [
+      {
+        alias: normalized,
+        pattern: new RegExp(`(?:^| )${escapeRegExp(normalized)}${pluralSuffix}(?: |$)`),
+        aisle: rule.aisle,
+        category: rule.category,
+        canonical: rule.canonical,
+      },
+    ];
+  });
+}).sort((a, b) => b.alias.length - a.alias.length);
 
 function findRule(name: string): CompiledAlias | undefined {
   const normalized = normalizeIngredientName(name);
@@ -434,6 +441,13 @@ export function isPantryStaple(name: string): boolean {
   });
 }
 
+function canonicalNameFor(name: string, match: CompiledAlias): string {
+  if (match.canonical) return match.canonical;
+  const normalized = normalizeIngredientName(name);
+  if (normalized === match.alias || normalized === `${match.alias}s`) return match.alias;
+  return name;
+}
+
 export function assignAisle(name: string): AisleAssignment {
   const match = findRule(name);
   if (!match) {
@@ -442,12 +456,17 @@ export function assignAisle(name: string): AisleAssignment {
   return {
     aisle: match.aisle,
     category: match.category,
-    canonicalName: match.canonical ?? name,
+    canonicalName: canonicalNameFor(name, match),
   };
 }
 
-export function canonicalIngredientName(name: string): string {
+/** Merge key for the shopping list: "lemons" and "lemon" share "lemon". */
+export function canonicalShopName(name: string): string {
   return assignAisle(name).canonicalName;
+}
+
+export function canonicalIngredientName(name: string): string {
+  return canonicalShopName(name);
 }
 
 export function categorySectionName(category: ShoppingListCategory): string {

@@ -7,6 +7,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import {
+  HouseholdService,
   PlanService,
   RecipeService,
   PeopleService,
@@ -14,6 +15,7 @@ import {
   collectShoppingListEntries,
   planEntriesForWeek,
   resolveIncludeStaples,
+  weekDefaultServings,
   type ShoppingListData,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
@@ -137,6 +139,20 @@ async function handler(
     }
   }
 
+  const households = new HouseholdService(db);
+  const household = await households.getHousehold(context.householdId);
+  const householdPeople = await peopleService.listPeopleByHousehold(context.householdId, {
+    limit: 40,
+  });
+  const servingsSettings = household
+    ? households.servingsSettingsFor(household, householdPeople.items.length)
+    : {
+        defaultCookFor: weekDefaultServings({
+          familySize: householdPeople.items.length,
+          mode: "family",
+        }),
+      };
+
   const shoppingList = shoppingListService.build({
     mealPlanId: plan.id,
     weekStart: plan.weekStart,
@@ -144,6 +160,7 @@ async function handler(
     groupBy: input.groupBy,
     includeStaples: resolveIncludeStaples(input),
     warnings,
+    defaultCookFor: servingsSettings.defaultCookFor,
   });
 
   return {

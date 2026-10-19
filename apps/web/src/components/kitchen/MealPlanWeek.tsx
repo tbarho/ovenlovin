@@ -96,12 +96,12 @@ function mealThumb(title: string, image: string | null) {
 
 function servingsCopy(meal: WeekMeal, cookFor: number): string | null {
   if (meal.isNoCook) return null;
-  const recipeMakes =
-    meal.recipeServings ?? (meal.servings && meal.servings !== cookFor ? meal.servings : null);
-  if (recipeMakes && recipeMakes !== cookFor) {
-    return `Recipe makes ${recipeMakes} · cooking for ${cookFor}`;
+  const cookingFor = meal.servings && meal.servings > 0 ? meal.servings : cookFor;
+  const recipeMakes = meal.recipeServings;
+  if (recipeMakes && recipeMakes !== cookingFor) {
+    return `Recipe makes ${recipeMakes} · cooking for ${cookingFor}`;
   }
-  if (meal.servings) return `${meal.servings} servings`;
+  if (cookingFor) return `${cookingFor} servings`;
   return `Cooking for ${cookFor}`;
 }
 

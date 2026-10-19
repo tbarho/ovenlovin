@@ -78,6 +78,13 @@ test.describe("phone kitchen menu", () => {
     await expect(page.getByRole("dialog", { name: "Menu" })).toHaveCount(0);
   });
 
+  test("redirects /plan to /plans", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/plan");
+    await expect(page).toHaveURL(/\/plans\/?$/);
+    await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
+  });
+
   test("keeps desktop sidebar navigation at 1440px", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/recipes");

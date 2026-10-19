@@ -519,8 +519,19 @@ describe("MealPlanWeek", () => {
   it("explains recipe yield when it differs from the cook-for count", () => {
     const six: WeekMeal = { ...pesto, servings: 6, recipeServings: 6 };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [six])} defaultServings={4} />);
-    expect(screen.getByText("Recipe makes 6 · cooking for 4")).toBeVisible();
+    expect(screen.getByText("6 servings")).toBeVisible();
     expect(screen.getByText("Scale shopping and portions for")).toBeVisible();
+  });
+
+  it("uses household Default servings on a chili card when the entry has no servings", () => {
+    const chili: WeekMeal = {
+      ...pesto,
+      title: "Beef chili",
+      servings: null,
+      recipeServings: 6,
+    };
+    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [chili])} defaultServings={5} />);
+    expect(screen.getByText("Recipe makes 6 · cooking for 5")).toBeVisible();
   });
 
   it("creates a plan when Sunday is still empty", async () => {
@@ -553,7 +564,7 @@ describe("MealPlanWeek", () => {
     });
   });
 
-  it("stores max(recipe yield, cook-for) when adding dinner in family mode", async () => {
+  it("stores the cook-for count when adding dinner in family mode", async () => {
     const user = userEvent.setup();
     render(
       <MealPlanWeek

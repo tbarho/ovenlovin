@@ -68,6 +68,10 @@ describe("servingsScale", () => {
     expect(servingsScale(null, 4, 2)).toBe(2);
     expect(servingsScale(undefined, null, 1)).toBe(1);
   });
+
+  it("uses household Default servings before recipe yield when the entry has no servings", () => {
+    expect(servingsScale(null, 6, 1, 5)).toBe(0.8333);
+  });
 });
 
 describe("ShoppingListService", () => {
@@ -253,7 +257,7 @@ describe("ShoppingListService", () => {
     ]);
     expect(
       byAisle.sections.find((section) => section.name === "Produce")?.items.map((item) => item.name)
-    ).toEqual(["carrots", "yellow onion"]);
+    ).toEqual(["carrot", "yellow onion"]);
 
     const byCategory = build(entries, { groupBy: "category" });
     expect(byCategory.sections.map((section) => section.name).sort()).toEqual([
@@ -265,7 +269,7 @@ describe("ShoppingListService", () => {
       byCategory.sections
         .find((section) => section.name === "Protein")
         ?.items.map((item) => item.name)
-    ).toEqual(["chicken thighs", "salmon fillets"]);
+    ).toEqual(["chicken thigh", "salmon fillets"]);
   });
 
   it("merges kosher salt, sea salt, and salt under salt", () => {
@@ -507,6 +511,105 @@ describe("ShoppingListService", () => {
     expect(garlic?.displayUnit).toBe("clove");
     expect(service.exportAsMarkdown(list)).toContain("2 cloves garlic");
     expect(JSON.parse(service.exportAsJSON(list)).ingredients[0].key).toBe("garlic::clove");
+  });
+
+  it("totals two chili nights at household Default servings, not recipe yield", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "chili", servings: null, scaleFactor: 1 }),
+          recipeTitle: "Beef chili",
+          recipeServings: 6,
+          ingredients: [{ rawText: "1 lb ground beef" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "chili", servings: 5, scaleFactor: 1 }),
+          recipeTitle: "Beef chili",
+          recipeServings: 6,
+          ingredients: [{ rawText: "1 lb ground beef" }],
+        },
+      ],
+      { defaultCookFor: 5 }
+    );
+
+    expect(list.ingredients[0]).toMatchObject({
+      name: "ground beef",
+      displayQuantity: "1 2/3",
+      displayUnit: "lb",
+    });
+    expect(service.exportAsMarkdown(list)).toContain("1 2/3 lbs ground beef");
+    expect(service.exportAsMarkdown(list)).not.toContain("1 5/6");
+  });
+
+  it("rounds countable shop items up and keeps measured cooking fractions", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "household-dinner", servings: 5 }),
+        recipeTitle: "Household dinner",
+        recipeServings: 6,
+        ingredients: [{ rawText: "3 eggs" }],
+      },
+      {
+        entry: entry({ id: "entry-2", recipeId: "roast", servings: 4 }),
+        recipeTitle: "Sunday roast",
+        recipeServings: 6,
+        ingredients: [
+          { rawText: "1 whole chicken" },
+          { rawText: "1 can kidney beans" },
+          { rawText: "1 lb ground beef" },
+        ],
+      },
+    ]);
+
+    expect(list.ingredients.find((item) => item.name === "egg")).toMatchObject({
+      quantity: 3,
+      displayQuantity: "3",
+    });
+    expect(list.ingredients.find((item) => item.name === "whole chicken")).toMatchObject({
+      quantity: 1,
+      displayQuantity: "1",
+    });
+    expect(list.ingredients.find((item) => item.name === "kidney beans")).toMatchObject({
+      quantity: 1,
+      unit: "can",
+      displayQuantity: "1",
+      displayUnit: "can",
+    });
+    expect(list.ingredients.find((item) => item.name === "ground beef")).toMatchObject({
+      displayQuantity: "2/3",
+      displayUnit: "lb",
+    });
+    const markdown = service.exportAsMarkdown(list);
+    expect(markdown).toMatch(/3 eggs?/);
+    expect(markdown).not.toContain("2 1/2");
+    expect(markdown).not.toContain("2/3 whole chicken");
+    expect(markdown).not.toContain("2/3 can");
+  });
+
+  it("merges lemon and lemons onto one shopping line", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "salmon", servings: 4 }),
+        recipeTitle: "Sheet-pan salmon",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 lemon" }],
+      },
+      {
+        entry: entry({ id: "entry-2", recipeId: "chili", servings: 4 }),
+        recipeTitle: "Beef chili",
+        recipeServings: 4,
+        ingredients: [{ rawText: "2 lemons" }],
+      },
+    ]);
+
+    expect(list.ingredients).toEqual([
+      expect.objectContaining({
+        name: "lemon",
+        quantity: 3,
+        displayQuantity: "3",
+      }),
+    ]);
+    expect(list.itemCount).toBe(1);
   });
 
   it("marks check-offs in list export", () => {

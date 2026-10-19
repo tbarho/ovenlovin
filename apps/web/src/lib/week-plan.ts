@@ -10,6 +10,7 @@ import {
   planEntriesForWeek,
   shopItemKey,
   weekDefaultServings,
+  effectivePlanServings,
   type DefaultServingsMode,
   type MealPlan,
   type MealPlanEntry,
@@ -267,7 +268,10 @@ export async function loadWeekKitchen(
       title: recipe?.title ?? entry.freeformMeal ?? "Untitled meal",
       href: recipe ? `/recipes/${recipe.id}` : null,
       image: recipe ? recipeMainImage(recipe.images) : null,
-      servings: entry.servings ?? recipe?.servings ?? null,
+      servings: effectivePlanServings({
+        entryServings: entry.servings,
+        defaultCookFor: servingsSettings.defaultCookFor,
+      }),
       recipeServings: recipe?.servings ?? null,
       isNoCook,
       findings,
@@ -290,7 +294,8 @@ export async function loadWeekKitchen(
           unit: row.unit,
         })),
       };
-    })
+    }),
+    servingsSettings.defaultCookFor
   );
 
   const shopItems: ShopItem[] = aggregated.map((item) => {

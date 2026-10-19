@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultDisplayedServings,
+  effectivePlanServings,
   normalizeHouseholdServingsSetting,
+  parseServingsQuery,
   planEntryServings,
+  presentDisplayedRecipe,
   recipeServingsPresentation,
   recipeYieldServings,
   scaledServingsNote,
   weekDefaultServings,
 } from "./default-servings";
+import type { RecipeDetails } from "../schemas/recipes";
 
 describe("defaultDisplayedServings", () => {
   it("opens a 4-serving recipe at family size and leaves a larger yield alone", () => {
@@ -64,11 +68,17 @@ describe("weekDefaultServings and planEntryServings", () => {
     expect(weekDefaultServings({ familySize: 8, mode: "recipe" })).toBe(4);
   });
 
-  it("stores max(yield, cook-for) for family plan entries", () => {
+  it("stores the cook-for count for family and fixed plan entries", () => {
     expect(planEntryServings({ recipeServings: 4, cookFor: 8, mode: "family" })).toBe(8);
-    expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "family" })).toBe(10);
+    expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "family" })).toBe(8);
     expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "fixed" })).toBe(8);
     expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "recipe" })).toBe(10);
+  });
+
+  it("uses household Default servings when a plan entry has no servings", () => {
+    expect(effectivePlanServings({ entryServings: null, defaultCookFor: 5 })).toBe(5);
+    expect(effectivePlanServings({ entryServings: 6, defaultCookFor: 5 })).toBe(6);
+    expect(effectivePlanServings({ defaultCookFor: 5 })).toBe(5);
   });
 });
 
@@ -131,5 +141,40 @@ describe("notes and settings", () => {
       displayServings: 8,
       scaledNote: "Scaled to 8 for your family",
     });
+    expect(parseServingsQuery("6")).toBe(6);
+    expect(parseServingsQuery("nope")).toBeNull();
+    expect(
+      recipeServingsPresentation({
+        recipeServings: 4,
+        familySize: 8,
+        mode: "family",
+        servingsOverride: 6,
+      }).displayServings
+    ).toBe(6);
+  });
+
+  it("scales REST recipe displayText to Default servings or a servings override", () => {
+    const recipe = {
+      servings: 4,
+      ingredients: [
+        {
+          rawText: "1 lb ground beef",
+          quantityMin: 1,
+          unit: "lb",
+        },
+      ],
+    } as RecipeDetails;
+
+    const family = presentDisplayedRecipe(recipe, { familySize: 8, mode: "family" });
+    expect(family.displayServings).toBe(8);
+    expect(family.ingredients[0]?.displayText).toBe("2 lb ground beef");
+
+    const overridden = presentDisplayedRecipe(recipe, {
+      familySize: 8,
+      mode: "family",
+      servingsOverride: 6,
+    });
+    expect(overridden.displayServings).toBe(6);
+    expect(overridden.ingredients[0]?.displayText).toBe("1 1/2 lb ground beef");
   });
 });

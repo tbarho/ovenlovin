@@ -5,6 +5,7 @@ import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import { RecipeService, type RecipeContentUpdate } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { assertRecipeHousehold } from "@/lib/api/recipes";
+import { loadKitchenServingsSettings, presentRecipeForKitchen } from "@/lib/kitchen-servings";
 import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +15,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const recipe = await new RecipeService(getDatabase()).getRecipeDetails(id);
     assertRecipeHousehold(recipe, householdId, id);
-    return jsonResponse(presentRecipeDetailsForApi(recipe, requestApiOrigin(request)));
+    const settings = await loadKitchenServingsSettings(householdId);
+    const presented = presentRecipeForKitchen(
+      recipe,
+      settings,
+      request.nextUrl.searchParams.get("servings")
+    );
+    return jsonResponse(presentRecipeDetailsForApi(presented, requestApiOrigin(request)));
   } catch (error) {
     return handleApiError(error, request.url);
   }
