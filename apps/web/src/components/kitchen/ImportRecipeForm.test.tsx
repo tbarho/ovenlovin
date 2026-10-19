@@ -2,7 +2,11 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
-import { PHOTO_IMPORT_ESTIMATE, PHOTO_IMPORT_TIMEOUT_MESSAGE } from "@/lib/photo-import-client";
+import {
+  PHOTO_IMPORT_ESTIMATE,
+  PHOTO_IMPORT_TIMEOUT_MESSAGE,
+  PHOTO_SAVE_NO_IMAGE_MESSAGE,
+} from "@/lib/photo-import-client";
 import { cancelPhotoImportJob } from "@/lib/photo-import-job";
 import { typeFullWordAndKeepFocus } from "@/test/sheet-focus";
 import { ImportRecipeForm } from "./ImportRecipeForm";
@@ -260,6 +264,26 @@ describe("ImportRecipeForm photo import", () => {
     const imageBody = JSON.parse(String(imageCall?.[1]?.body));
     expect(imageBody.image).toMatch(/^data:image\/jpeg;base64,/);
     expect(imageBody.image.length).toBeLessThan(50_000);
+  });
+
+  it("says the recipe saved when the photo upload fails", async () => {
+    mockXhr({ body: { ...preview, images: [] } });
+    const user = userEvent.setup();
+    vi.mocked(api).mockImplementation(async (path: string) => {
+      if (path === "/api/v1/recipes") return { id: "rec-1", title: "Weeknight Tomato Pasta" };
+      throw new TypeError("Failed to fetch");
+    });
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    await user.upload(library, file);
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
+    await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
+    expect(await within(dialog).findByText(PHOTO_SAVE_NO_IMAGE_MESSAGE)).toBeVisible();
+    expect(within(dialog).getByRole("button", { name: "Open recipe" })).toBeVisible();
+    expect(within(dialog).queryByRole("button", { name: "Save recipe" })).not.toBeInTheDocument();
   });
 });
 

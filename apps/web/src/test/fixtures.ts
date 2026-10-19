@@ -129,6 +129,8 @@ export function testRecipeDetails(overrides: Partial<RecipeDetails> = {}): Recip
     source: null,
     cookbooks: [],
     nutrition: null,
+    reviewReasons: [],
+    uncertainFields: [],
     ...overrides,
   };
 }

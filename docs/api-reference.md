@@ -339,40 +339,36 @@ POST /api/v1/recipes
 POST /api/v1/recipes/import
 ```
 
+URL and paste import **preview by default**. Persist only when `save` is `true` (same as photo import). The kitchen UI and MCP tools always send `save: true`. Send `Idempotency-Key` on persist so a retry after a dropped connection returns the same recipe instead of a second copy.
+
 **Request body** (URL import):
 ```json
 {
-  "source": {
-    "type": "url",
-    "url": "https://example.com/chocolate-chip-cookies"
-  }
+  "source": "url",
+  "content": "https://example.com/chocolate-chip-cookies",
+  "save": true
 }
 ```
 
 **Request body** (text import):
 ```json
 {
-  "source": {
-    "type": "text",
-    "text": "Chocolate Chip Cookies\n\nIngredients:\n- 2 cups flour\n- 1 cup butter..."
-  }
+  "source": "paste",
+  "content": "Chocolate Chip Cookies\n\nIngredients:\n- 2 cups flour\n- 1 cup butter...",
+  "save": true
 }
 ```
 
-**Response**: `201 Created`
+**Response**: `200` preview when `save` is omitted or false; `201` when saved; `200` on an idempotent replay. Demo responses include `remainingImports`. Duplicate URL imports return `409` with `recipeId`, `title`, and `recipeUrl`.
+
 ```json
 {
   "id": "recipe-456",
   "title": "Chocolate Chip Cookies",
-  "confidence": 0.95,
-  "warnings": [
-    "Could not extract nutrition information"
-  ],
-  "recipe": {
-    "id": "recipe-456",
-    "title": "Chocolate Chip Cookies",
-    ...
-  }
+  "status": "needs_review",
+  "reviewReasons": ["This imported recipe needs a human check before cooking."],
+  "uncertainFields": [],
+  "remainingImports": 4
 }
 ```
 
@@ -382,7 +378,7 @@ POST /api/v1/recipes/import
 POST /api/v1/recipes/import/photo
 ```
 
-Extract a recipe from a recipe card, cookbook page, screenshot, or several pages of one recipe. Default is **preview only** so a human can review fields before save. The first photo is stored in Vercel Blob and becomes the recipe's single main image.
+Extract a recipe from a recipe card, cookbook page, screenshot, or several pages of one recipe. Default is **preview only** (`save` omitted or false), same as URL import. The first photo is stored in Vercel Blob when configured and becomes the recipe's single main image. Exact or near-duplicate photos return `409` with the existing `recipeId`. Send `Idempotency-Key` when `save=true`.
 
 Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC on Vercel). Vision model: `RK_MODEL_VISION` or `spacexai/grok-4.7`.
 

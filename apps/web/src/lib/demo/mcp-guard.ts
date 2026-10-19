@@ -53,8 +53,31 @@ export function isSuccessfulImportRecipeCall(
   }
   if (!resultBody) return false;
   try {
-    const parsed = JSON.parse(resultBody) as { error?: unknown };
-    return parsed.error == null;
+    const parsed = JSON.parse(resultBody) as {
+      error?: unknown;
+      result?: { content?: Array<{ text?: string }> | { created?: unknown } };
+    };
+    if (parsed.error != null) return false;
+    const content = parsed.result?.content;
+    const texts = Array.isArray(content)
+      ? content.map((part) => part.text).filter((text): text is string => typeof text === "string")
+      : [];
+    for (const text of texts) {
+      try {
+        const inner = JSON.parse(text) as { created?: unknown };
+        if (inner.created === false) return false;
+      } catch {
+        if (/"created"\s*:\s*false/.test(text)) return false;
+      }
+    }
+    if (
+      parsed.result &&
+      !Array.isArray(parsed.result.content) &&
+      (parsed.result as { created?: unknown }).created === false
+    ) {
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }

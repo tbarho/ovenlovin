@@ -12,13 +12,31 @@ import { recipeMethodTagSchema, slugifyTitle } from "../schemas/recipes";
 import { backfillParsedIngredient, parseIngredientLine } from "../parsing/ingredient-line";
 import { DEFAULT_RECIPE_SERVINGS, scaleIngredientDisplay } from "../scaling/servings";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
+import { reviewMetadataFromJson } from "../media/import-review";
+import { isNearDuplicatePhotoHash } from "../media/photo-hash";
+import {
+  importDedupeKeys,
+  matchFromDedupeKind,
+  photoFingerprintFromDraft,
+  photoPerceptualHashFromDraft,
+  prepareImportDraft,
+  sourceUrlFromDraft,
+  type ImportDuplicateMatch,
+} from "../media/prepare-import-draft";
+import { normalizeSourceUrl } from "../media/source-url";
 import { BaseService } from "./base";
 import { CookbookService } from "./cookbooks";
+import { ImportDedupeService } from "./import-dedupe";
 import {
   backfillInlineImageList,
   omitInlineImagePayloads,
   type StoredImagePut,
 } from "../media/recipe-images";
+
+export type PersistImportedDraftResult =
+  | { outcome: "created"; recipe: RecipeDetails }
+  | { outcome: "existing"; recipe: RecipeDetails; match: ImportDuplicateMatch }
+  | { outcome: "in_flight"; match: ImportDuplicateMatch };
 
 export class RecipeService extends BaseService {
   async getRecipe(id: string): Promise<Recipe | null> {
@@ -315,10 +333,16 @@ export class RecipeService extends BaseService {
         }
       : null;
 
+    const review = reviewMetadataFromJson(
+      (sources[0]?.rawExtractionJson as Record<string, unknown> | null) ?? null
+    );
+
     return {
       ...found,
       cookbooks,
       nutrition,
+      reviewReasons: review.reviewReasons,
+      uncertainFields: review.uncertainFields,
       ingredients: ingredients.map((row) => ({
         id: row.id,
         createdAt: row.createdAt.toISOString(),
@@ -390,6 +414,7 @@ export class RecipeService extends BaseService {
     draft: RecipeImportDraft,
     input: { householdId: string; createdBy: string }
   ): Promise<RecipeDetails> {
+    draft = prepareImportDraft(draft);
     const methodTags = (draft.methodTags ?? []).filter(
       (tag): tag is RecipeMethodTag => recipeMethodTagSchema.safeParse(tag).success
     );
@@ -525,6 +550,141 @@ export class RecipeService extends BaseService {
       )
       .limit(1);
     return row ? this.mapRecipe(row.recipe) : null;
+  }
+
+  async findPhotoNearDuplicate(
+    householdId: string,
+    perceptualHash: string
+  ): Promise<Recipe | null> {
+    if (!perceptualHash.trim()) return null;
+    const rows = await this._db
+      .select({ recipe, raw: recipeSource.rawExtractionJson })
+      .from(recipe)
+      .innerJoin(recipeSource, eq(recipeSource.recipeId, recipe.id))
+      .where(
+        and(
+          eq(recipe.householdId, householdId),
+          isNull(recipe.deletedAt),
+          eq(recipeSource.type, "photo")
+        )
+      );
+    for (const row of rows) {
+      const raw = (row.raw as Record<string, unknown> | null) ?? {};
+      const other = raw.photoPerceptualHash;
+      if (typeof other === "string" && isNearDuplicatePhotoHash(perceptualHash, other)) {
+        return this.mapRecipe(row.recipe);
+      }
+    }
+    return null;
+  }
+
+  async findSourceUrlDuplicate(householdId: string, url: string): Promise<Recipe | null> {
+    const normalized = normalizeSourceUrl(url);
+    if (!normalized) return null;
+    const rows = await this._db
+      .select({
+        recipe,
+        url: recipeSource.url,
+        canonicalUrl: recipeSource.canonicalUrl,
+        raw: recipeSource.rawExtractionJson,
+      })
+      .from(recipe)
+      .innerJoin(recipeSource, eq(recipeSource.recipeId, recipe.id))
+      .where(
+        and(
+          eq(recipe.householdId, householdId),
+          isNull(recipe.deletedAt),
+          eq(recipeSource.type, "url")
+        )
+      );
+    for (const row of rows) {
+      const candidates = [
+        typeof (row.raw as Record<string, unknown> | null)?.sourceUrlNormalized === "string"
+          ? String((row.raw as Record<string, unknown>).sourceUrlNormalized)
+          : "",
+        row.canonicalUrl ?? "",
+        row.url ?? "",
+      ];
+      if (candidates.some((candidate) => normalizeSourceUrl(candidate) === normalized)) {
+        return this.mapRecipe(row.recipe);
+      }
+    }
+    return null;
+  }
+
+  async findImportDuplicate(
+    householdId: string,
+    draft: RecipeImportDraft
+  ): Promise<{ recipe: RecipeDetails; match: ImportDuplicateMatch } | null> {
+    const prepared = prepareImportDraft(draft);
+    const fingerprint = photoFingerprintFromDraft(prepared);
+    if (fingerprint) {
+      const exact = await this.findPhotoImportDuplicate(householdId, fingerprint);
+      if (exact) {
+        const details = await this.getRecipeDetails(exact.id);
+        if (details) return { recipe: details, match: "photo" };
+      }
+    }
+    const phash = photoPerceptualHashFromDraft(prepared);
+    if (phash) {
+      const near = await this.findPhotoNearDuplicate(householdId, phash);
+      if (near) {
+        const details = await this.getRecipeDetails(near.id);
+        if (details) return { recipe: details, match: "photo_near" };
+      }
+    }
+    const sourceUrl = sourceUrlFromDraft(prepared);
+    if (sourceUrl) {
+      const existing = await this.findSourceUrlDuplicate(householdId, sourceUrl);
+      if (existing) {
+        const details = await this.getRecipeDetails(existing.id);
+        if (details) return { recipe: details, match: "source_url" };
+      }
+    }
+    return null;
+  }
+
+  async persistImportedDraft(
+    draft: RecipeImportDraft,
+    input: { householdId: string; createdBy: string; idempotencyKey?: string }
+  ): Promise<PersistImportedDraftResult> {
+    const prepared = prepareImportDraft(draft);
+    const existing = await this.findImportDuplicate(input.householdId, prepared);
+    if (existing) return { outcome: "existing", recipe: existing.recipe, match: existing.match };
+
+    const dedupe = new ImportDedupeService(this._db);
+    const keys = importDedupeKeys(prepared, input.idempotencyKey);
+    const claimed: typeof keys = [];
+    try {
+      for (const key of keys) {
+        const claim = await dedupe.claim(input.householdId, key.kind, key.key);
+        if (claim.status === "completed") {
+          const recipeDetails = await this.getRecipeDetails(claim.recipeId);
+          if (recipeDetails) {
+            return {
+              outcome: "existing",
+              recipe: recipeDetails,
+              match: matchFromDedupeKind(key.kind),
+            };
+          }
+        }
+        if (claim.status === "in_flight") {
+          return { outcome: "in_flight", match: matchFromDedupeKind(key.kind) };
+        }
+        claimed.push(key);
+      }
+
+      const created = await this.createRecipeFromDraft(prepared, input);
+      for (const key of claimed) {
+        await dedupe.complete(input.householdId, key.kind, key.key, created.id);
+      }
+      return { outcome: "created", recipe: created };
+    } catch (error) {
+      for (const key of claimed) {
+        await dedupe.release(input.householdId, key.kind, key.key);
+      }
+      throw error;
+    }
   }
 
   /**

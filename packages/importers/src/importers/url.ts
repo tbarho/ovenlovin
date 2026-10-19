@@ -21,10 +21,10 @@ import { extractHtmlRecipe } from "../utils/html-recipe";
 import { extractRecipeWithLlm } from "../utils/llm-recipe";
 import { pageTextFromHtml } from "../utils/page-text";
 import {
+  cleanImportedTitle,
   parseRecipeNotes,
   parseRecipeNutrition,
   parseRecipeServings,
-  stripTrailingRecipeWord,
 } from "../utils/recipe-ld";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { decodeHtmlEntities } from "../utils/decode-html";
@@ -95,9 +95,7 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
       const recipe = raw.rawData;
 
       const title =
-        typeof recipe.name === "string"
-          ? stripTrailingRecipeWord(decodeHtmlEntities(recipe.name))
-          : "";
+        typeof recipe.name === "string" ? cleanImportedTitle(decodeHtmlEntities(recipe.name)) : "";
       const description =
         typeof recipe.description === "string" ? decodeHtmlEntities(recipe.description) : undefined;
 

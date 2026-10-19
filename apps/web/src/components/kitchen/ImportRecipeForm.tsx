@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
@@ -162,6 +162,7 @@ export function ImportRecipeForm() {
     id: string;
     notice: string;
   } | null>(null);
+  const importKeyRef = useRef("");
   const fieldValue = source === "paste" ? paste : url;
   const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(fieldValue.trim());
   const jobBusy = photoJob?.phase === "uploading" || photoJob?.phase === "reading";
@@ -213,10 +214,13 @@ export function ImportRecipeForm() {
     setPending(true);
     setError(null);
     try {
+      if (!importKeyRef.current) importKeyRef.current = crypto.randomUUID();
       const recipe = await api<RecipeDetails>("/api/v1/recipes/import", {
         method: "POST",
-        body: JSON.stringify({ source, content: fieldValue }),
+        headers: { "Idempotency-Key": importKeyRef.current },
+        body: JSON.stringify({ source, content: fieldValue, save: true }),
       });
+      importKeyRef.current = "";
       setImported({
         id: recipe.id,
         notice: importGuessedNotice(recipe.title, recipe.servings ?? null),

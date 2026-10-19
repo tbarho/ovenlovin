@@ -51,3 +51,7 @@ JSON body:
 ```
 
 Form body: `url`, plus `jsonLd` or `html`. A form POST redirects to `/recipes/{id}`. A JSON POST returns `201` and the recipe.
+
+`POST /api/v1/recipes/import/page` always persists (the client already captured the page to save it).
+
+`POST /api/v1/recipes/import` and `POST /api/v1/recipes/import/photo` preview unless `save` is `true`. The web Import form and MCP tools send `save: true`. Send `Idempotency-Key` on persist so a dropped connection can be retried without a second recipe. Duplicate URL or photo imports return `409` with `recipeId`, `title`, and `recipeUrl`. Near-duplicate photos (a 1-pixel change) use the same warning. `needs_review` saves include `reviewReasons` and `uncertainFields`. Wikibooks titles drop the `Cookbook:` prefix.

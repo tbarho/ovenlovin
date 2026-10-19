@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/browser-api";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_STEPS,
+  PHOTO_SAVE_NO_IMAGE_MESSAGE,
   compressPhotoForSave,
   photoImportAnnouncement,
   photoImportStepReached,
@@ -81,6 +82,8 @@ function PhotoReviewForm({
   heroSrc,
   pending,
   error,
+  savedRecipeId,
+  onOpenSaved,
   onChange,
   onSave,
 }: {
@@ -88,6 +91,8 @@ function PhotoReviewForm({
   heroSrc: string | null;
   pending: boolean;
   error: string | null;
+  savedRecipeId: string | null;
+  onOpenSaved: () => void;
   onChange: (next: PhotoReviewDraft) => void;
   onSave: (event: React.FormEvent) => void;
 }) {
@@ -246,15 +251,21 @@ function PhotoReviewForm({
           </span>
         ) : null}
       </div>
-      {error ? <p className="muted">{error}</p> : null}
+      {error ? <p className="import-warn">{error}</p> : null}
       {pending ? (
         <p className="muted" role="status" aria-live="polite">
           Saving this recipe…
         </p>
       ) : null}
-      <button className="btn primary" type="submit" disabled={pending}>
-        {pending ? "Saving…" : "Save recipe"}
-      </button>
+      {savedRecipeId ? (
+        <button type="button" className="btn primary" onClick={onOpenSaved}>
+          Open recipe
+        </button>
+      ) : (
+        <button className="btn primary" type="submit" disabled={pending}>
+          {pending ? "Saving…" : "Save recipe"}
+        </button>
+      )}
     </form>
   );
 }
@@ -273,20 +284,44 @@ export function PhotoImportDialog({
   const [draft, setDraft] = useState<PhotoReviewDraft | null>(null);
   const [pending, setPending] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedRecipe, setSavedRecipe] = useState<{
+    id: string;
+    title?: string;
+    servings?: number;
+  } | null>(null);
+  const saveKeyRef = useRef("");
 
   useEffect(() => subscribePhotoImportJob(setJob), []);
 
   useEffect(() => {
     if (job?.phase === "review" && job.preview) {
-      setDraft(reviewDraftFromPreview(job.preview));
-      setSaveError(null);
+      const preview = job.preview;
+      setDraft((current) => current ?? reviewDraftFromPreview(preview));
     }
-    if (job?.phase !== "review") setDraft(null);
+    if (job?.phase !== "review") {
+      setDraft(null);
+      setSavedRecipe(null);
+      saveKeyRef.current = "";
+    }
   }, [job]);
 
   function cancelImport() {
     cancelPhotoImportJob();
     onClose();
+  }
+
+  function finishSaved(recipe: { id: string; title?: string; servings?: number }) {
+    window.sessionStorage.setItem(
+      "ovenlovin.import-toast",
+      JSON.stringify({
+        title: recipe.title || draft?.title || "Untitled recipe",
+        servings: recipe.servings ?? (draft?.servings.trim() ? Number(draft.servings) : 4),
+      })
+    );
+    cancelPhotoImportJob();
+    onClose();
+    router.push(`/recipes/${recipe.id}`);
+    router.refresh();
   }
 
   async function saveReview(event: React.FormEvent) {
@@ -296,31 +331,32 @@ export function PhotoImportDialog({
     setSaveError(null);
     try {
       const body = recipeCreateBodyFromReview(draft);
-      const recipe = await api<{ id: string; title?: string; servings?: number }>(
-        "/api/v1/recipes",
-        {
+      let recipe = savedRecipe;
+      if (!recipe) {
+        if (!saveKeyRef.current) saveKeyRef.current = crypto.randomUUID();
+        recipe = await api<{ id: string; title?: string; servings?: number }>("/api/v1/recipes", {
           method: "POST",
+          keepalive: false,
+          headers: { "Idempotency-Key": saveKeyRef.current },
           body: JSON.stringify(body),
-        }
-      );
-      if ((!body.images || body.images.length === 0) && job.files[0]) {
-        const image = await compressPhotoForSave(job.files[0]);
-        await api(`/api/v1/recipes/${recipe.id}/image`, {
-          method: "POST",
-          body: JSON.stringify({ image }),
         });
+        setSavedRecipe(recipe);
       }
-      window.sessionStorage.setItem(
-        "ovenlovin.import-toast",
-        JSON.stringify({
-          title: recipe.title || draft.title || "Untitled recipe",
-          servings: recipe.servings ?? (draft.servings.trim() ? Number(draft.servings) : 4),
-        })
-      );
-      cancelPhotoImportJob();
-      onClose();
-      router.push(`/recipes/${recipe.id}`);
-      router.refresh();
+      if ((!body.images || body.images.length === 0) && job.files[0]) {
+        try {
+          const image = await compressPhotoForSave(job.files[0]);
+          await api(`/api/v1/recipes/${recipe.id}/image`, {
+            method: "POST",
+            keepalive: false,
+            body: JSON.stringify({ image }),
+          });
+        } catch {
+          setSaveError(PHOTO_SAVE_NO_IMAGE_MESSAGE);
+          setPending(false);
+          return;
+        }
+      }
+      finishSaved(recipe);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Could not save recipe");
       setPending(false);
@@ -383,6 +419,8 @@ export function PhotoImportDialog({
           }
           pending={pending}
           error={saveError}
+          savedRecipeId={savedRecipe?.id ?? null}
+          onOpenSaved={() => savedRecipe && finishSaved(savedRecipe)}
           onChange={setDraft}
           onSave={saveReview}
         />

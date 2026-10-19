@@ -28,6 +28,7 @@ describe("extractHtmlRecipe", () => {
       extractorVersion: "0.1.0",
     });
     expect(draft.title).toMatch(/pancake/i);
+    expect(draft.title).not.toMatch(/Cookbook:/i);
     expect(draft.ingredients.length).toBeGreaterThanOrEqual(5);
     expect(draft.steps.length).toBe(3);
   });
@@ -45,6 +46,7 @@ describe("extractHtmlRecipe", () => {
       <ol><li>Mix the batter.</li><li>Cook on a skillet.</li></ol>
     </body></html>`;
     const recipe = extractHtmlRecipe(html);
+    expect(recipe?.name).toBe("Pancake");
     expect(recipe?.recipeIngredient).toEqual(expect.arrayContaining(["1 cup flour", "1 egg"]));
     expect(recipe?.recipeInstructions).toHaveLength(2);
   });

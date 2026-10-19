@@ -156,6 +156,22 @@
           "course": {
             "type": "string",
             "nullable": true
+          },
+          "reviewReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "uncertainFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remainingImports": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": ["id", "householdId", "title", "slug", "images", "status"]
@@ -237,6 +253,12 @@
           "needsReview": {
             "type": "boolean"
           },
+          "reviewReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "uncertainFields": {
             "type": "array",
             "items": {
@@ -272,6 +294,7 @@
           "images",
           "overallConfidence",
           "needsReview",
+          "reviewReasons",
           "uncertainFields",
           "allergenClassifications"
         ]
@@ -521,6 +544,31 @@
           }
         },
         "required": ["id", "date", "mealSlot", "attendees"]
+      },
+      "HouseholdServingsSettings": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["family", "fixed", "recipe"]
+          },
+          "servings": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 24
+          },
+          "familySize": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "defaultCookFor": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24
+          }
+        },
+        "required": ["mode", "servings", "familySize", "defaultCookFor"]
       },
       "HouseholdSchedule": {
         "type": "object",
@@ -1146,7 +1194,8 @@
     "/recipes/import": {
       "post": {
         "tags": ["recipes"],
-        "summary": "Import a recipe from a URL or pasted text, copying the main image into Vercel Blob",
+        "summary": "Import a recipe from a URL or pasted text",
+        "description": "Preview by default (`save` omitted or false). Persist only when `save=true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1159,6 +1208,10 @@
                   },
                   "content": {
                     "type": "string"
+                  },
+                  "save": {
+                    "type": "boolean",
+                    "description": "When true, persist the recipe. Default is preview only."
                   }
                 },
                 "required": ["source", "content"]
@@ -1167,8 +1220,8 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Imported recipe",
+          "200": {
+            "description": "Extracted draft for review (save omitted or false), or an idempotent replay",
             "content": {
               "application/json": {
                 "schema": {
@@ -1176,6 +1229,19 @@
                 }
               }
             }
+          },
+          "201": {
+            "description": "Imported recipe when save=true",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate or in-flight import. Includes recipeId, title, and recipeUrl."
           }
         }
       }
@@ -1183,7 +1249,7 @@
     "/recipes/import/page": {
       "post": {
         "tags": ["recipes"],
-        "summary": "Import a recipe from HTML or JSON-LD captured on the user's device (bookmarklet or iOS Shortcut)",
+        "summary": "Import a recipe from HTML or JSON-LD captured on the user's device (Safari shortcut or browser bookmark)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1223,7 +1289,7 @@
     "/recipes/import/photo": {
       "post": {
         "tags": ["recipes"],
-        "summary": "Extract a recipe from one or more photos (review by default). Multipart upload or a Blob/image URL. Saves only the first photo as the main image.",
+        "summary": "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact and near-duplicate photos return 409 with the existing recipeId. Send Idempotency-Key on save so retries do not create a second recipe.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2548,6 +2614,63 @@
         "responses": {
           "200": {
             "description": "Household"
+          }
+        }
+      }
+    },
+    "/households/settings": {
+      "get": {
+        "tags": ["households"],
+        "summary": "Get kitchen Default servings",
+        "description": "family matches max(recipe yield, People count). fixed uses servings. recipe keeps the card yield.",
+        "responses": {
+          "200": {
+            "description": "Default servings setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdServingsSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["households"],
+        "summary": "Update kitchen Default servings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["family", "fixed", "recipe"]
+                  },
+                  "servings": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 24
+                  }
+                },
+                "required": ["mode"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated Default servings setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdServingsSettings"
+                }
+              }
+            }
           }
         }
       }

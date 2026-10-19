@@ -1,12 +1,17 @@
 import { NextRequest } from "next/server";
 import { CookbookService, fingerprintImageBlob, RecipeService } from "@ovenlovin/core";
+import { perceptualHashFromImageBlob } from "@ovenlovin/core/photo-hash";
 import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, ConflictError, handleApiError } from "@/lib/api/errors";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
+import {
+  getIdempotencyKey,
+  getRequestContext,
+  requireHouseholdId,
+  requireUserId,
+} from "@/lib/api/middleware";
 import { createVercelImagePut } from "@/lib/blob-store";
-import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { readPhotoImportRequest } from "@/lib/photo-import-request";
 import {
   classifyPhotoImportPreview,
@@ -14,10 +19,46 @@ import {
   extractPhotoPreview,
   presentPhotoImportPreview,
 } from "@/lib/photo-import";
+import {
+  conflictFromImportResult,
+  importDuplicateDetail,
+  isIdempotentReplay,
+  recipeFromPersist,
+  saveImportedRecipe,
+  withDemoImportQuota,
+} from "@/lib/import-save";
 import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+async function rejectExistingPhoto(householdId: string, blob: string | undefined): Promise<void> {
+  if (!blob) return;
+  const service = new RecipeService(getDatabase());
+  const fingerprint = fingerprintImageBlob(blob);
+  const exact = await service.findPhotoImportDuplicate(householdId, fingerprint);
+  if (exact) {
+    throw new ConflictError(importDuplicateDetail("photo", exact.title), {
+      code: "import_duplicate",
+      match: "photo",
+      recipeId: exact.id,
+      title: exact.title,
+      recipeUrl: `/recipes/${exact.id}`,
+    });
+  }
+  const phash = perceptualHashFromImageBlob(blob);
+  if (!phash) return;
+  const near = await service.findPhotoNearDuplicate(householdId, phash);
+  if (near) {
+    throw new ConflictError(importDuplicateDetail("photo_near", near.title), {
+      code: "import_duplicate",
+      match: "photo_near",
+      recipeId: near.id,
+      title: near.title,
+      recipeUrl: `/recipes/${near.id}`,
+    });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,19 +74,8 @@ export async function POST(request: NextRequest) {
     }
 
     const input = await readPhotoImportRequest(request);
-    const first = input.images[0]?.blob;
-    if (first) {
-      const duplicate = await new RecipeService(getDatabase()).findPhotoImportDuplicate(
-        householdId,
-        fingerprintImageBlob(first)
-      );
-      if (duplicate) {
-        throw new ConflictError("This photo was already imported as a recipe", {
-          recipeId: duplicate.id,
-          title: duplicate.title,
-        });
-      }
-    }
+    await rejectExistingPhoto(householdId, input.images[0]?.blob);
+
     const preview = await extractPhotoPreview(input.images, {
       householdId,
       isHandwritten: input.isHandwritten,
@@ -69,32 +99,39 @@ export async function POST(request: NextRequest) {
       return jsonResponse(presentPhotoImportPreview(preview));
     }
 
-    const db = getDatabase();
-    const service = new RecipeService(db);
-    const recipe = await service.createRecipeFromDraft(draftFromPhotoPreview(preview), {
+    const { result, quota } = await saveImportedRecipe(draftFromPhotoPreview(preview), {
       householdId,
       createdBy: createdBy as string,
+      idempotencyKey: getIdempotencyKey(request),
     });
+    if (result.outcome === "in_flight") {
+      throw conflictFromImportResult(result);
+    }
+    const recipe = recipeFromPersist(result);
 
-    if (input.cookbookId) {
-      const cookbooks = new CookbookService(db);
+    if (input.cookbookId && result.outcome === "created") {
+      const cookbooks = new CookbookService(getDatabase());
       const cookbook = await cookbooks.getCookbook(input.cookbookId);
       if (cookbook && cookbook.householdId === householdId) {
         await cookbooks.addRecipe(input.cookbookId, recipe.id);
       }
     }
 
-    await recordSuccessfulDemoImport(householdId);
-
     const presented = presentRecipeDetailsForApi(recipe, requestApiOrigin(request));
-    return createdResponse(
+    const body = withDemoImportQuota(
       {
         ...presentPhotoImportPreview(preview),
         images: presented.images,
         recipe: presented,
+        reviewReasons: presented.reviewReasons,
+        uncertainFields: presented.uncertainFields,
       },
-      `/api/v1/recipes/${recipe.id}`
+      quota
     );
+    if (isIdempotentReplay(result)) {
+      return jsonResponse(body);
+    }
+    return createdResponse(body, `/api/v1/recipes/${recipe.id}`);
   } catch (error) {
     return handleApiError(error, request.url);
   }

@@ -15,6 +15,8 @@ export const PHOTO_IMPORT_NOT_RECIPE_MESSAGE =
   "That does not look like a recipe. Type or paste it instead.";
 export const PHOTO_IMPORT_NETWORK_MESSAGE = "Connection lost. Check your network and try again.";
 export const PHOTO_IMPORT_CANCELLED_MESSAGE = "Photo import cancelled";
+export const PHOTO_SAVE_NO_IMAGE_MESSAGE =
+  "Recipe saved, but the photo could not be stored. Open the recipe - do not import it again.";
 
 export type PhotoImportPhase = "uploading" | "reading" | "review" | "error";
 export type PhotoImportErrorKind =

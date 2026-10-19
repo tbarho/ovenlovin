@@ -17,10 +17,7 @@ export type ImportedNutrition = {
   sodium?: number;
 };
 
-export function stripTrailingRecipeWord(title: string): string {
-  const stripped = title.replace(/\s+recipe\s*$/i, "").trim();
-  return stripped.length > 0 ? stripped : title.trim();
-}
+export { cleanImportedTitle, stripTrailingRecipeWord } from "@ovenlovin/core";
 
 function positiveInt(value: number): number | undefined {
   if (!Number.isFinite(value) || value <= 0) return undefined;
