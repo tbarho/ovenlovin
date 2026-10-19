@@ -7,6 +7,7 @@ import {
   type JsonRpcResponse,
   isJsonRpcNotification,
   jsonRpcError,
+  jsonRpcFromThrown,
   jsonRpcResult,
   requestId,
 } from "./json-rpc";
@@ -130,11 +131,7 @@ export async function dispatchMcpRequest(
         );
     }
   } catch (error) {
-    if (error && typeof error === "object" && "error" in error && "jsonrpc" in error) {
-      return error as JsonRpcResponse;
-    }
-    const messageText = error instanceof Error ? error.message : "Internal error";
-    return jsonRpcError(id, JsonRpcErrorCode.internal, messageText);
+    return jsonRpcFromThrown(id, error);
   }
 }
 

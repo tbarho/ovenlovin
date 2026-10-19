@@ -2,13 +2,31 @@ import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { PeopleService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
+import { McpInvalidParamsError } from "../json-rpc";
 
-export const managePeopleSchema = z.object({
-  action: z.enum(["list", "create", "update", "delete"]),
-  personId: z.string().uuid().optional(),
-  displayName: z.string().min(1).max(255).optional(),
-  notes: z.string().optional(),
-});
+export const managePeopleSchema = z
+  .object({
+    action: z.enum(["list", "create", "update", "delete"]),
+    personId: z.string().uuid().optional(),
+    displayName: z.string().min(1).max(255).optional(),
+    notes: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === "create" && !value.displayName?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["displayName"],
+        message: "displayName is required to create a person",
+      });
+    }
+    if ((value.action === "update" || value.action === "delete") && !value.personId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["personId"],
+        message: "personId is required",
+      });
+    }
+  });
 
 async function handler(input: z.infer<typeof managePeopleSchema>, context: AuthContext) {
   const db = createDbClient(process.env.DATABASE_URL!);
@@ -27,7 +45,9 @@ async function handler(input: z.infer<typeof managePeopleSchema>, context: AuthC
   }
 
   if (input.action === "create") {
-    if (!input.displayName) throw new Error("displayName is required to create a person");
+    if (!input.displayName) {
+      throw new McpInvalidParamsError("displayName is required to create a person");
+    }
     const created = await people.createPerson({
       householdId: context.householdId,
       displayName: input.displayName,
@@ -40,7 +60,7 @@ async function handler(input: z.infer<typeof managePeopleSchema>, context: AuthC
     };
   }
 
-  if (!input.personId) throw new Error("personId is required");
+  if (!input.personId) throw new McpInvalidParamsError("personId is required");
   const person = await people.getPerson(input.personId);
   if (!person || person.householdId !== context.householdId) {
     throw new Error(`Person not found: ${input.personId}`);

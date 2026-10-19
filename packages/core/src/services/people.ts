@@ -162,9 +162,40 @@ export class PeopleService extends BaseService {
     return result ? this.mapPersonRule(result) : null;
   }
 
+  async findMatchingRule(input: {
+    personId: string;
+    kind: PersonRule["kind"];
+    target: string;
+    severity: PersonRule["severity"];
+  }): Promise<PersonRule | null> {
+    const [result] = await this._db
+      .select()
+      .from(personRule)
+      .where(
+        and(
+          eq(personRule.personId, input.personId),
+          eq(personRule.kind, input.kind),
+          eq(personRule.target, input.target),
+          eq(personRule.severity, input.severity),
+          isNull(personRule.deletedAt)
+        )
+      )
+      .limit(1);
+
+    return result ? this.mapPersonRule(result) : null;
+  }
+
   async createRule(
     data: Omit<PersonRule, "id" | "createdAt" | "updatedAt" | "deletedAt">
   ): Promise<PersonRule> {
+    const existing = await this.findMatchingRule({
+      personId: data.personId,
+      kind: data.kind,
+      target: data.target,
+      severity: data.severity,
+    });
+    if (existing) return existing;
+
     const [created] = await this._db
       .insert(personRule)
       .values({

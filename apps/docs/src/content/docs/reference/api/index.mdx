@@ -114,8 +114,9 @@ All errors follow problem+json format:
 ### Households
 
 - `GET /households` - Get the authenticated household
-- `GET /households/mine` - List kitchens the signed-in user belongs to
-- `POST /households/select` - Switch the active kitchen
+- `GET /households/mine` - List kitchens (signed-in: every kitchen you belong to; API key: the key's kitchen only, read-only, with `active: true`)
+- `POST /households/select` - Switch the active kitchen (signed-in users only; API keys are bound to one kitchen)
+
 - `GET /households/members` - List kitchen members
 - `PATCH /households/members/{userId}` - Change a member role (owner)
 - `DELETE /households/members/{userId}` - Remove a member (owner)
@@ -124,7 +125,7 @@ All errors follow problem+json format:
 - `POST /households/invites` - Create an invite link (owner or admin)
 - `DELETE /households/invites/{id}` - Revoke an invite (owner or admin)
 - `GET /invites/{token}` - Preview an invite (no auth)
-- `POST /invites/{token}/accept` - Accept an invite
+- `POST /invites/{token}/accept` - Accept an invite (signed-in person only; an API key cannot join another kitchen)
 
 See [Kitchen invites](/docs/kitchen-invites).
 

@@ -72,6 +72,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const rest = { ...body };
     delete rest.confirmUnknown;
+    if (typeof rest.severity === "string") {
+      const existing = await service.findMatchingRule({
+        personId,
+        kind: canonical.kind,
+        target: canonical.target,
+        severity: rest.severity,
+      });
+      if (existing) {
+        return jsonResponse(existing);
+      }
+    }
     const rule = await service.createRule({
       ...rest,
       personId,

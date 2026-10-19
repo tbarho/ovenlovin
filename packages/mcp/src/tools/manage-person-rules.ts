@@ -3,33 +3,67 @@ import type { AuthContext } from "../auth/index";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
 import { canonicalizePersonRuleTarget, unknownRuleTargetMessage } from "@ovenlovin/allergens";
 import { createDbClient } from "@ovenlovin/db";
+import { McpInvalidParamsError } from "../json-rpc";
 
 export { canonicalizePersonRuleTarget } from "@ovenlovin/allergens";
 
-export const managePersonRulesSchema = z.object({
-  action: z.enum(["list", "add", "remove"]),
-  personId: z.string().uuid(),
-  id: z.string().uuid().optional().describe("Rule id (required for remove)"),
-  kind: z
-    .enum(["allergen", "ingredient", "ingredient_category", "diet", "tag", "custom"])
-    .optional(),
-  target: z.string().min(1).max(255).optional(),
-  severity: z.enum(["block", "warn", "prefer_avoid"]).optional(),
-  label: z.string().optional(),
-  note: z.string().optional(),
-  includeMayContain: z.boolean().optional(),
-  includeCrossContact: z.boolean().optional(),
-  sharedFacility: z.enum(["block", "warn", "ignore"]).optional(),
-  includeDescendants: z.boolean().optional(),
-  treatCoconutAsTreeNut: z
-    .boolean()
-    .optional()
-    .describe("For tree_nut rules. Defaults to false - coconut is not a tree nut unless set."),
-  confirmUnknown: z
-    .boolean()
-    .optional()
-    .describe("Required to save a target that is not in the allergen catalog, such as xyzzy."),
-});
+export const managePersonRulesSchema = z
+  .object({
+    action: z.enum(["list", "add", "remove"]),
+    personId: z.string().uuid(),
+    id: z.string().uuid().optional().describe("Rule id (required for remove)"),
+    kind: z
+      .enum(["allergen", "ingredient", "ingredient_category", "diet", "tag", "custom"])
+      .optional(),
+    target: z.string().min(1).max(255).optional(),
+    severity: z.enum(["block", "warn", "prefer_avoid"]).optional(),
+    label: z.string().optional(),
+    note: z.string().optional(),
+    includeMayContain: z.boolean().optional(),
+    includeCrossContact: z.boolean().optional(),
+    sharedFacility: z.enum(["block", "warn", "ignore"]).optional(),
+    includeDescendants: z.boolean().optional(),
+    treatCoconutAsTreeNut: z
+      .boolean()
+      .optional()
+      .describe("For tree_nut rules. Defaults to false - coconut is not a tree nut unless set."),
+    confirmUnknown: z
+      .boolean()
+      .optional()
+      .describe("Required to save a target that is not in the allergen catalog, such as xyzzy."),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === "add") {
+      if (!value.kind) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["kind"],
+          message: "kind is required to add a rule (use kind, target, and severity)",
+        });
+      }
+      if (!value.target) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["target"],
+          message: "target is required to add a rule (use kind, target, and severity)",
+        });
+      }
+      if (!value.severity) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["severity"],
+          message: "severity is required to add a rule (use kind, target, and severity)",
+        });
+      }
+    }
+    if (value.action === "remove" && !value.id) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["id"],
+        message: "id is required to remove a rule",
+      });
+    }
+  });
 
 async function handler(input: z.infer<typeof managePersonRulesSchema>, context: AuthContext) {
   const db = createDbClient(process.env.DATABASE_URL!);
@@ -63,11 +97,30 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
 
   if (input.action === "add") {
     if (!input.kind || !input.target || !input.severity) {
-      throw new Error("kind, target, and severity are required to add a rule");
+      throw new McpInvalidParamsError("kind, target, and severity are required to add a rule");
     }
     const canonical = canonicalizePersonRuleTarget(input.kind, input.target);
     if (input.kind === "allergen" && !canonical.resolved && !input.confirmUnknown) {
-      throw new Error(unknownRuleTargetMessage(input.target));
+      throw new McpInvalidParamsError(unknownRuleTargetMessage(input.target));
+    }
+    const existing = await people.findMatchingRule({
+      personId: person.id,
+      kind: canonical.kind,
+      target: canonical.target,
+      severity: input.severity,
+    });
+    if (existing) {
+      return {
+        personId: person.id,
+        status: "exists" as const,
+        rule: {
+          id: existing.id,
+          kind: existing.kind,
+          target: existing.target,
+          severity: existing.severity,
+        },
+        canonicalizedFrom: canonical.canonicalized ? input.target : undefined,
+      };
     }
     const created = await people.createRule({
       personId: person.id,
@@ -99,7 +152,7 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
     };
   }
 
-  if (!input.id) throw new Error("id is required to remove a rule");
+  if (!input.id) throw new McpInvalidParamsError("id is required to remove a rule");
   const existing = await people.getRule(input.id);
   if (!existing || existing.personId !== person.id) {
     throw new Error(`Rule not found: ${input.id}`);

@@ -393,6 +393,7 @@ describe("MCP Tool Schemas", () => {
 
     it("validates manage_people and manage_person_rules", () => {
       expect(managePeopleTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
+      expect(managePeopleTool.inputSchema.safeParse({ action: "create" }).success).toBe(false);
       expect(
         managePeopleTool.inputSchema.safeParse({ action: "create", displayName: "Parent A" })
           .success

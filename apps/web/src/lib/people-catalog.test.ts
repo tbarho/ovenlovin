@@ -31,6 +31,11 @@ describe("people catalog search", () => {
     expect(loves.some((entry) => entry.code === "mexican")).toBe(true);
   });
 
+  it("resolves sesame seeds to the sesame allergen", () => {
+    expect(resolveFoodAdd("sesame seeds", { mode: "cant_eat" })?.entry.code).toBe("sesame");
+    expect(resolveFoodAdd("Sesame Seeds", { mode: "cant_eat" })?.entry.code).toBe("sesame");
+  });
+
   it("resolves a peanut typo to the canonical allergen", () => {
     const resolved = resolveFoodAdd("pean", { mode: "cant_eat" });
     expect(resolved?.kind).toBe("canonical");

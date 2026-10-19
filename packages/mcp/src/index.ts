@@ -4,6 +4,7 @@ export { authenticateRequest, requireScope, requireAdminRole } from "./auth/inde
 export { parseAuthorizationHeader } from "./auth/authorization";
 export { handleHttpRequest, type HttpTransportOptions, type AuthInfo } from "./transport/http";
 export { dispatchMcpRequest, listedTools } from "./protocol";
+export { JsonRpcErrorCode, McpInvalidParamsError, jsonRpcFromThrown } from "./json-rpc";
 
 // Export all tools
 export * from "./tools/search-recipes";

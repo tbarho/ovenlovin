@@ -10,6 +10,8 @@ import {
   canManageMembers,
   defaultInviteExpiry,
   invitePath,
+  inviteNeedsSignedInUserMessage,
+  API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE,
   inviteStatus,
   isInviteToken,
   isSoleOwner,
@@ -131,5 +133,14 @@ describe("kitchen access policy", () => {
     expect(isInviteToken(token)).toBe(true);
     expect(isInviteToken("not-an-invite")).toBe(false);
     expect(invitePath(token)).toBe(`/invite/${token}`);
+  });
+
+  it("tells an API key to have a signed-in person open the invite link", () => {
+    const token = "olinv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const message = inviteNeedsSignedInUserMessage("https://kitchen.example", token, true);
+    expect(message).toContain(`https://kitchen.example/invite/${token}`);
+    expect(message).toMatch(/signed-in person must open/i);
+    expect(message).not.toBe("User authentication required");
+    expect(API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE).toMatch(/\/api\/v1\/households\/mine/);
   });
 });
