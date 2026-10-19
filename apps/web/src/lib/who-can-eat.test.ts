@@ -75,6 +75,22 @@ describe("whoCanEat", () => {
     expect(swapped.people[0]?.mark).toBe("ok");
   });
 
+  it("treats a milk dislike as ask first, not a hard block", () => {
+    const milk = testPersonRule({
+      personId: parent.id,
+      target: "milk",
+      severity: "prefer_avoid",
+    });
+    const result = whoCanEat({
+      people: [parent],
+      rules: [milk],
+      ingredients: [{ id: "mozz", name: "mozzarella" }],
+    });
+    expect(result.people[0]?.mark).toBe("warn");
+    expect(result.people[0]?.title).toMatch(/check with Parent A first/i);
+    expect(result.people[0]?.mark).not.toBe("block");
+  });
+
   it("lists one dairy reason when mozzarella and parmesan both match", () => {
     const milk = testPersonRule({
       personId: parent.id,

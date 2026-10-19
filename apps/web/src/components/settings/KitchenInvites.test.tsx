@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
@@ -16,7 +16,25 @@ const pendingInvite = {
 describe("KitchenInvites", () => {
   beforeEach(() => {
     vi.mocked(api).mockReset();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+  });
+
+  it("shows the copy action next to the create control", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockImplementation(async (_path, init) => {
+      if (init?.method === "POST") return pendingInvite;
+      return { items: init?.method === "POST" ? [pendingInvite] : [] };
+    });
+
+    render(<KitchenInvites canManage />);
+    await waitFor(() => {
+      expect(screen.getByText("No pending invite links.")).toBeVisible();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Create invite link" }));
+    const created = await screen.findByTestId("invite-created");
+    expect(within(created).getByText("Copy this link and send it yourself.")).toBeVisible();
+    expect(within(created).getByRole("button", { name: "Copy" })).toBeVisible();
   });
 
   it("shows the empty invite state in the panel after revoke succeeds", async () => {
@@ -24,6 +42,7 @@ describe("KitchenInvites", () => {
     let items: (typeof pendingInvite)[] = [];
     let holdReload: Promise<void> | undefined;
     let releaseReload: (() => void) | undefined;
+    const confirmSpy = vi.spyOn(window, "confirm");
 
     vi.mocked(api).mockImplementation(async (path, init) => {
       if (init?.method === "POST") {
@@ -54,6 +73,9 @@ describe("KitchenInvites", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "Revoke" }));
+    expect(confirmSpy).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog", { name: "Revoke invite?" });
+    await user.click(within(dialog).getByRole("button", { name: "Revoke link" }));
     await waitFor(() => {
       expect(screen.getByText("No pending invite links.")).toBeVisible();
     });
