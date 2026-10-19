@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { PlanService, resolveWriteActor } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
@@ -46,6 +47,7 @@ async function handler(
   input: SaveMealPlanInput,
   context: AuthContext
 ): Promise<SaveMealPlanOutput> {
+  requireWriteRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const planService = new PlanService(db);
   const actor = resolveWriteActor({

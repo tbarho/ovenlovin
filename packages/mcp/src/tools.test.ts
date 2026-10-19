@@ -434,6 +434,19 @@ describe("MCP Tool Schemas", () => {
       ).rejects.toMatchObject({ code: "forbidden" });
     });
 
+    it("rejects manage_people create for a viewer", async () => {
+      await expect(
+        managePeopleTool.handler(
+          { action: "create", displayName: "Parent A" },
+          {
+            householdId: "550e8400-e29b-41d4-a716-446655440001",
+            membershipRole: "viewer",
+            scopes: [],
+          }
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
     it("rejects manage_people update and delete for members, including a member's API key", async () => {
       const personId = "550e8400-e29b-41d4-a716-446655440000";
       const member = {

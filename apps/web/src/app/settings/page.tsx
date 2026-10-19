@@ -9,6 +9,7 @@ import { DemoAgentPanel } from "@/components/demo/DemoAgentPanel";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { getDemoSandboxForSession } from "@/lib/demo/session";
 import { shortBuildSha } from "@/lib/build-sha";
+import { canWriteKitchen } from "@ovenlovin/core";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { resolveOrigin } from "@/lib/origin";
 
@@ -20,6 +21,7 @@ export default async function SettingsPage() {
   const origin = resolveOrigin(await headers());
   const buildSha = shortBuildSha();
   const canManageInvites = context.membershipRole === "owner" || context.membershipRole === "admin";
+  const canWrite = canWriteKitchen(context.membershipRole);
 
   return (
     <>
@@ -40,7 +42,7 @@ export default async function SettingsPage() {
       </div>
       <KitchenNameSettings canRename={context.membershipRole === "owner"} />
       <KitchenSwitcher />
-      <DefaultServingsSettings />
+      <DefaultServingsSettings canWrite={canWrite} />
       <KitchenMembers currentUserId={context.userId} currentRole={context.membershipRole} />
       <KitchenInvites canManage={canManageInvites} />
       {demo && sandbox ? (

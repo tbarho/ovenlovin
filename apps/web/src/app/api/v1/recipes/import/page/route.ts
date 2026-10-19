@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId, requireUserId } from "@/lib/api/middleware";
+import { getRequestContext, requireWritableHousehold, requireUserId } from "@/lib/api/middleware";
 import { importCapturedPage, parseCapturedPage } from "@/lib/import-page";
 
 export const runtime = "nodejs";
@@ -32,7 +32,7 @@ function wantsRedirect(request: NextRequest): boolean {
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const createdBy = context.userId || context.clientId || requireUserId(context);
 
     const captured = parseCapturedPage(await readBody(request));

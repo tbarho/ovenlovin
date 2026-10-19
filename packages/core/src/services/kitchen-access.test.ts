@@ -11,6 +11,7 @@ import {
   canManageInvites,
   canManageMembers,
   canRenameKitchen,
+  canWriteKitchen,
   assertCanRenameKitchen,
   defaultInviteExpiry,
   invitePath,
@@ -49,6 +50,14 @@ describe("kitchen access policy", () => {
     expect(canManageMembers("admin")).toBe(false);
     expect(canManageMembers("member")).toBe(false);
     expect(() => assertCanManageMembers("admin")).toThrow(/Owner role/);
+  });
+
+  it("lets owner, admin, and member write, but not viewer", () => {
+    expect(canWriteKitchen("owner")).toBe(true);
+    expect(canWriteKitchen("admin")).toBe(true);
+    expect(canWriteKitchen("member")).toBe(true);
+    expect(canWriteKitchen("viewer")).toBe(false);
+    expect(canWriteKitchen(undefined)).toBe(false);
   });
 
   it("lets only the owner rename a kitchen", () => {

@@ -1,4 +1,4 @@
-import { HouseholdService, PeopleService } from "@ovenlovin/core";
+import { canWriteKitchen, HouseholdService, PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { PeopleHome } from "@/components/people/PeopleHome";
 import { requireKitchenContext } from "@/lib/kitchen-session";
@@ -22,6 +22,7 @@ export default async function PeoplePage() {
       people={people.items}
       rules={rules}
       loves={loves}
+      canWrite={canWriteKitchen(context.membershipRole)}
     />
   );
 }

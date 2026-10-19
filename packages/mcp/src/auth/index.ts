@@ -5,6 +5,7 @@ import {
   ApiKeyService,
   HouseholdService,
   apiKeyMembershipRole,
+  canWriteKitchen,
 } from "@ovenlovin/core";
 import { eq } from "drizzle-orm";
 import { household } from "@ovenlovin/db/schema";
@@ -208,6 +209,15 @@ export function requireAdminRole(context: AuthContext): void {
     throw {
       code: "forbidden",
       message: "Admin or owner role required",
+    } as AuthError;
+  }
+}
+
+export function requireWriteRole(context: AuthContext): void {
+  if (!canWriteKitchen(context.membershipRole)) {
+    throw {
+      code: "forbidden",
+      message: "Member, admin, or owner role required",
     } as AuthError;
   }
 }

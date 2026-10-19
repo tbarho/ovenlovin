@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { PlanService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
@@ -67,6 +68,7 @@ async function loadPlan(input: EditMealPlanInput, householdId: string, service: 
 }
 
 async function handler(input: EditMealPlanInput, context: AuthContext) {
+  requireWriteRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const service = new PlanService(db);
   const plan = await loadPlan(input, context.householdId, service);

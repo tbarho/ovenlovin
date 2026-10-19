@@ -5,6 +5,7 @@ import {
   ApiKeyService,
   HouseholdService,
   apiKeyMembershipRole,
+  canWriteKitchen,
 } from "@ovenlovin/core";
 import { enforceDemoRequestGuards } from "@/lib/demo/enforce";
 import { getSessionContext } from "@/lib/session";
@@ -70,6 +71,17 @@ export function requireHouseholdId(context: RequestContext): string {
     throw new UnauthorizedError("Household context required");
   }
   return context.householdId;
+}
+
+export function requireWriteRole(context: RequestContext): void {
+  if (!canWriteKitchen(context.membershipRole)) {
+    throw new ForbiddenError("Member, admin, or owner role required");
+  }
+}
+
+export function requireWritableHousehold(context: RequestContext): string {
+  requireWriteRole(context);
+  return requireHouseholdId(context);
 }
 
 export function requireUserId(context: RequestContext): string {
