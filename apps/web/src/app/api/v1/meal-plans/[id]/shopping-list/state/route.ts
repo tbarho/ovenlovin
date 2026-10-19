@@ -2,11 +2,7 @@ import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
-import {
-  PlanService,
-  parseShoppingTripState,
-  shoppingTripStateWriteSchema,
-} from "@ovenlovin/core";
+import { PlanService, parseShoppingTripState, shoppingTripStateWriteSchema } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

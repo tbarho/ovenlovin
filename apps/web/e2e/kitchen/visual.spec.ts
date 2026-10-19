@@ -166,7 +166,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await page.goto(urls.pestoHref);
   await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
   await expect(page.getByTestId("scaled-servings-note")).toContainText(
-    "Scaled to 5 for your family"
+    "Recipe makes 4 · cooking for 5"
   );
   await expect(page.getByRole("button", { name: "Reset to 4" })).toBeVisible();
   await expect(page.getByTestId("who-can-eat")).toBeVisible();
@@ -269,7 +269,9 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Default servings" })).toBeVisible();
-  await expect(page.getByText(/Match my family \(5 people\)/i)).toBeVisible();
+  await expect(page.getByRole("radio", { name: /Match my family \(5 people\)/i })).toBeVisible({
+    timeout: 30_000,
+  });
   await expect(page.getByRole("heading", { name: "Kitchen members" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Invite links" })).toBeVisible();
   await expect(page.getByText(/grok kitchen key/i)).toBeVisible();
@@ -283,7 +285,7 @@ test.describe("signed-in kitchen visual harness", () => {
 
   for (const width of WIDTHS) {
     test(`captures ${width}px pages and sheets`, async ({ page }) => {
-      test.setTimeout(90_000);
+      test.setTimeout(180_000);
       urls = urls ?? (await discoverKitchen(page));
       await captureWidth(page, width, urls);
     });

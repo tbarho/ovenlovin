@@ -580,9 +580,7 @@ describe("ShoppingListService", () => {
       },
     ]);
     expect(formatShoppingListGeneratedAt(list.generatedAt, "UTC")).toMatch(/UTC/);
-    expect(service.exportAsMarkdown(list, { timeZone: "UTC" })).toMatch(
-      /\*\*Generated:\*\*.*UTC/
-    );
+    expect(service.exportAsMarkdown(list, { timeZone: "UTC" })).toMatch(/\*\*Generated:\*\*.*UTC/);
     expect(service.exportAsMarkdown(list, { timeZone: "America/Chicago" })).toMatch(
       /\*\*Generated:\*\*.*(CDT|CST)/
     );
@@ -599,7 +597,9 @@ describe("ShoppingListService", () => {
       },
     ]);
     expect(list.ingredients.find((item) => item.name.includes("tofu"))?.aisle).toBe("Refrigerated");
-    expect(list.ingredients.find((item) => item.name.includes("olive"))?.aisle).toBe("Canned goods");
+    expect(list.ingredients.find((item) => item.name.includes("olive"))?.aisle).toBe(
+      "Canned goods"
+    );
     expect(list.sections.map((section) => section.name).sort()).toEqual([
       "Canned goods",
       "Refrigerated",
