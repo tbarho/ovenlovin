@@ -7,7 +7,7 @@ import {
   getRequestContext,
   requireHouseholdId,
   requireOwnerRole,
-  requireUserId,
+  requireUserOrKeyOwner,
 } from "@/lib/api/middleware";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 
@@ -23,7 +23,7 @@ export async function PATCH(
     const context = await getRequestContext(request);
     requireOwnerRole(context);
     const householdId = requireHouseholdId(context);
-    const actorUserId = requireUserId(context);
+    const actorUserId = requireUserOrKeyOwner(context);
     const { userId } = await params;
     requireResourceId("User", userId);
     const body = patchSchema.parse(await request.json().catch(() => ({})));
@@ -48,7 +48,7 @@ export async function DELETE(
     const context = await getRequestContext(request);
     requireOwnerRole(context);
     const householdId = requireHouseholdId(context);
-    const actorUserId = requireUserId(context);
+    const actorUserId = requireUserOrKeyOwner(context);
     const { userId } = await params;
     requireResourceId("User", userId);
     await new HouseholdService(getDatabase()).removeMember({

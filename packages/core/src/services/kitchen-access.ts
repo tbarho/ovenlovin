@@ -52,6 +52,10 @@ export function canManageMembers(role: MembershipRole | undefined): boolean {
   return role === "owner";
 }
 
+export function canRenameKitchen(role: MembershipRole | undefined): boolean {
+  return role === "owner";
+}
+
 export function assertCanManageInvites(role: MembershipRole | undefined): void {
   if (!canManageInvites(role)) {
     throw new HouseholdAccessError(
@@ -67,6 +71,12 @@ export function assertCanManageMembers(role: MembershipRole | undefined): void {
       "Owner role is required to change kitchen members or roles.",
       "forbidden"
     );
+  }
+}
+
+export function assertCanRenameKitchen(role: MembershipRole | undefined): void {
+  if (!canRenameKitchen(role)) {
+    throw new HouseholdAccessError("Owner role is required to rename this kitchen.", "forbidden");
   }
 }
 

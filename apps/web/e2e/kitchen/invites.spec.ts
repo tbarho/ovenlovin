@@ -21,10 +21,11 @@ test.describe("kitchen invites", () => {
     await expect(invitePanel.getByRole("heading", { name: "Invite links" })).toBeVisible();
     await expect(invitePanel.getByText("No pending invite links.")).toBeVisible();
     await invitePanel.getByRole("button", { name: "Create invite link" }).click();
-    await expect(invitePanel.getByText("Copy this link and send it yourself")).toBeVisible();
+    const created = invitePanel.getByTestId("invite-created");
+    await expect(created.getByText("Copy this link and send it yourself")).toBeVisible();
+    await expect(created.getByRole("button", { name: "Copy" })).toBeInViewport();
     const revoke = invitePanel.getByRole("button", { name: "Revoke" });
     await expect(revoke).toHaveCount(1);
-    page.once("dialog", (dialog) => dialog.accept());
     // The Revoke button immediately becomes "Revoking…", so a name:"Revoke"
     // count of 0 is not "revoke finished". CI 39290782455 still showed the
     // invite row and a disabled Revoking button after the 5s empty-state wait.
@@ -36,6 +37,10 @@ test.describe("kitchen invites", () => {
       { timeout: 30_000 }
     );
     await revoke.click();
+    await page
+      .getByRole("dialog", { name: "Revoke invite?" })
+      .getByRole("button", { name: "Revoke link" })
+      .click();
     await revoked;
     await expect(invitePanel.getByText("No pending invite links.")).toBeVisible({
       timeout: 30_000,
