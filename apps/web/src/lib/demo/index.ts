@@ -13,5 +13,11 @@ export {
   getDemoSandboxForSession,
   getDemoSessionContext,
 } from "./session";
-export { DEMO_COOKIE_NAME, DEMO_HOUSEHOLD_NAME, DEMO_PEOPLE, DEMO_RECIPES } from "./fixture";
+export {
+  DEMO_COOKIE_NAME,
+  DEMO_HOUSEHOLD_NAME,
+  DEMO_PEOPLE,
+  DEMO_RECIPES,
+  distinctDemoKitchenName,
+} from "./fixture";
 export { DEMO_ENTER_PATH, safeDemoEnterNext } from "./enter";

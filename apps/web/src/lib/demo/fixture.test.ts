@@ -1,7 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { DEMO_PEOPLE, DEMO_PLAN_DINNERS, DEMO_RECIPES, DEMO_SHOPPING_ITEMS } from "./fixture";
+import {
+  DEMO_HOUSEHOLD_NAME,
+  DEMO_PEOPLE,
+  DEMO_PLAN_DINNERS,
+  DEMO_RECIPES,
+  DEMO_SHOPPING_ITEMS,
+  distinctDemoKitchenName,
+} from "./fixture";
 
 describe("demo kitchen fixture", () => {
+  it("names new demo sandboxes distinctly", () => {
+    const first = distinctDemoKitchenName("aaaaaaaa-1111-4111-8111-111111111111");
+    const second = distinctDemoKitchenName("bbbbbbbb-2222-4222-8222-222222222222");
+    expect(first).toMatch(new RegExp(`^${DEMO_HOUSEHOLD_NAME} `));
+    expect(second).toMatch(new RegExp(`^${DEMO_HOUSEHOLD_NAME} `));
+    expect(first).not.toBe(second);
+    expect(first).not.toBe(DEMO_HOUSEHOLD_NAME);
+  });
+
   it("has five people with rules and loves", () => {
     expect(DEMO_PEOPLE).toHaveLength(5);
     expect(DEMO_PEOPLE.map((person) => person.displayName)).toEqual([

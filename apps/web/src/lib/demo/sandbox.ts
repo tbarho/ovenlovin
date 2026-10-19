@@ -35,7 +35,12 @@ import {
   user,
 } from "@ovenlovin/db/schema";
 import type { RequestContext } from "@/lib/api/middleware";
-import { DEMO_COOKIE_NAME, DEMO_TTL_MS, DEMO_TTL_SECONDS } from "./fixture";
+import {
+  DEMO_COOKIE_NAME,
+  DEMO_TTL_MS,
+  DEMO_TTL_SECONDS,
+  distinctDemoKitchenName,
+} from "./fixture";
 import { seedDemoKitchen } from "./seed";
 
 export type DemoSandboxRecord = {
@@ -114,6 +119,7 @@ export async function getOrCreateDemoSandbox(
     clerkUserId: `user_demo_${id}`,
     householdSlug: `demo-${id}`,
     email: `demo-${id}@demo.ovenlovin.local`,
+    householdName: distinctDemoKitchenName(id),
   });
 
   const expiresAt = new Date(Date.now() + DEMO_TTL_MS);

@@ -12,7 +12,6 @@ export const manageKitchenInvitesSchema = z.object({
 });
 
 function actorRole(context: AuthContext) {
-  if (context.apiKeyId) return "admin" as const;
   return context.membershipRole ?? "member";
 }
 
@@ -22,9 +21,7 @@ function actorUserId(context: AuthContext): string {
 }
 
 async function handler(input: z.infer<typeof manageKitchenInvitesSchema>, context: AuthContext) {
-  if (!context.apiKeyId) {
-    requireAdminRole(context);
-  }
+  requireAdminRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const invites = new InviteService(db);
   const role = actorRole(context);

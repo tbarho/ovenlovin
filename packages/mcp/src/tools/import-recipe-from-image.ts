@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { McpInvalidParamsError } from "../json-rpc";
 import {
   copyRemoteImages,
   fingerprintImageBlob,
@@ -108,7 +109,7 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   const images = collectImages(input);
   const first = images[0]?.blob;
   if (!first) {
-    throw new Error("Provide imageUrl, imageBase64, or images[]");
+    throw new McpInvalidParamsError("Provide imageUrl, imageBase64, or images[]");
   }
 
   const db = createDbClient(process.env.DATABASE_URL!);
@@ -117,17 +118,9 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   const perceptualHash = perceptualHashFromImageBlob(first);
   const exact = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
   if (exact) {
-    return {
-      recipeId: exact.id,
-      created: false,
-      duplicate: true,
-      match: "photo",
-      status: exact.status,
-      title: exact.title,
-      notes: exact.notes ?? null,
-      images: mcpRecipeImages(exact.id, exact.images),
-      message: `This photo was already imported as "${exact.title}" (${exact.id}). Open that recipe instead of importing again.`,
-    };
+    throw new McpInvalidParamsError(
+      `This photo was already imported as "${exact.title}" (${exact.id}). Skip or open that recipe.`
+    );
   }
   const extracted = await runPhotoImport({ images, isHandwritten: input.isHandwritten }, {});
   const draft = extracted.draft;

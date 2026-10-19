@@ -25,11 +25,34 @@ export function invitePath(token: string): string {
   return `/invite/${token}`;
 }
 
+export function inviteAcceptLink(origin: string, token: string): string {
+  return `${origin.replace(/\/$/, "")}${invitePath(token)}`;
+}
+
+export function inviteNeedsSignedInUserMessage(
+  origin: string,
+  token: string,
+  viaApiKey: boolean
+): string {
+  const link = inviteAcceptLink(origin, token);
+  if (viaApiKey) {
+    return `An API key cannot accept a kitchen invite or join another kitchen. A signed-in person must open ${link}.`;
+  }
+  return `User authentication required. A signed-in person must open ${link}.`;
+}
+
+export const API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE =
+  "An API key is bound to one kitchen and cannot switch. A signed-in person can switch kitchens. Use GET /api/v1/households/mine to see this key's kitchen.";
+
 export function canManageInvites(role: MembershipRole | undefined): boolean {
   return role === "owner" || role === "admin";
 }
 
 export function canManageMembers(role: MembershipRole | undefined): boolean {
+  return role === "owner";
+}
+
+export function canRenameKitchen(role: MembershipRole | undefined): boolean {
   return role === "owner";
 }
 
@@ -48,6 +71,12 @@ export function assertCanManageMembers(role: MembershipRole | undefined): void {
       "Owner role is required to change kitchen members or roles.",
       "forbidden"
     );
+  }
+}
+
+export function assertCanRenameKitchen(role: MembershipRole | undefined): void {
+  if (!canRenameKitchen(role)) {
+    throw new HouseholdAccessError("Owner role is required to rename this kitchen.", "forbidden");
   }
 }
 
@@ -79,6 +108,17 @@ export function preferredKitchenId(input: {
 }): string | null {
   return input.pendingInviteHouseholdId ?? input.selectedHouseholdId ?? null;
 }
+
+/** Creator's current role in the key's kitchen - not a role from another household. */
+export function apiKeyMembershipRole(
+  memberships: Array<{ householdId: string; role: MembershipRole }>,
+  householdId: string
+): MembershipRole | undefined {
+  return memberships.find((item) => item.householdId === householdId)?.role;
+}
+
+export const API_KEY_CREATOR_NOT_A_MEMBER =
+  "This API key's creator is no longer a member of this kitchen.";
 
 export function selectActiveMembership(
   memberships: Membership[],

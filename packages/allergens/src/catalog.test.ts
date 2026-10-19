@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   allergenCatalog,
+  allCatalogEntries,
   catalogForIntent,
   findCatalogEntry,
   humanizeTarget,
@@ -8,6 +9,8 @@ import {
   resolveCatalogTarget,
   ruleKindForCatalogGroup,
   searchCatalog,
+  unknownRuleTargetMessage,
+  ambiguousRuleTargetMessage,
 } from "./catalog";
 
 describe("allergenCatalog", () => {
@@ -88,10 +91,68 @@ describe("resolveCatalogTarget", () => {
     });
   });
 
+  it("canonicalizes common plural and phrase forms for major allergens", () => {
+    expect(canonicalizePersonRuleTarget("allergen", "sesame seeds")).toMatchObject({
+      target: "sesame",
+      resolved: true,
+      canonicalized: true,
+    });
+    expect(canonicalizePersonRuleTarget("allergen", "Sesame Seeds")).toMatchObject({
+      target: "sesame",
+      resolved: true,
+    });
+    expect(canonicalizePersonRuleTarget("allergen", "sesame")).toMatchObject({
+      target: "sesame",
+      resolved: true,
+    });
+    expect(canonicalizePersonRuleTarget("allergen", "mustard seeds").target).toBe("mustard");
+    expect(canonicalizePersonRuleTarget("allergen", "soy beans").target).toBe("soy");
+    expect(canonicalizePersonRuleTarget("allergen", "eggs").target).toBe("egg");
+    expect(canonicalizePersonRuleTarget("allergen", "tree nuts").target).toBe("tree_nut");
+    expect(canonicalizePersonRuleTarget("allergen", "cow's milk").target).toBe("milk");
+    expect(canonicalizePersonRuleTarget("allergen", "wheat flour").target).toBe("wheat");
+  });
+
+  it("resolves every catalog code to itself, including wheat and shrimp", () => {
+    for (const entry of allCatalogEntries()) {
+      const kind = ruleKindForCatalogGroup(entry.group);
+      const canonical = canonicalizePersonRuleTarget(kind, entry.code);
+      expect({
+        code: entry.code,
+        target: canonical.target,
+        resolved: canonical.resolved,
+      }).toEqual({ code: entry.code, target: entry.code, resolved: true });
+    }
+    expect(canonicalizePersonRuleTarget("allergen", "wheat").target).toBe("wheat");
+    expect(canonicalizePersonRuleTarget("allergen", "shrimp").target).toBe("shrimp");
+    expect(canonicalizePersonRuleTarget("allergen", "crab").target).toBe("crab");
+    expect(canonicalizePersonRuleTarget("allergen", "lobster").target).toBe("lobster");
+  });
+
+  it("does not auto-pick peanut or tree_nut for nuts", () => {
+    expect(resolveCatalogTarget("nuts", { kind: "allergen" })).toBeNull();
+    const canonical = canonicalizePersonRuleTarget("allergen", "nuts");
+    expect(canonical.resolved).toBe(false);
+    expect(canonical.ambiguous).toEqual(expect.arrayContaining(["peanut", "tree_nut"]));
+    expect(canonical.ambiguous).toHaveLength(2);
+    expect(canonicalizePersonRuleTarget("allergen", "nut").ambiguous).toEqual(
+      expect.arrayContaining(["peanut", "tree_nut"])
+    );
+    expect(canonicalizePersonRuleTarget("allergen", "all nuts").ambiguous).toEqual(
+      expect.arrayContaining(["peanut", "tree_nut"])
+    );
+    expect(ambiguousRuleTargetMessage("nuts", canonical.ambiguous ?? [])).toMatch(/peanut/);
+    expect(ambiguousRuleTargetMessage("nuts", canonical.ambiguous ?? [])).toMatch(/tree_nut/);
+    expect(ambiguousRuleTargetMessage("nuts", canonical.ambiguous ?? [])).not.toMatch(
+      /confirmUnknown/
+    );
+  });
+
   it("does not invent a catalog match for xyzzy", () => {
     expect(resolveCatalogTarget("xyzzy", { kind: "allergen" })).toBeNull();
     expect(canonicalizePersonRuleTarget("allergen", "xyzzy").resolved).toBe(false);
     expect(canonicalizePersonRuleTarget("custom", "blueberries").resolved).toBe(false);
+    expect(unknownRuleTargetMessage("xyzzy")).toContain("confirmUnknown: true");
   });
 });
 

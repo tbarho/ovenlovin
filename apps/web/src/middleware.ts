@@ -1,5 +1,6 @@
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
+import { isApiOrMcpPath, isApiShapedRequest, missingApiResponse } from "@/lib/api/missing-route";
 import { isClerkProtectExempt } from "@/lib/clerk-protect";
 import { DEMO_ENTER_PATH, shouldRedirectToDemoEnter } from "@/lib/demo/enter";
 import { DEMO_COOKIE_NAME } from "@/lib/demo/fixture";
@@ -29,6 +30,15 @@ const clerk = clerkMiddleware(async (auth, req) => {
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (isDevPreviewPath(req.nextUrl.pathname) && !isDevPreviewAllowed()) {
     return new NextResponse("Not Found", { status: 404 });
+  }
+  if (
+    isApiShapedRequest({
+      authorization: req.headers.get("authorization"),
+      accept: req.headers.get("accept"),
+    }) &&
+    !isApiOrMcpPath(req.nextUrl.pathname)
+  ) {
+    return missingApiResponse(req);
   }
   if (isE2eAuthBypassEnabled()) {
     return withInviteCookie(req, NextResponse.next());

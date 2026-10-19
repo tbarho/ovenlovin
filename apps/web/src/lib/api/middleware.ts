@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { getDatabase } from "@ovenlovin/db";
-import { ApiKeyService } from "@ovenlovin/core";
+import {
+  API_KEY_CREATOR_NOT_A_MEMBER,
+  ApiKeyService,
+  HouseholdService,
+  apiKeyMembershipRole,
+} from "@ovenlovin/core";
 import { enforceDemoRequestGuards } from "@/lib/demo/enforce";
 import { getSessionContext } from "@/lib/session";
 import { ForbiddenError, UnauthorizedError } from "./errors";
@@ -41,11 +46,18 @@ async function parseApiKey(apiKey: string): Promise<RequestContext> {
     throw new UnauthorizedError("Invalid or expired API key");
   }
 
+  const memberships = await new HouseholdService(db).getMembershipsForUser(result.key.createdBy);
+  const membershipRole = apiKeyMembershipRole(memberships, result.key.householdId);
+  if (!membershipRole) {
+    throw new UnauthorizedError(API_KEY_CREATOR_NOT_A_MEMBER);
+  }
+
   return {
     clientId: result.key.id,
     householdId: result.key.householdId,
     isBot: true,
     apiKeyCreatedBy: result.key.createdBy,
+    membershipRole,
   };
 }
 
@@ -77,14 +89,12 @@ export function requireUserOrKeyOwner(context: RequestContext): string {
 }
 
 export function requireAdminRole(context: RequestContext): void {
-  if (context.isBot) return;
   if (!context.membershipRole || !["owner", "admin"].includes(context.membershipRole)) {
     throw new ForbiddenError("Admin or owner role required");
   }
 }
 
 export function requireOwnerRole(context: RequestContext): void {
-  if (context.isBot) return;
   if (context.membershipRole !== "owner") {
     throw new ForbiddenError("Owner role required");
   }

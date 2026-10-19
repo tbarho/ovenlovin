@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { UnauthorizedError } from "./errors";
-import { requireUserId, requireUserOrKeyOwner } from "./middleware";
+import { ForbiddenError, UnauthorizedError } from "./errors";
+import {
+  requireAdminRole,
+  requireOwnerRole,
+  requireUserId,
+  requireUserOrKeyOwner,
+} from "./middleware";
 
 describe("invite actor helpers", () => {
   it("lets an API key create invites as the key owner, but not accept them", () => {
@@ -27,6 +32,30 @@ describe("invite actor helpers", () => {
   it("rejects a key with no owning user", () => {
     expect(() => requireUserOrKeyOwner({ isBot: true, clientId: "key" })).toThrow(
       UnauthorizedError
+    );
+  });
+});
+
+describe("API key kitchen roles", () => {
+  const kitchenId = "22222222-2222-4222-8222-222222222222";
+  const ownerKey = {
+    isBot: true,
+    householdId: kitchenId,
+    apiKeyCreatedBy: "11111111-1111-4111-8111-111111111111",
+    clientId: "33333333-3333-4333-8333-333333333333",
+    membershipRole: "owner" as const,
+  };
+  const adminKey = { ...ownerKey, membershipRole: "admin" as const };
+
+  it("lets the owner's key rename the kitchen and manage members, and rejects an admin's key", () => {
+    expect(() => requireOwnerRole(ownerKey)).not.toThrow();
+    expect(() => requireOwnerRole(adminKey)).toThrow(ForbiddenError);
+    expect(() => requireAdminRole(adminKey)).not.toThrow();
+    expect(() => requireAdminRole({ ...adminKey, membershipRole: "member" })).toThrow(
+      ForbiddenError
+    );
+    expect(() => requireOwnerRole({ isBot: true, clientId: ownerKey.clientId })).toThrow(
+      ForbiddenError
     );
   });
 });

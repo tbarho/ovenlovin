@@ -77,14 +77,21 @@ describe("partitionPlanRecipes", () => {
   const tacos = pick({ id: "tacos", title: "Veggie tacos", safety: "ok" });
   const chili = pick({ id: "chili", title: "Beef chili", safety: "warn" });
 
-  it("shows safer picks first and keeps other risk recipes collapsed", () => {
+  it("keeps ask-first and dislike recipes visible and only collapses blocks", () => {
     const groups = partitionPlanRecipes([pesto, chili, tacos], "", null);
     expect(groups.safer.map((recipe) => recipe.id)).toEqual(["tacos"]);
-    expect(groups.safe.map((recipe) => recipe.id)).toEqual([]);
-    expect(groups.unsafe.map((recipe) => recipe.id)).toEqual(["chili", "pesto"]);
+    expect(groups.safe.map((recipe) => recipe.id)).toEqual(["chili"]);
+    expect(groups.unsafe.map((recipe) => recipe.id)).toEqual(["pesto"]);
   });
 
-  it("keeps the current risky dinner visible instead of collapsing it", () => {
+  it("does not hide recipes when the only findings are ask-first", () => {
+    const groups = partitionPlanRecipes([chili, tacos], "", null);
+    expect(groups.safer).toEqual([]);
+    expect(groups.safe.map((recipe) => recipe.id)).toEqual(["tacos", "chili"]);
+    expect(groups.unsafe).toEqual([]);
+  });
+
+  it("keeps the current blocked dinner visible instead of collapsing it", () => {
     const groups = partitionPlanRecipes([pesto, tacos], "", "pesto");
     expect(groups.safer.map((recipe) => recipe.id)).toEqual(["tacos"]);
     expect(groups.safe.map((recipe) => recipe.id)).toEqual(["pesto"]);
@@ -101,6 +108,9 @@ describe("plan risk confirm copy", () => {
       warning: "Contains peanuts, so Child B can't eat this. Anaphylaxis risk",
     });
     expect(recipeNeedsPlanConfirm(kungPao)).toBe(true);
+    expect(
+      recipeNeedsPlanConfirm(pick({ id: "scan", title: "Photo import", safety: "unknown" }))
+    ).toBe(true);
     expect(recipeNeedsPlanConfirm(pick({ id: "tacos", title: "Veggie tacos" }))).toBe(false);
     const copy = planRiskConfirmCopy(kungPao, "Sunday");
     expect(copy.title).toContain("Kung pao chicken");
@@ -108,6 +118,12 @@ describe("plan risk confirm copy", () => {
     expect(copy.body).toContain("Child B");
     expect(copy.body).toContain("peanuts");
     expect(copy.body).toContain("warning stays on Sunday");
+    const unknownCopy = planRiskConfirmCopy(
+      pick({ id: "scan", title: "Photo import", safety: "unknown" }),
+      "Monday"
+    );
+    expect(unknownCopy.body).toContain("We couldn't check this recipe's ingredients.");
+    expect(unknownCopy.body).not.toMatch(/[\u2013\u2014]/);
   });
 });
 

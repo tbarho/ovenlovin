@@ -1,14 +1,15 @@
 import { NextRequest } from "next/server";
-import { handleApiError, BadRequestError, NotFoundError } from "@/lib/api/errors";
+import { handleApiError, BadRequestError } from "@/lib/api/errors";
 import { jsonResponse, createdResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { assertPersonHousehold } from "@/lib/api/people";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId } = await params;
     const type = new URL(request.url).searchParams.get("type") ?? undefined;
@@ -17,9 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const preferences = await service.getPreferencesForPerson(personId, type);
     return jsonResponse(preferences);
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const context = await getRequestContext(request);
     requireAdminRole(context);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId } = await params;
     const body = (await request.json()) as { type?: string; value?: string; weight?: number };
@@ -47,9 +46,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const createdBy = context.userId || context.clientId || "system";
     const preference = await service.createPreference({
