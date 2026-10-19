@@ -63,7 +63,7 @@ async function parseClerkToken(token: string): Promise<AuthContext> {
   if (!secretKey) {
     throw {
       code: "unauthorized",
-      message: "Server configuration error: CLERK_SECRET_KEY not set",
+      message: "Bearer tokens are not supported on this server. Use ApiKey.",
     } as AuthError;
   }
 
