@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ImportBookmarklet } from "./ImportBookmarklet";
 
 describe("ImportBookmarklet", () => {
-  it("shows a draggable bookmarklet and copies the javascript URL", async () => {
+  it("shows a draggable Save to OvenLovin link and copies the javascript URL", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 
@@ -20,7 +20,7 @@ describe("ImportBookmarklet", () => {
       "/recipes/import/capture#"
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Copy bookmarklet" }));
+    await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
     expect(writeText).toHaveBeenCalled();
     expect(writeText.mock.calls[0]?.[0]).toMatch(/^javascript:/);
     expect(await screen.findByRole("button", { name: "Copied" })).toBeTruthy();

@@ -36,8 +36,8 @@ interface Importer<TInput> {
 - HTML / markdown recipe-card fallback (Wikibooks, Jina)
 - Cheap LLM fallback (`openai/gpt-4o-mini` via Vercel AI Gateway, override with `RK_MODEL_EXTRACT`)
 - "No recipe found on this page" when the page loaded but is not a recipe (example.com)
-- "This site blocked the importer (tried ...)" only after every layer failed, and that message points at the bookmarklet
-- Device capture: `extract({ url, html })` or `extract({ url, jsonLd })` skips the server fetch (bookmarklet and iOS Shortcut)
+- "This site blocked the importer (tried ...)" only after every layer failed
+- Device capture: `extract({ url, html })` or `extract({ url, jsonLd })` skips the server fetch (Safari shortcut and Advanced browser save)
 
 ### Pasted Text Importer
 

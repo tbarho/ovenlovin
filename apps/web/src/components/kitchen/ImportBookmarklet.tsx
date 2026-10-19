@@ -25,11 +25,10 @@ export function ImportBookmarklet({ origin }: { origin?: string }) {
   }
 
   return (
-    <div className="form-card import-bookmarklet">
-      <h2>Save from your browser</h2>
+    <div className="import-advanced">
       <p className="muted">
-        Drag this onto your bookmarks bar. On a recipe page the importer cannot fetch, open the
-        bookmark. It sends the page from your device and opens the saved recipe.
+        Drag Save to OvenLovin onto your bookmarks bar. On a recipe page, open it to send the page
+        from your browser.
       </p>
       <div className="import-row">
         <a
@@ -41,11 +40,11 @@ export function ImportBookmarklet({ origin }: { origin?: string }) {
           {title}
         </a>
         <button type="button" className="btn" onClick={() => void copyHref()}>
-          {copied ? "Copied" : "Copy bookmarklet"}
+          {copied ? "Copied" : "Copy code"}
         </button>
       </div>
       <p className="muted">
-        iPhone: Settings has an API key and a Shortcuts share-sheet recipe that does the same thing.
+        Safari on iPhone can use an API key from Settings with the steps above.
       </p>
     </div>
   );

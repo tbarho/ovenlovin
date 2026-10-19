@@ -4,7 +4,12 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
-import { importGuessedNotice, importInputError } from "@/lib/import-input";
+import {
+  BLOCKED_IMPORT_COPY,
+  importGuessedNotice,
+  importInputError,
+  isBlockedImportError,
+} from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_IN_PROGRESS,
@@ -19,7 +24,7 @@ import {
 } from "@/lib/photo-import-job";
 import { isImageFile } from "@/lib/photo-import-review";
 import { PhotoImportDialog } from "./PhotoImportDialog";
-import { ImportBookmarklet } from "./ImportBookmarklet";
+import { ImportFromDevice } from "./ImportFromDevice";
 
 function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -141,7 +146,8 @@ function PhotoPick({
 export function ImportRecipeForm() {
   const router = useRouter();
   const [source, setSource] = useState<"url" | "paste" | "photo">("url");
-  const [content, setContent] = useState("");
+  const [url, setUrl] = useState("");
+  const [paste, setPaste] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>(() => getPhotoImportJob()?.files ?? []);
@@ -156,7 +162,8 @@ export function ImportRecipeForm() {
     id: string;
     notice: string;
   } | null>(null);
-  const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(content.trim());
+  const fieldValue = source === "paste" ? paste : url;
+  const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(fieldValue.trim());
   const jobBusy = photoJob?.phase === "uploading" || photoJob?.phase === "reading";
 
   useEffect(
@@ -198,7 +205,7 @@ export function ImportRecipeForm() {
       setPhotoOpen(true);
       return;
     }
-    const inputError = importInputError(source, content);
+    const inputError = importInputError(source, fieldValue);
     if (inputError) {
       setError(inputError);
       return;
@@ -208,7 +215,7 @@ export function ImportRecipeForm() {
     try {
       const recipe = await api<RecipeDetails>("/api/v1/recipes/import", {
         method: "POST",
-        body: JSON.stringify({ source, content }),
+        body: JSON.stringify({ source, content: fieldValue }),
       });
       setImported({
         id: recipe.id,
@@ -298,9 +305,9 @@ export function ImportRecipeForm() {
             <div className="import-field">
               {source === "url" ? (
                 <input
-                  value={content}
+                  value={url}
                   onChange={(event) => {
-                    setContent(event.target.value);
+                    setUrl(event.target.value);
                     setError(null);
                   }}
                   placeholder="https://example.com/chocolate-chip-cookies"
@@ -308,9 +315,9 @@ export function ImportRecipeForm() {
                 />
               ) : (
                 <textarea
-                  value={content}
+                  value={paste}
                   onChange={(event) => {
-                    setContent(event.target.value);
+                    setPaste(event.target.value);
                     setError(null);
                   }}
                   placeholder={
@@ -329,7 +336,35 @@ export function ImportRecipeForm() {
             </button>
           </div>
         )}
-        {error ? <p className="muted import-error">{error}</p> : null}
+        {error && isBlockedImportError(error) ? (
+          <div className="import-blocked" role="status">
+            <p className="muted import-error">{BLOCKED_IMPORT_COPY}</p>
+            <div className="import-blocked-actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setSource("paste");
+                  setError(null);
+                }}
+              >
+                Paste the recipe text
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setSource("photo");
+                  setError(null);
+                }}
+              >
+                Add a photo
+              </button>
+            </div>
+          </div>
+        ) : error ? (
+          <p className="muted import-error">{error}</p>
+        ) : null}
         {imported ? (
           <p className="muted" data-testid="import-review">
             {imported.notice} · <a href={`/recipes/${imported.id}`}>Add to cookbook</a>
@@ -337,7 +372,7 @@ export function ImportRecipeForm() {
         ) : null}
       </form>
       <PhotoImportDialog open={photoOpen} onClose={closePhoto} onTypeOrPaste={typeOrPaste} />
-      <ImportBookmarklet />
+      <ImportFromDevice />
     </>
   );
 }

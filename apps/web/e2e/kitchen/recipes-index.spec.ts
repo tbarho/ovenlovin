@@ -27,7 +27,9 @@ test("recipe list is in the first phone viewport", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "URL" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Paste" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Photo" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Save from your browser" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Save from your browser" })).toHaveCount(0);
+  await expect(page.getByText("Save from Safari on iPhone")).toBeVisible();
+  await expect(page.getByText("Advanced")).toBeVisible();
 });
 
 test("recipe list is in the first desktop viewport", async ({ page }) => {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { importGuessedNotice, importInputError, looksLikeHttpUrl } from "./import-input";
+import {
+  BLOCKED_IMPORT_COPY,
+  importGuessedNotice,
+  importInputError,
+  isBlockedImportError,
+  looksLikeHttpUrl,
+} from "./import-input";
 
 describe("import input", () => {
   it("rejects an empty paste", () => {
@@ -19,6 +25,14 @@ describe("import input", () => {
     expect(importInputError("url", "https://example.com/chocolate-chip-cookies")).not.toMatch(
       /blocked/i
     );
+  });
+
+  it("treats a server block as the inline help copy", () => {
+    expect(
+      isBlockedImportError("This site blocked the importer (tried direct, google-translate, jina).")
+    ).toBe(true);
+    expect(isBlockedImportError(BLOCKED_IMPORT_COPY)).toBe(true);
+    expect(isBlockedImportError("No recipe found on this page.")).toBe(false);
   });
 
   it("names guessed servings after a paste import", () => {

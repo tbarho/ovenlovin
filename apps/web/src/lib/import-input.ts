@@ -31,6 +31,13 @@ export function importInputError(source: "url" | "paste", content: string): stri
   return null;
 }
 
+export const BLOCKED_IMPORT_COPY = "That site would not let us read its recipe.";
+
+export function isBlockedImportError(message: string | null | undefined): boolean {
+  if (!message) return false;
+  return /blocked the importer/i.test(message) || message === BLOCKED_IMPORT_COPY;
+}
+
 export function importGuessedNotice(title: string, servings: number | null): string {
   const yieldText =
     servings && servings > 0 ? `${servings} servings (guessed)` : "servings unknown";
