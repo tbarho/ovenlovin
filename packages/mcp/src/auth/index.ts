@@ -7,8 +7,6 @@ import {
   apiKeyMembershipRole,
   canWriteKitchen,
 } from "@ovenlovin/core";
-import { eq } from "drizzle-orm";
-import { household } from "@ovenlovin/db/schema";
 import { parseAuthorizationHeader } from "./authorization";
 
 /**
@@ -80,10 +78,9 @@ async function parseClerkToken(token: string): Promise<AuthContext> {
       } as AuthError;
     }
 
-    const userId = verifiedToken.sub;
+    const clerkUserId = verifiedToken.sub;
 
     const orgId = (verifiedToken as Record<string, unknown>).org_id as string | undefined;
-    const orgRole = (verifiedToken as Record<string, unknown>).org_role as string | undefined;
 
     if (!orgId) {
       throw {
@@ -93,12 +90,8 @@ async function parseClerkToken(token: string): Promise<AuthContext> {
     }
 
     const db = getDatabase();
-    const [householdRecord] = await db
-      .select()
-      .from(household)
-      .where(eq(household.clerkOrgId, orgId))
-      .limit(1);
-
+    const households = new HouseholdService(db);
+    const householdRecord = await households.getHouseholdByClerkOrgId(orgId);
     if (!householdRecord) {
       throw {
         code: "unauthorized",
@@ -106,14 +99,21 @@ async function parseClerkToken(token: string): Promise<AuthContext> {
       } as AuthError;
     }
 
-    const role = orgRole as "owner" | "admin" | "member" | "viewer" | undefined;
-    const scopes = deriveScopes(role ?? "member");
+    const userRecord = await households.getUserByClerkId(clerkUserId);
+    const memberships = userRecord ? await households.getMembershipsForUser(userRecord.id) : [];
+    const membershipRole = apiKeyMembershipRole(memberships, householdRecord.id);
+    if (!userRecord || !membershipRole) {
+      throw {
+        code: "unauthorized",
+        message: "Household membership required",
+      } as AuthError;
+    }
 
     return {
       householdId: householdRecord.id,
-      userId,
-      scopes,
-      membershipRole: role ?? "member",
+      userId: userRecord.id,
+      scopes: deriveScopes(membershipRole),
+      membershipRole,
     };
   } catch (error) {
     if (error && typeof error === "object" && "code" in error) {
