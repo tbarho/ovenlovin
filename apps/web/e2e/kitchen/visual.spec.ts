@@ -291,7 +291,7 @@ test.describe("signed-in kitchen visual harness", () => {
 
   for (const width of WIDTHS) {
     test(`captures ${width}px pages and sheets`, async ({ page }) => {
-      test.setTimeout(180_000);
+      test.setTimeout(90_000);
       urls = urls ?? (await discoverKitchen(page));
       await captureWidth(page, width, urls);
     });
