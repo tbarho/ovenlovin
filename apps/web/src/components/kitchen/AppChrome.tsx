@@ -5,6 +5,7 @@ import { brandPublicPath } from "@ovenlovin/brand";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { shortBuildSha } from "@/lib/build-sha";
 import { DemoBanner } from "@/components/demo/DemoBanner";
+import { KitchenSwitcher } from "@/components/settings/KitchenSwitcher";
 import { KitchenMenu } from "./KitchenMenu";
 import { KitchenNav } from "./KitchenNav";
 import { KitchenPageTitle } from "./KitchenPageTitle";
@@ -36,6 +37,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <aside className="kitchen-sidebar">
         <Brand />
         <KitchenNav variant="sidebar" />
+        <KitchenSwitcher />
         <Account />
       </aside>
       <header className="nav kitchen-topbar">

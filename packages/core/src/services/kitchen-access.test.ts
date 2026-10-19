@@ -8,6 +8,8 @@ import {
   assertInviteableRole,
   canManageInvites,
   canManageMembers,
+  canRenameKitchen,
+  assertCanRenameKitchen,
   defaultInviteExpiry,
   invitePath,
   inviteStatus,
@@ -43,6 +45,13 @@ describe("kitchen access policy", () => {
     expect(canManageMembers("admin")).toBe(false);
     expect(canManageMembers("member")).toBe(false);
     expect(() => assertCanManageMembers("admin")).toThrow(/Owner role/);
+  });
+
+  it("lets only the owner rename a kitchen", () => {
+    expect(canRenameKitchen("owner")).toBe(true);
+    expect(canRenameKitchen("admin")).toBe(false);
+    expect(canRenameKitchen("member")).toBe(false);
+    expect(() => assertCanRenameKitchen("admin")).toThrow(/rename this kitchen/);
   });
 
   it("rejects inviting someone as owner", () => {

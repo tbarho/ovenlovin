@@ -268,6 +268,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kitchen name" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Default servings" })).toBeVisible();
   await expect(page.getByText(/Match my family \(5 people\)/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Kitchen members" })).toBeVisible();

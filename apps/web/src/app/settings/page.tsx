@@ -3,6 +3,7 @@ import { ApiKeyManager } from "@/components/settings/ApiKeyManager";
 import { KitchenInvites } from "@/components/settings/KitchenInvites";
 import { KitchenMembers } from "@/components/settings/KitchenMembers";
 import { DefaultServingsSettings } from "@/components/settings/DefaultServingsSettings";
+import { KitchenNameSettings } from "@/components/settings/KitchenNameSettings";
 import { KitchenSwitcher } from "@/components/settings/KitchenSwitcher";
 import { DemoAgentPanel } from "@/components/demo/DemoAgentPanel";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
@@ -37,6 +38,7 @@ export default async function SettingsPage() {
           </p>
         </div>
       </div>
+      <KitchenNameSettings canRename={context.membershipRole === "owner"} />
       <KitchenSwitcher />
       <DefaultServingsSettings />
       <KitchenMembers currentUserId={context.userId} currentRole={context.membershipRole} />

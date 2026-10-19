@@ -10,7 +10,10 @@ import type {
   User,
   UserHousehold,
 } from "../schemas/households";
-import { updateHouseholdServingsSettingsSchema } from "../schemas/households";
+import {
+  updateHouseholdNameSchema,
+  updateHouseholdServingsSettingsSchema,
+} from "../schemas/households";
 import {
   normalizeHouseholdServingsSetting,
   parseDefaultServingsMode,
@@ -20,6 +23,7 @@ import { BaseService } from "./base";
 import {
   HouseholdAccessError,
   assertCanManageMembers,
+  assertCanRenameKitchen,
   isSoleOwner,
   selectActiveMembership,
 } from "./kitchen-access";
@@ -71,6 +75,29 @@ export class HouseholdService extends BaseService {
 
     if (!created) throw new Error("Failed to create household");
     return this.mapHousehold(created);
+  }
+
+  async updateHouseholdName(input: {
+    householdId: string;
+    name: string;
+    actorRole?: MembershipRole;
+    isBot?: boolean;
+  }): Promise<Household> {
+    if (!input.isBot) {
+      assertCanRenameKitchen(input.actorRole);
+    }
+    const { name } = updateHouseholdNameSchema.parse({ name: input.name });
+    const now = new Date();
+    const [updated] = await this._db
+      .update(household)
+      .set({
+        name,
+        updatedAt: now,
+      })
+      .where(and(eq(household.id, input.householdId), isNull(household.deletedAt)))
+      .returning();
+    if (!updated) throw new Error("Household not found");
+    return this.mapHousehold(updated);
   }
 
   async updateServingsSettings(

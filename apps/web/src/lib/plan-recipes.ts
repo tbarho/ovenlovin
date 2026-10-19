@@ -91,17 +91,20 @@ export function partitionPlanRecipes(
 } {
   const filtered = filterPlanRecipes(recipes, query);
   const ok = filtered.filter((recipe) => recipe.safety === "ok");
-  const risky = filtered.filter((recipe) => recipe.safety !== "ok");
+  const blocked = filtered.filter((recipe) => recipe.safety === "block");
+  const warned = filtered.filter(
+    (recipe) => recipe.safety === "warn" || recipe.safety === "unknown"
+  );
   const safer =
-    !query.trim() && risky.length > 0
+    !query.trim() && blocked.length > 0
       ? ok.filter((recipe) => recipe.id !== currentRecipeId).slice(0, 3)
       : [];
   const saferIds = new Set(safer.map((recipe) => recipe.id));
-  const currentRisky = risky.filter((recipe) => recipe.id === currentRecipeId);
+  const currentBlocked = blocked.filter((recipe) => recipe.id === currentRecipeId);
   return {
     safer,
-    safe: [...ok.filter((recipe) => !saferIds.has(recipe.id)), ...currentRisky],
-    unsafe: risky.filter((recipe) => recipe.id !== currentRecipeId),
+    safe: [...ok.filter((recipe) => !saferIds.has(recipe.id)), ...warned, ...currentBlocked],
+    unsafe: blocked.filter((recipe) => recipe.id !== currentRecipeId),
   };
 }
 
