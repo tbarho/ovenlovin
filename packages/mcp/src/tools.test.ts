@@ -453,7 +453,10 @@ describe("MCP Tool Schemas", () => {
       [
         "import_recipe_from_image",
         () =>
-          importRecipeFromImageTool.handler({ imageUrl: "https://example.com/photo.jpg" }, viewer),
+          importRecipeFromImageTool.handler(
+            { imageUrl: "https://example.com/photo.jpg", skipReview: false },
+            viewer
+          ),
       ],
       [
         "delete_recipe",
@@ -467,6 +470,7 @@ describe("MCP Tool Schemas", () => {
               weekStart: "2026-10-12",
               entries: [],
               checkReportJson: {},
+              status: "draft",
             },
             viewer
           ),
@@ -475,7 +479,7 @@ describe("MCP Tool Schemas", () => {
         "edit_meal_plan",
         () =>
           editMealPlanTool.handler(
-            { planId: "550e8400-e29b-41d4-a716-446655440000", action: "undo" },
+            { planId: "550e8400-e29b-41d4-a716-446655440000", action: "undo", meal: "dinner" },
             viewer
           ),
       ],
