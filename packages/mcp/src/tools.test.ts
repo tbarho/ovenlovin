@@ -393,6 +393,47 @@ describe("MCP Tool Schemas", () => {
       expect(resolved.canonicalized).toBe(true);
     });
 
+    it("rejects manage_person_rules add and remove for a member's API key", async () => {
+      const personId = "550e8400-e29b-41d4-a716-446655440000";
+      const memberKey = {
+        householdId: "550e8400-e29b-41d4-a716-446655440001",
+        membershipRole: "member" as const,
+        apiKeyId: "33333333-3333-4333-8333-333333333333",
+        scopes: [],
+      };
+      await expect(
+        managePersonRulesTool.handler(
+          { action: "add", personId, kind: "allergen", target: "peanut", severity: "block" },
+          memberKey
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+      await expect(
+        managePersonRulesTool.handler(
+          { action: "remove", personId, id: "550e8400-e29b-41d4-a716-446655440002" },
+          memberKey
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
+    it("rejects manage_person_loves add and remove for a member's API key", async () => {
+      const personId = "550e8400-e29b-41d4-a716-446655440000";
+      const memberKey = {
+        householdId: "550e8400-e29b-41d4-a716-446655440001",
+        membershipRole: "member" as const,
+        apiKeyId: "33333333-3333-4333-8333-333333333333",
+        scopes: [],
+      };
+      await expect(
+        managePersonLovesTool.handler({ action: "add", personId, value: "salmon" }, memberKey)
+      ).rejects.toMatchObject({ code: "forbidden" });
+      await expect(
+        managePersonLovesTool.handler(
+          { action: "remove", personId, id: "550e8400-e29b-41d4-a716-446655440002" },
+          memberKey
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
     it("rejects manage_people update and delete for members, including a member's API key", async () => {
       const personId = "550e8400-e29b-41d4-a716-446655440000";
       const member = {
