@@ -23,8 +23,10 @@ export function getDatabase(): DbClient {
 
 export function createDbClient(connectionString: string): DbClient {
   // shortcut: one process-wide pool, when a tool needs a second database
-  process.env.DATABASE_URL ??= connectionString;
-  return getDatabase();
+  if (dbInstance) return dbInstance;
+  const client = postgres(connectionString);
+  dbInstance = drizzle(client, { schema }) as DbClient;
+  return dbInstance;
 }
 
 export type { DbClient };
