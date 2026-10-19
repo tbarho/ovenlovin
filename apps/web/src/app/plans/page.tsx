@@ -71,6 +71,7 @@ export default async function PlansPage({
         entries={kitchen.entries}
         recipes={kitchen.recipes}
         defaultServings={kitchen.defaultServings}
+        defaultServingsMode={kitchen.defaultServingsMode}
       />
     </>
   );

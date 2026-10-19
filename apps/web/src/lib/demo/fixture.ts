@@ -225,7 +225,7 @@ export const DEMO_RECIPES: DemoRecipe[] = [
     cookbook: "weeknight",
     title: "Tomato soup",
     description: "A blender soup for a cold night.",
-    servings: 4,
+    servings: 5,
     prepTimeMinutes: 10,
     cookTimeMinutes: 30,
     cuisine: "American",
@@ -233,6 +233,8 @@ export const DEMO_RECIPES: DemoRecipe[] = [
     ingredients: [
       { rawText: "2 cans crushed tomatoes" },
       { rawText: "1 yellow onion" },
+      { rawText: "0.6666666667 cup celery" },
+      { rawText: "0.6666666667 cup carrot" },
       { rawText: "2 cups vegetable broth" },
       { rawText: "1/2 cup cream" },
       { rawText: "2 tbsp butter" },

@@ -44,6 +44,13 @@ describe("demo kitchen fixture", () => {
     expect(kungPao?.ingredients.some((item) => /peanut/i.test(item.rawText))).toBe(true);
   });
 
+  it("stores schema.org-style 2/3 decimals on tomato soup so display can format them", () => {
+    const soup = DEMO_RECIPES.find((recipe) => recipe.slug === "tomato-soup");
+    expect(soup?.servings).toBe(5);
+    expect(soup?.ingredients.some((item) => item.rawText === "0.6666666667 cup celery")).toBe(true);
+    expect(soup?.ingredients.some((item) => item.rawText === "0.6666666667 cup carrot")).toBe(true);
+  });
+
   it("seeds a meal plan and a shopping list", () => {
     expect(DEMO_PLAN_DINNERS.length).toBeGreaterThanOrEqual(5);
     expect(DEMO_SHOPPING_ITEMS.length).toBeGreaterThanOrEqual(8);

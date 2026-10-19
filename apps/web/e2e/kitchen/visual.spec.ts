@@ -165,6 +165,10 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto(urls.pestoHref);
   await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
+  await expect(page.getByTestId("scaled-servings-note")).toContainText(
+    "Scaled to 5 for your family"
+  );
+  await expect(page.getByRole("button", { name: "Reset to 4" })).toBeVisible();
   await expect(page.getByTestId("who-can-eat")).toBeVisible();
   await expect(page.getByTestId("recipe-main-image")).toHaveCount(1);
   await expect(page.locator(".recipe-thumbs")).toHaveCount(0);
@@ -251,6 +255,9 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByRole("note")).toBeVisible();
   await expect(page.getByTestId("meal-plan-week")).toBeVisible();
   await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: /scale shopping and portions for/i })
+  ).toHaveValue("5");
   await shot(page, width, "plans-week");
 
   await page.goto("/list");
@@ -261,6 +268,8 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
 
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Default servings" })).toBeVisible();
+  await expect(page.getByText(/Match my family \(5 people\)/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Kitchen members" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Invite links" })).toBeVisible();
   await expect(page.getByText(/grok kitchen key/i)).toBeVisible();

@@ -1,7 +1,12 @@
 import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey } from "../schemas/shopping-trip";
-import { formatMeasureText, scaleFactorForPlanEntry, toFriendlyMeasure } from "../scaling/servings";
+import {
+  formatMeasureText,
+  formatQuantity,
+  scaleFactorForPlanEntry,
+  toFriendlyMeasure,
+} from "../scaling/servings";
 import {
   assignAisle,
   categorySectionName,
@@ -408,7 +413,8 @@ export class ShoppingListService {
       "Name,Quantity,Unit,Aisle,Category,Recipes,Checked",
       ...data.ingredients.map((ing) => {
         const recipes = ing.recipes.map((r) => r.recipeTitle).join("; ");
-        const quantity = ing.displayQuantity ?? (ing.quantity != null ? String(ing.quantity) : "");
+        const quantity =
+          ing.displayQuantity ?? (ing.quantity != null ? formatQuantity(ing.quantity) : "");
         const unit = ing.displayUnit ?? ing.unit ?? "";
         const checked = ing.checked ? "yes" : "";
         return `"${ing.name}","${quantity}","${unit}","${ing.aisle}","${ing.category}","${recipes}","${checked}"`;

@@ -3,12 +3,19 @@ import { household, user, membership } from "@ovenlovin/db";
 import type {
   Household,
   HouseholdMember,
+  HouseholdServingsSettings,
   InviteRole,
   Membership,
   MembershipRole,
   User,
   UserHousehold,
 } from "../schemas/households";
+import { updateHouseholdServingsSettingsSchema } from "../schemas/households";
+import {
+  normalizeHouseholdServingsSetting,
+  parseDefaultServingsMode,
+  weekDefaultServings,
+} from "../scaling/default-servings";
 import { BaseService } from "./base";
 import {
   HouseholdAccessError,
@@ -39,7 +46,18 @@ export class HouseholdService extends BaseService {
   }
 
   async createHousehold(
-    data: Omit<Household, "id" | "createdAt" | "updatedAt" | "deletedAt">
+    data: Omit<
+      Household,
+      | "id"
+      | "createdAt"
+      | "updatedAt"
+      | "deletedAt"
+      | "defaultServingsMode"
+      | "defaultServingsCount"
+    > & {
+      defaultServingsMode?: Household["defaultServingsMode"];
+      defaultServingsCount?: number | null;
+    }
   ): Promise<Household> {
     const [created] = await this._db
       .insert(household)
@@ -53,6 +71,43 @@ export class HouseholdService extends BaseService {
 
     if (!created) throw new Error("Failed to create household");
     return this.mapHousehold(created);
+  }
+
+  async updateServingsSettings(
+    householdId: string,
+    patch: { mode: "family" | "fixed" | "recipe"; servings?: number | null }
+  ): Promise<Household> {
+    const parsed = updateHouseholdServingsSettingsSchema.parse(patch);
+    const setting = normalizeHouseholdServingsSetting(parsed);
+    const now = new Date();
+    const [updated] = await this._db
+      .update(household)
+      .set({
+        defaultServingsMode: setting.mode,
+        defaultServingsCount: setting.servings,
+        updatedAt: now,
+      })
+      .where(and(eq(household.id, householdId), isNull(household.deletedAt)))
+      .returning();
+    if (!updated) throw new Error("Household not found");
+    return this.mapHousehold(updated);
+  }
+
+  servingsSettingsFor(household: Household, familySize: number): HouseholdServingsSettings {
+    const setting = normalizeHouseholdServingsSetting({
+      mode: household.defaultServingsMode,
+      servings: household.defaultServingsCount ?? null,
+    });
+    return {
+      mode: setting.mode,
+      servings: setting.servings,
+      familySize,
+      defaultCookFor: weekDefaultServings({
+        familySize,
+        mode: setting.mode,
+        fixedServings: setting.servings,
+      }),
+    };
   }
 
   async getUser(id: string): Promise<User | null> {
@@ -355,6 +410,8 @@ export class HouseholdService extends BaseService {
       name: row.name,
       slug: row.slug,
       clerkOrgId: row.clerkOrgId ?? null,
+      defaultServingsMode: parseDefaultServingsMode(row.defaultServingsMode),
+      defaultServingsCount: row.defaultServingsCount ?? null,
     };
   }
 

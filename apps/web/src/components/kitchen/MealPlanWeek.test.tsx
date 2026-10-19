@@ -552,4 +552,36 @@ describe("MealPlanWeek", () => {
       }),
     });
   });
+
+  it("stores max(recipe yield, cook-for) when adding dinner in family mode", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+        defaultServings={8}
+        defaultServingsMode="family"
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /sunday/i }));
+    await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans", {
+      method: "POST",
+      body: JSON.stringify({
+        weekStart: "2026-10-12",
+        status: "draft",
+        entries: [
+          {
+            date: "2026-10-18",
+            meal: "dinner",
+            recipeId: "recipe-tacos",
+            servings: 8,
+            attendees: [],
+          },
+        ],
+      }),
+    });
+  });
 });

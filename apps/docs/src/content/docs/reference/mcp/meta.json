@@ -2,6 +2,7 @@
   "title": "MCP Tools",
   "pages": [
     "get-household-context",
+    "manage-household-settings",
     "search-recipes",
     "get-recipe",
     "check-meal-plan",

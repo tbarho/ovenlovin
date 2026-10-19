@@ -3,11 +3,37 @@ import { baseEntitySchema, createdBySchema, uuidSchema } from "./common";
 
 export const membershipRoleSchema = z.enum(["owner", "admin", "member", "viewer"]);
 
+export const defaultServingsModeSchema = z.enum(["family", "fixed", "recipe"]);
+
 export const householdSchema = baseEntitySchema.merge(createdBySchema).extend({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(255),
   clerkOrgId: z.string().max(255).nullable().optional(),
+  defaultServingsMode: defaultServingsModeSchema.default("family"),
+  defaultServingsCount: z.number().int().min(1).max(24).nullable().optional(),
 });
+
+export const householdServingsSettingsSchema = z.object({
+  mode: defaultServingsModeSchema,
+  servings: z.number().int().min(1).max(24).nullable(),
+  familySize: z.number().int().nonnegative(),
+  defaultCookFor: z.number().int().min(1).max(24),
+});
+
+export const updateHouseholdServingsSettingsSchema = z
+  .object({
+    mode: defaultServingsModeSchema,
+    servings: z.number().int().min(1).max(24).optional().nullable(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.mode === "fixed" && !(value.servings && value.servings > 0)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["servings"],
+        message: "Provide servings (1-24) when Default servings is a fixed number.",
+      });
+    }
+  });
 
 export const userSchema = baseEntitySchema.extend({
   clerkUserId: z.string().max(255),
@@ -98,6 +124,9 @@ export const userHouseholdSchema = z.object({
   membership: membershipSchema,
 });
 
+export type DefaultServingsMode = z.infer<typeof defaultServingsModeSchema>;
+export type HouseholdServingsSettings = z.infer<typeof householdServingsSettingsSchema>;
+export type UpdateHouseholdServingsSettings = z.infer<typeof updateHouseholdServingsSettingsSchema>;
 export type MembershipRole = z.infer<typeof membershipRoleSchema>;
 export type InviteRole = z.infer<typeof inviteRoleSchema>;
 export type InviteStatus = z.infer<typeof inviteStatusSchema>;

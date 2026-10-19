@@ -15,6 +15,7 @@ const WRITE_TOOLS = new Set([
   "manage_person_loves",
   "reorder_people",
   "manage_household_schedule",
+  "manage_household_settings",
 ]);
 
 export async function enforceDemoMcpGuards(

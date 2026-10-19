@@ -78,6 +78,13 @@
       "when": 1792700000000,
       "tag": "0010_household_invite",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0011_default_servings",
+      "breakpoints": true
     }
   ]
 }
