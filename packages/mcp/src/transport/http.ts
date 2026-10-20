@@ -94,6 +94,13 @@ export async function handleHttpRequest(
               typeof (error as { message: unknown }).message === "string"
             ? (error as { message: string }).message
             : "Invalid credentials";
+      const authCode =
+        error && typeof error === "object" && "code" in error
+          ? (error as { code?: string }).code
+          : undefined;
+      if (authCode === "forbidden") {
+        return envelope(403, jsonRpcError(id, JsonRpcErrorCode.forbidden, message));
+      }
       return envelope(401, jsonRpcError(id, JsonRpcErrorCode.unauthorized, message));
     }
   } else if (options.onAuth) {
