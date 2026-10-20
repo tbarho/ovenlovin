@@ -34,7 +34,7 @@ interface Importer<TInput> {
 - Fetch layers: live Firefox document headers (including Accept-Encoding so Food Network gzip works), related URLs on 404, then Google Translate and Jina public copies
 - schema.org Recipe JSON-LD (primary)
 - HTML / markdown recipe-card fallback (Wikibooks, Jina)
-- Cheap LLM fallback (`openai/gpt-4o-mini` via Vercel AI Gateway, override with `RK_MODEL_EXTRACT`)
+- LLM fallback (`spacexai/grok-4.7` via Vercel AI Gateway, same as paste; override with `RK_MODEL_EXTRACT`)
 - "No recipe found on this page" when the page loaded but is not a recipe (example.com)
 - "This site blocked the importer (tried ...)" only after every layer failed
 - Device capture: `extract({ url, html })` or `extract({ url, jsonLd })` skips the server fetch (Safari shortcut and Advanced browser save)

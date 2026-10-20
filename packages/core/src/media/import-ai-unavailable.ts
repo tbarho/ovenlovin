@@ -17,6 +17,56 @@ function errorStatus(error: unknown): number | undefined {
   return typeof status === "number" ? status : undefined;
 }
 
+export type ImportAiUnavailableMeta = {
+  provider?: string;
+  model?: string;
+  statusCode?: number;
+  generationId?: string;
+};
+
+function readString(obj: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+/** Fields for one Vercel log line when recipe reading is down. */
+export function importAiUnavailableMeta(error: unknown): ImportAiUnavailableMeta {
+  const meta: ImportAiUnavailableMeta = {};
+  const seen = new Set<unknown>();
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== "object" || seen.has(value)) return;
+    seen.add(value);
+    const obj = value as Record<string, unknown>;
+    if (meta.statusCode == null) {
+      const status = errorStatus(value);
+      if (status != null) meta.statusCode = status;
+    }
+    if (meta.model == null) {
+      const model = readString(obj, ["modelId", "model"]);
+      if (model) meta.model = model;
+    }
+    if (meta.provider == null) {
+      const provider = readString(obj, ["provider", "providerId"]);
+      if (provider) meta.provider = provider;
+    }
+    if (meta.generationId == null) {
+      const generationId = readString(obj, ["generationId", "generation_id"]);
+      if (generationId) meta.generationId = generationId;
+    }
+    visit(obj.lastError);
+    visit(obj.cause);
+    visit(obj.data);
+    if (Array.isArray(obj.errors)) {
+      for (const nested of obj.errors) visit(nested);
+    }
+  };
+  visit(error);
+  return meta;
+}
+
 /** AI Gateway / model down, overloaded, or rate-limited. Not a recipe-site 503. */
 export function isImportAiUnavailable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;

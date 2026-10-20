@@ -2,6 +2,7 @@ import {
   HouseholdAccessError,
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  importAiUnavailableMeta,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
 import { NextResponse } from "next/server";
@@ -235,6 +236,7 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
   }
 
   if (isImportAiUnavailable(error)) {
+    console.warn("import_ai_unavailable", importAiUnavailableMeta(error));
     return new ServiceUnavailableError(IMPORT_AI_UNAVAILABLE_MESSAGE, {
       code: IMPORT_AI_UNAVAILABLE_CODE,
     }).toResponse(instance);
