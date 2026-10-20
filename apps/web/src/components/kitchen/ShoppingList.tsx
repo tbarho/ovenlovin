@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { normalizeIngredientName } from "@ovenlovin/core/parsing";
+import { cookForPeopleLabel } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
 import type { ShopItem, ShoppingExtra, ShoppingTripState } from "@/lib/week-plan-view";
@@ -39,11 +40,13 @@ export function ShoppingList({
   planId = null,
   checkedKeys = [],
   extras = [],
+  scaledFor = null,
 }: {
   items: ShopItem[];
   planId?: string | null;
   checkedKeys?: string[];
   extras?: ShoppingExtra[];
+  scaledFor?: number | null;
 }) {
   const [checked, setChecked] = useState<string[]>(checkedKeys);
   const [added, setAdded] = useState<ShoppingExtra[]>(extras);
@@ -119,6 +122,11 @@ export function ShoppingList({
 
   return (
     <div className="shop-board" data-testid="shopping-list" aria-busy={pending}>
+      {scaledFor ? (
+        <p className="muted" data-testid="shop-scaled-for">
+          {cookForPeopleLabel(scaledFor)}
+        </p>
+      ) : null}
       <ShopAdd value={draft} onChange={setDraft} onSubmit={addExtra} pending={pending} />
       {checked.length > 0 ? (
         <div className="shop-toolbar">
