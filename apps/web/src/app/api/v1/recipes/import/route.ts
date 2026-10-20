@@ -68,12 +68,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.source === "url" && !savedDraft) {
-      if (!looksLikeHttpUrl(body.content)) {
+      const content = body.content?.trim() ?? "";
+      if (!looksLikeHttpUrl(content)) {
         throw new BadRequestError("That doesn't look like a web address");
       }
       const collision = await new RecipeService(getDatabase()).findUrlImportCollision(
         householdId,
-        body.content.trim(),
+        content,
         idempotencyKey
       );
       if (collision) {
