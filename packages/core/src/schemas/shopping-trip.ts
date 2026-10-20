@@ -6,10 +6,19 @@ export const shoppingExtraSchema = z.object({
   name: z.string().min(1).max(255),
 });
 
+/** Stored trip JSON. Unknown keys are stripped so a reload does not wipe check-offs. */
 export const shoppingTripStateSchema = z.object({
   checkedKeys: z.array(z.string().min(1).max(160)).max(500),
   extras: z.array(shoppingExtraSchema).max(100),
 });
+
+/** PATCH body. Unknown keys are rejected with 400. */
+export const shoppingTripStateWriteSchema = z
+  .object({
+    checkedKeys: z.array(z.string().min(1).max(160)).max(500),
+    extras: z.array(shoppingExtraSchema.strict()).max(100),
+  })
+  .strict();
 
 export type ShoppingExtra = z.infer<typeof shoppingExtraSchema>;
 export type ShoppingTripState = z.infer<typeof shoppingTripStateSchema>;

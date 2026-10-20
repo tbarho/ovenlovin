@@ -4,6 +4,8 @@ import { DECIMAL_TWO_THIRDS_CELERY } from "../scaling/quantity-display.fixture";
 import {
   KITCHEN_STAPLES_SECTION,
   ShoppingListService,
+  applyShoppingTrip,
+  formatShoppingListGeneratedAt,
   resolveIncludeStaples,
   servingsScale,
 } from "./shopping-list";
@@ -381,7 +383,7 @@ describe("ShoppingListService", () => {
     expect(doubled.ingredients[0]).toMatchObject({
       name: "celery",
       displayQuantity: "1 1/3",
-      displayUnit: "cup",
+      displayUnit: "cups",
     });
   });
 
@@ -427,12 +429,16 @@ describe("ShoppingListService", () => {
     const withoutStaples = build(entries);
     expect(withoutStaples.includeStaples).toBe(false);
     expect(withoutStaples.includePantryItems).toBe(false);
+    expect(withoutStaples.ingredients[0]?.isStaple).toBe(false);
+    expect(withoutStaples.ingredients[0]?.isPantryItem).toBe(false);
     expect(withoutStaples.ingredients.map((item) => item.name)).toEqual(["yellow onion"]);
     expect(withoutStaples.itemCount).toBe(1);
 
     const withStaples = build(entries, { includeStaples: true });
     expect(withStaples.includeStaples).toBe(true);
     expect(withStaples.includePantryItems).toBe(true);
+    expect(withStaples.ingredients.find((item) => item.name === "salt")?.isStaple).toBe(true);
+    expect(withStaples.ingredients.find((item) => item.name === "salt")?.isPantryItem).toBe(true);
     expect(withStaples.itemCount).toBe(3);
     expect(withStaples.sections.map((section) => section.name).sort()).toEqual([
       KITCHEN_STAPLES_SECTION,
@@ -516,9 +522,10 @@ describe("ShoppingListService", () => {
     ]);
     const garlic = list.ingredients.find((item) => item.name === "garlic");
     expect(garlic?.key).toBe("garlic::clove");
-    expect(garlic?.displayUnit).toBe("clove");
+    expect(garlic?.displayUnit).toBe("cloves");
     expect(service.exportAsMarkdown(list)).toContain("2 cloves garlic");
     expect(JSON.parse(service.exportAsJSON(list)).ingredients[0].key).toBe("garlic::clove");
+    expect(JSON.parse(service.exportAsJSON(list)).ingredients[0].displayUnit).toBe("cloves");
   });
 
   it("totals two chili nights at household Default servings, not recipe yield", () => {
@@ -543,7 +550,7 @@ describe("ShoppingListService", () => {
     expect(list.ingredients[0]).toMatchObject({
       name: "ground beef",
       displayQuantity: "1 2/3",
-      displayUnit: "lb",
+      displayUnit: "lbs",
     });
     expect(service.exportAsMarkdown(list)).toContain("1 2/3 lbs ground beef");
     expect(service.exportAsMarkdown(list)).not.toContain("1 5/6");
@@ -636,5 +643,77 @@ describe("ShoppingListService", () => {
       ingredients: Array<{ checked: boolean }>;
     };
     expect(parsed.ingredients[0]?.checked).toBe(true);
+  });
+
+  it("applies check-offs and extras to markdown, JSON, and the structured list", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "pesto", servings: 4 }),
+        recipeTitle: "Weeknight pesto pasta",
+        recipeServings: 4,
+        ingredients: [{ rawText: "2 eggs" }],
+      },
+    ]);
+    const eggKey = list.ingredients[0]?.key ?? "egg";
+    const trip = {
+      checkedKeys: [eggKey, "extra-1"],
+      extras: [{ key: "extra-1", name: "paper towels" }],
+    };
+    const marked = applyShoppingTrip(list, trip);
+    expect(marked.ingredients.map((item) => item.name).sort()).toEqual(["egg", "paper towels"]);
+    expect(marked.ingredients.find((item) => item.name === "egg")?.checked).toBe(true);
+    expect(marked.ingredients.find((item) => item.name === "paper towels")?.checked).toBe(true);
+    expect(marked.itemCount).toBe(2);
+
+    const markdown = service.format(list, "markdown", trip);
+    expect(markdown).toContain("- [x] 2 egg");
+    expect(markdown).toContain("- [x] paper towels");
+    expect(markdown).not.toContain("- [ ] 2 egg");
+
+    const parsed = JSON.parse(service.format(list, "json", trip)) as {
+      ingredients: Array<{ name: string; checked?: boolean }>;
+    };
+    expect(parsed.ingredients).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "egg", checked: true }),
+        expect.objectContaining({ name: "paper towels", checked: true }),
+      ])
+    );
+  });
+
+  it("labels Generated with the kitchen timezone", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "a", servings: 4 }),
+        recipeTitle: "A",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 yellow onion" }],
+      },
+    ]);
+    expect(formatShoppingListGeneratedAt(list.generatedAt, "UTC")).toMatch(/UTC/);
+    expect(service.exportAsMarkdown(list, { timeZone: "UTC" })).toMatch(/\*\*Generated:\*\*.*UTC/);
+    expect(service.exportAsMarkdown(list, { timeZone: "America/Chicago" })).toMatch(
+      /\*\*Generated:\*\*.*(CDT|CST)/
+    );
+    expect(service.exportAsText(list, { timeZone: "UTC" })).toMatch(/Generated: .*UTC/);
+  });
+
+  it("keeps tofu and kalamata olives out of Produce", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "stir", servings: 4 }),
+        recipeTitle: "Tofu stir-fry",
+        recipeServings: 4,
+        ingredients: [{ rawText: "14 oz extra-firm tofu" }, { rawText: "1/2 cup kalamata olives" }],
+      },
+    ]);
+    expect(list.ingredients.find((item) => item.name.includes("tofu"))?.aisle).toBe("Refrigerated");
+    expect(list.ingredients.find((item) => item.name.includes("olive"))?.aisle).toBe(
+      "Canned goods"
+    );
+    expect(list.sections.map((section) => section.name).sort()).toEqual([
+      "Canned goods",
+      "Refrigerated",
+    ]);
   });
 });

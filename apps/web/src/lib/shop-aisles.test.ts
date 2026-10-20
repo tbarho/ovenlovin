@@ -13,8 +13,17 @@ describe("groupShopItemsByAisle", () => {
       item("yellow onion"),
       item("chicken thighs"),
       item("paper towels"),
+      item("extra-firm tofu"),
+      item("kalamata olives"),
     ]);
-    expect(groups.map((group) => group.aisle)).toEqual(["Produce", "Meat", "Spices", "Other"]);
+    expect(groups.map((group) => group.aisle)).toEqual([
+      "Produce",
+      "Meat",
+      "Refrigerated",
+      "Canned goods",
+      "Spices",
+      "Other",
+    ]);
     expect(groups[0]?.items.map((entry) => entry.name)).toEqual(["yellow onion"]);
   });
 });

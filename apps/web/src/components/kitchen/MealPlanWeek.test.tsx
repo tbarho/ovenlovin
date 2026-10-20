@@ -539,7 +539,7 @@ describe("MealPlanWeek", () => {
     const chili: WeekMeal = {
       ...pesto,
       title: "Beef chili",
-      servings: null,
+      servings: 5,
       recipeServings: 6,
     };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [chili])} defaultServings={5} />);
@@ -550,7 +550,7 @@ describe("MealPlanWeek", () => {
     const chili: WeekMeal = {
       ...pesto,
       title: "Beef chili",
-      servings: null,
+      servings: 6,
       recipeServings: 6,
     };
     render(

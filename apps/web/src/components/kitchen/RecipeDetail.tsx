@@ -14,11 +14,11 @@ import type {
 import { recipeMainImage } from "@ovenlovin/core/media";
 import {
   clampServings,
+  cookForServingsLabel,
   defaultDisplayedServings,
   formatDurationMinutes,
   recipeYieldServings,
   scaleIngredientDisplay,
-  scaledServingsNote,
 } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
@@ -144,12 +144,9 @@ export function RecipeDetail({
       })),
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );
-  const scaleNote = scaledServingsNote({
-    displayed: servings,
+  const servingsLabel = cookForServingsLabel({
+    cookFor: servings,
     recipeServings: storedServings,
-    mode: servingsMode,
-    familySize,
-    fixedServings,
   });
   function applyStoredServings(nextStored: number) {
     setServings(
@@ -280,10 +277,11 @@ export function RecipeDetail({
               </button>
             </div>
             <p className="muted">
-              {scaleNote ? (
-                <span data-testid="scaled-servings-note">
-                  {scaleNote}.{" "}
-                  {servings !== storedServings ? (
+              <span data-testid="scaled-servings-note">
+                {servingsLabel}
+                {servings !== storedServings ? (
+                  <>
+                    .{" "}
                     <button
                       type="button"
                       className="servings-reset"
@@ -291,14 +289,9 @@ export function RecipeDetail({
                     >
                       Reset to {storedServings}
                     </button>
-                  ) : null}
-                </span>
-              ) : (
-                <>
-                  1-24 servings. Scales from {storedServings} stored servings. Units stay as
-                  written.
-                </>
-              )}
+                  </>
+                ) : null}
+              </span>
             </p>
           </div>
 

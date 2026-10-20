@@ -3,6 +3,7 @@ import {
   backfillParsedIngredient,
   normalizeIngredientName,
   parseIngredientLine,
+  splitLeadingUnit,
 } from "./ingredient-line";
 
 describe("parseIngredientLine", () => {
@@ -98,5 +99,20 @@ describe("backfillParsedIngredient", () => {
       name: "2 tbsp olive oil",
     });
     expect(backfilled.name).toBe("olive oil");
+  });
+});
+
+describe("splitLeadingUnit", () => {
+  it("peels a plural unit off the rest of the line", () => {
+    expect(splitLeadingUnit("cups shredded mozzarella")).toEqual({
+      unit: "cup",
+      rest: "shredded mozzarella",
+    });
+    expect(splitLeadingUnit("cloves garlic")).toEqual({ unit: "clove", rest: "garlic" });
+    expect(splitLeadingUnit("shredded mozzarella")).toEqual({
+      unit: null,
+      rest: "shredded mozzarella",
+    });
+    expect(splitLeadingUnit("lb. ground beef")).toEqual({ unit: "lb", rest: "ground beef" });
   });
 });

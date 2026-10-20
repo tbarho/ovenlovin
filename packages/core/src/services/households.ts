@@ -20,6 +20,7 @@ import {
   weekDefaultServings,
 } from "../scaling/default-servings";
 import { BaseService } from "./base";
+import { PeopleService } from "./people";
 import {
   HouseholdAccessError,
   assertCanManageMembers,
@@ -132,6 +133,25 @@ export class HouseholdService extends BaseService {
         fixedServings: setting.servings,
       }),
     };
+  }
+
+  async loadKitchenServingsSettings(householdId: string): Promise<HouseholdServingsSettings> {
+    const household = await this.getHousehold(householdId);
+    const people = await new PeopleService(this._db).listPeopleByHousehold(householdId, {
+      limit: 40,
+    });
+    if (!household) {
+      return {
+        mode: "family",
+        servings: null,
+        familySize: people.items.length,
+        defaultCookFor: weekDefaultServings({
+          familySize: people.items.length,
+          mode: "family",
+        }),
+      };
+    }
+    return this.servingsSettingsFor(household, people.items.length);
   }
 
   async getUser(id: string): Promise<User | null> {

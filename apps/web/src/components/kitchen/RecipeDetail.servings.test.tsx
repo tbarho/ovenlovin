@@ -30,11 +30,12 @@ describe("RecipeDetail default servings", () => {
 
     expect(screen.getByLabelText("Servings")).toHaveAttribute("aria-valuenow", "8");
     expect(screen.getByTestId("scaled-servings-note")).toHaveTextContent(
-      "Scaled to 8 for your family"
+      "Recipe makes 4 · cooking for 8"
     );
     await user.click(screen.getByRole("button", { name: "Reset to 4" }));
     expect(screen.getByLabelText("Servings")).toHaveAttribute("aria-valuenow", "4");
-    expect(screen.queryByTestId("scaled-servings-note")).not.toBeInTheDocument();
+    expect(screen.getByTestId("scaled-servings-note")).toHaveTextContent("4 servings");
+    expect(screen.queryByRole("button", { name: /reset to/i })).not.toBeInTheDocument();
   });
 
   it("leaves a larger yield alone in family mode", () => {
@@ -52,7 +53,7 @@ describe("RecipeDetail default servings", () => {
     );
 
     expect(screen.getByLabelText("Servings")).toHaveAttribute("aria-valuenow", "10");
-    expect(screen.queryByTestId("scaled-servings-note")).not.toBeInTheDocument();
+    expect(screen.getByTestId("scaled-servings-note")).toHaveTextContent("10 servings");
     expect(screen.queryByRole("button", { name: /reset to/i })).not.toBeInTheDocument();
   });
 
@@ -107,7 +108,7 @@ describe("RecipeDetail default servings", () => {
     await user.click(screen.getByRole("button", { name: "More servings" }));
     await user.click(screen.getByRole("button", { name: "More servings" }));
     expect(screen.getByLabelText("Servings")).toHaveAttribute("aria-valuenow", "8");
-    expect(screen.getByText("1 1/3 cup celery")).toBeInTheDocument();
-    expect(screen.getByText("1 1/3 cup carrot")).toBeInTheDocument();
+    expect(screen.getByText("1 1/3 cups celery")).toBeInTheDocument();
+    expect(screen.getByText("1 1/3 cups carrot")).toBeInTheDocument();
   });
 });

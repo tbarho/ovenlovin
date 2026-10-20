@@ -89,9 +89,26 @@ describe("generateOpenApiDocument", () => {
     expect(spec.paths?.["/meal-plans/{id}/shopping-list/state"]?.patch).toBeTruthy();
     const tripState = spec.components?.schemas?.ShoppingTripState as {
       properties?: Record<string, unknown>;
+      additionalProperties?: unknown;
     };
     expect(tripState?.properties).toHaveProperty("checkedKeys");
     expect(tripState?.properties).toHaveProperty("extras");
+    expect(tripState?.additionalProperties).toBe(false);
+    const shoppingList = spec.components?.schemas?.ShoppingList as {
+      properties?: Record<string, { description?: string }>;
+    };
+    expect(shoppingList?.properties).toHaveProperty("includeStaples");
+    expect(shoppingList?.properties).toHaveProperty("includePantryItems");
+    expect(shoppingList?.properties?.includePantryItems?.description).toMatch(/deprecated alias/i);
+    const shoppingItem = spec.components?.schemas?.ShoppingListIngredient as {
+      properties?: Record<string, { description?: string }>;
+    };
+    expect(shoppingItem?.properties).toHaveProperty("isStaple");
+    expect(shoppingItem?.properties).toHaveProperty("isPantryItem");
+    expect(shoppingItem?.properties?.isPantryItem?.description).toMatch(/deprecated alias/i);
+    expect(JSON.stringify(spec.paths?.["/meal-plans/{id}/shopping-list"]?.get)).toContain(
+      "timeZone"
+    );
     expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/API key/);
     expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/active/);
     expect(JSON.stringify(spec.paths?.["/invites/{token}/accept"]?.post)).toMatch(/signed-in/);

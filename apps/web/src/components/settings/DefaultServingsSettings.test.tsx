@@ -37,5 +37,7 @@ describe("DefaultServingsSettings", () => {
         body: JSON.stringify({ mode: "fixed", servings: 8 }),
       });
     });
+    expect(await screen.findByTestId("default-servings-saved")).toHaveTextContent("Saved");
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
 });

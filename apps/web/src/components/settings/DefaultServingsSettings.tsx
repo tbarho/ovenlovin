@@ -27,6 +27,7 @@ export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolea
   const [fixedCount, setFixedCount] = useState("8");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const load = useCallback(async () => {
     const data = await api<HouseholdServingsSettings>("/api/v1/households/settings");
@@ -43,6 +44,7 @@ export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolea
   async function save(mode: HouseholdServingsSettings["mode"], servings?: number | null) {
     setPending(true);
     setError(null);
+    setSaved(false);
     try {
       const data = await api<HouseholdServingsSettings>("/api/v1/households/settings", {
         method: "PATCH",
@@ -53,6 +55,7 @@ export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolea
       });
       setSettings(data);
       if (data.servings) setFixedCount(String(data.servings));
+      setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save default servings");
     } finally {
@@ -76,6 +79,11 @@ export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolea
         Used when you open a recipe, add dinner to the meal plan, and scale the shopping list. You
         can still change servings on each view.
       </p>
+      {saved ? (
+        <p className="default-servings-saved" role="status" data-testid="default-servings-saved">
+          Saved
+        </p>
+      ) : null}
       {error ? <p className="muted">{error}</p> : null}
       {settings ? (
         <fieldset className="default-servings-options" disabled={pending || !canWrite}>

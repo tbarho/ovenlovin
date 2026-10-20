@@ -15,6 +15,7 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 | `includeStaples`      | boolean       | No       | `false`      | Include kitchen staples (salt, pepper, oil). Distinct from the pantry category. |
 | `includePantryItems`  | boolean       | No       | - | Deprecated alias for `includeStaples`                                           |
 | `includeRuleWarnings` | boolean       | No       | `true`       | Include per-person rule warnings for shoppers                                   |
+| `timeZone`            | string        | No       | kitchen TZ   | IANA timezone for the markdown/text Generated line (always labeled)             |
 
 ## Output Schema
 
@@ -41,22 +42,21 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
 ```markdown
 # Shopping List
 
+**Week Starting:** 2026-10-12
+**Generated:** Oct 12, 2026, 4:00 PM CDT
+
 ## Produce
 
-- 2 cup cherry tomatoes (Grilled Chicken Salad)
-- 1 head romaine lettuce (Grilled Chicken Salad)
+- [ ] 2 cups cherry tomatoes (Grilled Chicken Salad)
+- [x] 1 head romaine lettuce (Grilled Chicken Salad)
 
 ## Meat
 
-- 2 lb chicken breast (Grilled Chicken Salad)
+- [ ] 2 lbs chicken breast (Grilled Chicken Salad)
 
-## Grains
+## Other
 
-- 1 lb pasta (Vegetarian Pasta Primavera)
-
-## Dairy
-
-- 0.5 cup parmesan cheese (Vegetarian Pasta Primavera)
+- [ ] paper towels
 
 ## ⚠️ Warnings
 
@@ -79,7 +79,8 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
       "quantity": 2,
       "unit": "lb",
       "aisle": "Meat",
-      "category": "meat",
+      "category": "protein",
+      "isStaple": false,
       "isPantryItem": false,
       "recipes": [
         { "recipeId": "r1", "recipeTitle": "Grilled Chicken Salad", "quantity": 2, "unit": "lb" }
@@ -177,8 +178,9 @@ WARNINGS:
 1. **Automatic aggregation**: Duplicate ingredients across recipes are combined when possible
 2. **Unit conversion**: Common unit conversions are applied (e.g., 3 tsp = 1 tbsp)
 3. **Safety warnings**: Inline warnings alert shoppers to dietary restrictions and allergens
-4. **Kitchen staples**: Enable `includeStaples: true` to include salt and oil. `includePantryItems` is still accepted as an alias.
-5. **Parse confidence**: Low-confidence parsed ingredients may show in `rawText` form
+4. **Kitchen staples**: Enable `includeStaples: true` to include salt and oil. `includePantryItems` is still accepted as an alias. On each item, `isStaple` is canonical; `isPantryItem` is the same alias.
+5. **Check-offs and extras**: Markdown uses `- [x]` for checked keys from the saved trip. Extras such as paper towels appear in `list` and in markdown/text/csv.
+6. **Generated time**: The human-readable Generated line uses `timeZone` (IANA) and always includes a zone label such as CDT or UTC. `generatedAt` stays ISO-8601 UTC.
 
 ## Related Tools
 

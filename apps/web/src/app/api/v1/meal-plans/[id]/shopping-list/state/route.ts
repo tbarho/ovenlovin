@@ -6,7 +6,7 @@ import {
   requireHouseholdId,
   requireWritableHousehold,
 } from "@/lib/api/middleware";
-import { PlanService, parseShoppingTripState, shoppingTripStateSchema } from "@ovenlovin/core";
+import { PlanService, parseShoppingTripState, shoppingTripStateWriteSchema } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     const shoppingState = parseShoppingTripState(
-      shoppingTripStateSchema.parse(await request.json())
+      shoppingTripStateWriteSchema.parse(await request.json())
     );
 
     const db = getDatabase();

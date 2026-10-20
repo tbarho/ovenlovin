@@ -1876,6 +1876,12 @@ select {
   letter-spacing: -0.03em;
 }
 
+.default-servings-saved {
+  margin: 0 0 10px;
+  color: var(--ok, #17643b);
+  font-weight: 600;
+}
+
 .default-servings-options {
   display: grid;
   gap: 10px;
