@@ -47,6 +47,15 @@ describe("resolveSandboxSession", () => {
     expect(session.userId).toBe(sandbox.userId);
   });
 
+  it("lands on the joined kitchen when no preferred cookie is set", () => {
+    const session = resolveSandboxSession({
+      sandbox,
+      memberships: [own, joined],
+    });
+    expect(session.householdId).toBe(joinedKitchen);
+    expect(session.membershipRole).toBe("member");
+  });
+
   it("keeps the sandbox pin when no preferred kitchen matches a membership", () => {
     const session = resolveSandboxSession({
       sandbox,

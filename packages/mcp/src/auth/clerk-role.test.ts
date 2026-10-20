@@ -110,6 +110,22 @@ describe("Clerk Bearer kitchen role", () => {
     });
   });
 
+  it("keeps MCP writes on the oldest kitchen after joining another", async () => {
+    fixtures.memberships = [
+      membership(kitchenA, "owner", "mem_a", "2026-01-01T00:00:00.000Z"),
+      membership(kitchenB, "member", "mem_b", "2026-02-01T00:00:00.000Z"),
+    ];
+    const context = await authenticateRequest(bearer);
+    expect(context).toMatchObject({
+      householdId: kitchenA,
+      userId: dbUserId,
+      membershipRole: "owner",
+    });
+    expect(context.scopes).toContain("recipes:write");
+    expect(context.scopes).toContain("plans:write");
+    expect(() => requireWriteRole(context)).not.toThrow();
+  });
+
   it("picks X-Kitchen-Id when the user has two memberships and no org_id", async () => {
     fixtures.memberships = [
       membership(kitchenA, "member", "mem_a", "2026-01-01T00:00:00.000Z"),
