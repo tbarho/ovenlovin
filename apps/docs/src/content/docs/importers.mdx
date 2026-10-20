@@ -127,7 +127,7 @@ The photo importer:
 
 1. Accepts one or more images (JPEG, PNG, WebP, GIF, AVIF) as a file upload, Blob URL, or base64
 2. Stores the first photo in Vercel Blob as the recipe's single main image
-3. Sends all pages to a vision-capable AI Gateway model (default: `RK_MODEL_VISION` or `spacexai/grok-4.7`)
+3. Sends all pages to a vision-capable AI Gateway model (default: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`)
 4. Extracts title, servings, times, ingredients (name, quantity, unit), steps, notes, and a visible source
 5. Classifies ingredients with the existing allergen catalog and lists `uncertainFields` when the photo is hard to read
 6. Returns a draft for review (`save` omitted) or persists when `save=true`
@@ -203,7 +203,7 @@ Parse recipes from pasted plain text, including recipes copied from emails, PDFs
 The paste importer:
 
 1. Accepts plain text input
-2. Sends to LLM (default: `spacexai/grok-4.7`) for parsing
+2. Sends to LLM (default: `deepseek/deepseek-v4.1-flash`) for parsing
 3. Identifies title, ingredients, instructions, and metadata
 4. Structures data into recipe format
 5. Returns draft with confidence scores
@@ -242,7 +242,7 @@ import { createPasteImporter } from "@ovenlovin/importers";
 
 const importer = createPasteImporter({
   aiGatewayKey: process.env.AI_GATEWAY_API_KEY,
-  defaultModel: process.env.RK_MODEL_DEFAULT || "spacexai/grok-4.7",
+  defaultModel: process.env.RK_MODEL_DEFAULT || "deepseek/deepseek-v4.1-flash",
 });
 
 const text = `

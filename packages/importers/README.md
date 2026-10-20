@@ -34,7 +34,7 @@ interface Importer<TInput> {
 - Fetch layers: live Firefox document headers (including Accept-Encoding so Food Network gzip works), related URLs on 404, then Google Translate and Jina public copies
 - schema.org Recipe JSON-LD (primary)
 - HTML / markdown recipe-card fallback (Wikibooks, Jina)
-- LLM fallback (`spacexai/grok-4.7` via Vercel AI Gateway, same as paste; override with `RK_MODEL_EXTRACT`)
+- LLM fallback (`deepseek/deepseek-v4.1-flash` via Vercel AI Gateway, same as paste; override with `RK_MODEL_EXTRACT`)
 - "No recipe found on this page" when the page loaded but is not a recipe (example.com)
 - "This site blocked the importer (tried ...)" only after every layer failed
 - Device capture: `extract({ url, html })` or `extract({ url, jsonLd })` skips the server fetch (Safari shortcut and Advanced browser save)
@@ -69,6 +69,14 @@ Each importer has test fixtures in `__tests__/fixtures/<source>/`:
 - Recorded confidence scores
 - Regression thresholds enforced in CI
 
+Live-model import evals are not part of CI. From the repo root:
+
+```bash
+pnpm eval:import
+```
+
+That needs `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN`. Override the model with `EVAL_IMPORT_MODEL` or a comma list in `EVAL_IMPORT_MODELS`. Default models: `spacexai/grok-4.7`, `deepseek/deepseek-v4.1-flash`, `openai/gpt-6-luna`. Cases live in `src/eval/` (paste text, photo cards, and URL pages without JSON-LD, including Smitten Kitchen slow-roasted tomatoes).
+
 ## AI Stack
 
 All LLM calls use the Vercel AI SDK with AI Gateway:
@@ -81,10 +89,10 @@ All LLM calls use the Vercel AI SDK with AI Gateway:
 ## Usage
 
 ```typescript
-import { createUrlImporter, createPasteImporter, createPhotoImporter } from '@ovenlovin/importers';
+import { createUrlImporter, createPasteImporter, createPhotoImporter } from "@ovenlovin/importers";
 
-const urlImporter = createUrlImporter({ modelId: 'grok/grok-2-latest' });
-const extraction = await urlImporter.extract({ url: 'https://example.com/recipe' });
+const urlImporter = createUrlImporter({ modelId: "grok/grok-2-latest" });
+const extraction = await urlImporter.extract({ url: "https://example.com/recipe" });
 const draft = await urlImporter.toDraft(extraction);
 ```
 

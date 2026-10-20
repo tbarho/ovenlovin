@@ -380,7 +380,7 @@ POST /api/v1/recipes/import/photo
 
 Extract a recipe from a recipe card, cookbook page, screenshot, or several pages of one recipe. Default is **preview only** (`save` omitted or false), same as URL import. Preview JSON includes `saved: false` and `preview: true`. The first photo is stored in Vercel Blob when configured and becomes the recipe's single main image. Exact SHA matches return `409` with the existing `recipeId`. Near-duplicate PNG photos (perceptual hash of PNG bytes only) add `possibleDuplicate {recipeId,title}` on preview, and on `409` when `save:true` without `allowDuplicate:true`. Send `Idempotency-Key` when `save=true`.
 
-Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC on Vercel). Vision model: `RK_MODEL_VISION` or `spacexai/grok-4.7`.
+Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC on Vercel). Vision model: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`.
 
 **JSON** (Blob URL or base64):
 

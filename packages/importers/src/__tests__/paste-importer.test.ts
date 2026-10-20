@@ -67,7 +67,7 @@ describe("Paste Importer", () => {
           prompt: expect.stringContaining("Extract recipe data"),
           maxRetries: 5,
           providerOptions: {
-            gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
+            gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
           },
         })
       );

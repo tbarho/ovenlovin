@@ -5,6 +5,7 @@ import {
   IMPORT_GATEWAY_FALLBACK_MODELS,
   IMPORT_GENERATE_MAX_RETRIES,
   importGenerateOptions,
+  resolveDefaultModelId,
   resolveExtractModelId,
   resolveVisionModelId,
 } from "./models";
@@ -24,7 +25,7 @@ describe("resolveVisionModelId", () => {
 
   it("uses the gateway default when nothing is set", () => {
     expect(resolveVisionModelId(undefined, {})).toBe(DEFAULT_VISION_MODEL);
-    expect(DEFAULT_VISION_MODEL).toBe("spacexai/grok-4.7");
+    expect(DEFAULT_VISION_MODEL).toBe("deepseek/deepseek-v4.1-flash");
   });
 
   it("ignores blank override and env values", () => {
@@ -32,10 +33,22 @@ describe("resolveVisionModelId", () => {
   });
 });
 
+describe("resolveDefaultModelId", () => {
+  it("uses DeepSeek when nothing is set", () => {
+    expect(resolveDefaultModelId(undefined, {})).toBe("deepseek/deepseek-v4.1-flash");
+  });
+
+  it("uses RK_MODEL_DEFAULT", () => {
+    expect(resolveDefaultModelId(undefined, { RK_MODEL_DEFAULT: "spacexai/grok-4.7" })).toBe(
+      "spacexai/grok-4.7"
+    );
+  });
+});
+
 describe("resolveExtractModelId", () => {
-  it("uses the same grok-4.7 primary as paste when nothing is set", () => {
+  it("uses the same DeepSeek primary as paste when nothing is set", () => {
     expect(resolveExtractModelId(undefined, {})).toBe(DEFAULT_VISION_MODEL);
-    expect(DEFAULT_EXTRACT_MODEL).toBe("spacexai/grok-4.7");
+    expect(DEFAULT_EXTRACT_MODEL).toBe("deepseek/deepseek-v4.1-flash");
   });
 
   it("uses RK_MODEL_DEFAULT when RK_MODEL_EXTRACT is unset", () => {
@@ -61,17 +74,14 @@ describe("resolveExtractModelId", () => {
 });
 
 describe("importGenerateOptions", () => {
-  it("retries past a short 503 burst and falls back to deepseek then gpt-6-luna", () => {
+  it("retries past a short 503 burst and falls back to gpt-6-luna then grok-4.7", () => {
     expect(IMPORT_GENERATE_MAX_RETRIES).toBeGreaterThan(2);
     expect(importGenerateOptions()).toEqual({
       maxRetries: IMPORT_GENERATE_MAX_RETRIES,
       providerOptions: {
-        gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
+        gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
       },
     });
-    expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual([
-      "deepseek/deepseek-v4.1-flash",
-      "openai/gpt-6-luna",
-    ]);
+    expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual(["openai/gpt-6-luna", "spacexai/grok-4.7"]);
   });
 });

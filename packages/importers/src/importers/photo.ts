@@ -89,6 +89,7 @@ const recipeSchema = z.object({
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
   const visionModelId = resolveVisionModelId(config.visionModelId);
+  const generate = config.generate ?? generateObject;
 
   return {
     name: "photo-importer",
@@ -109,7 +110,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         ? "\n\nIMPORTANT: This is a HANDWRITTEN recipe card. Handwriting recognition is challenging:\n- Mark ingredients/steps as 'illegible' if you cannot read them with high confidence\n- Mark as 'low' confidence for uncertain readings\n- Preserve exact text as written, including quirks\n- Note any legibility issues in handwrittenNotes"
         : "";
 
-      const result = await generateObject({
+      const result = await generate({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
         model: gateway(visionModelId) as any,

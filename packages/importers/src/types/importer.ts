@@ -169,6 +169,8 @@ export interface ImporterConfig {
   abortSignal?: AbortSignal;
   /** Test hook: structured recipe from page text after JSON-LD and HTML extract. */
   extractWithLlm?: (pageText: string) => Promise<Record<string, unknown> | null>;
+  /** Test/eval hook. Defaults to AI SDK generateObject. */
+  generate?: typeof import("ai").generateObject;
 }
 
 /**
