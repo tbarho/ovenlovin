@@ -677,7 +677,58 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.skipReview).toBe(false);
+        expect(result.data.save).toBeUndefined();
       }
+    });
+
+    it("accepts preview, idempotency, and allowDuplicate fields", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "paste",
+        content: "Soup\nServes 2",
+        save: false,
+        idempotencyKey: "olive-preview-1",
+        allowDuplicate: true,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("returns a preview without persisting when save is false", async () => {
+      const persist = vi
+        .spyOn(RecipeService.prototype, "persistImportedDraft")
+        .mockResolvedValue({} as never);
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+
+      const result = await importRecipeTool.handler(
+        {
+          source: "paste",
+          save: false,
+          skipReview: false,
+          draft: {
+            title: "Weeknight Tomato Pasta",
+            ingredients: [{ rawText: "12 oz pasta" }],
+            steps: [{ text: "Boil the pasta." }],
+            source: {
+              type: "paste",
+              importerName: "paste-importer",
+              importerVersion: "1",
+              rawExtractionJson: {},
+            },
+          },
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          scopes: [],
+        }
+      );
+
+      expect(result).toMatchObject({
+        saved: false,
+        preview: true,
+        title: "Weeknight Tomato Pasta",
+      });
+      expect(result.recipeId).toBeUndefined();
+      expect(persist).not.toHaveBeenCalled();
     });
 
     it("reports an already-saved URL as a duplicate without fetching", async () => {
@@ -743,6 +794,47 @@ describe("MCP Tool Schemas", () => {
           images: [{ url: "https://example.com/page-1.jpg" }, { base64: "abc123" }],
         }).success
       ).toBe(true);
+    });
+
+    it("returns a duplicate photo as a result, not invalid-params", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "findPhotoImportDuplicate").mockResolvedValue({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        title: "Weeknight Tomato Pasta",
+        status: "published",
+        notes: null,
+        servings: 4,
+        images: [],
+      } as never);
+      const extract = vi.fn();
+      vi.spyOn(importers, "runPhotoImport").mockImplementation(extract);
+
+      const previous = process.env.AI_GATEWAY_API_KEY;
+      process.env.AI_GATEWAY_API_KEY = "test-key";
+      try {
+        const result = await importRecipeFromImageTool.handler(
+          {
+            imageUrl: "https://blob.vercel-storage.com/card.jpg",
+            skipReview: false,
+            save: true,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        );
+        expect(result).toMatchObject({
+          recipeId: "550e8400-e29b-41d4-a716-446655440000",
+          created: false,
+          duplicate: true,
+          title: "Weeknight Tomato Pasta",
+        });
+        expect(extract).not.toHaveBeenCalled();
+      } finally {
+        if (previous === undefined) delete process.env.AI_GATEWAY_API_KEY;
+        else process.env.AI_GATEWAY_API_KEY = previous;
+      }
     });
 
     it("rejects a call with no image", () => {

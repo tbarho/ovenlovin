@@ -17,6 +17,8 @@ export type DemoLimitDecision =
       remainingImports?: number;
       importLimit?: number;
       importCount?: number;
+      resetAt?: string;
+      retryAfter?: number;
     };
 
 export function remainingImportsFromCount(importCount: number): number {
@@ -49,13 +51,25 @@ export function rollWriteWindow(counters: DemoLimitCounters, now = new Date()): 
   return counters;
 }
 
+export function writeWindowReset(
+  counters: DemoLimitCounters,
+  now = new Date()
+): { resetAt: string; retryAfter: number } {
+  const resetAt = new Date(counters.windowStartedAt.getTime() + DEMO_WRITE_WINDOW_MS);
+  return {
+    resetAt: resetAt.toISOString(),
+    retryAfter: Math.max(1, Math.ceil((resetAt.getTime() - now.getTime()) / 1000)),
+  };
+}
+
 export function decideDemoWrite(input: {
   pathname: string;
   method: string;
   counters: DemoLimitCounters;
   now?: Date;
+  preview?: boolean;
 }): DemoLimitDecision {
-  if (!isMutatingMethod(input.method)) {
+  if (!isMutatingMethod(input.method) || input.preview) {
     return {
       ok: true,
       next: input.counters,
@@ -92,6 +106,7 @@ export function decideDemoWrite(input: {
       ok: false,
       code: "write_rate",
       reason: `This demo sandbox allows ${DEMO_WRITE_LIMIT_PER_HOUR} writes per hour.`,
+      ...writeWindowReset(next, now),
     };
   }
 
