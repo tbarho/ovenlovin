@@ -531,8 +531,26 @@ describe("MealPlanWeek", () => {
   it("explains recipe yield when it differs from the cook-for count", () => {
     const six: WeekMeal = { ...pesto, servings: 6, recipeServings: 6 };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [six])} defaultServings={4} />);
-    expect(screen.getByText("Recipe makes 6 · cooking for 4")).toBeVisible();
+    expect(screen.getByText("6 servings")).toBeVisible();
     expect(screen.getByText("Scale shopping and portions for")).toBeVisible();
+  });
+
+  it("uses recipe yield on a card in recipe mode when the entry has no servings", () => {
+    const chili: WeekMeal = {
+      ...pesto,
+      title: "Beef chili",
+      servings: null,
+      recipeServings: 6,
+    };
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [chili])}
+        defaultServings={4}
+        defaultServingsMode="recipe"
+      />
+    );
+    expect(screen.getByText("6 servings")).toBeVisible();
+    expect(screen.queryByText("cooking for 4")).not.toBeInTheDocument();
   });
 
   it("creates a plan when Sunday is still empty", async () => {

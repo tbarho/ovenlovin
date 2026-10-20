@@ -6,11 +6,7 @@ import {
   requireHouseholdId,
   requireWritableHousehold,
 } from "@/lib/api/middleware";
-import {
-  PlanService,
-  parseShoppingTripState,
-  shoppingTripStateWriteSchema,
-} from "@ovenlovin/core";
+import { PlanService, parseShoppingTripState, shoppingTripStateWriteSchema } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
