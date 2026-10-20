@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cookForPeopleLabel,
   cookForServingsLabel,
   defaultDisplayedServings,
   effectivePlanServings,
@@ -71,7 +72,7 @@ describe("weekDefaultServings and planEntryServings", () => {
 
   it("stores the cook-for count for family and fixed plan entries", () => {
     expect(planEntryServings({ recipeServings: 4, cookFor: 8, mode: "family" })).toBe(8);
-    expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "family" })).toBe(8);
+    expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "family" })).toBe(10);
     expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "fixed" })).toBe(8);
     expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "recipe" })).toBe(10);
   });
@@ -80,6 +81,14 @@ describe("weekDefaultServings and planEntryServings", () => {
     expect(effectivePlanServings({ entryServings: null, defaultCookFor: 5 })).toBe(5);
     expect(effectivePlanServings({ entryServings: 6, defaultCookFor: 5 })).toBe(6);
     expect(effectivePlanServings({ defaultCookFor: 5 })).toBe(5);
+    expect(
+      effectivePlanServings({
+        entryServings: null,
+        defaultCookFor: 5,
+        mode: "family",
+        recipeServings: 6,
+      })
+    ).toBe(6);
   });
 
   it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
@@ -113,6 +122,8 @@ describe("notes and settings", () => {
     expect(cookForServingsLabel({ cookFor: 4, recipeServings: 4 })).toBe("4 servings");
     expect(cookForServingsLabel({ cookFor: 1, recipeServings: 1 })).toBe("1 serving");
     expect(cookForServingsLabel({ cookFor: 5 })).toBe("5 servings");
+    expect(cookForPeopleLabel(6)).toBe("For 6 people");
+    expect(cookForPeopleLabel(1)).toBe("For 1 person");
   });
 
   it("names the family scale and can reset copy", () => {

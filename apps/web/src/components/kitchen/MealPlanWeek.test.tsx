@@ -539,11 +539,12 @@ describe("MealPlanWeek", () => {
     const chili: WeekMeal = {
       ...pesto,
       title: "Beef chili",
-      servings: 5,
+      servings: 6,
       recipeServings: 6,
     };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [chili])} defaultServings={5} />);
-    expect(screen.getByText("Recipe makes 6 · cooking for 5")).toBeVisible();
+    expect(screen.getByText("6 servings")).toBeVisible();
+    expect(screen.queryByText("cooking for 5")).not.toBeInTheDocument();
   });
 
   it("uses recipe yield on a card in recipe mode when the entry has no servings", () => {
