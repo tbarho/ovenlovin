@@ -33,35 +33,45 @@ describe("resolveVisionModelId", () => {
 });
 
 describe("resolveExtractModelId", () => {
-  it("uses the cheap gateway default, not RK_MODEL_DEFAULT", () => {
-    expect(resolveExtractModelId(undefined, { RK_MODEL_DEFAULT: "spacexai/grok-4.7" })).toBe(
-      DEFAULT_EXTRACT_MODEL
-    );
-    expect(DEFAULT_EXTRACT_MODEL).toBe("openai/gpt-4o-mini");
+  it("uses the same grok-4.7 primary as paste when nothing is set", () => {
+    expect(resolveExtractModelId(undefined, {})).toBe(DEFAULT_VISION_MODEL);
+    expect(DEFAULT_EXTRACT_MODEL).toBe("spacexai/grok-4.7");
   });
 
-  it("uses RK_MODEL_EXTRACT when set", () => {
-    expect(resolveExtractModelId(undefined, { RK_MODEL_EXTRACT: "google/gemini-2.5-flash" })).toBe(
+  it("uses RK_MODEL_DEFAULT when RK_MODEL_EXTRACT is unset", () => {
+    expect(resolveExtractModelId(undefined, { RK_MODEL_DEFAULT: "google/gemini-2.5-flash" })).toBe(
       "google/gemini-2.5-flash"
     );
   });
 
+  it("uses RK_MODEL_EXTRACT when set", () => {
+    expect(
+      resolveExtractModelId(undefined, {
+        RK_MODEL_EXTRACT: "google/gemini-2.5-flash",
+        RK_MODEL_DEFAULT: "spacexai/grok-4.7",
+      })
+    ).toBe("google/gemini-2.5-flash");
+  });
+
   it("uses the explicit override first", () => {
     expect(
-      resolveExtractModelId("openai/gpt-4o-mini", { RK_MODEL_EXTRACT: "google/gemini-2.5-flash" })
-    ).toBe("openai/gpt-4o-mini");
+      resolveExtractModelId("openai/gpt-6-luna", { RK_MODEL_EXTRACT: "google/gemini-2.5-flash" })
+    ).toBe("openai/gpt-6-luna");
   });
 });
 
 describe("importGenerateOptions", () => {
-  it("retries past a short 503 burst and falls back to grok-4.6 then gpt-4o-mini", () => {
+  it("retries past a short 503 burst and falls back to deepseek then gpt-6-luna", () => {
     expect(IMPORT_GENERATE_MAX_RETRIES).toBeGreaterThan(2);
     expect(importGenerateOptions()).toEqual({
       maxRetries: IMPORT_GENERATE_MAX_RETRIES,
       providerOptions: {
-        gateway: { models: ["spacexai/grok-4.6", "openai/gpt-4o-mini"] },
+        gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
       },
     });
-    expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual(["spacexai/grok-4.6", "openai/gpt-4o-mini"]);
+    expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual([
+      "deepseek/deepseek-v4.1-flash",
+      "openai/gpt-6-luna",
+    ]);
   });
 });

@@ -47,14 +47,14 @@ describe("extractRecipeWithLlm", () => {
     const recipe = await extractRecipeWithLlm("Weeknight Tomato Pasta\nIngredients\n12 oz pasta", {
       env: { AI_GATEWAY_API_KEY: "test-key" },
       generate,
-      modelId: "openai/gpt-4o-mini",
+      modelId: "spacexai/grok-4.7",
     });
 
     expect(generate).toHaveBeenCalledWith(
       expect.objectContaining({
         maxRetries: 5,
         providerOptions: {
-          gateway: { models: ["spacexai/grok-4.6", "openai/gpt-4o-mini"] },
+          gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
         },
       })
     );

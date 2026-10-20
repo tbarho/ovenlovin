@@ -3,11 +3,8 @@
 /** Default vision-capable model on Vercel AI Gateway (Grok 4.7). */
 export const DEFAULT_VISION_MODEL = "spacexai/grok-4.7";
 
-/**
- * Low-cost fast text model on Vercel AI Gateway for unstructured recipe pages.
- * Catalog: openai/gpt-4o-mini ($0.15 / $0.60 per 1M tokens, structured output).
- */
-export const DEFAULT_EXTRACT_MODEL = "openai/gpt-4o-mini";
+/** Same primary as paste and photo import. */
+export const DEFAULT_EXTRACT_MODEL = DEFAULT_VISION_MODEL;
 
 /**
  * Resolve the photo-import vision model.
@@ -26,7 +23,7 @@ export function resolveVisionModelId(
 
 /**
  * Resolve the URL-import text extract model.
- * Override → `RK_MODEL_EXTRACT` → cheap gateway default (not RK_MODEL_DEFAULT).
+ * Override → `RK_MODEL_EXTRACT` → `RK_MODEL_DEFAULT` → grok-4.7 (same as paste).
  */
 export function resolveExtractModelId(
   override?: string,
@@ -34,13 +31,18 @@ export function resolveExtractModelId(
 ): string {
   const fromOverride = override?.trim();
   if (fromOverride) return fromOverride;
-  const fromEnv = env.RK_MODEL_EXTRACT?.trim();
-  if (fromEnv) return fromEnv;
+  const fromExtract = env.RK_MODEL_EXTRACT?.trim();
+  if (fromExtract) return fromExtract;
+  const fromDefault = env.RK_MODEL_DEFAULT?.trim();
+  if (fromDefault) return fromDefault;
   return DEFAULT_EXTRACT_MODEL;
 }
 
 /** Gateway fallbacks when the primary model returns a fast 503. */
-export const IMPORT_GATEWAY_FALLBACK_MODELS = ["spacexai/grok-4.6", "openai/gpt-4o-mini"] as const;
+export const IMPORT_GATEWAY_FALLBACK_MODELS = [
+  "deepseek/deepseek-v4.1-flash",
+  "openai/gpt-6-luna",
+] as const;
 
 /** Default AI SDK retries are 2 (3 attempts). Stay inside the 60s / 55s photo budget. */
 export const IMPORT_GENERATE_MAX_RETRIES = 5;
