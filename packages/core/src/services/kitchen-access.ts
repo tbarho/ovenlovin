@@ -133,10 +133,11 @@ export function selectActiveMembership(
     const preferred = memberships.find((item) => item.householdId === preferredHouseholdId);
     if (preferred) return preferred;
   }
+  // Newest first: an invitee still owns an older sandbox kitchen.
   const sorted = [...memberships].sort((a, b) => {
-    const created = a.createdAt.localeCompare(b.createdAt);
+    const created = b.createdAt.localeCompare(a.createdAt);
     if (created !== 0) return created;
-    return a.id.localeCompare(b.id);
+    return b.id.localeCompare(a.id);
   });
   return sorted[0] ?? null;
 }

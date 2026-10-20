@@ -8,9 +8,9 @@ export type SandboxIdentity = {
 };
 
 /**
- * Demo sandboxes pin a visitor to their own kitchen. After they join or select
- * another kitchen, the pin is only a fallback when they are not a member of
- * the preferred kitchen.
+ * Demo sandboxes pin a visitor to their own kitchen only when they have no
+ * memberships yet. After they join another kitchen, newest membership wins
+ * unless a preferred kitchen cookie matches.
  */
 export function resolveSandboxSession(input: {
   sandbox: SandboxIdentity;
