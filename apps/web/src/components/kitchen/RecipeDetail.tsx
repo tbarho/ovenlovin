@@ -129,10 +129,12 @@ export function RecipeDetail({
     if (!raw) return;
     window.sessionStorage.removeItem("ovenlovin.import-toast");
     try {
-      const data = JSON.parse(raw) as { title?: string; servings?: number };
+      const data = JSON.parse(raw) as { title?: string; servings?: number | null };
       const title = data.title || recipe.title;
-      const count = data.servings || storedServings;
-      setToast(`Imported ${title} · ${count} servings (guessed) · Add to a cookbook`);
+      const count = data.servings && data.servings > 0 ? data.servings : null;
+      setToast(
+        `${count ? `Imported ${title} · ${count} servings (guessed)` : `Imported ${title} · servings unknown`} · Add to a cookbook`
+      );
     } catch {
       setToast(`Imported ${recipe.title} · Add to a cookbook`);
     }
@@ -142,7 +144,11 @@ export function RecipeDetail({
     () =>
       recipe.ingredients.map((ingredient) => ({
         id: ingredient.id,
-        text: scaleIngredientDisplay(ingredient, recipe.servings ?? storedServings, servings),
+        text: scaleIngredientDisplay(
+          ingredient,
+          recipe.servings && recipe.servings > 0 ? recipe.servings : servings,
+          servings
+        ),
       })),
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );

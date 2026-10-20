@@ -221,4 +221,21 @@ describe("notes and settings", () => {
     expect(overridden.displayServings).toBe(6);
     expect(overridden.ingredients[0]?.displayText).toBe("1 1/2 lbs ground beef");
   });
+
+  it("does not scale amounts when the recipe yield is unknown", () => {
+    const recipe = {
+      servings: null,
+      ingredients: [
+        {
+          rawText: "1 lb ground beef",
+          quantityMin: 1,
+          unit: "lb",
+        },
+      ],
+    } as RecipeDetails;
+
+    const family = presentDisplayedRecipe(recipe, { familySize: 8, mode: "family" });
+    expect(family.displayServings).toBe(8);
+    expect(family.ingredients[0]?.displayText).toBe("1 lb ground beef");
+  });
 });

@@ -26,7 +26,7 @@ export function CaptureFromDevice() {
         });
         window.sessionStorage.setItem(
           "ovenlovin.import-toast",
-          JSON.stringify({ title: recipe.title, servings: recipe.servings ?? 4 })
+          JSON.stringify({ title: recipe.title, servings: recipe.servings ?? null })
         );
         router.replace(`/recipes/${recipe.id}`);
         router.refresh();

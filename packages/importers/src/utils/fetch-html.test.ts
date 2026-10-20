@@ -150,6 +150,34 @@ describe("fetchHtml layers", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("retries a flaky 403 on the direct layer once", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        text: async () => CHALLENGE,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        text: async () => BUDGET,
+      });
+
+    const result = await fetchHtml("https://www.budgetbytes.com/beef-stroganoff/", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+    });
+    expect(result.via).toBe("direct");
+    expect(result.layersTried).toEqual(["direct"]);
+    expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("uses the Google Translate copy when the live response is a challenge", async () => {
     const live = "https://www.allrecipes.com/recipe/26317/chicken-pot-pie-ix/";
     const fetchMock = vi.fn(async (requested: string) => {

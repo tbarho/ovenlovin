@@ -288,7 +288,7 @@ export function ImportRecipeForm({
       });
       window.sessionStorage.setItem(
         "ovenlovin.import-toast",
-        JSON.stringify({ title: recipe.title, servings: recipe.servings ?? 4 })
+        JSON.stringify({ title: recipe.title, servings: recipe.servings ?? null })
       );
       router.push(`/recipes/${recipe.id}`);
     } catch (err) {

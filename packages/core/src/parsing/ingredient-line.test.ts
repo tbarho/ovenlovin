@@ -54,6 +54,24 @@ describe("parseIngredientLine", () => {
     const parsed = parseIngredientLine("1 cup flour (sifted)");
     expect(parsed.name).toBe("flour");
   });
+
+  it("reads a unit glued to the item name", () => {
+    expect(parseIngredientLine("1 cupsour cream")).toMatchObject({
+      quantityMin: 1,
+      unit: "cup",
+      name: "sour cream",
+    });
+    expect(parseIngredientLine("10 oz.mushrooms")).toMatchObject({
+      quantityMin: 10,
+      unit: "oz",
+      name: "mushrooms",
+    });
+    expect(parseIngredientLine("2 cups flour")).toMatchObject({
+      quantityMin: 2,
+      unit: "cup",
+      name: "flour",
+    });
+  });
 });
 
 describe("normalizeIngredientName", () => {

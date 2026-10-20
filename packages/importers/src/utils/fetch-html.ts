@@ -286,7 +286,11 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   const tryDirect = async (candidate: string, layer: FetchLayer): Promise<FetchResult | null> => {
     layersTried.push(layer);
     try {
-      const direct = await readResponse(fetchImpl, candidate);
+      let direct = await readResponse(fetchImpl, candidate);
+      if (layer === "direct" && (BLOCKED_STATUSES.has(direct.status) || direct.status >= 500)) {
+        // shortcut: one retry on a flaky 403/429/5xx, upgrade if a host needs backoff
+        direct = await readResponse(fetchImpl, candidate);
+      }
       lastStatus = direct.status;
       lastStatusText = direct.statusText;
       return remember({

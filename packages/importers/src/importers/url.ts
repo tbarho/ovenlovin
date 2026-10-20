@@ -16,11 +16,15 @@ import {
   extractPageImages,
   pickImportRecipeImage,
   RecipeNotFoundError,
+  RecipeImportFetchError,
+  looksLikeBotChallenge,
+  looksLikeSoftBlock,
 } from "../utils/url";
-import { extractHtmlRecipe } from "../utils/html-recipe";
+import { extractHtmlRecipe, parseHtmlRecipeServings } from "../utils/html-recipe";
 import { extractRecipeWithLlm } from "../utils/llm-recipe";
 import { pageTextFromHtml } from "../utils/page-text";
 import {
+  cleanImportedIngredientLine,
   cleanImportedTitle,
   parseRecipeNotes,
   parseRecipeNutrition,
@@ -60,7 +64,7 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
             )
           : null) ?? extractJsonLd(html);
       const htmlRecipe = jsonLd ? null : extractHtmlRecipe(html);
-      const structured =
+      let structured =
         jsonLd ??
         htmlRecipe ??
         (await (config.extractWithLlm
@@ -71,7 +75,17 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
             })));
 
       if (!structured) {
+        if (looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
+          throw new RecipeImportFetchError(finalUrl, 403, "Forbidden", layersTried);
+        }
         throw new RecipeNotFoundError(finalUrl, layersTried);
+      }
+
+      if (parseRecipeServings(structured) == null) {
+        const htmlServings = parseHtmlRecipeServings(html);
+        if (htmlServings != null) {
+          structured = { ...structured, recipeYield: htmlServings };
+        }
       }
 
       return {
@@ -195,7 +209,7 @@ function parseIngredients(recipeIngredient: unknown): ParsedIngredient[] {
   }
 
   return ingredientStrings.map((line) => {
-    const rawText = decodeHtmlEntities(line);
+    const rawText = cleanImportedIngredientLine(decodeHtmlEntities(line));
     const parsed = parseIngredientLine(rawText);
     return {
       rawText,

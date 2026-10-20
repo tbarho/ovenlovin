@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cleanImportedIngredientLine,
   parseRecipeNotes,
   parseRecipeNutrition,
   parseRecipeServings,
@@ -36,6 +37,29 @@ describe("parseRecipeServings", () => {
   it("returns undefined when no yield is present", () => {
     expect(parseRecipeServings({})).toBeUndefined();
     expect(parseRecipeServings({ recipeYield: "a few" })).toBeUndefined();
+  });
+
+  it("reads recipeServings when recipeYield is missing", () => {
+    expect(parseRecipeServings({ recipeServings: 4 })).toBe(4);
+    expect(parseRecipeServings({ servings: "4 servings" })).toBe(4);
+  });
+});
+
+describe("cleanImportedIngredientLine", () => {
+  it("strips Budget Bytes cost notes and unglues units", () => {
+    expect(cleanImportedIngredientLine("2 cloves garlic ($0.16)")).toBe("2 cloves garlic");
+    expect(cleanImportedIngredientLine("1/2 lb.ground beef ($2.50*)")).toBe("1/2 lb. ground beef");
+    expect(cleanImportedIngredientLine("1 cupsour cream")).toBe("1 cup sour cream");
+    expect(cleanImportedIngredientLine("1 Tbsp parsley (chopped (optional), $0.10)")).toBe(
+      "1 Tbsp parsley (chopped (optional))"
+    );
+    expect(
+      cleanImportedIngredientLine("1(290 g)yellow onion(small dice, (about 2 cups) $0.74)")
+    ).toBe("1(290 g) yellow onion(small dice, (about 2 cups))");
+    expect(cleanImportedIngredientLine("parsley(chopped (optional), $0.10)")).toBe(
+      "parsley(chopped (optional))"
+    );
+    expect(cleanImportedIngredientLine("optional*****")).toBe("optional");
   });
 });
 
