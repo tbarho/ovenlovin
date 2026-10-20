@@ -43,6 +43,7 @@ describe("CookbookRecipes add and remove", () => {
 
     await user.click(within(dialog).getByRole("checkbox", { name: /Kung pao chicken/i }));
     await user.click(within(dialog).getByRole("button", { name: "Add 1 recipe" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Added to Weeknight dinners");
     expect(api).toHaveBeenCalledWith(
       "/api/v1/cookbooks/00000000-0000-4000-8000-000000000020/recipes",
       {
