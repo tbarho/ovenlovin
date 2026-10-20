@@ -256,7 +256,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByTestId("meal-plan-week")).toBeVisible();
   await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /beef chili/i }).first()).toBeVisible();
-  await expect(page.getByText("Recipe makes 6 · cooking for 5").first()).toBeVisible();
+  await expect(page.getByText("6 servings").first()).toBeVisible();
   await expect(
     page.getByRole("combobox", { name: /scale shopping and portions for/i })
   ).toHaveValue("5");
@@ -268,8 +268,8 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByTestId("shopping-list")).toBeVisible();
   const list = page.getByTestId("shopping-list");
   await expect(list.getByText("ground beef")).toBeVisible();
-  await expect(list.getByText(/1 2\/3 lbs?/i)).toBeVisible();
-  await expect(list.getByText(/1 5\/6/)).toHaveCount(0);
+  await expect(list.getByText(/1 5\/6 lbs?/i)).toBeVisible();
+  await expect(page.getByTestId("shop-scaled-for")).toHaveTextContent("For 5 people");
   await shot(page, width, "shopping-list");
 
   await page.goto("/settings");

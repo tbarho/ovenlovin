@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DefaultServingsMode } from "@ovenlovin/core";
-import { cookForServingsLabel, planEntryServings } from "@ovenlovin/core/scaling";
+import { cookForServingsLabel, planEntryServings, servingsRangeMax } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -330,6 +330,10 @@ export function MealPlanWeek({
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [servings, setServings] = useState(defaultServings);
+  const servingsMax = servingsRangeMax(
+    defaultServings,
+    ...days.flatMap((day) => day.meals.flatMap((meal) => [meal.servings, meal.recipeServings]))
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [daysView, setDaysView] = useState(days);
@@ -476,6 +480,14 @@ export function MealPlanWeek({
 
   function applyServings(nextServings: number) {
     setServings(nextServings);
+    setDaysView((current) =>
+      current.map((day) => ({
+        ...day,
+        meals: day.meals.map((meal) =>
+          meal.recipeId ? { ...meal, servings: nextServings } : meal
+        ),
+      }))
+    );
     if (entriesView.length === 0) return;
     void persist(
       entriesView.map((entry) => (entry.recipeId ? { ...entry, servings: nextServings } : entry))
@@ -496,7 +508,7 @@ export function MealPlanWeek({
             disabled={pending}
             onChange={(event) => applyServings(Number(event.target.value))}
           >
-            {Array.from({ length: 24 }, (_, index) => index + 1).map((count) => (
+            {Array.from({ length: servingsMax }, (_, index) => index + 1).map((count) => (
               <option key={count} value={count}>
                 {count}
               </option>

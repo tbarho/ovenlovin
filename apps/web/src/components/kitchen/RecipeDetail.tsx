@@ -19,6 +19,7 @@ import {
   formatDurationMinutes,
   recipeYieldServings,
   scaleIngredientDisplay,
+  servingsRangeMax,
 } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
@@ -78,6 +79,7 @@ export function RecipeDetail({
     mode: servingsMode,
     fixedServings,
   });
+  const servingsMax = servingsRangeMax(storedServings, autoServings);
   const [servings, setServings] = useState(autoServings);
   const [sheet, setSheet] = useState<
     null | "details" | "image" | "ingredients" | "steps" | "cookbook"
@@ -252,26 +254,28 @@ export function RecipeDetail({
                 type="button"
                 className="btn compact"
                 aria-label="Fewer servings"
-                onClick={() => setServings(clampServings(servings - 1))}
+                onClick={() => setServings(clampServings(servings - 1, 1, servingsMax))}
               >
                 −
               </button>
               <input
                 type="range"
                 min={1}
-                max={24}
+                max={servingsMax}
                 value={servings}
                 aria-valuemin={1}
-                aria-valuemax={24}
+                aria-valuemax={servingsMax}
                 aria-valuenow={servings}
                 aria-label="Servings"
-                onChange={(event) => setServings(clampServings(Number(event.target.value)))}
+                onChange={(event) =>
+                  setServings(clampServings(Number(event.target.value), 1, servingsMax))
+                }
               />
               <button
                 type="button"
                 className="btn compact"
                 aria-label="More servings"
-                onClick={() => setServings(clampServings(servings + 1))}
+                onClick={() => setServings(clampServings(servings + 1, 1, servingsMax))}
               >
                 +
               </button>
