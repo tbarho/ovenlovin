@@ -304,6 +304,19 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(true);
     });
 
+    it("accepts a previewed draft", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "paste",
+        draft: {
+          title: "Weeknight Tomato Pasta",
+          ingredients: [{ rawText: "12 oz pasta" }],
+          steps: [{ text: "Boil the pasta." }],
+          source: { type: "paste", importerName: "paste-importer", importerVersion: "0.1.0" },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
     it("defaults includeSource to true", () => {
       const result = getRecipeTool.inputSchema.safeParse({
         id: "550e8400-e29b-41d4-a716-446655440000",
@@ -688,6 +701,19 @@ describe("MCP Tool Schemas", () => {
 
     it("rejects a call with no image", () => {
       expect(importRecipeFromImageTool.inputSchema.safeParse({}).success).toBe(false);
+    });
+
+    it("accepts a previewed draft without an image", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          draft: {
+            title: "Weeknight Tomato Pasta",
+            ingredients: [{ rawText: "12 oz pasta" }],
+            steps: [{ text: "Boil the pasta." }],
+            source: { type: "photo", importerName: "photo-importer", importerVersion: "0.1.0" },
+          },
+        }).success
+      ).toBe(true);
     });
   });
 

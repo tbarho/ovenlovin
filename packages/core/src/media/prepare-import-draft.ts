@@ -72,6 +72,59 @@ export function photoPerceptualHashFromDraft(draft: RecipeImportDraft): string |
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+/** Persist a previewed import without extracting again. */
+export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.title !== "string" || !raw.title.trim()) return null;
+  if (!raw.source || typeof raw.source !== "object") return null;
+  if (!Array.isArray(raw.ingredients) || !Array.isArray(raw.steps)) return null;
+
+  const ingredients: RecipeImportDraft["ingredients"] = [];
+  for (const item of raw.ingredients) {
+    if (!item || typeof item !== "object") continue;
+    const rawText = (item as { rawText?: unknown }).rawText;
+    if (typeof rawText !== "string" || !rawText.trim()) continue;
+    ingredients.push(item as RecipeImportDraft["ingredients"][number]);
+  }
+  const steps: RecipeImportDraft["steps"] = [];
+  for (const item of raw.steps) {
+    if (!item || typeof item !== "object") continue;
+    const text = (item as { text?: unknown }).text;
+    if (typeof text !== "string" || !text.trim()) continue;
+    steps.push({ text });
+  }
+  if (ingredients.length === 0 || steps.length === 0) return null;
+
+  const source = raw.source as RecipeImportDraft["source"];
+  if (typeof source.importerName !== "string" || !source.importerName.trim()) return null;
+  return prepareImportDraft({
+    title: raw.title,
+    description: typeof raw.description === "string" ? raw.description : undefined,
+    notes: typeof raw.notes === "string" ? raw.notes : undefined,
+    servings: typeof raw.servings === "number" ? raw.servings : undefined,
+    prepTimeMinutes: typeof raw.prepTimeMinutes === "number" ? raw.prepTimeMinutes : undefined,
+    cookTimeMinutes: typeof raw.cookTimeMinutes === "number" ? raw.cookTimeMinutes : undefined,
+    totalTimeMinutes: typeof raw.totalTimeMinutes === "number" ? raw.totalTimeMinutes : undefined,
+    cuisine: typeof raw.cuisine === "string" ? raw.cuisine : undefined,
+    course: typeof raw.course === "string" ? raw.course : undefined,
+    images: Array.isArray(raw.images) ? (raw.images as string[]) : undefined,
+    ingredients,
+    steps,
+    source: {
+      ...source,
+      rawExtractionJson: source.rawExtractionJson ?? {},
+    },
+    needsReview: Boolean(raw.needsReview),
+    reviewReasons: Array.isArray(raw.reviewReasons)
+      ? raw.reviewReasons.filter((item): item is string => typeof item === "string")
+      : undefined,
+    uncertainFields: Array.isArray(raw.uncertainFields)
+      ? raw.uncertainFields.filter((item): item is string => typeof item === "string")
+      : undefined,
+  });
+}
+
 export function sourceUrlFromDraft(draft: RecipeImportDraft): string | null {
   if (draft.source.type !== "url") return null;
   return (

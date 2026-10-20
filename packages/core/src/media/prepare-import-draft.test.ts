@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { importDedupeKeys, prepareImportDraft } from "./prepare-import-draft";
+import {
+  draftFromSavedPreview,
+  importDedupeKeys,
+  prepareImportDraft,
+} from "./prepare-import-draft";
 import type { RecipeImportDraft } from "../schemas/recipes";
 
 function draft(overrides: Partial<RecipeImportDraft> = {}): RecipeImportDraft {
@@ -66,4 +70,30 @@ describe("prepareImportDraft", () => {
     );
     expect(importDedupeKeys(prepared)).toEqual([]);
   });
+
+  it("rebuilds a recipe draft from a preview payload", () => {
+    const preview = presentablePreview();
+    const rebuilt = draftFromSavedPreview(preview);
+    expect(rebuilt?.title).toBe("Weeknight Tomato Pasta");
+    expect(rebuilt?.ingredients).toHaveLength(1);
+    expect(rebuilt?.steps).toHaveLength(1);
+    expect(rebuilt?.source.importerName).toBe("paste-importer");
+    expect(draftFromSavedPreview({ title: "Nope" })).toBeNull();
+  });
 });
+
+function presentablePreview() {
+  return {
+    saved: false,
+    preview: true,
+    title: "Weeknight Tomato Pasta",
+    ingredients: [{ rawText: "12 oz pasta" }],
+    steps: [{ text: "Boil the pasta." }],
+    source: {
+      type: "paste",
+      importerName: "paste-importer",
+      importerVersion: "0.1.0",
+      rawExtractionJson: { via: "preview" },
+    },
+  };
+}
