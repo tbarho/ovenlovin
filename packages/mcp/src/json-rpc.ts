@@ -14,6 +14,7 @@ export const JsonRpcErrorCode = {
   internal: -32603,
   unauthorized: -32001,
   forbidden: -32003,
+  quota: -32004,
 } as const;
 
 /** User/input mistakes (missing fields, unknown allergen, duplicate photo). */

@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { normalizeIngredientName } from "@ovenlovin/core/parsing";
 import { cookForPeopleLabel } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
 import type { ShopItem, ShoppingExtra, ShoppingTripState } from "@/lib/week-plan-view";
+import { KitchenToast } from "./KitchenToast";
 
 function uniqueWarnings(warnings: ShopItem["warnings"]) {
   const seen = new Set<string>();
@@ -55,6 +56,12 @@ export function ShoppingList({
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    extras: ShoppingExtra[];
+    checked: string[];
+  } | null>(null);
+  const dismissToast = useCallback(() => setToast(null), []);
 
   const listed = useMemo(() => [...items, ...added.map(extraShopItem)], [added, items]);
   const groups = useMemo(() => groupShopItemsByAisle(listed), [listed]);
@@ -86,18 +93,31 @@ export function ShoppingList({
     event.preventDefault();
     const name = draft.trim();
     if (!name) return;
+    const previous = { extras: added, checked };
     const nextExtras = [...added, { key: extraKey(name), name }];
     setAdded(nextExtras);
     setDraft("");
     persist({ checkedKeys: checked, extras: nextExtras });
+    setToast({ message: `Added ${name}`, ...previous });
   }
 
   function removeExtra(key: string) {
+    const extra = added.find((item) => item.key === key);
+    const previous = { extras: added, checked };
     const nextExtras = added.filter((item) => item.key !== key);
     const nextChecked = checked.filter((item) => item !== key);
     setAdded(nextExtras);
     setChecked(nextChecked);
     persist({ checkedKeys: nextChecked, extras: nextExtras });
+    setToast({ message: `Removed ${extra?.name ?? "item"}`, ...previous });
+  }
+
+  function undoToast() {
+    if (!toast) return;
+    setAdded(toast.extras);
+    setChecked(toast.checked);
+    persist({ checkedKeys: toast.checked, extras: toast.extras });
+    setToast(null);
   }
 
   function clearChecked() {
@@ -110,6 +130,14 @@ export function ShoppingList({
     persist({ checkedKeys: [], extras: nextExtras });
   }
 
+  const toastEl = (
+    <KitchenToast
+      message={toast?.message ?? null}
+      onUndo={toast ? undoToast : undefined}
+      onDismiss={dismissToast}
+    />
+  );
+
   if (listed.length === 0) {
     return (
       <div className="shop-board">
@@ -118,6 +146,7 @@ export function ShoppingList({
           Nothing to shop for yet. Add dinners on the plan, or jot milk and paper towels above.
         </p>
         {error ? <p className="muted">{error}</p> : null}
+        {toastEl}
       </div>
     );
   }
@@ -192,6 +221,7 @@ export function ShoppingList({
         </section>
       ))}
       {error ? <p className="muted">{error}</p> : null}
+      {toastEl}
     </div>
   );
 }
