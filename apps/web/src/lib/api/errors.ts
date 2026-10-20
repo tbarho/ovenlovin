@@ -62,11 +62,16 @@ export class ApiError extends Error {
   }
 
   toResponse(instance?: string): NextResponse {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/problem+json",
+    };
+    const retryAfter = this.extensions?.retryAfter;
+    if (typeof retryAfter === "number" && Number.isFinite(retryAfter)) {
+      headers["Retry-After"] = String(Math.max(0, Math.ceil(retryAfter)));
+    }
     return NextResponse.json(this.toProblemDetail(instance), {
       status: this.status,
-      headers: {
-        "Content-Type": "application/problem+json",
-      },
+      headers,
     });
   }
 }
