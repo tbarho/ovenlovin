@@ -829,9 +829,69 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   const shoppingTripStateDoc = z
     .object({
       checkedKeys: z.array(z.string()),
-      extras: z.array(z.object({ key: z.string(), name: z.string() })),
+      extras: z.array(z.object({ key: z.string(), name: z.string() }).strict()),
     })
+    .strict()
     .openapi("ShoppingTripState");
+
+  const shoppingListIngredientDoc = z
+    .object({
+      key: z.string(),
+      checked: z.boolean().optional(),
+      name: z.string(),
+      quantity: z.number().optional(),
+      unit: z.string().optional(),
+      displayQuantity: z.string().optional(),
+      displayUnit: z
+        .string()
+        .optional()
+        .describe("Unit inflected for the display quantity (`cloves` when the amount is 2)."),
+      aisle: z.string(),
+      category: z.string(),
+      isStaple: z
+        .boolean()
+        .describe(
+          "Canonical kitchen-staple flag (salt, oil, pepper). Distinct from the pantry food-taxonomy category."
+        ),
+      isPantryItem: z.boolean().describe("Deprecated alias of isStaple."),
+      recipes: z.array(
+        z.object({
+          recipeId: z.string(),
+          recipeTitle: z.string(),
+          quantity: z.number().optional(),
+          unit: z.string().optional(),
+        })
+      ),
+    })
+    .openapi("ShoppingListIngredient");
+
+  const shoppingListDoc = z
+    .object({
+      mealPlanId: z.string(),
+      weekStart: z.string(),
+      groupBy: z.enum(["aisle", "recipe", "category"]),
+      includeStaples: z
+        .boolean()
+        .describe("Canonical flag for kitchen staples such as salt, pepper, and oil."),
+      includePantryItems: z.boolean().describe("Deprecated alias of includeStaples."),
+      ingredients: z.array(shoppingListIngredientDoc),
+      sections: z.array(
+        z.object({
+          name: z.string(),
+          items: z.array(shoppingListIngredientDoc),
+        })
+      ),
+      itemCount: z.number().int().nonnegative(),
+      generatedAt: z.string(),
+      warnings: z.array(
+        z.object({
+          ingredient: z.string(),
+          personName: z.string(),
+          note: z.string(),
+        })
+      ),
+    })
+    .openapi("ShoppingList");
 
   const mealPlanSchema = z
     .object({
@@ -1014,9 +1074,22 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           .boolean()
           .optional()
           .describe("Deprecated alias for includeStaples."),
+        timeZone: z
+          .string()
+          .optional()
+          .describe(
+            "IANA timezone for markdown/text Generated labels (for example America/Chicago). Always includes a zone abbreviation."
+          ),
       }),
     },
-    responses: { 200: { description: "Shopping list" } },
+    responses: {
+      200: {
+        description:
+          "Shopping list. JSON is the ShoppingList object (includeStaples / isStaple canonical; includePantryItems / isPantryItem aliases). Markdown/text stamp check-offs and extras.",
+        content: { "application/json": { schema: shoppingListDoc } },
+      },
+      400: { description: "Invalid format, groupBy, or timeZone" },
+    },
   });
 
   registry.registerPath({
@@ -1053,6 +1126,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         description: "Saved shopping trip state",
         content: { "application/json": { schema: shoppingTripStateDoc } },
       },
+      400: { description: "Unknown keys or invalid check-off payload" },
     },
   });
 

@@ -30,7 +30,7 @@ describe("presentRecipeForKitchen", () => {
     });
     expect(family.displayServings).toBe(8);
     expect(family.servings).toBe(4);
-    expect(family.ingredients[0]?.displayText).toBe("2 lb pasta");
+    expect(family.ingredients[0]?.displayText).toBe("2 lbs pasta");
 
     const overridden = presentRecipeForKitchen(
       recipe,
@@ -38,6 +38,6 @@ describe("presentRecipeForKitchen", () => {
       "6"
     );
     expect(overridden.displayServings).toBe(6);
-    expect(overridden.ingredients[0]?.displayText).toBe("1 1/2 lb pasta");
+    expect(overridden.ingredients[0]?.displayText).toBe("1 1/2 lbs pasta");
   });
 });

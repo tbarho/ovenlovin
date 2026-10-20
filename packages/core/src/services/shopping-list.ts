@@ -1,10 +1,11 @@
 import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
-import { shopItemKey } from "../schemas/shopping-trip";
+import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
 import {
   formatMeasureText,
   formatQuantity,
+  inflectedUnit,
   isCountableShopItem,
   scaleFactorForPlanEntry,
   toFriendlyMeasure,
@@ -45,6 +46,9 @@ export interface ShoppingListIngredient {
   displayUnit?: string;
   aisle: string;
   category: ShoppingListCategory;
+  /** Kitchen staple (salt, oil, pepper) - not the pantry food-taxonomy category. */
+  isStaple: boolean;
+  /** @deprecated Alias of {@link ShoppingListIngredient.isStaple}. */
   isPantryItem: boolean;
   recipes: ShoppingListRecipeRef[];
 }
@@ -191,7 +195,7 @@ function sectionForItem(
   if (groupBy === "recipe") {
     return item.recipes[0]?.recipeTitle ?? "Other";
   }
-  if (includeStaples && item.isPantryItem) {
+  if (includeStaples && item.isStaple) {
     return KITCHEN_STAPLES_SECTION;
   }
   if (groupBy === "category") {
@@ -305,6 +309,7 @@ export class ShoppingListService {
             unit,
             aisle: placement.aisle,
             category: placement.category,
+            isStaple: pantry,
             isPantryItem: pantry,
             recipes: [recipeRef],
           });
@@ -323,7 +328,7 @@ export class ShoppingListService {
     }
 
     const ingredients = Array.from(ingredientMap.values())
-      .filter((item) => includeStaples || !item.isPantryItem)
+      .filter((item) => includeStaples || !item.isStaple)
       .map((item) => {
         const rawQuantity = item.quantity != null ? roundQuantity(item.quantity) : undefined;
         const quantity =
@@ -331,12 +336,20 @@ export class ShoppingListService {
             ? wholeShopQuantity(rawQuantity)
             : rawQuantity;
         const display = quantity != null ? toFriendlyMeasure(quantity, item.unit) : undefined;
+        const displayQuantity = display?.displayQuantity;
+        const displayUnit =
+          displayQuantity && display.displayUnit
+            ? inflectedUnit(displayQuantity, display.displayUnit)
+            : display?.displayUnit;
         return {
           ...item,
           key: shopItemKey(item.name, item.unit),
           quantity,
-          displayQuantity: display?.displayQuantity,
-          displayUnit: display?.displayUnit,
+          displayQuantity,
+          displayUnit,
+          checked: item.checked ?? false,
+          isStaple: item.isStaple,
+          isPantryItem: item.isStaple,
           recipes: item.recipes.map((recipe) => ({
             ...recipe,
             quantity: recipe.quantity != null ? roundQuantity(recipe.quantity) : undefined,
@@ -404,16 +417,22 @@ export class ShoppingListService {
   format(
     data: ShoppingListData,
     format: "json" | "csv" | "markdown" | "text",
-    options: { checkedKeys?: string[] } = {}
+    options: ShoppingListFormatOptions = {}
   ): string {
-    const marked = withCheckoffs(data, options.checkedKeys);
+    const marked =
+      options.checkedKeys != null || options.extras != null
+        ? applyShoppingTrip(data, {
+            checkedKeys: options.checkedKeys ?? [],
+            extras: options.extras ?? [],
+          })
+        : data;
     switch (format) {
       case "csv":
         return this.exportAsCSV(marked);
       case "markdown":
-        return this.exportAsMarkdown(marked);
+        return this.exportAsMarkdown(marked, options);
       case "text":
-        return this.exportAsText(marked);
+        return this.exportAsText(marked, options);
       case "json":
       default:
         return this.exportAsJSON(marked);
@@ -439,12 +458,12 @@ export class ShoppingListService {
     return lines.join("\n");
   }
 
-  exportAsMarkdown(data: ShoppingListData): string {
+  exportAsMarkdown(data: ShoppingListData, options: ShoppingListExportOptions = {}): string {
     const lines = [
       `# Shopping List`,
       ``,
       `**Week Starting:** ${data.weekStart}`,
-      `**Generated:** ${new Date(data.generatedAt).toLocaleString()}`,
+      `**Generated:** ${formatShoppingListGeneratedAt(data.generatedAt, options.timeZone)}`,
       ``,
     ];
 
@@ -468,13 +487,13 @@ export class ShoppingListService {
     return lines.join("\n").trimEnd() + "\n";
   }
 
-  exportAsText(data: ShoppingListData): string {
+  exportAsText(data: ShoppingListData, options: ShoppingListExportOptions = {}): string {
     const lines = [
       `Shopping List`,
       `=============`,
       ``,
       `Week Starting: ${data.weekStart}`,
-      `Generated: ${new Date(data.generatedAt).toLocaleString()}`,
+      `Generated: ${formatShoppingListGeneratedAt(data.generatedAt, options.timeZone)}`,
       ``,
     ];
 
@@ -500,19 +519,82 @@ export class ShoppingListService {
   }
 }
 
-function withCheckoffs(data: ShoppingListData, checkedKeys?: string[]): ShoppingListData {
-  const checked = new Set(checkedKeys ?? []);
+export type ShoppingListExportOptions = {
+  timeZone?: string;
+};
+
+export type ShoppingListFormatOptions = ShoppingListExportOptions & {
+  checkedKeys?: string[];
+  extras?: ShoppingExtra[];
+};
+
+export function parseIanaTimeZone(value: string): string | null {
+  const tz = value.trim();
+  if (!tz) return null;
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: tz }).format(new Date(0));
+    return tz;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveIanaTimeZone(value?: string | null): string {
+  const explicit = value ? parseIanaTimeZone(value) : null;
+  if (explicit) return explicit;
+  return parseIanaTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone) ?? "UTC";
+}
+
+export function formatShoppingListGeneratedAt(iso: string, timeZone?: string | null): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const tz = resolveIanaTimeZone(timeZone);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: tz,
+    timeZoneName: "short",
+  }).format(date);
+}
+
+function extraToIngredient(extra: ShoppingExtra): ShoppingListIngredient {
+  const placement = assignAisle(extra.name);
+  return {
+    key: extra.key,
+    name: extra.name,
+    aisle: placement.aisle,
+    category: placement.category,
+    checked: false,
+    isStaple: false,
+    isPantryItem: false,
+    recipes: [],
+  };
+}
+
+/** Merge saved check-offs and extras into a built list for REST, MCP, and markdown. */
+export function applyShoppingTrip(
+  data: ShoppingListData,
+  trip: { checkedKeys?: string[]; extras?: ShoppingExtra[] } = {}
+): ShoppingListData {
+  const existingKeys = new Set(data.ingredients.map((item) => item.key));
+  const extras = (trip.extras ?? [])
+    .filter((extra) => extra.name.trim() && !existingKeys.has(extra.key))
+    .map(extraToIngredient);
+  const combined = [...data.ingredients, ...extras];
+  const checked = new Set(trip.checkedKeys ?? []);
   const mark = <T extends ShoppingListIngredient>(item: T): T => ({
     ...item,
     checked: checked.has(item.key),
   });
+  const ingredients = combined.map(mark).sort((a, b) => a.name.localeCompare(b.name));
   return {
     ...data,
-    ingredients: data.ingredients.map(mark),
-    sections: data.sections.map((section) => ({
-      ...section,
-      items: section.items.map(mark),
-    })),
+    ingredients,
+    sections: groupSections(ingredients, data.groupBy, data.includeStaples),
+    itemCount: ingredients.length,
   };
 }
 

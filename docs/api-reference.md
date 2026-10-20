@@ -744,8 +744,9 @@ GET /api/v1/meal-plans/{planId}/shopping-list
 **Query parameters**:
 - `format` (string, optional) - `json` (default), `csv`, `markdown`, or `text`
 - `groupBy` (string, optional) - `aisle` (default), `recipe`, or `category`
-- `includeStaples` (boolean, optional) - Include kitchen staples such as salt, pepper, and oil. Distinct from the **pantry** food-taxonomy category (flour, canned goods). Default `false`.
+- `includeStaples` (boolean, optional) - Include kitchen staples such as salt, pepper, and oil. Distinct from the **pantry** food-taxonomy category (flour, canned goods). Default `false`. Canonical flag; items use `isStaple` with deprecated alias `isPantryItem`.
 - `includePantryItems` (boolean, optional) - Deprecated alias for `includeStaples`.
+- `timeZone` (string, optional) - IANA timezone for markdown/text Generated labels. Always includes a zone abbreviation.
 
 **Response** (JSON):
 ```json

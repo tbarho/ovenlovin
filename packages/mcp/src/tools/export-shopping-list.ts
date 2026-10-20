@@ -12,10 +12,12 @@ import {
   RecipeService,
   PeopleService,
   ShoppingListService,
+  applyShoppingTrip,
   collectShoppingListEntries,
+  parseIanaTimeZone,
+  parseShoppingTripState,
   planEntriesForWeek,
   resolveIncludeStaples,
-  weekDefaultServings,
   type ShoppingListData,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
@@ -38,6 +40,13 @@ export const exportShoppingListSchema = z.object({
     ),
   includePantryItems: z.boolean().optional().describe("Deprecated alias for includeStaples."),
   includeRuleWarnings: z.boolean().default(true),
+  timeZone: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "IANA timezone for the markdown/text Generated line (for example America/Chicago). Default: kitchen server timezone, always labeled."
+    ),
 });
 
 export type ExportShoppingListInput = z.infer<typeof exportShoppingListSchema>;
@@ -139,37 +148,35 @@ async function handler(
     }
   }
 
-  const households = new HouseholdService(db);
-  const household = await households.getHousehold(context.householdId);
-  const householdPeople = await peopleService.listPeopleByHousehold(context.householdId, {
-    limit: 40,
-  });
-  const servingsSettings = household
-    ? households.servingsSettingsFor(household, householdPeople.items.length)
-    : {
-        mode: "family" as const,
-        defaultCookFor: weekDefaultServings({
-          familySize: householdPeople.items.length,
-          mode: "family",
-        }),
-      };
+  if (input.timeZone && !parseIanaTimeZone(input.timeZone)) {
+    throw new Error("Invalid timeZone. Use an IANA name such as America/Chicago.");
+  }
 
-  const shoppingList = shoppingListService.build({
-    mealPlanId: plan.id,
-    weekStart: plan.weekStart,
-    entries: sources,
-    groupBy: input.groupBy,
-    includeStaples: resolveIncludeStaples(input),
-    warnings,
-    defaultCookFor: servingsSettings.defaultCookFor,
-    mode: servingsSettings.mode,
-  });
+  const servingsSettings = await new HouseholdService(db).loadKitchenServingsSettings(
+    context.householdId
+  );
+
+  const shoppingList = applyShoppingTrip(
+    shoppingListService.build({
+      mealPlanId: plan.id,
+      weekStart: plan.weekStart,
+      entries: sources,
+      groupBy: input.groupBy,
+      includeStaples: resolveIncludeStaples(input),
+      warnings,
+      defaultCookFor: servingsSettings.defaultCookFor,
+      mode: servingsSettings.mode,
+    }),
+    parseShoppingTripState(plan.shoppingState)
+  );
 
   return {
     format: input.format,
     list: shoppingList,
     content:
-      input.format === "json" ? undefined : shoppingListService.format(shoppingList, input.format),
+      input.format === "json"
+        ? undefined
+        : shoppingListService.format(shoppingList, input.format, { timeZone: input.timeZone }),
     itemCount: shoppingList.itemCount,
     warnings,
   };
@@ -178,7 +185,7 @@ async function handler(
 export const exportShoppingListTool = {
   name: "export_shopping_list",
   description:
-    "Export a shopping list for a meal plan. Returns structured `list` (object, never a JSON string) plus optional markdown/csv/text `content`. Aggregates ingredients, converts units, and includes per-person rule warnings for shoppers.",
+    "Export a shopping list for a meal plan. Returns structured `list` (object, never a JSON string) plus optional markdown/csv/text `content`. Includes saved check-offs ([x] vs [ ]) and extras such as paper towels. Canonical staple flag is includeStaples / item isStaple; includePantryItems and isPantryItem are aliases. Generated timestamps use timeZone (IANA) and always include a zone label. Aggregates ingredients, converts units, and includes per-person rule warnings for shoppers.",
   inputSchema: exportShoppingListSchema,
   handler,
 } as const;

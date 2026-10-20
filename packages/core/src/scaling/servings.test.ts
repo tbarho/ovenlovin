@@ -99,6 +99,10 @@ describe("toFriendlyMeasure", () => {
     expect(pluralizeUnit("2", "clove")).toBe("2 cloves");
     expect(pluralizeUnit("1", "clove")).toBe("1 clove");
     expect(pluralizeUnit("2/3", "cup")).toBe("2/3 cup");
+    expect(pluralizeUnit("2", "dash")).toBe("2 dashes");
+    expect(pluralizeUnit("2", "glass")).toBe("2 glass");
+    expect(pluralizeUnit("1/2-1", "lb")).toBe("1/2-1 lb");
+    expect(pluralizeUnit("2", "tsp.")).toBe("2 tsp");
   });
 
   it("keeps a third-cup instead of 0.33 cup", () => {
@@ -117,6 +121,14 @@ describe("toFriendlyMeasure", () => {
     expect(toFriendlyMeasure(8, "tbsp")).toEqual({ displayQuantity: "1/2", displayUnit: "cup" });
     expect(toFriendlyMeasure(5, "tbsp")).toEqual({ displayQuantity: "5", displayUnit: "tbsp" });
     expect(toFriendlyMeasure(0.5, "tsp")).toEqual({ displayQuantity: "1/2", displayUnit: "tsp" });
+  });
+
+  it("keeps small spoon amounts as tbsp instead of 1/8 cup", () => {
+    expect(toFriendlyMeasure(2, "tbsp")).toEqual({ displayQuantity: "2", displayUnit: "tbsp" });
+    expect(toFriendlyMeasure(0.125, "cup")).toEqual({ displayQuantity: "2", displayUnit: "tbsp" });
+    expect(toFriendlyMeasure(6, "tsp")).toEqual({ displayQuantity: "2", displayUnit: "tbsp" });
+    expect(formatMeasureText(2, "tbsp")).toBe("2 tbsp");
+    expect(formatMeasureText(0.125, "cup")).toBe("2 tbsp");
   });
 });
 
@@ -147,7 +159,37 @@ describe("scaleIngredientDisplay", () => {
   });
 
   it("scales 2/3 celery to a mixed number", () => {
-    expect(scaleIngredientDisplay(DECIMAL_TWO_THIRDS_CELERY, 4, 8)).toBe("1 1/3 cup celery");
+    expect(scaleIngredientDisplay(DECIMAL_TWO_THIRDS_CELERY, 4, 8)).toBe("1 1/3 cups celery");
+  });
+
+  it("singularizes cups when a 2-cup line scales down to 1", () => {
+    expect(
+      scaleIngredientDisplay(
+        { rawText: "2 cups shredded mozzarella", quantityMin: 2, unit: "cup" },
+        8,
+        4
+      )
+    ).toBe("1 cup shredded mozzarella");
+    expect(pluralizeUnit("1", "cups")).toBe("1 cup");
+  });
+
+  it("does not prepend a stored unit when it is not right after the quantity", () => {
+    expect(
+      scaleIngredientDisplay(
+        { rawText: "2 (14 oz) cans diced tomatoes", quantityMin: 2, unit: "can" },
+        4,
+        4
+      )
+    ).toBe("2 (14 oz) cans diced tomatoes");
+  });
+
+  it("keeps abbreviated units that end in a period", () => {
+    expect(scaleIngredientDisplay({ rawText: "½ lb. ground beef" }, 4, 4)).toBe(
+      "1/2 lb ground beef"
+    );
+    expect(
+      scaleIngredientDisplay({ rawText: "2 tsp. baking soda", quantityMin: 2, unit: "tsp." }, 4, 4)
+    ).toBe("2 tsp baking soda");
   });
 });
 

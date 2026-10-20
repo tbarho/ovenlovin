@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cookForServingsLabel,
   defaultDisplayedServings,
   effectivePlanServings,
   normalizeHouseholdServingsSetting,
@@ -105,6 +106,15 @@ describe("weekDefaultServings and planEntryServings", () => {
 });
 
 describe("notes and settings", () => {
+  it("uses the same cook-for wording on recipes and plan cards", () => {
+    expect(cookForServingsLabel({ cookFor: 8, recipeServings: 4 })).toBe(
+      "Recipe makes 4 · cooking for 8"
+    );
+    expect(cookForServingsLabel({ cookFor: 4, recipeServings: 4 })).toBe("4 servings");
+    expect(cookForServingsLabel({ cookFor: 1, recipeServings: 1 })).toBe("1 serving");
+    expect(cookForServingsLabel({ cookFor: 5 })).toBe("5 servings");
+  });
+
   it("names the family scale and can reset copy", () => {
     expect(
       scaledServingsNote({
@@ -189,7 +199,7 @@ describe("notes and settings", () => {
 
     const family = presentDisplayedRecipe(recipe, { familySize: 8, mode: "family" });
     expect(family.displayServings).toBe(8);
-    expect(family.ingredients[0]?.displayText).toBe("2 lb ground beef");
+    expect(family.ingredients[0]?.displayText).toBe("2 lbs ground beef");
 
     const overridden = presentDisplayedRecipe(recipe, {
       familySize: 8,
@@ -197,6 +207,6 @@ describe("notes and settings", () => {
       servingsOverride: 6,
     });
     expect(overridden.displayServings).toBe(6);
-    expect(overridden.ingredients[0]?.displayText).toBe("1 1/2 lb ground beef");
+    expect(overridden.ingredients[0]?.displayText).toBe("1 1/2 lbs ground beef");
   });
 });

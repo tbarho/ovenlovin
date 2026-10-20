@@ -96,6 +96,23 @@ export function effectivePlanServings(input: {
   return clampServings(input.defaultCookFor);
 }
 
+/**
+ * Shared kitchen copy for recipe pages and plan cards.
+ * When the card yield differs from cook-for, name both; otherwise "{n} servings".
+ */
+export function cookForServingsLabel(input: {
+  cookFor: number;
+  recipeServings?: number | null;
+}): string {
+  const cookFor = clampServings(input.cookFor);
+  const recipeMakes =
+    input.recipeServings && input.recipeServings > 0 ? input.recipeServings : null;
+  if (recipeMakes != null && recipeMakes !== cookFor) {
+    return `Recipe makes ${recipeMakes} · cooking for ${cookFor}`;
+  }
+  return `${cookFor} ${cookFor === 1 ? "serving" : "servings"}`;
+}
+
 /** Optional `?servings=` override for REST/MCP recipe display. */
 export function parseServingsQuery(value: string | number | null | undefined): number | null {
   if (value == null || value === "") return null;

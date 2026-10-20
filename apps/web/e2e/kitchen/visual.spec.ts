@@ -166,7 +166,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await page.goto(urls.pestoHref);
   await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
   await expect(page.getByTestId("scaled-servings-note")).toContainText(
-    "Scaled to 5 for your family"
+    "Recipe makes 4 · cooking for 5"
   );
   await expect(page.getByRole("button", { name: "Reset to 4" })).toBeVisible();
   await expect(page.getByTestId("who-can-eat")).toBeVisible();
