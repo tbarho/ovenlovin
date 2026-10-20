@@ -4,6 +4,7 @@ import {
   importDuplicateDetail,
   possibleDuplicateOf,
   presentImportPreview,
+  replayOrDuplicateUrlImport,
   wantsPersist,
 } from "./import-save";
 
@@ -52,5 +53,17 @@ describe("import save helpers", () => {
     expect(preview.uncertainFields).toEqual(["servings"]);
     expect(preview.saved).toBe(false);
     expect(preview.preview).toBe(true);
+  });
+
+  it("replays a completed Idempotency-Key and reports a saved URL as a duplicate", () => {
+    const recipe = { id: "recipe-1", title: "Weeknight Chili" } as never;
+    expect(replayOrDuplicateUrlImport({ recipe, match: "idempotency" })).toEqual({
+      kind: "replay",
+      recipe,
+    });
+    expect(replayOrDuplicateUrlImport({ recipe, match: "source_url" })).toEqual({
+      kind: "duplicate",
+      recipe,
+    });
   });
 });

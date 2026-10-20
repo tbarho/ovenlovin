@@ -74,6 +74,32 @@ async function handler(
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
 
+  if (input.source === "url") {
+    const collision = await recipeService.findUrlImportCollision(
+      context.householdId,
+      input.content
+    );
+    if (collision) {
+      const recipe = collision.recipe;
+      return {
+        recipeId: recipe.id,
+        created: false,
+        duplicate: true,
+        status: recipe.status,
+        title: recipe.title,
+        notes: recipe.notes ?? null,
+        servings: recipe.servings ?? undefined,
+        prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
+        cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
+        images: recipe.images,
+        confidence: 1,
+        reviewReasons: recipe.reviewReasons,
+        uncertainFields: recipe.uncertainFields,
+        message: `This recipe was already imported as "${recipe.title}" (${recipe.id}). Open that recipe instead of importing again.`,
+      };
+    }
+  }
+
   let draft;
   if (input.source === "url") {
     const importer = createUrlImporter();

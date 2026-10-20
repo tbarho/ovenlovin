@@ -83,3 +83,12 @@ export function sourceUrlFromDraft(draft: RecipeImportDraft): string | null {
     ) ?? null
   );
 }
+
+/** Replay a completed Idempotency-Key before treating the same URL or photo as a duplicate. */
+export function preferCompletedImport<T>(lookups: {
+  idempotency?: T | null;
+  duplicate?: { recipe: T; match: ImportDuplicateMatch } | null;
+}): { recipe: T; match: ImportDuplicateMatch } | null {
+  if (lookups.idempotency) return { recipe: lookups.idempotency, match: "idempotency" };
+  return lookups.duplicate ?? null;
+}
