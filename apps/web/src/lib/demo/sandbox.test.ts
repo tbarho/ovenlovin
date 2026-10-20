@@ -5,6 +5,7 @@ import {
   DEMO_SANDBOX_IMPORT_TABLES,
   DEMO_SANDBOX_INVITE_TABLES,
   DEMO_SANDBOX_RECIPE_CHILD_TABLES,
+  DEMO_SANDBOX_USER_REF_TABLES,
   demoCookieOptions,
   isDemoCookieName,
   isSandboxExpired,
@@ -44,6 +45,7 @@ describe("demo sandbox cookie", () => {
     ]);
     expect(DEMO_SANDBOX_IMPORT_TABLES).toEqual(["import_dedupe"]);
     expect(DEMO_SANDBOX_INVITE_TABLES).toEqual(["household_invite"]);
+    expect(DEMO_SANDBOX_USER_REF_TABLES).toEqual(["membership", "person", "person_rule", "share"]);
   });
 
   it("wipes a sandbox that has leftover invite and import rows before the household", async () => {
@@ -79,6 +81,11 @@ describe("demo sandbox cookie", () => {
         }
         return thenable([]);
       },
+      update: () => ({
+        set: () => ({
+          where: async () => undefined,
+        }),
+      }),
       delete: (table: unknown) => ({
         where: async () => {
           const name = getTableName(table as never);
@@ -101,6 +108,130 @@ describe("demo sandbox cookie", () => {
     expect(deleted.indexOf("import_dedupe")).toBeLessThan(deleted.indexOf("recipe"));
     expect(deleted.indexOf("import_dedupe")).toBeLessThan(deleted.indexOf("household"));
     expect(deleted.indexOf("household_invite")).toBeLessThan(deleted.indexOf("household"));
+  });
+
+  it("lets an invitee reset after joining another kitchen without wiping that kitchen", async () => {
+    const deleted: string[] = [];
+    const leftoverUser = new Set(["membership", "person", "share"]);
+    let householdGone = false;
+    const thenable = <T>(value: T) => ({
+      from() {
+        return this;
+      },
+      innerJoin() {
+        return this;
+      },
+      where() {
+        return this;
+      },
+      limit() {
+        return Promise.resolve(value);
+      },
+      then(onFulfilled: (value: T) => unknown, onRejected?: (reason: unknown) => unknown) {
+        return Promise.resolve(value).then(onFulfilled, onRejected);
+      },
+    });
+    const db = {
+      select: (shape?: Record<string, unknown>) => {
+        if (shape && "householdId" in shape && "userId" in shape) {
+          return thenable([
+            {
+              id: "sandbox-b",
+              householdId: "household-b",
+              userId: "user-b",
+            },
+          ]);
+        }
+        return thenable([]);
+      },
+      update: (table: unknown) => ({
+        set: () => ({
+          where: async () => {
+            leftoverUser.delete(getTableName(table as never));
+          },
+        }),
+      }),
+      delete: (table: unknown) => ({
+        where: async () => {
+          const name = getTableName(table as never);
+          if (name === "household") {
+            householdGone = true;
+          }
+          if (name === "membership" && householdGone) {
+            leftoverUser.delete("membership");
+          }
+          if (name === "share" && householdGone) {
+            leftoverUser.delete("share");
+          }
+          if (name === "user" && leftoverUser.size > 0) {
+            throw new Error(`FK ${[...leftoverUser].join(",")} still references user`);
+          }
+          deleted.push(name);
+        },
+      }),
+    } as unknown as DbClient;
+
+    await wipeExpiredDemoSandboxes(db, new Date("2026-10-19T00:00:00.000Z"));
+    expect(leftoverUser.size).toBe(0);
+    expect(deleted).toContain("user");
+    expect(deleted.filter((name) => name === "household")).toHaveLength(1);
+    expect(deleted.indexOf("household")).toBeLessThan(deleted.lastIndexOf("membership"));
+    expect(deleted.lastIndexOf("membership")).toBeLessThan(deleted.indexOf("user"));
+  });
+
+  it("skips deleting the sandbox user when another kitchen still has a rule they set", async () => {
+    const deleted: string[] = [];
+    let householdGone = false;
+    const thenable = <T>(value: T) => ({
+      from() {
+        return this;
+      },
+      innerJoin() {
+        return this;
+      },
+      where() {
+        return this;
+      },
+      limit() {
+        return Promise.resolve(value);
+      },
+      then(onFulfilled: (value: T) => unknown, onRejected?: (reason: unknown) => unknown) {
+        return Promise.resolve(value).then(onFulfilled, onRejected);
+      },
+    });
+    const db = {
+      select: (shape?: Record<string, unknown>) => {
+        if (shape && "householdId" in shape && "userId" in shape) {
+          return thenable([
+            {
+              id: "sandbox-b",
+              householdId: "household-b",
+              userId: "user-b",
+            },
+          ]);
+        }
+        if (householdGone && shape && "id" in shape) {
+          return thenable([{ id: "rule-1" }]);
+        }
+        return thenable([]);
+      },
+      update: () => ({
+        set: () => ({
+          where: async () => undefined,
+        }),
+      }),
+      delete: (table: unknown) => ({
+        where: async () => {
+          const name = getTableName(table as never);
+          if (name === "household") householdGone = true;
+          deleted.push(name);
+        },
+      }),
+    } as unknown as DbClient;
+
+    await wipeExpiredDemoSandboxes(db, new Date("2026-10-19T00:00:00.000Z"));
+    expect(deleted).not.toContain("user");
+    expect(deleted.filter((name) => name === "household")).toHaveLength(1);
   });
 
   it("reseeds inside a transaction so a failed seed leaves the old kitchen", async () => {

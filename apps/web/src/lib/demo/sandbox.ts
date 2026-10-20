@@ -241,6 +241,14 @@ export const DEMO_SANDBOX_IMPORT_TABLES = ["import_dedupe"] as const;
 /** household_invite FKs are ON DELETE no action - wipe these before the household. */
 export const DEMO_SANDBOX_INVITE_TABLES = ["household_invite"] as const;
 
+/** User-row FKs that can live in another kitchen after an invitee joins. */
+export const DEMO_SANDBOX_USER_REF_TABLES = [
+  "membership",
+  "person",
+  "person_rule",
+  "share",
+] as const;
+
 async function wipeSandboxHousehold(
   db: DbClient,
   row: { id: string; householdId: string; userId: string }
@@ -315,5 +323,16 @@ async function wipeSandboxHousehold(
   await db.delete(householdInvite).where(eq(householdInvite.householdId, householdId));
   await db.delete(membership).where(eq(membership.householdId, householdId));
   await db.delete(household).where(eq(household.id, householdId));
-  await db.delete(user).where(eq(user.id, row.userId));
+
+  await db.delete(membership).where(eq(membership.userId, row.userId));
+  await db.update(person).set({ userId: null }).where(eq(person.userId, row.userId));
+  await db.delete(share).where(eq(share.granteeUserId, row.userId));
+  const leftoverRules = await db
+    .select({ id: personRule.id })
+    .from(personRule)
+    .where(eq(personRule.setBy, row.userId))
+    .limit(1);
+  if (leftoverRules.length === 0) {
+    await db.delete(user).where(eq(user.id, row.userId));
+  }
 }
