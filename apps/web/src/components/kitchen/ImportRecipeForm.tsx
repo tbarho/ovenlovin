@@ -291,7 +291,6 @@ export function ImportRecipeForm({
         JSON.stringify({ title: recipe.title, servings: recipe.servings ?? 4 })
       );
       router.push(`/recipes/${recipe.id}`);
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
