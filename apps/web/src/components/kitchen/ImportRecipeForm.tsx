@@ -24,8 +24,14 @@ import {
   type PhotoImportJobSnapshot,
 } from "@/lib/photo-import-job";
 import { isImageFile } from "@/lib/photo-import-review";
-import { PhotoImportDialog } from "./PhotoImportDialog";
+import { ImportReviewForm, PhotoImportDialog } from "./PhotoImportDialog";
 import { ImportFromDevice } from "./ImportFromDevice";
+import { BottomSheet } from "./BottomSheet";
+import {
+  recipeCreateBodyFromReview,
+  reviewDraftFromImportPreview,
+  type PhotoReviewDraft,
+} from "@/lib/photo-import-review";
 
 function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -165,9 +171,13 @@ export function ImportRecipeForm() {
     notice: string;
   } | null>(null);
   const [retryable, setRetryable] = useState(false);
+  const [review, setReview] = useState<PhotoReviewDraft | null>(null);
+  const [reviewPreview, setReviewPreview] = useState<unknown>(null);
   const importKeyRef = useRef("");
   useEffect(() => {
     importKeyRef.current = "";
+    setReview(null);
+    setReviewPreview(null);
   }, [source, url, paste]);
   const fieldValue = source === "paste" ? paste : url;
   const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(fieldValue.trim());
@@ -222,14 +232,50 @@ export function ImportRecipeForm() {
     setRetryable(false);
     setExistingRecipeUrl(null);
     try {
+      const preview = await api<Parameters<typeof reviewDraftFromImportPreview>[0]>(
+        "/api/v1/recipes/import",
+        {
+          method: "POST",
+          keepalive: false,
+          body: JSON.stringify({ source, content: fieldValue }),
+        }
+      );
+      setReviewPreview(preview);
+      setReview(reviewDraftFromImportPreview(preview));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not import recipe");
+      setExistingRecipeUrl(apiErrorRecipeUrl(err));
+      setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveReview(event: React.FormEvent) {
+    event.preventDefault();
+    if (!review) return;
+    setPending(true);
+    setError(null);
+    setExistingRecipeUrl(null);
+    try {
       if (!importKeyRef.current) importKeyRef.current = crypto.randomUUID();
       const recipe = await api<RecipeDetails>("/api/v1/recipes/import", {
         method: "POST",
         keepalive: false,
         headers: { "Idempotency-Key": importKeyRef.current },
-        body: JSON.stringify({ source, content: fieldValue, save: true }),
+        body: JSON.stringify({
+          source,
+          content: fieldValue,
+          save: true,
+          draft: {
+            ...(typeof reviewPreview === "object" && reviewPreview ? reviewPreview : {}),
+            ...recipeCreateBodyFromReview(review),
+          },
+        }),
       });
       importKeyRef.current = "";
+      setReview(null);
+      setReviewPreview(null);
       setImported({
         id: recipe.id,
         notice: importGuessedNotice(recipe.title, recipe.servings ?? null),
@@ -241,7 +287,7 @@ export function ImportRecipeForm() {
       router.push(`/recipes/${recipe.id}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not import recipe");
+      setError(err instanceof Error ? err.message : "Could not save recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
       setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
     } finally {
@@ -405,6 +451,30 @@ export function ImportRecipeForm() {
           </p>
         ) : null}
       </form>
+      <BottomSheet
+        open={Boolean(review)}
+        title="Review import"
+        onClose={() => {
+          setReview(null);
+          setReviewPreview(null);
+        }}
+      >
+        {review ? (
+          <ImportReviewForm
+            draft={review}
+            heroSrc={null}
+            pending={pending}
+            error={error}
+            existingRecipeUrl={existingRecipeUrl}
+            possibleDuplicate={null}
+            savedRecipeId={imported?.id ?? null}
+            showPhotoChrome={false}
+            onOpenSaved={() => imported && router.push(`/recipes/${imported.id}`)}
+            onChange={setReview}
+            onSave={saveReview}
+          />
+        ) : null}
+      </BottomSheet>
       <PhotoImportDialog open={photoOpen} onClose={closePhoto} onTypeOrPaste={typeOrPaste} />
       <ImportFromDevice />
     </>

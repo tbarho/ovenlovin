@@ -383,40 +383,80 @@ describe("ImportRecipeForm url and paste validation", () => {
       ...crypto,
       randomUUID: () => `import-key-${++n}`,
     });
-    vi.mocked(api).mockRejectedValueOnce(new Error("Connection lost")).mockResolvedValueOnce({
-      id: "00000000-0000-4000-8000-000000000088",
+    const urlPreview = {
       title: "Cookies",
       servings: 4,
-    });
+      ingredients: [{ rawText: "flour" }],
+      steps: [{ text: "Mix." }],
+      source: {
+        type: "url",
+        importerName: "url-importer",
+        importerVersion: "0.1.0",
+        rawExtractionJson: {},
+      },
+    };
+    vi.mocked(api)
+      .mockResolvedValueOnce(urlPreview)
+      .mockRejectedValueOnce(new Error("Connection lost"))
+      .mockResolvedValueOnce(urlPreview)
+      .mockResolvedValueOnce({
+        id: "00000000-0000-4000-8000-000000000088",
+        title: "Cookies",
+        servings: 4,
+      });
     render(<ImportRecipeForm />);
     const field = screen.getByPlaceholderText(/example.com/i);
     await user.type(field, "https://www.budgetbytes.com/pasta");
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(await screen.findByText("Connection lost")).toBeVisible();
+    const firstDialog = await screen.findByRole("dialog");
+    await user.click(within(firstDialog).getByRole("button", { name: "Save recipe" }));
+    expect(await within(firstDialog).findByText("Connection lost")).toBeVisible();
     await user.clear(field);
     await user.type(field, "https://www.budgetbytes.com/cookies");
     await user.click(screen.getByRole("button", { name: "Import" }));
-    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    const secondDialog = await screen.findByRole("dialog");
+    await user.click(within(secondDialog).getByRole("button", { name: "Save recipe" }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(4));
     const keys = vi.mocked(api).mock.calls.map((call) => {
       const headers = call[1]?.headers as Record<string, string> | undefined;
       return headers?.["Idempotency-Key"];
     });
-    expect(keys[0]).toBe("import-key-1");
-    expect(keys[1]).toBe("import-key-2");
+    expect(keys[0]).toBeUndefined();
+    expect(keys[1]).toBe("import-key-1");
+    expect(keys[2]).toBeUndefined();
+    expect(keys[3]).toBe("import-key-2");
     vi.unstubAllGlobals();
   });
 
-  it("shows guessed servings after a paste import", async () => {
+  it("shows guessed servings after a paste import is reviewed and saved", async () => {
     const user = userEvent.setup();
-    vi.mocked(api).mockResolvedValue({
-      id: "00000000-0000-4000-8000-000000000099",
-      title: "Test Recipe 1",
-      servings: 4,
-    });
+    vi.mocked(api)
+      .mockResolvedValueOnce({
+        title: "Test Recipe 1",
+        servings: 4,
+        ingredients: [{ rawText: "pasta" }],
+        steps: [{ text: "Boil." }],
+        source: {
+          type: "paste",
+          importerName: "paste-importer",
+          importerVersion: "0.1.0",
+          rawExtractionJson: {},
+        },
+      })
+      .mockResolvedValueOnce({
+        id: "00000000-0000-4000-8000-000000000099",
+        title: "Test Recipe 1",
+        servings: 4,
+      });
     render(<ImportRecipeForm />);
     await user.click(screen.getByRole("tab", { name: "Paste" }));
     await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Test Recipe 1");
     await user.click(screen.getByRole("button", { name: "Import" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText("Title")).toHaveValue("Test Recipe 1");
+    await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(api).mock.calls[1]?.[1]?.body).toContain("save");
     expect(await screen.findByTestId("import-review")).toHaveTextContent(
       "Imported Test Recipe 1 · 4 servings (guessed)"
     );

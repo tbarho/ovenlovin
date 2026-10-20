@@ -3,6 +3,7 @@ import type { PhotoImportPreview } from "./photo-import";
 import {
   isUncertainReviewField,
   recipeCreateBodyFromReview,
+  reviewDraftFromImportPreview,
   reviewDraftFromPreview,
   uncertainFieldNote,
 } from "./photo-import-review";
@@ -38,6 +39,25 @@ const preview: PhotoImportPreview = {
 };
 
 describe("photo import review draft", () => {
+  it("maps a URL or paste preview onto the same review draft", () => {
+    const draft = reviewDraftFromImportPreview({
+      title: "Weeknight Tomato Pasta",
+      servings: 4,
+      ingredients: [{ rawText: "12 oz pasta" }],
+      steps: [{ text: "Boil pasta." }],
+      source: {
+        type: "paste",
+        importerName: "paste-importer",
+        importerVersion: "0.1.0",
+        rawExtractionJson: {},
+      },
+    });
+    expect(draft.title).toBe("Weeknight Tomato Pasta");
+    expect(draft.ingredientsText).toBe("12 oz pasta");
+    expect(draft.stepsText).toBe("Boil pasta.");
+    expect(recipeCreateBodyFromReview(draft).source.type).toBe("paste");
+  });
+
   it("maps preview fields and keeps only the listed image urls for save", () => {
     const draft = reviewDraftFromPreview(preview);
     expect(draft.ingredientsText).toContain("parmesan");
