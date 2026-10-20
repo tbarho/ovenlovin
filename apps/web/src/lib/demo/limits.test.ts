@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decideDemoWrite, nextCountersAfterSuccessfulImport } from "./limits";
+import {
+  decideDemoWrite,
+  demoSandboxImportsSpent,
+  nextCountersAfterSuccessfulImport,
+} from "./limits";
 
 const counters = {
   importCount: 0,
@@ -113,5 +117,11 @@ describe("decideDemoWrite", () => {
     });
     expect(decision.ok).toBe(true);
     if (decision.ok) expect(decision.next.writesInWindow).toBe(1);
+  });
+
+  it("treats a used-up import quota as spent so enter can mint a fresh sandbox", () => {
+    expect(demoSandboxImportsSpent(5)).toBe(true);
+    expect(demoSandboxImportsSpent(0)).toBe(false);
+    expect(demoSandboxImportsSpent(4)).toBe(false);
   });
 });

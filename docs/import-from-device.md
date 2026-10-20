@@ -23,9 +23,9 @@ If `NEXT_PUBLIC_IOS_SHORTCUT_URL` is set, Import shows **Add the OvenLovin Short
 
 The endpoint needs the page HTML or JSON-LD.
 
-## Advanced (browser bookmark)
+## Bookmarklet for desktop browsers
 
-Under Import, open **Advanced**. Drag **Save to OvenLovin** onto your bookmarks bar, or tap **Copy code** and paste it as a bookmark.
+Under Import, open **Bookmarklet for desktop browsers**. Drag **Save to OvenLovin** onto your bookmarks bar, or tap **Copy code** and paste it as a bookmark.
 
 1. Stay signed in to OvenLovin in the same browser.
 2. Open the recipe page.

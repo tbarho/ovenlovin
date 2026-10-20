@@ -23,6 +23,10 @@ export function remainingImportsFromCount(importCount: number): number {
   return Math.max(0, DEMO_IMPORT_LIMIT - importCount);
 }
 
+export function demoSandboxImportsSpent(importCount: number): boolean {
+  return remainingImportsFromCount(importCount) <= 0;
+}
+
 /** Demo write quota: POST/PUT/PATCH only. Deletes stay free so testers can clean up. */
 export function isMutatingMethod(method: string): boolean {
   return ["POST", "PUT", "PATCH"].includes(method.toUpperCase());

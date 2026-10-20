@@ -42,7 +42,7 @@ export function ImportFromDevice({
         ) : null}
       </details>
       <details className="import-disclose">
-        <summary>Advanced</summary>
+        <summary>Bookmarklet for desktop browsers</summary>
         <ImportBookmarklet origin={host} />
       </details>
     </div>

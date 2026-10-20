@@ -249,14 +249,24 @@ export async function extractPhotoPreview(
     abortSignal?: AbortSignal;
   }
 ): Promise<PhotoImportPreview> {
-  const storedImages = await persistMainPhoto(images, options.householdId, options.put);
   const extracted = await runPhotoImport(
     { images, isHandwritten: options.isHandwritten },
     {
       abortSignal: options.abortSignal,
     }
   );
-  extracted.draft.images = storedImages;
+  const hero = recipeHeroFromPhotoDraft(
+    extracted.draft.images,
+    images.map((image) => image.blob)
+  );
+  extracted.draft.images =
+    hero.length > 0
+      ? await persistMainPhoto(
+          hero.map((blob) => ({ blob })),
+          options.householdId,
+          options.put
+        )
+      : [];
   const first = images[0]?.blob;
   if (first) {
     extracted.draft.source = {
@@ -268,5 +278,14 @@ export async function extractPhotoPreview(
       },
     };
   }
-  return previewFromDraft(extracted.draft, storedImages);
+  return previewFromDraft(extracted.draft, extracted.draft.images);
+}
+
+/** Photographed cards are source material, not the recipe hero. */
+export function recipeHeroFromPhotoDraft(
+  extractedImages: string[] | undefined,
+  photographed: string[] = []
+): string[] {
+  const cards = new Set(photographed);
+  return keepMainRecipeImages((extractedImages ?? []).filter((url) => !cards.has(url)));
 }

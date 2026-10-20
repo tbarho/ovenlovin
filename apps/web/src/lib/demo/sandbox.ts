@@ -42,6 +42,7 @@ import {
   DEMO_TTL_SECONDS,
   distinctDemoKitchenName,
 } from "./fixture";
+import { demoSandboxImportsSpent } from "./limits";
 import { seedDemoKitchen } from "./seed";
 
 export type DemoSandboxRecord = {
@@ -51,6 +52,7 @@ export type DemoSandboxRecord = {
   clerkUserId: string;
   apiKeyPlaintext: string;
   expiresAt: Date;
+  importCount: number;
 };
 
 export function demoCookieOptions(secure: boolean) {
@@ -79,6 +81,7 @@ async function loadSandbox(db: DbClient, id: string): Promise<DemoSandboxRecord 
       userId: demoSandbox.userId,
       apiKeyPlaintext: demoSandbox.apiKeyPlaintext,
       expiresAt: demoSandbox.expiresAt,
+      importCount: demoSandbox.importCount,
       clerkUserId: user.clerkUserId,
       deletedAt: demoSandbox.deletedAt,
     })
@@ -96,6 +99,7 @@ async function loadSandbox(db: DbClient, id: string): Promise<DemoSandboxRecord 
     clerkUserId: row.clerkUserId,
     apiKeyPlaintext: row.apiKeyPlaintext,
     expiresAt: row.expiresAt,
+    importCount: row.importCount,
   };
 }
 
@@ -112,7 +116,7 @@ export async function getOrCreateDemoSandbox(
 ): Promise<DemoSandboxRecord> {
   if (cookieId) {
     const existing = await findDemoSandboxById(cookieId, db);
-    if (existing) return existing;
+    if (existing && !demoSandboxImportsSpent(existing.importCount)) return existing;
   }
 
   const id = randomUUID();
@@ -140,6 +144,7 @@ export async function getOrCreateDemoSandbox(
     clerkUserId: `user_demo_${id}`,
     apiKeyPlaintext: seeded.apiKeyPlaintext,
     expiresAt,
+    importCount: 0,
   };
 }
 
@@ -163,6 +168,7 @@ export async function findDemoSandboxByHousehold(
       userId: demoSandbox.userId,
       apiKeyPlaintext: demoSandbox.apiKeyPlaintext,
       expiresAt: demoSandbox.expiresAt,
+      importCount: demoSandbox.importCount,
       clerkUserId: user.clerkUserId,
       deletedAt: demoSandbox.deletedAt,
     })
@@ -178,6 +184,7 @@ export async function findDemoSandboxByHousehold(
     clerkUserId: row.clerkUserId,
     apiKeyPlaintext: row.apiKeyPlaintext,
     expiresAt: row.expiresAt,
+    importCount: row.importCount,
   };
 }
 
