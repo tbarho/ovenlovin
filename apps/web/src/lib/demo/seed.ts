@@ -28,7 +28,7 @@ export type DemoKitchenSeed = {
 
 export async function seedDemoKitchen(
   db: DbClient,
-  ids: { clerkUserId: string; householdSlug: string; email: string }
+  ids: { clerkUserId: string; householdSlug: string; email: string; householdName?: string }
 ): Promise<DemoKitchenSeed> {
   const households = new HouseholdService(db);
   const people = new PeopleService(db);
@@ -44,7 +44,7 @@ export async function seedDemoKitchen(
   });
 
   const household = await households.createHousehold({
-    name: DEMO_HOUSEHOLD_NAME,
+    name: ids.householdName ?? DEMO_HOUSEHOLD_NAME,
     slug: ids.householdSlug,
     clerkOrgId: null,
     createdBy: user.id,

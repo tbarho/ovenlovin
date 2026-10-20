@@ -22,7 +22,7 @@ const MODES = [
   },
 ];
 
-export function DefaultServingsSettings() {
+export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolean }) {
   const [settings, setSettings] = useState<HouseholdServingsSettings | null>(null);
   const [fixedCount, setFixedCount] = useState("8");
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function DefaultServingsSettings() {
       ) : null}
       {error ? <p className="muted">{error}</p> : null}
       {settings ? (
-        <fieldset className="default-servings-options" disabled={pending}>
+        <fieldset className="default-servings-options" disabled={pending || !canWrite}>
           <legend className="sr-only">Default servings</legend>
           {MODES.map((option) => (
             <label key={option.value} className="default-servings-option">

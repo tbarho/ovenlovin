@@ -1279,15 +1279,22 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "get",
     path: "/households/mine",
     tags: ["households"],
-    summary: "List kitchens the signed-in user belongs to",
-    responses: { 200: { description: "Kitchens" } },
+    summary:
+      "List kitchens. Signed-in users see every kitchen they belong to. An API key sees only its own kitchen, read-only, with active: true.",
+    responses: {
+      200: {
+        description:
+          "Kitchens with an `active` flag. `activeHouseholdId` is the current kitchen. API keys cannot switch.",
+      },
+    },
   });
 
   registry.registerPath({
     method: "post",
     path: "/households/select",
     tags: ["households"],
-    summary: "Switch the active kitchen for this browser session",
+    summary:
+      "Switch the active kitchen for this browser session. Signed-in users only; API keys are bound to one kitchen.",
     request: {
       body: {
         content: {
@@ -1407,8 +1414,15 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "post",
     path: "/invites/{token}/accept",
     tags: ["households"],
-    summary: "Accept a kitchen invite for the signed-in user",
+    summary:
+      "Accept a kitchen invite for the signed-in user. API keys cannot join another kitchen; the error names the /invite/{token} link a person must open.",
     request: { params: z.object({ token: z.string() }) },
-    responses: { 200: { description: "Joined kitchen" } },
+    responses: {
+      200: { description: "Joined kitchen" },
+      401: {
+        description:
+          "Signed-in user required. An API key cannot accept; the problem detail includes the invite link.",
+      },
+    },
   });
 }

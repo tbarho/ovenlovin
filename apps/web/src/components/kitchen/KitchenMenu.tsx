@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { isKitchenNavActive, kitchenNavLinks } from "@/lib/kitchen-nav";
 import { KitchenSwitcher } from "@/components/settings/KitchenSwitcher";
@@ -12,8 +12,11 @@ export function KitchenMenu({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
   const dialogId = useId();
   const [open, setOpen] = useState(false);
+  const pathRef = useRef(pathname);
 
   useEffect(() => {
+    if (pathRef.current === pathname) return;
+    pathRef.current = pathname;
     setOpen(false);
   }, [pathname]);
 

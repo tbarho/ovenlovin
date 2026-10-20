@@ -99,6 +99,9 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/meal-plans/{id}/shopping-list"]?.get)).toContain(
       "timeZone"
     );
+    expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/API key/);
+    expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/active/);
+    expect(JSON.stringify(spec.paths?.["/invites/{token}/accept"]?.post)).toMatch(/signed-in/);
   });
 
   it("documents meal-plan POST and PATCH bodies with entries and no silent extras", () => {

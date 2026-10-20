@@ -43,7 +43,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "API key or Clerk JWT",
-        "description": "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT."
+        "description": "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to."
       }
     },
     "schemas": {
@@ -521,6 +521,31 @@
           }
         },
         "required": ["id", "date", "mealSlot", "attendees"]
+      },
+      "HouseholdServingsSettings": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["family", "fixed", "recipe"]
+          },
+          "servings": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 24
+          },
+          "familySize": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "defaultCookFor": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24
+          }
+        },
+        "required": ["mode", "servings", "familySize", "defaultCookFor"]
       },
       "HouseholdSchedule": {
         "type": "object",
@@ -1183,7 +1208,7 @@
     "/recipes/import/page": {
       "post": {
         "tags": ["recipes"],
-        "summary": "Import a recipe from HTML or JSON-LD captured on the user's device (bookmarklet or iOS Shortcut)",
+        "summary": "Import a recipe from HTML or JSON-LD captured on the user's device (Safari shortcut or browser bookmark)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2552,6 +2577,63 @@
         }
       }
     },
+    "/households/settings": {
+      "get": {
+        "tags": ["households"],
+        "summary": "Get kitchen Default servings",
+        "description": "family matches max(recipe yield, People count). fixed uses servings. recipe keeps the card yield.",
+        "responses": {
+          "200": {
+            "description": "Default servings setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdServingsSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["households"],
+        "summary": "Update kitchen Default servings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["family", "fixed", "recipe"]
+                  },
+                  "servings": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 24
+                  }
+                },
+                "required": ["mode"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated Default servings setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdServingsSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/households/schedule": {
       "get": {
         "tags": ["households"],
@@ -2691,10 +2773,10 @@
     "/households/mine": {
       "get": {
         "tags": ["households"],
-        "summary": "List kitchens the signed-in user belongs to",
+        "summary": "List kitchens. Signed-in users see every kitchen they belong to. An API key sees only its own kitchen, read-only, with active: true.",
         "responses": {
           "200": {
-            "description": "Kitchens"
+            "description": "Kitchens with an `active` flag. `activeHouseholdId` is the current kitchen. API keys cannot switch."
           }
         }
       }
@@ -2702,7 +2784,7 @@
     "/households/select": {
       "post": {
         "tags": ["households"],
-        "summary": "Switch the active kitchen for this browser session",
+        "summary": "Switch the active kitchen for this browser session. Signed-in users only; API keys are bound to one kitchen.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2930,7 +3012,7 @@
     "/invites/{token}/accept": {
       "post": {
         "tags": ["households"],
-        "summary": "Accept a kitchen invite for the signed-in user",
+        "summary": "Accept a kitchen invite for the signed-in user. API keys cannot join another kitchen; the error names the /invite/{token} link a person must open.",
         "parameters": [
           {
             "schema": {
@@ -2944,6 +3026,9 @@
         "responses": {
           "200": {
             "description": "Joined kitchen"
+          },
+          "401": {
+            "description": "Signed-in user required. An API key cannot accept; the problem detail includes the invite link."
           }
         }
       }

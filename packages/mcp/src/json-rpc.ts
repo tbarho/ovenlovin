@@ -10,6 +10,19 @@ export const JsonRpcErrorCode = {
   forbidden: -32003,
 } as const;
 
+/** User/input mistakes (missing fields, unknown allergen, duplicate photo). */
+export class McpInvalidParamsError extends Error {
+  readonly rpcCode = JsonRpcErrorCode.invalidParams;
+
+  constructor(
+    message: string,
+    readonly data?: unknown
+  ) {
+    super(message);
+    this.name = "McpInvalidParamsError";
+  }
+}
+
 export type JsonRpcId = string | number | null;
 
 export type JsonRpcRequest = {
@@ -61,4 +74,15 @@ export function jsonRpcError(
 export function requestId(message: JsonRpcRequest | undefined): JsonRpcId {
   if (!message || message.id === undefined) return null;
   return message.id;
+}
+
+export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure {
+  if (error && typeof error === "object" && "error" in error && "jsonrpc" in error) {
+    return error as JsonRpcFailure;
+  }
+  if (error instanceof McpInvalidParamsError) {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, error.data);
+  }
+  const messageText = error instanceof Error ? error.message : "Internal error";
+  return jsonRpcError(id, JsonRpcErrorCode.internal, messageText);
 }

@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+} from "@/lib/api/middleware";
 import { PlanService, planPatchesToWrites, updateMealPlanBodySchema } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
 
     const { id } = await params;
     const body = updateMealPlanBodySchema.parse(await request.json());
@@ -84,7 +88,7 @@ export async function DELETE(
 ) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
 
     const { id } = await params;
 

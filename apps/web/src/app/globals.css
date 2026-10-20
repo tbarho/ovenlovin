@@ -1930,6 +1930,15 @@ select {
   background: #fff;
 }
 
+.kitchen-name-form,
+.invite-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.kitchen-name-form label,
 .kitchen-switcher label,
 .invite-create label {
   display: grid;
@@ -1938,6 +1947,7 @@ select {
   color: var(--muted);
 }
 
+.kitchen-name-form input,
 .kitchen-switcher select,
 .invite-create select,
 .invite-create input,
@@ -1950,15 +1960,19 @@ select {
   max-width: 100%;
 }
 
-.invite-create {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: end;
+.kitchen-name-form input {
+  min-width: min(100%, 16rem);
 }
 
+.kitchen-name-form .btn,
 .invite-create .btn {
   min-height: 44px;
+}
+
+.invite-created {
+  flex: 1 1 100%;
+  display: grid;
+  gap: 8px;
 }
 
 .member-list,
@@ -2911,6 +2925,17 @@ select {
     box-shadow: 0 0 0 1px #eaeaea;
   }
 
+  .kitchen-sidebar .kitchen-switcher {
+    margin-top: auto;
+    padding: 12px 8px 4px;
+  }
+
+  .kitchen-sidebar .kitchen-switcher select {
+    width: 100%;
+    max-width: none;
+    border-radius: 10px;
+  }
+
   .kitchen-sidebar .nav-user {
     margin-left: 0;
     padding: 16px 8px 4px;
@@ -3169,6 +3194,11 @@ select {
   font-size: 12.5px;
 }
 
+.week-pick[data-safety="warn"],
+.week-pick[data-safety="unknown"] {
+  border-color: #f0d9b5;
+}
+
 .week-pick[data-safety="block"] {
   border-color: #f3d2d2;
 }
@@ -3184,6 +3214,7 @@ select {
 
 .week-unsafe-toggle {
   width: 100%;
+  min-height: 44px;
   padding: 8px 0;
   border: 0;
   background: none;

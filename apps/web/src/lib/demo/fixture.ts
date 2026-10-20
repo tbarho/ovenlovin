@@ -1,6 +1,11 @@
 import type { RecipeImportDraft } from "@ovenlovin/core";
 
 export const DEMO_HOUSEHOLD_NAME = "Sample kitchen";
+
+export function distinctDemoKitchenName(uniqueId: string): string {
+  const compact = uniqueId.replace(/-/g, "").slice(-6);
+  return `${DEMO_HOUSEHOLD_NAME} ${compact}`;
+}
 export const DEMO_COOKIE_NAME = "ol_demo_sandbox";
 export const DEMO_TTL_MS = 24 * 60 * 60 * 1000;
 export const DEMO_TTL_SECONDS = 24 * 60 * 60;

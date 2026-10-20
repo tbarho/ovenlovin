@@ -101,6 +101,73 @@ describe("dispatchMcpRequest", () => {
     });
   });
 
+  it("returns invalid params when manage_people create omits displayName", async () => {
+    const response = await dispatchMcpRequest(
+      {
+        jsonrpc: "2.0",
+        id: 10,
+        method: "tools/call",
+        params: { name: "manage_people", arguments: { action: "create" } },
+      },
+      { householdId: "11111111-1111-4111-8111-111111111111", scopes: [] },
+      serverInfo
+    );
+    expect(response).toMatchObject({
+      jsonrpc: "2.0",
+      id: 10,
+      error: { code: JsonRpcErrorCode.invalidParams },
+    });
+    expect(response && "error" in response ? response.error.message : "").toMatch(/displayName/);
+    expect(response && "error" in response ? response.error.code : 0).not.toBe(
+      JsonRpcErrorCode.internal
+    );
+  });
+
+  it("returns invalid params when personId is missing", async () => {
+    const response = await dispatchMcpRequest(
+      {
+        jsonrpc: "2.0",
+        id: 12,
+        method: "tools/call",
+        params: {
+          name: "manage_person_rules",
+          arguments: { action: "list" },
+        },
+      },
+      { householdId: "11111111-1111-4111-8111-111111111111", scopes: [] },
+      serverInfo
+    );
+    expect(response && "error" in response ? response.error.code : 0).toBe(
+      JsonRpcErrorCode.invalidParams
+    );
+    expect(response && "error" in response ? response.error.message : "").toMatch(/^personId:/);
+  });
+
+  it("returns invalid params when a rule is missing target", async () => {
+    const response = await dispatchMcpRequest(
+      {
+        jsonrpc: "2.0",
+        id: 11,
+        method: "tools/call",
+        params: {
+          name: "manage_person_rules",
+          arguments: {
+            action: "add",
+            personId: "550e8400-e29b-41d4-a716-446655440000",
+            food: "peanut",
+            severity: "block",
+          },
+        },
+      },
+      { householdId: "11111111-1111-4111-8111-111111111111", scopes: [] },
+      serverInfo
+    );
+    expect(response).toMatchObject({
+      error: { code: JsonRpcErrorCode.invalidParams },
+    });
+    expect(response && "error" in response ? response.error.message : "").toMatch(/target/);
+  });
+
   it("does not use a stub household on tools/call", async () => {
     const response = await dispatchMcpRequest(
       {

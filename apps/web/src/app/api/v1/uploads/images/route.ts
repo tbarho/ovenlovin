@@ -4,7 +4,7 @@ import { copyRemoteImages } from "@ovenlovin/core";
 import { BadRequestError, ForbiddenError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 import { createVercelImagePut } from "@/lib/blob-store";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       throw new ForbiddenError("Image uploads are turned off in the public demo.");
     }
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const contentType = request.headers.get("content-type") ?? "";
 
     if (contentType.includes("application/json")) {

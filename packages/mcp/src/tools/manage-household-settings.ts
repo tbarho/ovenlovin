@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import {
   HouseholdService,
   PeopleService,
@@ -31,6 +32,7 @@ async function handler(
 ): Promise<HouseholdServingsSettings> {
   const db = createDbClient(process.env.DATABASE_URL!);
   if (input.action === "update") {
+    requireWriteRole(context);
     if (!input.mode) throw new Error("mode is required to update Default servings");
     const parsed = updateHouseholdServingsSettingsSchema.parse({
       mode: input.mode,

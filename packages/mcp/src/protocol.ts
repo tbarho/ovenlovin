@@ -7,6 +7,7 @@ import {
   type JsonRpcResponse,
   isJsonRpcNotification,
   jsonRpcError,
+  jsonRpcFromThrown,
   jsonRpcResult,
   requestId,
 } from "./json-rpc";
@@ -55,10 +56,14 @@ async function callTool(params: Record<string, unknown>, authContext: AuthContex
 
   const parsed = tool.inputSchema.safeParse(args);
   if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const path = (issue?.path ?? []).map(String).join(".");
     throw jsonRpcError(
       id,
       JsonRpcErrorCode.invalidParams,
-      "Invalid tool arguments",
+      path
+        ? `${path}: ${issue?.message ?? "Invalid tool arguments"}`
+        : (issue?.message ?? "Invalid tool arguments"),
       parsed.error.issues
     );
   }
@@ -130,11 +135,7 @@ export async function dispatchMcpRequest(
         );
     }
   } catch (error) {
-    if (error && typeof error === "object" && "error" in error && "jsonrpc" in error) {
-      return error as JsonRpcResponse;
-    }
-    const messageText = error instanceof Error ? error.message : "Internal error";
-    return jsonRpcError(id, JsonRpcErrorCode.internal, messageText);
+    return jsonRpcFromThrown(id, error);
   }
 }
 

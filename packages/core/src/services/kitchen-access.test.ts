@@ -1,15 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { Membership, MembershipRole } from "../schemas/households";
 import {
+  API_KEY_CREATOR_NOT_A_MEMBER,
   HouseholdAccessError,
+  apiKeyMembershipRole,
   assertCanManageInvites,
   assertCanManageMembers,
   assertInviteAcceptable,
   assertInviteableRole,
   canManageInvites,
   canManageMembers,
+  canRenameKitchen,
+  canWriteKitchen,
+  assertCanRenameKitchen,
   defaultInviteExpiry,
   invitePath,
+  inviteNeedsSignedInUserMessage,
+  API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE,
   inviteStatus,
   isInviteToken,
   isSoleOwner,
@@ -45,6 +52,21 @@ describe("kitchen access policy", () => {
     expect(() => assertCanManageMembers("admin")).toThrow(/Owner role/);
   });
 
+  it("lets owner, admin, and member write, but not viewer", () => {
+    expect(canWriteKitchen("owner")).toBe(true);
+    expect(canWriteKitchen("admin")).toBe(true);
+    expect(canWriteKitchen("member")).toBe(true);
+    expect(canWriteKitchen("viewer")).toBe(false);
+    expect(canWriteKitchen(undefined)).toBe(false);
+  });
+
+  it("lets only the owner rename a kitchen", () => {
+    expect(canRenameKitchen("owner")).toBe(true);
+    expect(canRenameKitchen("admin")).toBe(false);
+    expect(canRenameKitchen("member")).toBe(false);
+    expect(() => assertCanRenameKitchen("admin")).toThrow(/rename this kitchen/);
+  });
+
   it("rejects inviting someone as owner", () => {
     expect(() => assertInviteableRole("owner")).toThrow(/Owner cannot be granted/);
     expect(() => assertInviteableRole("member")).not.toThrow();
@@ -72,6 +94,22 @@ describe("kitchen access policy", () => {
         selectedHouseholdId: "hhhhhhh1-1111-4111-8111-111111111111",
       })
     ).toBe("hhhhhhh1-1111-4111-8111-111111111111");
+  });
+
+  it("uses the key creator's role in this kitchen, not another household", () => {
+    const kitchenId = "22222222-2222-4222-8222-222222222222";
+    expect(
+      apiKeyMembershipRole(
+        [
+          { householdId: "55555555-5555-4555-8555-555555555555", role: "owner" },
+          { householdId: kitchenId, role: "admin" },
+        ],
+        kitchenId
+      )
+    ).toBe("admin");
+    expect(apiKeyMembershipRole([], kitchenId)).toBeUndefined();
+    expect(API_KEY_CREATOR_NOT_A_MEMBER).toMatch(/no longer a member of this kitchen/);
+    expect(API_KEY_CREATOR_NOT_A_MEMBER).not.toMatch(/[\u2013\u2014]/);
   });
 
   it("selects a preferred kitchen when the user belongs to it", () => {
@@ -131,5 +169,14 @@ describe("kitchen access policy", () => {
     expect(isInviteToken(token)).toBe(true);
     expect(isInviteToken("not-an-invite")).toBe(false);
     expect(invitePath(token)).toBe(`/invite/${token}`);
+  });
+
+  it("tells an API key to have a signed-in person open the invite link", () => {
+    const token = "olinv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const message = inviteNeedsSignedInUserMessage("https://kitchen.example", token, true);
+    expect(message).toContain(`https://kitchen.example/invite/${token}`);
+    expect(message).toMatch(/signed-in person must open/i);
+    expect(message).not.toBe("User authentication required");
+    expect(API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE).toMatch(/\/api\/v1\/households\/mine/);
   });
 });
