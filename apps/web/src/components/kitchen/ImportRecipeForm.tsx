@@ -144,7 +144,13 @@ function PhotoPick({
   );
 }
 
-export function ImportRecipeForm() {
+export function ImportRecipeForm({
+  remainingImports,
+  importLimit,
+}: {
+  remainingImports?: number;
+  importLimit?: number;
+} = {}) {
   const router = useRouter();
   const [source, setSource] = useState<"url" | "paste" | "photo">("url");
   const [url, setUrl] = useState("");
@@ -254,6 +260,11 @@ export function ImportRecipeForm() {
       <form className="form-card import-card" onSubmit={onSubmit}>
         <div className="import-toolbar">
           <h2>Import a recipe</h2>
+          {remainingImports != null && importLimit != null ? (
+            <p className="muted" data-testid="import-quota">
+              {remainingImports} of {importLimit} left
+            </p>
+          ) : null}
           <div className="tabs import-tabs" role="tablist">
             <button
               type="button"

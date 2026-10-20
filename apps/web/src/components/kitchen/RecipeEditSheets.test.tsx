@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/browser-api";
 import { testCookbook, testRecipeDetails } from "@/test/fixtures";
 import { RecipeDetail } from "./RecipeDetail";
 
@@ -40,5 +41,22 @@ describe("dirty recipe edit sheets", () => {
     );
     expect(within(dialog).getByRole("button", { name: "Remove photo" })).toBeVisible();
     expect(within(dialog).getByText(/JPEG, PNG, or WebP/i)).toBeVisible();
+  });
+
+  it("shows Saved after a title or servings save", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValueOnce({});
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Parent A pasta", servings: 4 })}
+        cookbooks={[testCookbook()]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "Edit details" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit details" });
+    await user.clear(within(dialog).getByLabelText("Title"));
+    await user.type(within(dialog).getByLabelText("Title"), "Parent A noodles");
+    await user.click(within(dialog).getByRole("button", { name: "Save details" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Saved");
   });
 });

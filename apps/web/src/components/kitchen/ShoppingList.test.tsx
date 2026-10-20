@@ -65,6 +65,27 @@ describe("ShoppingList", () => {
     expect(screen.getAllByText("Contains dairy, so check with Parent A first")).toHaveLength(1);
   });
 
+  it("names the week cook-for on the list", () => {
+    render(
+      <ShoppingList
+        scaledFor={5}
+        scaledForMixed
+        items={[
+          {
+            key: "roast",
+            name: "chicken",
+            recipes: ["Sunday roast chicken"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByTestId("shop-scaled-for")).toHaveTextContent(
+      "For 5 people (some recipes at full yield)"
+    );
+  });
+
   it("shows friendly fractions instead of long decimals", () => {
     render(
       <ShoppingList

@@ -165,6 +165,22 @@ function storeIngredients(
   );
 }
 
+/** Same week can have leftover plans; show the one updated last. */
+export function pickPlanForWeek<T extends { id: string; weekStart: string; updatedAt: string }>(
+  plans: T[],
+  weekStart: string
+): T | null {
+  const matches = plans.filter((item) => item.weekStart === weekStart);
+  if (matches.length === 0) return null;
+  return (
+    [...matches].sort((a, b) => {
+      const updated = b.updatedAt.localeCompare(a.updatedAt);
+      if (updated !== 0) return updated;
+      return b.id.localeCompare(a.id);
+    })[0] ?? null
+  );
+}
+
 export async function loadWeekKitchen(
   householdId: string,
   weekStartIso?: string
@@ -177,7 +193,7 @@ export async function loadWeekKitchen(
 
   const requested = startOfWeekMonday(weekStartIso);
   const listed = await plans.listMealPlans(householdId, { pagination: { limit: 40 } });
-  const plan = listed.items.find((item) => item.weekStart === requested) ?? null;
+  const plan = pickPlanForWeek(listed.items, requested);
   const weekStart = requested;
 
   const householdPeople = await peopleService.listPeopleByHousehold(householdId, { limit: 40 });

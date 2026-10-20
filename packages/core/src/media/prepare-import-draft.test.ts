@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { importDedupeKeys, prepareImportDraft } from "./prepare-import-draft";
+import {
+  importDedupeKeys,
+  preferCompletedImport,
+  prepareImportDraft,
+} from "./prepare-import-draft";
 import type { RecipeImportDraft } from "../schemas/recipes";
 
 function draft(overrides: Partial<RecipeImportDraft> = {}): RecipeImportDraft {
@@ -65,5 +69,16 @@ describe("prepareImportDraft", () => {
       })
     );
     expect(importDedupeKeys(prepared)).toEqual([]);
+  });
+
+  it("replays a completed Idempotency-Key instead of a source_url duplicate", () => {
+    const replay = { id: "recipe-replay" };
+    const duplicate = { recipe: { id: "recipe-url" }, match: "source_url" as const };
+    expect(preferCompletedImport({ idempotency: replay, duplicate })).toEqual({
+      recipe: replay,
+      match: "idempotency",
+    });
+    expect(preferCompletedImport({ idempotency: null, duplicate })).toEqual(duplicate);
+    expect(preferCompletedImport({ idempotency: null, duplicate: null })).toBeNull();
   });
 });

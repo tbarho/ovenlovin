@@ -9,6 +9,12 @@ describe("updateHouseholdServingsSettingsSchema", () => {
     expect(
       updateHouseholdServingsSettingsSchema.safeParse({ mode: "fixed", servings: 8 }).success
     ).toBe(true);
+    expect(
+      updateHouseholdServingsSettingsSchema.safeParse({ mode: "fixed", servings: 48 }).success
+    ).toBe(true);
+    expect(
+      updateHouseholdServingsSettingsSchema.safeParse({ mode: "fixed", servings: 100 }).success
+    ).toBe(false);
   });
 });
 
