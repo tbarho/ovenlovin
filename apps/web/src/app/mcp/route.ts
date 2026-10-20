@@ -106,14 +106,14 @@ export async function POST(request: NextRequest) {
     if (error instanceof ForbiddenError) {
       return jsonRpcError(id, 403, -32003, error.detail ?? message);
     }
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      ((error as { code?: string }).code === "unauthorized" ||
-        (error as { code?: string }).code === "invalid_token")
-    ) {
-      return jsonRpcError(id, 401, -32001, message);
+    if (error && typeof error === "object" && "code" in error) {
+      const code = (error as { code?: string }).code;
+      if (code === "forbidden") {
+        return jsonRpcError(id, 403, -32003, message);
+      }
+      if (code === "unauthorized" || code === "invalid_token") {
+        return jsonRpcError(id, 401, -32001, message);
+      }
     }
     console.error("MCP request error:", error);
     return jsonRpcError(id, 500, -32603, authErrorMessage(error, "Internal error"));

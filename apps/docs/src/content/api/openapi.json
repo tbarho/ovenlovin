@@ -37,13 +37,13 @@
         "type": "apiKey",
         "in": "header",
         "name": "Authorization",
-        "description": "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings."
+        "description": "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected."
       },
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "API key or Clerk JWT",
-        "description": "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to."
+        "description": "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected."
       }
     },
     "schemas": {
