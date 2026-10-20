@@ -38,3 +38,18 @@ export function resolveExtractModelId(
   if (fromEnv) return fromEnv;
   return DEFAULT_EXTRACT_MODEL;
 }
+
+/** Gateway fallbacks when the primary model returns a fast 503. */
+export const IMPORT_GATEWAY_FALLBACK_MODELS = ["spacexai/grok-4.6", "openai/gpt-4o-mini"] as const;
+
+/** Default AI SDK retries are 2 (3 attempts). Stay inside the 60s / 55s photo budget. */
+export const IMPORT_GENERATE_MAX_RETRIES = 5;
+
+export function importGenerateOptions() {
+  return {
+    maxRetries: IMPORT_GENERATE_MAX_RETRIES,
+    providerOptions: {
+      gateway: { models: [...IMPORT_GATEWAY_FALLBACK_MODELS] },
+    },
+  };
+}

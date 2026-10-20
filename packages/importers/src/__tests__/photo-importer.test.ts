@@ -73,6 +73,10 @@ describe("Photo Importer", () => {
             }),
           ]),
           schema: expect.any(Object),
+          maxRetries: 5,
+          providerOptions: {
+            gateway: { models: ["spacexai/grok-4.6", "openai/gpt-4o-mini"] },
+          },
         })
       );
 

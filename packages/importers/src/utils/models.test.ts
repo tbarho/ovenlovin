@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_EXTRACT_MODEL,
   DEFAULT_VISION_MODEL,
+  IMPORT_GATEWAY_FALLBACK_MODELS,
+  IMPORT_GENERATE_MAX_RETRIES,
+  importGenerateOptions,
   resolveExtractModelId,
   resolveVisionModelId,
 } from "./models";
@@ -47,5 +50,18 @@ describe("resolveExtractModelId", () => {
     expect(
       resolveExtractModelId("openai/gpt-4o-mini", { RK_MODEL_EXTRACT: "google/gemini-2.5-flash" })
     ).toBe("openai/gpt-4o-mini");
+  });
+});
+
+describe("importGenerateOptions", () => {
+  it("retries past a short 503 burst and falls back to grok-4.6 then gpt-4o-mini", () => {
+    expect(IMPORT_GENERATE_MAX_RETRIES).toBeGreaterThan(2);
+    expect(importGenerateOptions()).toEqual({
+      maxRetries: IMPORT_GENERATE_MAX_RETRIES,
+      providerOptions: {
+        gateway: { models: ["spacexai/grok-4.6", "openai/gpt-4o-mini"] },
+      },
+    });
+    expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual(["spacexai/grok-4.6", "openai/gpt-4o-mini"]);
   });
 });

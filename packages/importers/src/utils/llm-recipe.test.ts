@@ -50,7 +50,14 @@ describe("extractRecipeWithLlm", () => {
       modelId: "openai/gpt-4o-mini",
     });
 
-    expect(generate).toHaveBeenCalled();
+    expect(generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxRetries: 5,
+        providerOptions: {
+          gateway: { models: ["spacexai/grok-4.6", "openai/gpt-4o-mini"] },
+        },
+      })
+    );
     expect(recipe?.name).toBe("Weeknight Tomato Pasta");
     expect(recipe?.recipeIngredient).toHaveLength(2);
   });
