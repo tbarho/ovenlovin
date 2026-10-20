@@ -244,6 +244,32 @@ export const E2E_RECIPES: KitchenRecipe[] = [
   },
   {
     ...draft({
+      slug: "beef-chili",
+      title: "Beef chili",
+      description: "A pot of chili for a busy night.",
+      servings: 6,
+      prepTimeMinutes: 15,
+      cookTimeMinutes: 45,
+      cuisine: "American",
+      course: "dinner",
+      ingredients: [
+        { rawText: "1 lb ground beef" },
+        { rawText: "1 can kidney beans" },
+        { rawText: "1 can crushed tomatoes" },
+        { rawText: "1 yellow onion" },
+        { rawText: "2 tbsp chili powder" },
+        { rawText: "2 lemons" },
+      ],
+      steps: [
+        { text: "Brown the beef with the onion." },
+        { text: "Add tomatoes, beans, and chili powder. Simmer." },
+        { text: "Finish with lemon." },
+      ],
+    }),
+    cookbook: "weeknight",
+  },
+  {
+    ...draft({
       slug: "saturday-pancakes",
       title: "Saturday pancakes",
       description: "Buttermilk pancakes for a slow morning.",
@@ -466,6 +492,18 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
       }
       createdRecipes.push(details);
     }
+  } else if (!existingRecipes.items.some((recipe) => /beef chili/i.test(recipe.title))) {
+    const chiliDraft = E2E_RECIPES.find((recipe) => recipe.slug === "beef-chili");
+    if (chiliDraft) {
+      const details = await recipes.createRecipeFromDraft(chiliDraft, {
+        householdId: household.id,
+        createdBy: user.id,
+      });
+      const weeknight = (await cookbooks.listCookbookCards(household.id)).find((book) =>
+        /weeknight dinners/i.test(book.name)
+      );
+      if (weeknight) await cookbooks.addRecipe(weeknight.id, details.id);
+    }
   }
 
   const existingKeys = await keys.listForHousehold(household.id);
@@ -484,10 +522,10 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
   const existingPlans = await plans.listMealPlans(household.id, { pagination: { limit: 40 } });
   if (!existingPlans.items.some((plan) => plan.weekStart === weekStart)) {
     const dinnerRecipes = await recipes.listRecipes(household.id, { pagination: { limit: 40 } });
-    const dinner = dinnerRecipes.items.filter((recipe) =>
-      ["weeknight-pesto-pasta", "sheet-pan-salmon", "veggie-tacos"].includes(recipe.slug)
-    );
-    if (dinner.length > 0) {
+    const chili = dinnerRecipes.items.find((recipe) => /beef chili/i.test(recipe.title));
+    const pesto = dinnerRecipes.items.find((recipe) => /pesto pasta/i.test(recipe.title));
+    const salmon = dinnerRecipes.items.find((recipe) => /sheet-pan salmon/i.test(recipe.title));
+    if (chili || pesto) {
       const plan = await plans.createMealPlan({
         householdId: household.id,
         weekStart,
@@ -499,16 +537,34 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
       const attendees = (await people.listPeopleByHousehold(household.id, { limit: 40 })).items.map(
         (person) => person.id
       );
-      const dates = [weekStart, addDays(weekStart, 1), addDays(weekStart, 2)];
-      for (const [index, recipe] of dinner.entries()) {
-        const date = dates[index];
-        if (!date) continue;
+      const nights: Array<{
+        date: string;
+        recipe: (typeof dinnerRecipes.items)[number];
+        servings: number | null;
+      }> = [];
+      if (chili) nights.push({ date: weekStart, recipe: chili, servings: null });
+      if (pesto) {
+        nights.push({
+          date: addDays(weekStart, 1),
+          recipe: pesto,
+          servings: pesto.servings ?? 4,
+        });
+      }
+      if (chili) nights.push({ date: addDays(weekStart, 2), recipe: chili, servings: 5 });
+      if (salmon) {
+        nights.push({
+          date: addDays(weekStart, 3),
+          recipe: salmon,
+          servings: salmon.servings ?? 4,
+        });
+      }
+      for (const night of nights) {
         await plans.createMealPlanEntry({
           mealPlanId: plan.id,
-          date,
+          date: night.date,
           mealSlot: "dinner",
-          recipeId: recipe.id,
-          servings: recipe.servings ?? 4,
+          recipeId: night.recipe.id,
+          servings: night.servings,
           attendees,
           scaleFactor: 1,
         });

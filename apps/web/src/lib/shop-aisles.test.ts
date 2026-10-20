@@ -50,4 +50,16 @@ describe("shopItemQuantity", () => {
       })
     ).toBe("2/3 cup");
   });
+
+  it("rounds a countable fallback quantity up to a whole unit", () => {
+    expect(
+      shopItemQuantity({
+        key: "egg",
+        name: "egg",
+        quantity: 2.5,
+        recipes: [],
+        warnings: [],
+      })
+    ).toBe("3");
+  });
 });

@@ -172,16 +172,48 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     },
   });
 
+  const recipeDetailsSchema = recipeSchema
+    .extend({
+      displayServings: z
+        .number()
+        .int()
+        .min(1)
+        .max(24)
+        .describe(
+          "Kitchen Default servings, or the `servings` query override. `servings` remains the stored card yield."
+        ),
+      scaledNote: z.string().nullable().optional(),
+      ingredients: z
+        .array(
+          z.object({
+            id: z.string().uuid(),
+            rawText: z.string(),
+            displayText: z.string().optional(),
+            quantityMin: z.number().nullable().optional(),
+            unit: z.string().nullable().optional(),
+          })
+        )
+        .optional(),
+    })
+    .openapi("RecipeDetails");
+
   registry.registerPath({
     method: "get",
     path: "/recipes/{id}",
     tags: ["recipes"],
     summary: "Get a recipe with ingredients, steps, times, notes, images, and source",
-    request: { params: z.object({ id: z.string().uuid() }) },
+    description:
+      "displayServings applies kitchen Default servings (family = max(yield, People count)). Pass ?servings= to override. ingredients.displayText is scaled to displayServings; rawText is the stored import string.",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      query: z.object({
+        servings: z.coerce.number().int().min(1).max(24).optional(),
+      }),
+    },
     responses: {
       200: {
         description: "Recipe details",
-        content: { "application/json": { schema: recipeSchema } },
+        content: { "application/json": { schema: recipeDetailsSchema } },
       },
     },
   });

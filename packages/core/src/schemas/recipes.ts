@@ -155,6 +155,8 @@ export type RecipeDetails = Recipe & {
   nutrition: RecipeNutritionFacts | null;
   reviewReasons: string[];
   uncertainFields: string[];
+  displayServings?: number;
+  scaledNote?: string | null;
 };
 
 export type RecipeContentUpdate = {

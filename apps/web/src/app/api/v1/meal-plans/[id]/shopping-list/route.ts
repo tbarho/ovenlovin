@@ -12,6 +12,7 @@ import {
   type ShoppingListGroupBy,
 } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { loadKitchenServingsSettings } from "@/lib/kitchen-servings";
 
 const FORMATS = ["json", "csv", "markdown", "text"] as const;
 const GROUP_BY = ["aisle", "recipe", "category"] as const;
@@ -19,7 +20,7 @@ const GROUP_BY = ["aisle", "recipe", "category"] as const;
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id } = await params;
     const url = new URL(request.url);
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const planService = new PlanService(db);
     const recipeService = new RecipeService(db);
     const shoppingListService = new ShoppingListService();
+    const servingsSettings = await loadKitchenServingsSettings(householdId);
 
     const plan = await planService.getMealPlan(id);
     if (!plan) {
@@ -72,6 +74,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       entries: sources,
       groupBy,
       includeStaples,
+      defaultCookFor: servingsSettings.defaultCookFor,
+      mode: servingsSettings.mode,
     });
 
     const trip = parseShoppingTripState(plan.shoppingState);

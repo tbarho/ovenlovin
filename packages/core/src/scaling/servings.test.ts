@@ -5,11 +5,13 @@ import {
   formatDurationMinutes,
   formatMeasureText,
   formatQuantity,
+  isCountableShopItem,
   pluralizeUnit,
   scaleFactorForPlanEntry,
   scaleIngredientDisplay,
   scaleQuantity,
   toFriendlyMeasure,
+  wholeShopQuantity,
 } from "./servings";
 
 describe("scaleFactorForPlanEntry", () => {
@@ -29,6 +31,20 @@ describe("scaleFactorForPlanEntry", () => {
     expect(scaleFactorForPlanEntry(null, 4, 2)).toBe(2);
     expect(scaleFactorForPlanEntry(undefined, null, 1)).toBe(1);
     expect(scaleFactorForPlanEntry()).toBe(1);
+  });
+
+  it("uses household Default servings before recipe yield when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 6, 1, 5)).toBe(0.8333);
+    expect(scaleFactorForPlanEntry(undefined, 6, 1, 5)).toBe(0.8333);
+    expect(scaleFactorForPlanEntry(5, 6, 1, 8)).toBe(0.8333);
+  });
+
+  it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 4, 2, 5)).toBe(2);
+  });
+
+  it("uses recipe yield in recipe mode when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 6, 1, 4, "recipe")).toBe(1);
   });
 });
 
@@ -148,5 +164,27 @@ describe("clampServings", () => {
     expect(clampServings(0)).toBe(1);
     expect(clampServings(48)).toBe(24);
     expect(clampServings(6.4)).toBe(6);
+  });
+});
+
+describe("countable shopping amounts", () => {
+  it("treats eggs, cans, and whole items as countable and cups as measured", () => {
+    expect(isCountableShopItem(undefined)).toBe(true);
+    expect(isCountableShopItem("")).toBe(true);
+    expect(isCountableShopItem("can")).toBe(true);
+    expect(isCountableShopItem("clove")).toBe(true);
+    expect(isCountableShopItem("cup")).toBe(false);
+    expect(isCountableShopItem("lb")).toBe(false);
+    expect(isCountableShopItem("tbsp")).toBe(false);
+  });
+
+  it("rounds countable grocery amounts up to a whole unit", () => {
+    expect(wholeShopQuantity(2.5)).toBe(3);
+    expect(wholeShopQuantity(2 / 3)).toBe(1);
+    expect(wholeShopQuantity(5 / 6)).toBe(1);
+    expect(wholeShopQuantity(2)).toBe(2);
+    expect(formatMeasureText(2.5, undefined)).toBe("3");
+    expect(formatMeasureText(2 / 3, "can")).toBe("1 can");
+    expect(formatMeasureText(5 / 6, "lb")).toBe("5/6 lb");
   });
 });

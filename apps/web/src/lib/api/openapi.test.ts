@@ -74,6 +74,8 @@ describe("generateOpenApiDocument", () => {
     expect(recipe?.properties).toHaveProperty("notes");
     expect(recipe?.properties).toHaveProperty("reviewReasons");
     expect(recipe?.properties).toHaveProperty("remainingImports");
+    expect(JSON.stringify(spec.paths?.["/recipes/{id}"]?.get)).toContain("displayServings");
+    expect(JSON.stringify(spec.paths?.["/recipes/{id}"]?.get)).toContain("?servings");
     expect(spec.paths?.["/meal-plans/{id}"]?.delete).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}/check"]?.get).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}/check"]?.post).toBeTruthy();

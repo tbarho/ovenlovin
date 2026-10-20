@@ -1,12 +1,16 @@
 import type { NextConfig } from "next";
 import { assertDemoModeSafeForBuild } from "./src/lib/demo/mode";
 import { assertE2eAuthBypassSafeForBuild } from "./src/lib/e2e-auth";
+import { PLAN_PATH_REDIRECTS } from "./src/lib/plan-path-redirects";
 
 assertE2eAuthBypassSafeForBuild();
 assertDemoModeSafeForBuild();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [...PLAN_PATH_REDIRECTS];
+  },
   env: {
     // Inlined at build time. Empty Vercel overrides must not hide the stamp.
     NEXT_PUBLIC_BUILD_TIME: process.env.NEXT_PUBLIC_BUILD_TIME?.trim() || new Date().toISOString(),
