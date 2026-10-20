@@ -305,7 +305,7 @@ describe("ImportRecipeForm url and paste validation", () => {
       vi.mocked(api).mockImplementation(
         (_path, init) =>
           new Promise((_, reject) => {
-            signal = init?.signal;
+            signal = init?.signal ?? undefined;
             init?.signal?.addEventListener("abort", () => {
               const error = new Error("Aborted");
               error.name = "AbortError";
