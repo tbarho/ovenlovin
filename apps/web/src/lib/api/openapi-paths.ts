@@ -5,6 +5,10 @@ import { z } from "zod";
 extendZodWithOpenApi(z);
 
 export function registerApiPaths(registry: OpenAPIRegistry) {
+  const importAiUnavailable = {
+    description: "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds.",
+  };
+
   const recipeTimes = {
     servings: z.number().int().positive().nullable().optional(),
     prepTimeMinutes: z.number().int().nonnegative().nullable().optional(),
@@ -323,6 +327,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       409: {
         description: "Duplicate or in-flight import. Includes recipeId, title, and recipeUrl.",
       },
+      503: importAiUnavailable,
     },
   });
 
@@ -350,6 +355,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         description: "Imported recipe",
         content: { "application/json": { schema: recipeSchema } },
       },
+      503: importAiUnavailable,
     },
   });
 
@@ -449,6 +455,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           },
         },
       },
+      503: importAiUnavailable,
     },
   });
 

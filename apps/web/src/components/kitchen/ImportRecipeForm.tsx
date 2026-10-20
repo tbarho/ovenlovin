@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, apiErrorRecipeUrl, type ApiClientError } from "@/lib/browser-api";
+import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
+import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
 import {
   BLOCKED_IMPORT_COPY,
@@ -242,7 +243,7 @@ export function ImportRecipeForm() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not import recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable((err as ApiClientError).status === 503);
+      setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
     } finally {
       setPending(false);
     }

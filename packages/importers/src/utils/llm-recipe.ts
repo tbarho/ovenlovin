@@ -2,6 +2,7 @@
 import { generateObject } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
+import { isImportAiUnavailable } from "@ovenlovin/core/import-ai-unavailable";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { resolveExtractModelId } from "./models";
 
@@ -84,7 +85,8 @@ ${pageText}`,
     });
 
     return llmRecipeToJsonLd(result.object as z.infer<typeof llmRecipeSchema>);
-  } catch {
+  } catch (error) {
+    if (isImportAiUnavailable(error)) throw error;
     return null;
   }
 }
