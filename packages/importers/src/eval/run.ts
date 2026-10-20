@@ -13,6 +13,7 @@ export type CaseResult = {
   id: string;
   model: string;
   scores: CaseScores;
+  observed?: ObservedRecipe;
   latencyMs: number;
   inputTokens?: number;
   outputTokens?: number;
@@ -99,7 +100,7 @@ function fromJsonLd(recipe: Record<string, unknown> | null): ObservedRecipe {
   };
 }
 
-async function runCase(model: string, evalCase: EvalCase): Promise<CaseResult> {
+export async function runImportCase(model: string, evalCase: EvalCase): Promise<CaseResult> {
   const tracker = trackingGenerate();
   const started = Date.now();
   try {
@@ -131,6 +132,7 @@ async function runCase(model: string, evalCase: EvalCase): Promise<CaseResult> {
       job: evalCase.job,
       id: evalCase.id,
       model,
+      observed,
       scores: scoreRecipe(observed, evalCase.expected),
       latencyMs: tracked.latencyMs || Date.now() - started,
       inputTokens: tracked.usage.usage?.inputTokens,
@@ -165,7 +167,7 @@ export async function runImportEval(
   const results: CaseResult[] = [];
   for (const model of models) {
     for (const evalCase of cases) {
-      results.push(await runCase(model, evalCase));
+      results.push(await runImportCase(model, evalCase));
     }
   }
   return results;

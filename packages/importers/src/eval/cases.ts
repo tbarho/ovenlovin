@@ -1,11 +1,14 @@
 /* eslint-disable no-undef */
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { ExpectedRecipe } from "./score";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const tests = join(here, "../__tests__/fixtures");
+const importersRoot = dirname(
+  createRequire(import.meta.url).resolve("@ovenlovin/importers/package.json")
+);
+const here = join(importersRoot, "src/eval");
+const tests = join(importersRoot, "src/__tests__/fixtures");
 
 export type EvalJob = "paste" | "photo" | "url";
 

@@ -69,13 +69,15 @@ Each importer has test fixtures in `__tests__/fixtures/<source>/`:
 - Recorded confidence scores
 - Regression thresholds enforced in CI
 
-Live-model import evals are not part of CI. From the repo root:
+Live-model import evals use eve (`defineEval`, `t.score`, `t.check`) in `@ovenlovin/import-evals` and are not part of CI. Production import still uses the AI SDK and gateway, not eve. From the repo root:
 
 ```bash
 pnpm eval:import
 ```
 
-That needs `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN`. Override the model with `EVAL_IMPORT_MODEL` or a comma list in `EVAL_IMPORT_MODELS`. Default models: `spacexai/grok-4.7`, `deepseek/deepseek-v4.1-flash`, `openai/gpt-6-luna`. Cases live in `src/eval/` (paste text, photo cards, and URL pages without JSON-LD, including Smitten Kitchen slow-roasted tomatoes).
+That needs `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN`, and Node.js 24+ for the eve CLI (OvenLovin itself stays on Node 20/22). Override the model with `EVAL_IMPORT_MODEL` or a comma list in `EVAL_IMPORT_MODELS`. Default models: `spacexai/grok-4.7`, `deepseek/deepseek-v4.1-flash`, `openai/gpt-6-luna`. Cases live in `src/eval/`; eve files live in `packages/import-evals/evals/import/*.eval.ts`.
+
+Eve's runner drives an agent over `t.send` and has no vision input for our photo importer. The smallest workaround: a mock-model fixture agent so `eve eval` can boot, and each eval calls the existing paste/photo/URL extractors, then records scores with `t.score`. Photo cases still load PNG bytes into `createPhotoImporter`. Eve 0.81 also peers `ai@7` and Node 24, so the eval package owns those; importers stay on AI SDK 5.
 
 ## AI Stack
 

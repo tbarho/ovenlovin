@@ -8,6 +8,7 @@ coverage
 e2e-artifacts
 playwright-report
 test-results
+.eve
 
 # Next.js
 .next/
