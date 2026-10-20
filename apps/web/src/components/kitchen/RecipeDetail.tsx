@@ -369,10 +369,10 @@ export function RecipeDetail({
         confirmLabel="Delete recipe"
         pending={pendingDelete}
         danger
+        error={deleteError}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => void deleteRecipe()}
       />
-      {deleteError ? <p className="muted">{deleteError}</p> : null}
       <KitchenToast message={toast} onDismiss={() => setToast(null)} />
     </>
   );
