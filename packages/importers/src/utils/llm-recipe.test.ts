@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { isImportAiUnavailable } from "@ovenlovin/core/import-ai-unavailable";
 import { extractRecipeWithLlm, llmRecipeToJsonLd } from "./llm-recipe";
 
 describe("llmRecipeToJsonLd", () => {
@@ -83,6 +84,31 @@ describe("extractRecipeWithLlm", () => {
         generate,
       })
     ).rejects.toBe(error);
+    expect(isImportAiUnavailable(error)).toBe(true);
+  });
+
+  it("throws when the request budget is already gone before generateObject", async () => {
+    const generate = vi.fn();
+    await expect(
+      extractRecipeWithLlm("Ingredients\n- pasta", {
+        env: { AI_GATEWAY_API_KEY: "test-key" },
+        generate,
+        startedAt: Date.now() - 50_000,
+      })
+    ).rejects.toSatisfy((error) => isImportAiUnavailable(error));
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it("passes the remaining request budget to generateObject", async () => {
+    const generate = vi.fn().mockResolvedValue({ object: { isRecipe: false } });
+    await extractRecipeWithLlm("Ingredients\n- pasta", {
+      env: { AI_GATEWAY_API_KEY: "test-key" },
+      generate,
+      startedAt: Date.now() - 40_000,
+    });
+    const abortSignal = generate.mock.calls[0]?.[0]?.abortSignal as AbortSignal;
+    expect(abortSignal).toBeInstanceOf(AbortSignal);
+    expect(abortSignal.aborted).toBe(false);
   });
 
   it("returns null when the model marks the page as not a recipe", async () => {

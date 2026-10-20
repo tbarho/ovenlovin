@@ -6,6 +6,7 @@ import {
   IMPORT_GENERATE_MAX_RETRIES,
   IMPORT_GENERATE_TIMEOUT_MS,
   importGenerateOptions,
+  remainingImportBudgetMs,
   resolveExtractModelId,
   resolveVisionModelId,
 } from "./models";
@@ -98,5 +99,14 @@ describe("importGenerateOptions", () => {
     expect(importGenerateOptions("spacexai/grok-4.7").providerOptions.gateway.models).toEqual([
       ...IMPORT_GATEWAY_FALLBACK_MODELS,
     ]);
+  });
+});
+
+describe("remainingImportBudgetMs", () => {
+  it("shrinks from the request start so page fetch plus AI stay under 50s", () => {
+    expect(remainingImportBudgetMs(1_000, 1_000)).toBe(IMPORT_GENERATE_TIMEOUT_MS);
+    expect(remainingImportBudgetMs(1_000, 41_000)).toBe(10_000);
+    expect(remainingImportBudgetMs(1_000, 51_000)).toBe(0);
+    expect(remainingImportBudgetMs(1_000, 41_000) + 40_000).toBeLessThan(60_000);
   });
 });

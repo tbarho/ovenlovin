@@ -98,6 +98,15 @@ describe("Paste Importer", () => {
       expect(result.sourceUrl).toBe("https://example.com");
       expect(result.author).toBe("Chef Baker");
     });
+
+    it("tags a generateObject timeout as import AI unavailable", async () => {
+      const { generateObject } = await import("ai");
+      const { isImportAiUnavailable } = await import("@ovenlovin/core/import-ai-unavailable");
+      const error = Object.assign(new Error("aborted"), { name: "TimeoutError" });
+      (generateObject as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
+      await expect(importer.extract({ text: "Recipe text" })).rejects.toBe(error);
+      expect(isImportAiUnavailable(error)).toBe(true);
+    });
   });
 
   describe("toDraft", () => {

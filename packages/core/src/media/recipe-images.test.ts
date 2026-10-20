@@ -53,6 +53,12 @@ describe("recipe images", () => {
     expect(isFetchableRecipeImageUrl("http://[fe80::1]/secret.jpg")).toBe(false);
     expect(isFetchableRecipeImageUrl("http://[::ffff:127.0.0.1]/secret.jpg")).toBe(false);
     expect(isFetchableRecipeImageUrl("http://[::ffff:10.1.2.3]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://100.64.0.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://198.18.1.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://224.0.0.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[64:ff9b::0a00:1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[ff02::1]/secret.jpg")).toBe(false);
   });
 
   it("guesses an extension from the URL or content type", () => {
@@ -102,7 +108,12 @@ describe("recipe images", () => {
     vi.mocked(lookup).mockResolvedValueOnce([{ address: "127.0.0.1", family: 4 }] as never);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    await copyRemoteImages(["https://loopback.example/photo.jpg"], vi.fn(), "recipes/hh");
+    const dropped = await copyRemoteImages(
+      ["https://loopback.example/photo.jpg"],
+      vi.fn(),
+      "recipes/hh"
+    );
+    expect(dropped).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
@@ -121,8 +132,29 @@ describe("recipe images", () => {
       return { ok: true, status: 200, headers: { get: () => "image/jpeg" } } as unknown as Response;
     });
     vi.stubGlobal("fetch", fetchMock);
-    await copyRemoteImages(["https://cdn.example/photo.jpg"], vi.fn(), "recipes/hh");
+    const dropped = await copyRemoteImages(
+      ["https://cdn.example/photo.jpg"],
+      vi.fn(),
+      "recipes/hh"
+    );
+    expect(dropped).toEqual([]);
     expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(["https://cdn.example/photo.jpg"]);
+    vi.unstubAllGlobals();
+  });
+
+  it("drops a URL when the image fetch is refused", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      })
+    );
+    const dropped = await copyRemoteImages(
+      ["https://cdn.example/photo.jpg"],
+      vi.fn(),
+      "recipes/hh"
+    );
+    expect(dropped).toEqual([]);
     vi.unstubAllGlobals();
   });
 

@@ -59,12 +59,20 @@ function isPrivateRecipeImageIp(address: string): boolean {
     if (a === 169 && b === 254) return true;
     if (a === 192 && b === 168) return true;
     if (a === 172 && b != null && b >= 16 && b <= 31) return true;
+    if (a === 100 && b != null && b >= 64 && b <= 127) return true;
+    if (a === 198 && (b === 18 || b === 19)) return true;
+    if (a != null && a >= 224 && a <= 239) return true;
     return false;
   }
   if (!host.includes(":")) return false;
-  if (host === "::1") return true;
+  if (host === "::1" || host === "::") return true;
+  if (host.startsWith("64:ff9b::") || /^64:ff9b:(?:0+:){4}/.test(host)) return true;
   const first = host.split(":")[0] ?? "";
-  return /^f[cd][0-9a-f]{2}$/.test(first) || /^fe[89ab][0-9a-f]$/.test(first);
+  return (
+    /^f[cd][0-9a-f]{2}$/.test(first) ||
+    /^fe[89ab][0-9a-f]$/.test(first) ||
+    /^ff[0-9a-f]{2}$/.test(first)
+  );
 }
 
 function imageHostName(url: string): string | null {
@@ -365,7 +373,7 @@ export async function copyRemoteImages(
       });
       copied.push(stored ?? url);
     } catch {
-      copied.push(url);
+      // blocked or refused: never keep a private or unfetched URL
     }
   }
 
