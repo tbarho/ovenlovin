@@ -5,14 +5,35 @@ import { VERCEL_DEPLOY_URL } from "@ovenlovin/brand";
 import { ConfirmDialog } from "@/components/kitchen/ConfirmDialog";
 
 const STORAGE_KEY = "ovenlovin.demo-banner.dismissed";
+const RESET_FAILED = "Could not reset this kitchen. Try again.";
 
 export function DemoBanner() {
   const [hidden, setHidden] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [pendingReset, setPendingReset] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   useEffect(() => {
     if (window.sessionStorage.getItem(STORAGE_KEY) === "1") setHidden(true);
   }, []);
+
+  async function resetKitchen() {
+    setPendingReset(true);
+    setResetError(null);
+    try {
+      const response = await fetch("/api/demo/reset", { method: "POST", credentials: "include" });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        setResetError(body?.error ?? RESET_FAILED);
+        return;
+      }
+      window.location.assign("/recipes");
+    } catch {
+      setResetError(RESET_FAILED);
+    } finally {
+      setPendingReset(false);
+    }
+  }
 
   if (hidden) return null;
 
@@ -40,17 +61,21 @@ export function DemoBanner() {
           Reset kitchen
         </button>
       </div>
-      <form id="demo-reset-form" action="/api/demo/reset" method="post" hidden />
       <ConfirmDialog
         open={confirmReset}
         title="Reset this kitchen?"
         body="This replaces your sandbox with a fresh sample kitchen. Edits in this demo will be gone."
         confirmLabel="Reset kitchen"
         danger
-        onCancel={() => setConfirmReset(false)}
+        pending={pendingReset}
+        error={resetError}
+        onCancel={() => {
+          if (pendingReset) return;
+          setConfirmReset(false);
+          setResetError(null);
+        }}
         onConfirm={() => {
-          const form = document.getElementById("demo-reset-form");
-          if (form instanceof HTMLFormElement) form.requestSubmit();
+          void resetKitchen();
         }}
       />
     </div>
