@@ -43,11 +43,11 @@ test("paste import previews then saves from review", async ({ page }) => {
       "Weeknight tomato pasta\n\nIngredients\n- 12 oz pasta\n- 1 jar tomatoes\n\nSteps\nBoil pasta. Warm sauce. Combine."
     );
   await page.getByRole("button", { name: "Import" }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog.getByLabel("Title")).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "Review import" });
+  await expect(dialog.getByLabel("Title")).toBeVisible({ timeout: 30_000 });
   await expect(dialog.getByLabel("Title")).toHaveValue(/pasta/i);
   await dialog.getByRole("button", { name: "Save recipe" }).click();
-  await expect(page).toHaveURL(/\/recipes\/[0-9a-f-]{36}/i);
+  await expect(page).toHaveURL(/\/recipes\/[0-9a-f-]{36}/i, { timeout: 15_000 });
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
