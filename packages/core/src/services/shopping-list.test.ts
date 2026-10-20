@@ -346,10 +346,10 @@ describe("ShoppingListService", () => {
       name: "salt",
       quantity: 1.8333,
       unit: "tbsp",
-      displayQuantity: "1 5/6",
+      displayQuantity: "1 3/4",
       displayUnit: "tbsp",
     });
-    expect(service.exportAsMarkdown(list)).toContain("1 5/6 tbsp salt");
+    expect(service.exportAsMarkdown(list)).toContain("1 3/4 tbsp salt");
     expect(service.exportAsMarkdown(list)).not.toContain("1.8333");
   });
 

@@ -38,18 +38,14 @@ function roundScaleFactor(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
 
+/** Kitchen-usable fractions. 1/8 stays for small spoon amounts. */
 const COOKING_FRACTIONS: Array<[number, number]> = [
   [1, 8],
-  [1, 6],
   [1, 4],
   [1, 3],
-  [3, 8],
   [1, 2],
-  [5, 8],
   [2, 3],
   [3, 4],
-  [5, 6],
-  [7, 8],
 ];
 
 export function scaleQuantity(quantity: number, fromServings: number, toServings: number): number {
@@ -81,11 +77,6 @@ export function formatQuantity(value: number): string {
       best = candidate;
       label = `${num}/${den}`;
     }
-  }
-
-  if (bestDelta > 0.04) {
-    const rounded = Math.round(abs * 100) / 100;
-    return `${sign}${Number.isInteger(rounded) ? String(rounded) : String(rounded)}`;
   }
 
   if (Math.abs(best - 1) < 1e-9) {
@@ -138,23 +129,31 @@ function candidateScore(
   unit: string,
   originalUnit: string,
   originalQuantity: number,
-  toBase: number
+  toBase: number,
+  originalToBase: number
 ): number {
   const delta = cookingFractionDelta(quantity);
   let score = delta;
-  if (delta > 0.04) score += 8;
   if (quantity < 0.125) score += 4;
   if (quantity > 24) score += (quantity - 24) * 0.05;
   if (quantity < 1 && unit !== originalUnit) {
-    const niceCup = unit === "cup" && delta <= 0.04 && quantity >= 0.25;
+    const niceCup = unit === "cup" && quantity >= 0.25;
     if (!niceCup) score += 1.5;
   }
   if (unit === "cup" && quantity > 0 && quantity < 0.25) {
     score += 3;
   }
-  if (cookingFractionDelta(originalQuantity) <= 0.02 && unit !== originalUnit && delta > 0.01) {
+  if (toBase < originalToBase && originalQuantity >= 0.25) score += 8;
+  const largeSpoons = (originalUnit === "tbsp" || originalUnit === "tsp") && originalQuantity >= 8;
+  if (
+    !largeSpoons &&
+    cookingFractionDelta(originalQuantity) <= 0.02 &&
+    unit !== originalUnit &&
+    delta > 0.01
+  ) {
     score += 6;
   }
+  if (largeSpoons && (unit === "tbsp" || unit === "tsp")) score += 3;
   score -= Math.log(toBase) * 0.02;
   if (unit === originalUnit) score -= 0.015;
   return score;
@@ -186,7 +185,14 @@ export function toFriendlyMeasure(quantity: number, unit?: string | null): Frien
   let best = { unit: normalized, quantity, score: Number.POSITIVE_INFINITY };
   for (const candidate of family) {
     const q = base / candidate.toBase;
-    const score = candidateScore(q, candidate.unit, normalized, quantity, candidate.toBase);
+    const score = candidateScore(
+      q,
+      candidate.unit,
+      normalized,
+      quantity,
+      candidate.toBase,
+      from.toBase
+    );
     if (score < best.score - 1e-9) {
       best = { unit: candidate.unit, quantity: q, score };
     }
@@ -340,25 +346,50 @@ export function scaleIngredientDisplay(
   const quantityMax = ingredient.quantityMax ?? leading.max;
   if (quantityMin == null) return ingredient.rawText;
 
-  const min = formatQuantity(scaleQuantity(quantityMin, from, to));
-  const max = quantityMax != null ? formatQuantity(scaleQuantity(quantityMax, from, to)) : null;
-  const qty = max ? `${min}-${max}` : min;
+  const size = leading.rest.match(/^(\([^)]+\)\s*)(.*)$/);
+  const sizePrefix = size?.[1] ?? "";
+  const afterSize = size?.[2] ?? leading.rest;
+  const leadingUnit = splitLeadingUnit(afterSize);
+  const parsed = parseIngredientLine(ingredient.rawText);
+  const unit =
+    leading.min != null ? leadingUnit.unit : (ingredient.unit ?? parsed.unit ?? leadingUnit.unit);
 
-  if (leading.min != null) {
-    const leadingUnit = splitLeadingUnit(leading.rest);
-    if (leadingUnit.unit) {
-      return leadingUnit.rest
-        ? `${pluralizeUnit(qty, leadingUnit.unit)} ${leadingUnit.rest}`
-        : pluralizeUnit(qty, leadingUnit.unit);
+  const scaledMin = scaleQuantity(quantityMin, from, to);
+  const scaledMax = quantityMax != null ? scaleQuantity(quantityMax, from, to) : null;
+
+  if (scaledMax != null) {
+    const minN = isCountableShopItem(unit) ? wholeShopQuantity(scaledMin) : scaledMin;
+    const maxN = isCountableShopItem(unit) ? wholeShopQuantity(scaledMax) : scaledMax;
+    const qty = `${formatQuantity(minN)}-${formatQuantity(maxN)}`;
+    if (leading.min != null) {
+      if (leadingUnit.unit) {
+        const head = sizePrefix
+          ? `${qty} ${sizePrefix}${inflectedUnit(qty, leadingUnit.unit)}`
+          : pluralizeUnit(qty, leadingUnit.unit);
+        return leadingUnit.rest ? `${head} ${leadingUnit.rest}` : head;
+      }
+      return leading.rest ? `${qty} ${leading.rest}` : qty;
     }
-    return leading.rest ? `${qty} ${leading.rest}` : qty;
+    const name = parsed.name;
+    const measure = unit ? pluralizeUnit(qty, unit) : qty;
+    return `${measure}${name ? ` ${name}` : ""}`.trim();
   }
 
-  const parsed = parseIngredientLine(ingredient.rawText);
-  const unit = ingredient.unit ?? parsed.unit;
+  if (sizePrefix && leadingUnit.unit) {
+    const amount = isCountableShopItem(unit) ? wholeShopQuantity(scaledMin) : scaledMin;
+    const { displayQuantity, displayUnit } = toFriendlyMeasure(amount, unit);
+    const labeled = displayUnit ? inflectedUnit(displayQuantity, displayUnit) : "";
+    const head = `${displayQuantity} ${sizePrefix}${labeled}`.trim();
+    return leadingUnit.rest ? `${head} ${leadingUnit.rest}` : head;
+  }
+
+  const measure = formatMeasureText(scaledMin, unit);
+  if (leading.min != null) {
+    const rest = leadingUnit.unit ? leadingUnit.rest : leading.rest;
+    return rest ? `${measure} ${rest}` : measure;
+  }
   const name = parsed.name;
-  const measure = unit ? pluralizeUnit(qty, unit) : qty;
-  return `${measure}${name ? ` ${name}` : ""}`.trim();
+  return name ? `${measure} ${name}` : measure;
 }
 
 export function clampServings(value: number, min = 1, max = 24): number {

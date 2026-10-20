@@ -73,8 +73,9 @@ describe("formatQuantity", () => {
   });
 
   it("rounds odd scaled values onto nearby cooking fractions", () => {
-    expect(formatQuantity((2 / 3) * (5 / 4))).toBe("5/6");
+    expect(formatQuantity((2 / 3) * (5 / 4))).toBe("3/4");
     expect(formatQuantity((1 / 3) * 2)).toBe("2/3");
+    expect(formatQuantity(0.44)).toBe("1/2");
   });
 
   it("snaps floating-point noise and stored decimal leftovers to fractions", () => {
@@ -91,10 +92,10 @@ describe("formatQuantity", () => {
 describe("toFriendlyMeasure", () => {
   it("converts ugly spoon amounts into a shoppable fraction", () => {
     expect(toFriendlyMeasure(1.8333, "tbsp")).toEqual({
-      displayQuantity: "1 5/6",
+      displayQuantity: "1 3/4",
       displayUnit: "tbsp",
     });
-    expect(formatMeasureText(1.8333, "tbsp")).toBe("1 5/6 tbsp");
+    expect(formatMeasureText(1.8333, "tbsp")).toBe("1 3/4 tbsp");
     expect(formatMeasureText(2, "clove")).toBe("2 cloves");
     expect(pluralizeUnit("2", "clove")).toBe("2 cloves");
     expect(pluralizeUnit("1", "clove")).toBe("1 clove");
@@ -129,6 +130,14 @@ describe("toFriendlyMeasure", () => {
     expect(toFriendlyMeasure(6, "tsp")).toEqual({ displayQuantity: "2", displayUnit: "tbsp" });
     expect(formatMeasureText(2, "tbsp")).toBe("2 tbsp");
     expect(formatMeasureText(0.125, "cup")).toBe("2 tbsp");
+  });
+
+  it("promotes a large spoon amount to the nearest kitchen cup", () => {
+    expect(toFriendlyMeasure(13.75, "tbsp")).toEqual({
+      displayQuantity: "3/4",
+      displayUnit: "cup",
+    });
+    expect(formatMeasureText(13.75, "tbsp")).toBe("3/4 cup");
   });
 });
 
@@ -181,6 +190,21 @@ describe("scaleIngredientDisplay", () => {
         4
       )
     ).toBe("2 (14 oz) cans diced tomatoes");
+    expect(
+      scaleIngredientDisplay(
+        { rawText: "2 (14 oz) cans diced tomatoes", quantityMin: 2, unit: "can" },
+        4,
+        2
+      )
+    ).toBe("1 (14 oz) can diced tomatoes");
+  });
+
+  it("rounds countable recipe amounts the same way the shopping list does", () => {
+    expect(scaleIngredientDisplay({ rawText: "2 eggs" }, 4, 5)).toBe("3 eggs");
+    expect(scaleIngredientDisplay({ rawText: "1 egg" }, 6, 5)).toBe("1 egg");
+    expect(
+      scaleIngredientDisplay({ rawText: "0.44 cup milk", quantityMin: 0.44, unit: "cup" }, 4, 4)
+    ).toBe("1/2 cup milk");
   });
 
   it("keeps abbreviated units that end in a period", () => {
@@ -227,6 +251,6 @@ describe("countable shopping amounts", () => {
     expect(wholeShopQuantity(2)).toBe(2);
     expect(formatMeasureText(2.5, undefined)).toBe("3");
     expect(formatMeasureText(2 / 3, "can")).toBe("1 can");
-    expect(formatMeasureText(5 / 6, "lb")).toBe("5/6 lb");
+    expect(formatMeasureText(5 / 6, "lb")).toBe("3/4 lb");
   });
 });
