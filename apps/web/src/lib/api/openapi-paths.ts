@@ -1,5 +1,9 @@
 import { extendZodWithOpenApi, OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
-import { createMealPlanBodySchema, updateMealPlanBodySchema } from "@ovenlovin/core";
+import {
+  SERVINGS_HARD_MAX,
+  createMealPlanBodySchema,
+  updateMealPlanBodySchema,
+} from "@ovenlovin/core";
 import { z } from "zod";
 
 extendZodWithOpenApi(z);
@@ -182,7 +186,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         .number()
         .int()
         .min(1)
-        .max(24)
+        .max(SERVINGS_HARD_MAX)
         .describe(
           "Kitchen Default servings, or the `servings` query override. `servings` remains the stored card yield."
         ),
@@ -211,7 +215,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     request: {
       params: z.object({ id: z.string().uuid() }),
       query: z.object({
-        servings: z.coerce.number().int().min(1).max(24).optional(),
+        servings: z.coerce.number().int().min(1).max(SERVINGS_HARD_MAX).optional(),
       }),
     },
     responses: {
@@ -1148,9 +1152,9 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   const householdServingsSettingsSchema = z
     .object({
       mode: z.enum(["family", "fixed", "recipe"]),
-      servings: z.number().int().min(1).max(24).nullable(),
+      servings: z.number().int().min(1).max(SERVINGS_HARD_MAX).nullable(),
       familySize: z.number().int().nonnegative(),
-      defaultCookFor: z.number().int().min(1).max(24),
+      defaultCookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX),
     })
     .openapi("HouseholdServingsSettings");
 
@@ -1180,7 +1184,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           "application/json": {
             schema: z.object({
               mode: z.enum(["family", "fixed", "recipe"]),
-              servings: z.number().int().min(1).max(24).optional().nullable(),
+              servings: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional().nullable(),
             }),
           },
         },
