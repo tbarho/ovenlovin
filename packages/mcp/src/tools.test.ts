@@ -406,6 +406,12 @@ describe("MCP Tool Schemas", () => {
         }).success
       ).toBe(true);
       expect(createRecipeTool.inputSchema.safeParse({ title: "" }).success).toBe(false);
+      expect(
+        createRecipeTool.inputSchema.safeParse({
+          title: "Toast",
+          images: [{ url: "https://example.com/a.png" }],
+        }).success
+      ).toBe(false);
     });
 
     it("validates delete tools", () => {
