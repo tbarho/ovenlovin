@@ -60,9 +60,19 @@ describe("resolveExtractModelId", () => {
   });
 });
 
+/** Same exponential wait the AI SDK uses for maxRetries (2s, 4s, 8s, …). */
+function aiSdkRetryWaitMs(maxRetries: number): number {
+  return Array.from({ length: maxRetries }, (_, i) => 2 ** (i + 1) * 1000).reduce(
+    (a, b) => a + b,
+    0
+  );
+}
+
 describe("importGenerateOptions", () => {
-  it("retries past a short 503 burst and falls back to deepseek then gpt-6-luna", () => {
-    expect(IMPORT_GENERATE_MAX_RETRIES).toBeGreaterThan(2);
+  it("keeps the retry wait inside the 60s import route limit", () => {
+    expect(aiSdkRetryWaitMs(5)).toBeGreaterThan(60_000);
+    expect(aiSdkRetryWaitMs(IMPORT_GENERATE_MAX_RETRIES)).toBeLessThan(60_000);
+    expect(IMPORT_GENERATE_MAX_RETRIES).toBeLessThanOrEqual(3);
     expect(importGenerateOptions()).toEqual({
       maxRetries: IMPORT_GENERATE_MAX_RETRIES,
       providerOptions: {

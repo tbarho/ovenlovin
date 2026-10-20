@@ -52,7 +52,7 @@ describe("extractRecipeWithLlm", () => {
 
     expect(generate).toHaveBeenCalledWith(
       expect.objectContaining({
-        maxRetries: 5,
+        maxRetries: 2,
         providerOptions: {
           gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
         },

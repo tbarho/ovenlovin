@@ -44,8 +44,8 @@ export const IMPORT_GATEWAY_FALLBACK_MODELS = [
   "openai/gpt-6-luna",
 ] as const;
 
-/** Default AI SDK retries are 2 (3 attempts). Stay inside the 60s / 55s photo budget. */
-export const IMPORT_GENERATE_MAX_RETRIES = 5;
+/** AI SDK waits 2+4+… seconds per retry. 5 retries is 62s and blows the 60s import limit. */
+export const IMPORT_GENERATE_MAX_RETRIES = 2;
 
 export function importGenerateOptions() {
   return {
