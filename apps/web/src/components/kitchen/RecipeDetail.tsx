@@ -159,6 +159,7 @@ export function RecipeDetail({
         fixedServings,
       })
     );
+    setToast("Saved");
   }
 
   return (
