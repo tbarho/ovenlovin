@@ -118,6 +118,25 @@ describe("handleApiError", () => {
     expect(response.status).toBe(500);
   });
 
+  it("maps a gateway 502 and a schema-miss to 503 import_ai_unavailable", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const gateway = handleApiError(
+      Object.assign(new Error("Bad gateway"), { name: "AI_APICallError", statusCode: 502 }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    const schemaMiss = handleApiError(
+      Object.assign(new Error("No object generated: response did not match schema."), {
+        name: "AI_NoObjectGeneratedError",
+      }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    warn.mockRestore();
+    expect(gateway.status).toBe(503);
+    expect(gateway.headers.get("retry-after")).toBe("60");
+    expect(schemaMiss.status).toBe(503);
+    expect(((await schemaMiss.json()) as { code?: string }).code).toBe(IMPORT_AI_UNAVAILABLE_CODE);
+  });
+
   it("maps a tagged importer AI timeout to 503 import_ai_unavailable", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const response = handleApiError(

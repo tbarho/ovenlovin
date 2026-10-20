@@ -44,11 +44,11 @@ const recipeSchema = z.object({
   title: z.string().describe("Recipe title"),
   titleConfidence: ocrConfidence.optional().describe("Confidence for the title"),
   description: z.string().optional().describe("Brief description"),
-  servings: z.number().int().positive().optional().describe("Number of servings"),
+  servings: z.number().positive().optional().describe("Number of servings"),
   servingsConfidence: ocrConfidence.optional().describe("Confidence for servings"),
-  prepTimeMinutes: z.number().int().nonnegative().optional().describe("Prep time in minutes"),
-  cookTimeMinutes: z.number().int().nonnegative().optional().describe("Cook time in minutes"),
-  totalTimeMinutes: z.number().int().nonnegative().optional().describe("Total time in minutes"),
+  prepTimeMinutes: z.number().nonnegative().optional().describe("Prep time in minutes"),
+  cookTimeMinutes: z.number().nonnegative().optional().describe("Cook time in minutes"),
+  totalTimeMinutes: z.number().nonnegative().optional().describe("Total time in minutes"),
   timesConfidence: ocrConfidence.optional().describe("Confidence for prep/cook/total times"),
   notes: z.string().optional().describe("Cook notes, tips, or handwritten margin notes if visible"),
   visibleSource: z
@@ -65,19 +65,24 @@ const recipeSchema = z.object({
         unit: z.string().optional().describe("Unit of measurement if legible"),
         ingredient: z.string().optional().describe("Ingredient name if legible"),
         preparation: z.string().optional().describe("Preparation notes if present"),
-        confidence: ocrConfidence,
+        confidence: ocrConfidence.optional(),
       })
     )
+    .optional()
     .describe("List of ingredients"),
   steps: z
     .array(
       z.object({
         text: z.string().describe("Step instruction text exactly as written"),
-        confidence: ocrConfidence,
+        confidence: ocrConfidence.optional(),
       })
     )
+    .optional()
     .describe("Cooking steps in order"),
-  ocrQuality: z.enum(["excellent", "good", "fair", "poor"]).describe("Overall image/text quality"),
+  ocrQuality: z
+    .enum(["excellent", "good", "fair", "poor"])
+    .optional()
+    .describe("Overall image/text quality"),
   looksLikeRecipe: z
     .boolean()
     .optional()

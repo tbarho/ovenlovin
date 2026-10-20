@@ -3,7 +3,7 @@ export const IMPORT_AI_UNAVAILABLE_CODE = "import_ai_unavailable";
 export const IMPORT_AI_UNAVAILABLE_MESSAGE =
   "Recipe reading is busy right now. Try again in a minute.";
 
-const UNAVAILABLE_STATUSES = new Set([429, 503, 529]);
+const UNAVAILABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
 
 function errorName(error: unknown): string {
   return error instanceof Error ? error.name : "";
@@ -69,9 +69,21 @@ export function importAiUnavailableMeta(error: unknown): ImportAiUnavailableMeta
 
 /** Mark a generateObject timeout so only importer AI aborts become import_ai_unavailable. */
 export function tagImportAiTimeout(error: unknown): unknown {
-  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-    Object.assign(error, { importAiTimeout: true });
-  }
+  const seen = new Set<unknown>();
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== "object" || seen.has(value)) return;
+    seen.add(value);
+    if (value instanceof Error && (value.name === "TimeoutError" || value.name === "AbortError")) {
+      Object.assign(value, { importAiTimeout: true });
+    }
+    const nested = value as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
+    visit(nested.lastError);
+    visit(nested.cause);
+    if (Array.isArray(nested.errors)) {
+      for (const inner of nested.errors) visit(inner);
+    }
+  };
+  visit(error);
   return error;
 }
 
@@ -80,7 +92,7 @@ export function isImportAiUnavailable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   if ((error as { importAiTimeout?: unknown }).importAiTimeout === true) return true;
   const name = errorName(error);
-  if (name === "AI_RetryError") return true;
+  if (name === "AI_RetryError" || name === "AI_NoObjectGeneratedError") return true;
   if (name.startsWith("AI_") && UNAVAILABLE_STATUSES.has(errorStatus(error) ?? -1)) return true;
   const nested = error as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
   if (nested.lastError && isImportAiUnavailable(nested.lastError)) return true;
