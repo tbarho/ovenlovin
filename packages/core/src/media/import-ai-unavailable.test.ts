@@ -23,4 +23,13 @@ describe("importAiUnavailableMeta", () => {
       generationId: "gen_test_123",
     });
   });
+
+  it("treats a generateObject timeout as unavailable", () => {
+    expect(
+      isImportAiUnavailable(Object.assign(new Error("aborted"), { name: "TimeoutError" }))
+    ).toBe(true);
+    expect(isImportAiUnavailable(Object.assign(new Error("aborted"), { name: "AbortError" }))).toBe(
+      true
+    );
+  });
 });

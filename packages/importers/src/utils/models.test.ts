@@ -4,6 +4,7 @@ import {
   DEFAULT_VISION_MODEL,
   IMPORT_GATEWAY_FALLBACK_MODELS,
   IMPORT_GENERATE_MAX_RETRIES,
+  IMPORT_GENERATE_TIMEOUT_MS,
   importGenerateOptions,
   resolveExtractModelId,
   resolveVisionModelId,
@@ -73,6 +74,8 @@ describe("importGenerateOptions", () => {
     expect(aiSdkRetryWaitMs(5)).toBeGreaterThan(60_000);
     expect(aiSdkRetryWaitMs(IMPORT_GENERATE_MAX_RETRIES)).toBeLessThan(60_000);
     expect(IMPORT_GENERATE_MAX_RETRIES).toBeLessThanOrEqual(3);
+    expect(IMPORT_GENERATE_TIMEOUT_MS).toBe(50_000);
+    expect(IMPORT_GENERATE_TIMEOUT_MS).toBeLessThan(60_000);
     expect(importGenerateOptions()).toEqual({
       maxRetries: IMPORT_GENERATE_MAX_RETRIES,
       providerOptions: {
@@ -82,6 +85,18 @@ describe("importGenerateOptions", () => {
     expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual([
       "deepseek/deepseek-v4.1-flash",
       "openai/gpt-6-luna",
+    ]);
+  });
+
+  it("drops a fallback that is the same as the primary", () => {
+    expect(importGenerateOptions("deepseek/deepseek-v4.1-flash")).toEqual({
+      maxRetries: IMPORT_GENERATE_MAX_RETRIES,
+      providerOptions: {
+        gateway: { models: ["openai/gpt-6-luna"] },
+      },
+    });
+    expect(importGenerateOptions("spacexai/grok-4.7").providerOptions.gateway.models).toEqual([
+      ...IMPORT_GATEWAY_FALLBACK_MODELS,
     ]);
   });
 });

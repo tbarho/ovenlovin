@@ -82,6 +82,28 @@ describe("prepareImportDraft", () => {
     expect(draftFromSavedPreview({ title: "Nope" })).toBeNull();
   });
 
+  it("keeps only typed ingredient fields from a client-sent preview", () => {
+    const rebuilt = draftFromSavedPreview({
+      ...presentablePreview(),
+      ingredients: [
+        {
+          rawText: "  12 oz pasta  ",
+          unit: "oz".repeat(60),
+          preparation: "diced".repeat(60),
+          quantity: { min: 12, max: 14 },
+          confidence: 0.8,
+          extra: "drop-me",
+        },
+      ],
+    });
+    expect(rebuilt?.ingredients[0]?.rawText).toBe("12 oz pasta");
+    expect(rebuilt?.ingredients[0]?.quantity).toEqual({ min: 12, max: 14 });
+    expect(rebuilt?.ingredients[0]?.unit).toHaveLength(100);
+    expect(rebuilt?.ingredients[0]?.preparation).toHaveLength(255);
+    expect(rebuilt?.ingredients[0]?.confidence).toBe(0.8);
+    expect(rebuilt?.ingredients[0]).not.toHaveProperty("extra");
+  });
+
   it("drops private image URLs from a client-sent preview", () => {
     const rebuilt = draftFromSavedPreview({
       ...presentablePreview(),

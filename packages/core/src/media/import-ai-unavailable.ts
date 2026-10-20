@@ -71,7 +71,7 @@ export function importAiUnavailableMeta(error: unknown): ImportAiUnavailableMeta
 export function isImportAiUnavailable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const name = errorName(error);
-  if (name === "AI_RetryError") return true;
+  if (name === "AI_RetryError" || name === "TimeoutError" || name === "AbortError") return true;
   if (name.startsWith("AI_") && UNAVAILABLE_STATUSES.has(errorStatus(error) ?? -1)) return true;
   const nested = error as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
   if (nested.lastError && isImportAiUnavailable(nested.lastError)) return true;

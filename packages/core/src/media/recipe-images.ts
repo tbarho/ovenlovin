@@ -1,5 +1,7 @@
 /* eslint-disable no-undef */
 import { createHash } from "crypto";
+import { lookup } from "dns/promises";
+import { BlockList, isIP } from "net";
 
 const BLOB_HOST_HINTS = ["public.blob.vercel-storage.com", "blob.vercel-storage.com"];
 
@@ -26,20 +28,65 @@ export function isStoredBlobUrl(url: string): boolean {
   }
 }
 
+const PRIVATE_IMAGE_NETS = new BlockList();
+PRIVATE_IMAGE_NETS.addAddress("0.0.0.0");
+PRIVATE_IMAGE_NETS.addSubnet("127.0.0.0", 8, "ipv4");
+PRIVATE_IMAGE_NETS.addSubnet("10.0.0.0", 8, "ipv4");
+PRIVATE_IMAGE_NETS.addSubnet("172.16.0.0", 12, "ipv4");
+PRIVATE_IMAGE_NETS.addSubnet("192.168.0.0", 16, "ipv4");
+PRIVATE_IMAGE_NETS.addSubnet("169.254.0.0", 16, "ipv4");
+PRIVATE_IMAGE_NETS.addAddress("::1", "ipv6");
+PRIVATE_IMAGE_NETS.addSubnet("fc00::", 7, "ipv6");
+PRIVATE_IMAGE_NETS.addSubnet("fe80::", 10, "ipv6");
+
+const PRIVATE_IMAGE_HOST = /^(localhost|0\.0\.0\.0)$|(\.localhost|\.local|\.internal)$/i;
+
+function isPrivateRecipeImageIp(address: string): boolean {
+  const host = address.toLowerCase().replace(/^\[|\]$/g, "");
+  const mapped = host.startsWith("::ffff:") ? host.slice(7) : "";
+  if (mapped && isIP(mapped) === 4) return isPrivateRecipeImageIp(mapped);
+  if (isIP(host) === 4) return PRIVATE_IMAGE_NETS.check(host, "ipv4");
+  if (isIP(host) === 6) return PRIVATE_IMAGE_NETS.check(host, "ipv6");
+  return false;
+}
+
+function imageHostName(url: string): string | null {
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  } catch {
+    return null;
+  }
+}
+
+/** Hostname or literal IP we must never fetch. DNS-to-private is checked at fetch time. */
+function isBlockedRecipeImageHost(host: string): boolean {
+  const name = host.toLowerCase().replace(/^\[|\]$/g, "");
+  return PRIVATE_IMAGE_HOST.test(name) || isPrivateRecipeImageIp(name);
+}
+
 /** Only fetch images we would also request on a first import, never localhost or link-local. */
 export function isFetchableRecipeImageUrl(url: string): boolean {
   if (isStoredBlobUrl(url)) return true;
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-    if (host === "localhost" || host.endsWith(".localhost") || host === "::1") return false;
-    if (host === "0.0.0.0" || host.endsWith(".local") || host.endsWith(".internal")) return false;
-    if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host)) return false;
-    if (/^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^169\.254\./.test(host)) return false;
-    return true;
+    return !isBlockedRecipeImageHost(parsed.hostname);
   } catch {
     return false;
+  }
+}
+
+async function assertPublicImageUrl(url: string): Promise<void> {
+  if (!isFetchableRecipeImageUrl(url)) throw new Error("blocked image url");
+  const host = imageHostName(url);
+  if (!host || isStoredBlobUrl(url) || isIP(host)) return;
+  try {
+    const answers = await lookup(host, { all: true });
+    if (answers.some((entry) => isPrivateRecipeImageIp(entry.address))) {
+      throw new Error("blocked image url");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === "blocked image url") throw error;
   }
 }
 
@@ -226,13 +273,32 @@ export async function backfillInlineImageList(
   return { images: keepMainRecipeImages(next), changed };
 }
 
+function isRedirectResponse(response: Response): boolean {
+  return (
+    response.status >= 300 && response.status < 400 && Boolean(response.headers.get("location"))
+  );
+}
+
+async function fetchImageHop(url: string, headers: Record<string, string>): Promise<Response> {
+  return fetch(url, { redirect: "manual", headers });
+}
+
 async function fetchRemoteImage(url: string): Promise<Response> {
-  const headers = headersForRemoteImage(url);
-  let response = await fetch(url, { redirect: "follow", headers });
+  let current = url;
+  await assertPublicImageUrl(current);
+  let response = await fetchImageHop(current, headersForRemoteImage(current));
+  // shortcut: 5 hops, upgrade if a recipe CDN needs a longer chain
+  for (let hops = 0; hops < 5 && isRedirectResponse(response); hops += 1) {
+    const location = response.headers.get("location");
+    if (!location) break;
+    current = new URL(location, current).href;
+    await assertPublicImageUrl(current);
+    response = await fetchImageHop(current, headersForRemoteImage(current));
+  }
   if (!response.ok && BLOCKED_IMAGE_STATUSES.has(response.status)) {
-    response = await fetch(url, {
-      redirect: "follow",
-      headers: { ...headers, "Cache-Control": "no-cache" },
+    response = await fetchImageHop(current, {
+      ...headersForRemoteImage(current),
+      "Cache-Control": "no-cache",
     });
   }
   return response;
