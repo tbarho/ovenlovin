@@ -2,6 +2,9 @@ import {
   HouseholdAccessError,
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  INVALID_IMAGE_URL_CODE,
+  INVALID_IMAGE_URL_MESSAGE,
+  InvalidImageUrlError,
   importAiUnavailableMeta,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
@@ -227,6 +230,15 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
 
   if (error instanceof ZodError) {
     return ValidationError.fromZodError(error).toResponse(instance);
+  }
+
+  if (error instanceof InvalidImageUrlError) {
+    return new BadRequestError(error.message, { code: error.code }).toResponse(instance);
+  }
+  if (error instanceof Error && error.message === "blocked image url") {
+    return new BadRequestError(INVALID_IMAGE_URL_MESSAGE, {
+      code: INVALID_IMAGE_URL_CODE,
+    }).toResponse(instance);
   }
 
   // Demo HTML routes redirect to /api/demo/enter. If that throw leaks into a

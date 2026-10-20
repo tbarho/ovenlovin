@@ -70,6 +70,19 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.draft).toMatchObject({ title: "Weeknight Tomato Pasta" });
   });
 
+  it("rejects a private or non-image photo URL before fetch", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ imageUrl: "http://127.0.0.1/card.png" }),
+    });
+
+    await expect(readPhotoImportRequest(request)).rejects.toMatchObject({
+      name: "InvalidImageUrlError",
+      code: "invalid_image_url",
+    });
+  });
+
   it("rejects an empty body", async () => {
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",

@@ -1,7 +1,9 @@
 import {
+  assertAllowedRecipeImageUrls,
   copyRemoteImages,
   ensureReviewMetadata,
   fingerprintImageBlob,
+  InvalidImageUrlError,
   keepMainRecipeImages,
   omitInlineImagePayloads,
   persistRecipeImageUrl,
@@ -249,7 +251,12 @@ export async function extractPhotoPreview(
     abortSignal?: AbortSignal;
   }
 ): Promise<PhotoImportPreview> {
+  assertAllowedRecipeImageUrls(images.map((image) => image.blob));
   const storedImages = await persistMainPhoto(images, options.householdId, options.put);
+  const firstUrl = images[0]?.blob;
+  if (firstUrl && /^https?:/i.test(firstUrl) && storedImages.length === 0) {
+    throw new InvalidImageUrlError();
+  }
   const extracted = await runPhotoImport(
     { images, isHandwritten: options.isHandwritten },
     {

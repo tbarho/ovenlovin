@@ -1,3 +1,4 @@
+import { assertAllowedRecipeImageUrls } from "@ovenlovin/core";
 import { BadRequestError } from "@/lib/api/errors";
 import {
   collectPhotoImages,
@@ -55,6 +56,8 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
       }
     }
 
+    assertAllowedRecipeImageUrls(images.map((image) => image.blob));
+
     if (images.length === 0 && draft == null) {
       throw new BadRequestError("Provide one or more recipe photos (file or imageUrl)");
     }
@@ -85,6 +88,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
   };
 
   const images = collectPhotoImages(body);
+  assertAllowedRecipeImageUrls(images.map((image) => image.blob));
   if (images.length === 0 && body.draft == null) {
     throw new BadRequestError(
       "Provide an imageUrl, imageBase64, or images[] (URL or base64) for photo import"

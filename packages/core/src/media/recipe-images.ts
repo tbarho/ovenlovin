@@ -101,6 +101,38 @@ export function isFetchableRecipeImageUrl(url: string): boolean {
   }
 }
 
+export const INVALID_IMAGE_URL_CODE = "invalid_image_url";
+export const INVALID_IMAGE_URL_MESSAGE =
+  "Use a public http(s) image URL, a stored blob URL, or an inline image.";
+
+/** User-supplied image refs we may store, fetch, or send to a model. */
+export function isAllowedRecipeImageUrl(url: string): boolean {
+  if (isInlineImageDataUrl(url)) return true;
+  if (!isFetchableRecipeImageUrl(url)) return false;
+  if (isStoredBlobUrl(url)) return true;
+  try {
+    return /\.(png|webp|gif|avif|jpe?g)$/i.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
+}
+
+export class InvalidImageUrlError extends Error {
+  readonly code = INVALID_IMAGE_URL_CODE;
+
+  constructor() {
+    super(INVALID_IMAGE_URL_MESSAGE);
+    this.name = "InvalidImageUrlError";
+  }
+}
+
+export function assertAllowedRecipeImageUrls(urls: readonly unknown[]): void {
+  for (const url of urls) {
+    if (typeof url !== "string" || !url.trim()) continue;
+    if (!isAllowedRecipeImageUrl(url)) throw new InvalidImageUrlError();
+  }
+}
+
 async function assertPublicImageUrl(url: string): Promise<void> {
   if (!isFetchableRecipeImageUrl(url)) throw new Error("blocked image url");
   const host = imageHostName(url);
@@ -356,7 +388,6 @@ export async function copyRemoteImages(
 
       const contentType = response.headers.get("content-type") ?? "image/jpeg";
       if (!contentType.startsWith("image/")) {
-        copied.push(url);
         continue;
       }
 

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { put } from "@vercel/blob";
-import { copyRemoteImages } from "@ovenlovin/core";
+import { assertAllowedRecipeImageUrls, copyRemoteImages } from "@ovenlovin/core";
 import { BadRequestError, ForbiddenError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     if (contentType.includes("application/json")) {
       const body = (await request.json()) as { url?: string };
       if (!body.url) throw new BadRequestError("Provide an image url");
+      assertAllowedRecipeImageUrls([body.url]);
       const [stored] = await copyRemoteImages(
         [body.url],
         createVercelImagePut(),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InvalidImageUrlError } from "@ovenlovin/core";
 import { JsonRpcErrorCode, McpInvalidParamsError, jsonRpcFromThrown } from "./json-rpc";
 
 describe("jsonRpcFromThrown", () => {
@@ -34,6 +35,12 @@ describe("jsonRpcFromThrown", () => {
     );
     expect(duplicate.error.code).toBe(JsonRpcErrorCode.invalidParams);
     expect(duplicate.error.message).toMatch(/already imported/i);
+  });
+
+  it("maps a blocked image URL to invalid params, not internal error", () => {
+    const response = jsonRpcFromThrown(5, new InvalidImageUrlError());
+    expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(response.error.data).toEqual({ code: "invalid_image_url" });
   });
 
   it("keeps unexpected failures as internal error", () => {

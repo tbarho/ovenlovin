@@ -406,6 +406,12 @@ describe("MCP Tool Schemas", () => {
         }).success
       ).toBe(true);
       expect(createRecipeTool.inputSchema.safeParse({ title: "" }).success).toBe(false);
+      expect(
+        createRecipeTool.inputSchema.safeParse({
+          title: "Toast",
+          images: ["http://169.254.169.254/latest/meta-data/x.png"],
+        }).success
+      ).toBe(false);
     });
 
     it("validates delete tools", () => {
@@ -737,6 +743,24 @@ describe("MCP Tool Schemas", () => {
           images: [{ url: "https://example.com/page-1.jpg" }, { base64: "abc123" }],
         }).success
       ).toBe(true);
+    });
+
+    it("rejects a private or file image URL", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          imageUrl: "http://169.254.169.254/latest/meta-data/",
+        }).success
+      ).toBe(false);
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          imageUrl: "file:///etc/passwd",
+        }).success
+      ).toBe(false);
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          images: [{ url: "http://localhost:3000/api/v1/status" }],
+        }).success
+      ).toBe(false);
     });
 
     it("rejects a call with no image", () => {

@@ -1,6 +1,7 @@
 import {
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  InvalidImageUrlError,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
 
@@ -88,6 +89,9 @@ export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure
   }
   if (error instanceof McpInvalidParamsError) {
     return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, error.data);
+  }
+  if (error instanceof InvalidImageUrlError) {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, { code: error.code });
   }
   if (isImportAiUnavailable(error)) {
     return jsonRpcError(id, JsonRpcErrorCode.internal, IMPORT_AI_UNAVAILABLE_MESSAGE, {

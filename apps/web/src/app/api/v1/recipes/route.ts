@@ -7,7 +7,7 @@ import {
   requireWritableHousehold,
   getIdempotencyKey,
 } from "@/lib/api/middleware";
-import { RecipeService } from "@ovenlovin/core";
+import { assertAllowedRecipeImageUrls, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import {
   isIdempotentReplay,
@@ -82,6 +82,9 @@ export async function POST(request: NextRequest) {
     const service = new RecipeService(db);
 
     const createdBy = context.userId || context.clientId || "system";
+    if (Array.isArray(body.images)) {
+      assertAllowedRecipeImageUrls(body.images);
+    }
 
     if (typeof body.title === "string" && body.title.trim()) {
       const ingredients = Array.isArray(body.ingredients)
