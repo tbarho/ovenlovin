@@ -26,6 +26,23 @@ export function isStoredBlobUrl(url: string): boolean {
   }
 }
 
+/** Only fetch images we would also request on a first import, never localhost or link-local. */
+export function isFetchableRecipeImageUrl(url: string): boolean {
+  if (isStoredBlobUrl(url)) return true;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (host === "localhost" || host.endsWith(".localhost") || host === "::1") return false;
+    if (host === "0.0.0.0" || host.endsWith(".local") || host.endsWith(".internal")) return false;
+    if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^169\.254\./.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function imageExtensionFromUrl(url: string, contentType?: string | null): string {
   const fromType = contentType?.split(";")[0]?.trim().toLowerCase();
   if (fromType === "image/png") return "png";
@@ -226,7 +243,7 @@ export async function copyRemoteImages(
   put: StoredImagePut | undefined,
   prefix: string
 ): Promise<string[]> {
-  const unique = [...new Set(urls.filter((url) => url.trim().length > 0))];
+  const unique = [...new Set(urls.filter((url) => isFetchableRecipeImageUrl(url)))];
   if (unique.length === 0) return [];
   if (!put) return unique;
 

@@ -44,6 +44,32 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.images[0]?.blob).toMatch(/^data:image\/png;base64,/);
   });
 
+  it("accepts a previewed draft without sending the photo again", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        save: true,
+        draft: {
+          title: "Weeknight Tomato Pasta",
+          ingredients: [{ rawText: "12 oz pasta" }],
+          steps: [{ text: "Boil the pasta." }],
+          source: {
+            type: "photo",
+            importerName: "photo-importer",
+            importerVersion: "0.1.0",
+            rawExtractionJson: {},
+          },
+        },
+      }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.save).toBe(true);
+    expect(parsed.images).toEqual([]);
+    expect(parsed.draft).toMatchObject({ title: "Weeknight Tomato Pasta" });
+  });
+
   it("rejects an empty body", async () => {
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",

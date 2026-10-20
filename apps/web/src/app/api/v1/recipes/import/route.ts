@@ -7,6 +7,7 @@ import {
 } from "@ovenlovin/importers";
 import {
   copyRemoteImages,
+  draftFromSavedPreview,
   keepMainRecipeImages,
   prepareImportDraft,
   RecipeService,
@@ -53,19 +54,27 @@ export async function POST(request: NextRequest) {
       source?: string;
       content?: string;
       save?: boolean | string;
+      draft?: unknown;
     };
-    if (!body.content?.trim() || (body.source !== "url" && body.source !== "paste")) {
+    if (body.source !== "url" && body.source !== "paste") {
       throw new BadRequestError("Provide source (url or paste) and content");
     }
 
     const idempotencyKey = getIdempotencyKey(request);
-    if (body.source === "url") {
-      if (!looksLikeHttpUrl(body.content)) {
+    const savedDraft =
+      wantsPersist(body.save) && body.draft != null ? draftFromSavedPreview(body.draft) : null;
+    if (body.draft != null && wantsPersist(body.save) && !savedDraft) {
+      throw new BadRequestError("That previewed draft is not a recipe");
+    }
+
+    if (body.source === "url" && !savedDraft) {
+      const content = body.content?.trim() ?? "";
+      if (!looksLikeHttpUrl(content)) {
         throw new BadRequestError("That doesn't look like a web address");
       }
       const collision = await new RecipeService(getDatabase()).findUrlImportCollision(
         householdId,
-        body.content.trim(),
+        content,
         idempotencyKey
       );
       if (collision) {
@@ -87,19 +96,25 @@ export async function POST(request: NextRequest) {
     }
 
     let draft;
-    if (body.source === "url") {
-      const importer = createUrlImporter();
-      const raw = await importer.extract({ url: body.content.trim() });
-      draft = await importer.toDraft(raw);
-    } else if (isAiGatewayConfigured(process.env)) {
-      const importer = createPasteImporter();
-      const raw = await importer.extract({ text: body.content });
-      draft = await importer.toDraft(raw);
+    if (savedDraft) {
+      draft = savedDraft;
     } else {
-      draft = draftFromPlainText(body.content);
+      if (!body.content?.trim()) {
+        throw new BadRequestError("Provide source (url or paste) and content");
+      }
+      if (body.source === "url") {
+        const importer = createUrlImporter();
+        const raw = await importer.extract({ url: body.content.trim() });
+        draft = await importer.toDraft(raw);
+      } else if (isAiGatewayConfigured(process.env)) {
+        const importer = createPasteImporter();
+        const raw = await importer.extract({ text: body.content });
+        draft = await importer.toDraft(raw);
+      } else {
+        draft = draftFromPlainText(body.content);
+      }
+      draft = prepareImportDraft(draft);
     }
-
-    draft = prepareImportDraft(draft);
 
     if (!wantsPersist(body.save)) {
       return jsonResponse(presentImportPreview(draft));
