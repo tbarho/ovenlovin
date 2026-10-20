@@ -268,8 +268,10 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByTestId("shopping-list")).toBeVisible();
   const list = page.getByTestId("shopping-list");
   await expect(list.getByText("ground beef")).toBeVisible();
-  await expect(list.getByText(/1 5\/6 lbs?/i)).toBeVisible();
-  await expect(page.getByTestId("shop-scaled-for")).toHaveText("For 5 people");
+  await expect(list.getByText(/2 lbs?/i)).toBeVisible();
+  await expect(page.getByTestId("shop-scaled-for")).toHaveText(
+    "For 5 people (some recipes at full yield)"
+  );
   await shot(page, width, "shopping-list");
 
   await page.goto("/settings");

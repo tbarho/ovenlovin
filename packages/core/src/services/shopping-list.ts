@@ -2,7 +2,7 @@ import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/in
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
-import { cookForPeopleLabel } from "../scaling/default-servings";
+import { cookForPeopleLabel, effectivePlanServings } from "../scaling/default-servings";
 import {
   formatMeasureText,
   formatQuantity,
@@ -80,6 +80,8 @@ export interface ShoppingListData {
   warnings: ShoppingListWarning[];
   /** Week cook-for shown as "For N people". */
   scaledFor?: number;
+  /** True when some plan entries cook at a different count than `scaledFor`. */
+  scaledForMixed?: boolean;
 }
 
 export interface ShoppingListLineInput {
@@ -338,7 +340,7 @@ export class ShoppingListService {
           rawQuantity != null && isCountableShopItem(item.unit)
             ? wholeShopQuantity(rawQuantity)
             : rawQuantity;
-        const display = quantity != null ? toFriendlyMeasure(quantity, item.unit) : undefined;
+        const display = quantity != null ? toFriendlyMeasure(quantity, item.unit, true) : undefined;
         const displayQuantity = display?.displayQuantity;
         const displayUnit =
           displayQuantity && display.displayUnit
@@ -374,6 +376,22 @@ export class ShoppingListService {
       warnings: input.warnings ?? [],
       scaledFor:
         input.defaultCookFor && input.defaultCookFor > 0 ? input.defaultCookFor : undefined,
+      scaledForMixed: Boolean(
+        input.defaultCookFor &&
+        input.defaultCookFor > 0 &&
+        input.entries.some((source) => {
+          if (!source.entry.recipeId) return false;
+          return (
+            effectivePlanServings({
+              entryServings: source.entry.servings,
+              defaultCookFor: input.defaultCookFor ?? 0,
+              mode: input.mode,
+              recipeServings: source.recipeServings,
+              scaleFactor: source.entry.scaleFactor,
+            }) !== input.defaultCookFor
+          );
+        })
+      ),
     };
   }
 
@@ -469,7 +487,9 @@ export class ShoppingListService {
       ``,
       `**Week Starting:** ${data.weekStart}`,
       `**Generated:** ${formatShoppingListGeneratedAt(data.generatedAt, options.timeZone)}`,
-      ...(data.scaledFor ? [``, `**${cookForPeopleLabel(data.scaledFor)}**`] : []),
+      ...(data.scaledFor
+        ? [``, `**${cookForPeopleLabel(data.scaledFor, data.scaledForMixed)}**`]
+        : []),
       ``,
     ];
 
@@ -500,7 +520,7 @@ export class ShoppingListService {
       ``,
       `Week Starting: ${data.weekStart}`,
       `Generated: ${formatShoppingListGeneratedAt(data.generatedAt, options.timeZone)}`,
-      ...(data.scaledFor ? [``, cookForPeopleLabel(data.scaledFor)] : []),
+      ...(data.scaledFor ? [``, cookForPeopleLabel(data.scaledFor, data.scaledForMixed)] : []),
       ``,
     ];
 
@@ -605,13 +625,20 @@ export function applyShoppingTrip(
   };
 }
 
+function shopItemName(ing: ShoppingListIngredient): string {
+  if (ing.name !== "egg" && ing.name !== "eggs") return ing.name;
+  if (ing.quantity == null) return ing.name;
+  return ing.quantity === 1 ? "egg" : "eggs";
+}
+
 function formatItemLine(ing: ShoppingListIngredient, includeRecipes = true): string {
-  const quantityPart = ing.quantity != null ? `${formatMeasureText(ing.quantity, ing.unit)} ` : "";
+  const quantityPart =
+    ing.quantity != null ? `${formatMeasureText(ing.quantity, ing.unit, true)} ` : "";
   const recipes = includeRecipes
     ? ` (${ing.recipes
         .map((r) => r.recipeTitle)
         .filter(Boolean)
         .join(", ")})`
     : "";
-  return `${quantityPart}${ing.name}${recipes}`.replace(/\s+/g, " ").trim();
+  return `${quantityPart}${shopItemName(ing)}${recipes}`.replace(/\s+/g, " ").trim();
 }

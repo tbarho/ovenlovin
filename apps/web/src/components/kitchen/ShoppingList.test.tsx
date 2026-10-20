@@ -68,7 +68,8 @@ describe("ShoppingList", () => {
   it("names the week cook-for on the list", () => {
     render(
       <ShoppingList
-        scaledFor={6}
+        scaledFor={5}
+        scaledForMixed
         items={[
           {
             key: "roast",
@@ -80,7 +81,9 @@ describe("ShoppingList", () => {
       />
     );
 
-    expect(screen.getByTestId("shop-scaled-for")).toHaveTextContent("For 6 people");
+    expect(screen.getByTestId("shop-scaled-for")).toHaveTextContent(
+      "For 5 people (some recipes at full yield)"
+    );
   });
 
   it("shows friendly fractions instead of long decimals", () => {

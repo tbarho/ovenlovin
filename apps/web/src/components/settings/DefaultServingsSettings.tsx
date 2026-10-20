@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { HouseholdServingsSettings } from "@ovenlovin/core";
+import { SERVINGS_HARD_MAX, type HouseholdServingsSettings } from "@ovenlovin/core";
 import { api } from "@/lib/browser-api";
 
 const MODES = [
@@ -116,13 +116,13 @@ export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolea
               <input
                 type="number"
                 min={1}
-                max={24}
+                max={SERVINGS_HARD_MAX}
                 value={fixedCount}
                 aria-label="Fixed default servings"
                 onChange={(event) => setFixedCount(event.target.value)}
                 onBlur={() => {
                   const count = Number(fixedCount);
-                  if (!Number.isFinite(count) || count < 1 || count > 24) {
+                  if (!Number.isFinite(count) || count < 1 || count > SERVINGS_HARD_MAX) {
                     setFixedCount(String(settings.servings ?? settings.defaultCookFor));
                     return;
                   }

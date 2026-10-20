@@ -79,6 +79,20 @@ describe("formatQuantity", () => {
     expect(formatQuantity(0.44)).toBe("1/2");
   });
 
+  it("treats whole numbers as snap candidates so 0.958 is 1, not 3/4", () => {
+    expect(formatQuantity(0.958)).toBe("1");
+    expect(formatQuantity(0.9)).toBe("1");
+    expect(formatQuantity(0.99)).toBe("1");
+    expect(formatQuantity(1.9)).toBe("2");
+    expect(formatQuantity(1.99)).toBe("2");
+    expect(formatQuantity(2.02)).toBe("2");
+    expect(formatMeasureText(23 / 24, "lb")).toBe("1 lb");
+    expect(formatMeasureText(0.958, "lb")).toBe("1 lb");
+    expect(formatMeasureText(0.958, "lb", true)).toBe("1 lb");
+    expect(formatMeasureText(0.8, "lb", true)).toBe("1 lb");
+    expect(formatQuantity(0.8, true)).toBe("1");
+  });
+
   it("snaps floating-point noise and stored decimal leftovers to fractions", () => {
     expect(formatQuantity(0.6666666667)).toBe("2/3");
     expect(formatQuantity(0.3333333333)).toBe("1/3");
@@ -133,12 +147,12 @@ describe("toFriendlyMeasure", () => {
     expect(formatMeasureText(0.125, "cup")).toBe("2 tbsp");
   });
 
-  it("promotes a large spoon amount to the nearest kitchen cup", () => {
+  it("keeps large spoon amounts when a cup snap would be more than 5% off", () => {
     expect(toFriendlyMeasure(13.75, "tbsp")).toEqual({
-      displayQuantity: "3/4",
-      displayUnit: "cup",
+      displayQuantity: "3/4 cup + 1 3/4 tbsp",
     });
-    expect(formatMeasureText(13.75, "tbsp")).toBe("3/4 cup");
+    expect(formatMeasureText(13.75, "tbsp")).toBe("3/4 cup + 1 3/4 tbsp");
+    expect(toFriendlyMeasure(8, "tbsp")).toEqual({ displayQuantity: "1/2", displayUnit: "cup" });
   });
 });
 
@@ -203,6 +217,7 @@ describe("scaleIngredientDisplay", () => {
   it("rounds countable recipe amounts the same way the shopping list does", () => {
     expect(scaleIngredientDisplay({ rawText: "2 eggs" }, 4, 5)).toBe("3 eggs");
     expect(scaleIngredientDisplay({ rawText: "1 egg" }, 6, 5)).toBe("1 egg");
+    expect(scaleIngredientDisplay({ rawText: "2 eggs" }, 4, 2)).toBe("1 egg");
     expect(
       scaleIngredientDisplay({ rawText: "0.44 cup milk", quantityMin: 0.44, unit: "cup" }, 4, 4)
     ).toBe("1/2 cup milk");
@@ -255,5 +270,6 @@ describe("countable shopping amounts", () => {
     expect(formatMeasureText(2.5, undefined)).toBe("3");
     expect(formatMeasureText(2 / 3, "can")).toBe("1 can");
     expect(formatMeasureText(5 / 6, "lb")).toBe("3/4 lb");
+    expect(formatMeasureText(5 / 6, "lb", true)).toBe("1 lb");
   });
 });

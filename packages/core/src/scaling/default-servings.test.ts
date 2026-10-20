@@ -124,6 +124,7 @@ describe("notes and settings", () => {
     expect(cookForServingsLabel({ cookFor: 5 })).toBe("5 servings");
     expect(cookForPeopleLabel(6)).toBe("For 6 people");
     expect(cookForPeopleLabel(1)).toBe("For 1 person");
+    expect(cookForPeopleLabel(5, true)).toBe("For 5 people (some recipes at full yield)");
   });
 
   it("names the family scale and can reset copy", () => {

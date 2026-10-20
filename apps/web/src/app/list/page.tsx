@@ -33,6 +33,9 @@ export default async function ShoppingListPage() {
         checkedKeys={kitchen.shoppingState.checkedKeys}
         extras={kitchen.shoppingState.extras}
         scaledFor={kitchen.defaultServings}
+        scaledForMixed={kitchen.days.some((day) =>
+          day.meals.some((meal) => meal.recipeId && meal.servings !== kitchen.defaultServings)
+        )}
       />
     </>
   );

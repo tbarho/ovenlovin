@@ -346,10 +346,10 @@ describe("ShoppingListService", () => {
       name: "salt",
       quantity: 1.8333,
       unit: "tbsp",
-      displayQuantity: "1 3/4",
+      displayQuantity: "2",
       displayUnit: "tbsp",
     });
-    expect(service.exportAsMarkdown(list)).toContain("1 3/4 tbsp salt");
+    expect(service.exportAsMarkdown(list)).toContain("2 tbsp salt");
     expect(service.exportAsMarkdown(list)).not.toContain("1.8333");
   });
 
@@ -549,12 +549,31 @@ describe("ShoppingListService", () => {
 
     expect(list.ingredients[0]).toMatchObject({
       name: "ground beef",
-      displayQuantity: "1 5/6",
+      displayQuantity: "2",
       displayUnit: "lbs",
     });
     expect(list.scaledFor).toBe(5);
-    expect(service.exportAsMarkdown(list)).toContain("For 5 people");
-    expect(service.exportAsMarkdown(list)).toContain("1 5/6 lbs ground beef");
+    expect(list.scaledForMixed).toBe(true);
+    expect(service.exportAsMarkdown(list)).toContain("For 5 people (some recipes at full yield)");
+    expect(service.exportAsMarkdown(list)).toContain("2 lbs ground beef");
+  });
+
+  it("does not show 3/4 lb when 1 lb is scaled from 24 to 23 servings", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "roast", servings: 23 }),
+        recipeTitle: "Sunday roast",
+        recipeServings: 24,
+        ingredients: [{ rawText: "1 lb ground beef" }],
+      },
+    ]);
+    expect(list.ingredients[0]).toMatchObject({
+      name: "ground beef",
+      displayQuantity: "1",
+      displayUnit: "lb",
+    });
+    expect(service.exportAsMarkdown(list)).toContain("1 lb ground beef");
+    expect(service.exportAsMarkdown(list)).not.toContain("3/4 lb");
   });
 
   it("rounds countable shop items up and keeps measured cooking fractions", () => {
@@ -596,7 +615,7 @@ describe("ShoppingListService", () => {
       displayUnit: "lb",
     });
     const markdown = service.exportAsMarkdown(list);
-    expect(markdown).toMatch(/3 eggs?/);
+    expect(markdown).toContain("3 eggs");
     expect(markdown).not.toContain("2 1/2");
     expect(markdown).not.toContain("2/3 whole chicken");
     expect(markdown).not.toContain("2/3 can");
@@ -667,7 +686,17 @@ describe("ShoppingListService", () => {
     expect(marked.itemCount).toBe(2);
 
     const markdown = service.format(list, "markdown", trip);
-    expect(markdown).toContain("- [x] 2 egg");
+    expect(markdown).toContain("- [x] 2 eggs");
+    const dozen = build([
+      {
+        entry: entry({ recipeId: "bake", servings: 4 }),
+        recipeTitle: "Sheet-pan cookies",
+        recipeServings: 4,
+        ingredients: [{ rawText: "12 eggs" }],
+      },
+    ]);
+    expect(service.exportAsText(dozen)).toMatch(/\b12 eggs\b/);
+    expect(service.exportAsText(dozen)).not.toMatch(/\b12 egg\b/);
     expect(markdown).toContain("- [x] paper towels");
     expect(markdown).not.toContain("- [ ] 2 egg");
 

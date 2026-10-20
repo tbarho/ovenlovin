@@ -24,7 +24,7 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 ## Household and plans
 
 - `get_household_context` - people in household `sortOrder`, Default servings (`servingsSettings`: family / fixed / recipe), plus per-person Loves (never used to hide recipes)
-- `manage_household_settings` - get or update kitchen Default servings (`family` = max(recipe yield, People count), `fixed` = a number 1-24, `recipe` = stored yield)
+- `manage_household_settings` - get or update kitchen Default servings (`family` = max(recipe yield, People count), `fixed` = a number 1-99, `recipe` = stored yield)
 - `manage_kitchen_invites` - create, list, or revoke shareable kitchen invite links (owner or admin; default role member)
 - `manage_kitchen_members` - list signed-in kitchen members, change roles, remove a member, or leave
 - `get_person_rules` - Can't eat / Doesn't like rules plus Loves

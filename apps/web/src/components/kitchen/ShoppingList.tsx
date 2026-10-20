@@ -41,12 +41,14 @@ export function ShoppingList({
   checkedKeys = [],
   extras = [],
   scaledFor = null,
+  scaledForMixed = false,
 }: {
   items: ShopItem[];
   planId?: string | null;
   checkedKeys?: string[];
   extras?: ShoppingExtra[];
   scaledFor?: number | null;
+  scaledForMixed?: boolean;
 }) {
   const [checked, setChecked] = useState<string[]>(checkedKeys);
   const [added, setAdded] = useState<ShoppingExtra[]>(extras);
@@ -124,7 +126,7 @@ export function ShoppingList({
     <div className="shop-board" data-testid="shopping-list" aria-busy={pending}>
       {scaledFor ? (
         <p className="muted" data-testid="shop-scaled-for">
-          {cookForPeopleLabel(scaledFor)}
+          {cookForPeopleLabel(scaledFor, scaledForMixed)}
         </p>
       ) : null}
       <ShopAdd value={draft} onChange={setDraft} onSubmit={addExtra} pending={pending} />

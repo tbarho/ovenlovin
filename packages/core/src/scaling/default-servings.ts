@@ -116,9 +116,10 @@ export function cookForServingsLabel(input: {
 }
 
 /** Shopping-list line for the week cook-for. */
-export function cookForPeopleLabel(count: number): string {
+export function cookForPeopleLabel(count: number, mixed = false): string {
   const n = clampServings(count);
-  return n === 1 ? "For 1 person" : `For ${n} people`;
+  const base = n === 1 ? "For 1 person" : `For ${n} people`;
+  return mixed ? `${base} (some recipes at full yield)` : base;
 }
 
 /** Optional `?servings=` override for REST/MCP recipe display. */
