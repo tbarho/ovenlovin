@@ -101,5 +101,5 @@ export function shopItemQuantity(item: ShopItem): string | null {
       : item.displayQuantity;
   }
   if (item.quantity == null) return null;
-  return formatMeasureText(item.quantity, item.unit);
+  return formatMeasureText(item.quantity, item.unit, true);
 }

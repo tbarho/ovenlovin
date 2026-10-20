@@ -9,6 +9,7 @@ describe("generateOpenApiDocument", () => {
     expect(spec.info.version).toBe("0.1.0");
     expect(spec.components?.securitySchemes).toHaveProperty("apiKey");
     expect(spec.security).toEqual([{ apiKey: [] }, { bearerAuth: [] }]);
+    expect(JSON.stringify(spec.components?.securitySchemes)).toMatch(/mismatched `X-Kitchen-Id`/);
   });
 
   it("includes meal plans, households, people, and api-keys", () => {

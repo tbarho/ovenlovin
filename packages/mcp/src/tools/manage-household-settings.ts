@@ -5,6 +5,7 @@ import {
   HouseholdService,
   PeopleService,
   type HouseholdServingsSettings,
+  SERVINGS_HARD_MAX,
   updateHouseholdServingsSettingsSchema,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
@@ -12,7 +13,7 @@ import { createDbClient } from "@ovenlovin/db";
 export const manageHouseholdSettingsSchema = z.object({
   action: z.enum(["get", "update"]).default("get"),
   mode: z.enum(["family", "fixed", "recipe"]).optional(),
-  servings: z.number().int().min(1).max(24).optional().nullable(),
+  servings: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional().nullable(),
 });
 
 async function settingsFor(
@@ -47,7 +48,7 @@ async function handler(
 export const manageHouseholdSettingsTool = {
   name: "manage_household_settings",
   description:
-    "Get or update kitchen Default servings: match the family size, a fixed number (1-24), or the recipe card's stored servings. Family size is the People (dietary profiles) count, not signed-in kitchen members.",
+    "Get or update kitchen Default servings: match the family size, a fixed number (1-99), or the recipe card's stored servings. Family size is the People (dietary profiles) count, not signed-in kitchen members.",
   inputSchema: manageHouseholdSettingsSchema,
   handler,
 } as const;

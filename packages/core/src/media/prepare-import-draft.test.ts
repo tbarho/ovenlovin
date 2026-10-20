@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   draftFromSavedPreview,
   importDedupeKeys,
+  preferCompletedImport,
   prepareImportDraft,
 } from "./prepare-import-draft";
 import type { RecipeImportDraft } from "../schemas/recipes";
@@ -79,6 +80,29 @@ describe("prepareImportDraft", () => {
     expect(rebuilt?.steps).toHaveLength(1);
     expect(rebuilt?.source.importerName).toBe("paste-importer");
     expect(draftFromSavedPreview({ title: "Nope" })).toBeNull();
+  });
+
+  it("drops private image URLs from a client-sent preview", () => {
+    const rebuilt = draftFromSavedPreview({
+      ...presentablePreview(),
+      images: [
+        "https://cdn.example/tomato.jpg",
+        "http://127.0.0.1/secret.jpg",
+        "http://169.254.169.254/latest/meta-data",
+      ],
+    });
+    expect(rebuilt?.images).toEqual(["https://cdn.example/tomato.jpg"]);
+  });
+
+  it("replays a completed Idempotency-Key instead of a source_url duplicate", () => {
+    const replay = { id: "recipe-replay" };
+    const duplicate = { recipe: { id: "recipe-url" }, match: "source_url" as const };
+    expect(preferCompletedImport({ idempotency: replay, duplicate })).toEqual({
+      recipe: replay,
+      match: "idempotency",
+    });
+    expect(preferCompletedImport({ idempotency: null, duplicate })).toEqual(duplicate);
+    expect(preferCompletedImport({ idempotency: null, duplicate: null })).toBeNull();
   });
 });
 

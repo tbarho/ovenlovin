@@ -9,6 +9,7 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("https://ovenlovin.vercel.app/api/v1/openapi.json");
     expect(text).toContain("Authorization: ApiKey");
     expect(text).toContain("X-Kitchen-Id");
+    expect(text).toContain("mismatched");
     expect(text).toContain("whoami");
     expect(text).toContain(
       "POST /api/v1/recipes/import (preview unless save:true; body source/content)"

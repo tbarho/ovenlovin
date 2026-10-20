@@ -18,6 +18,7 @@ import {
   importDedupeKeys,
   matchFromDedupeKind,
   photoFingerprintFromDraft,
+  preferCompletedImport,
   prepareImportDraft,
   sourceUrlFromDraft,
   type ImportDuplicateMatch,
@@ -635,15 +636,53 @@ export class RecipeService extends BaseService {
     return null;
   }
 
+  async findUrlImportCollision(
+    householdId: string,
+    url: string,
+    idempotencyKey?: string
+  ): Promise<{ recipe: RecipeDetails; match: "idempotency" | "source_url" } | null> {
+    const trimmed = idempotencyKey?.trim().slice(0, 512);
+    if (trimmed) {
+      const recipeId = await new ImportDedupeService(this._db).findCompleted(
+        householdId,
+        "idempotency",
+        trimmed
+      );
+      if (recipeId) {
+        const recipe = await this.getRecipeDetails(recipeId);
+        if (recipe) return { recipe, match: "idempotency" };
+      }
+    }
+    const existing = await this.findSourceUrlDuplicate(householdId, url);
+    if (!existing) return null;
+    const recipe = await this.getRecipeDetails(existing.id);
+    return recipe ? { recipe, match: "source_url" } : null;
+  }
+
   async persistImportedDraft(
     draft: RecipeImportDraft,
     input: { householdId: string; createdBy: string; idempotencyKey?: string }
   ): Promise<PersistImportedDraftResult> {
     const prepared = prepareImportDraft(draft);
-    const existing = await this.findImportDuplicate(input.householdId, prepared);
+    const dedupe = new ImportDedupeService(this._db);
+    const idempotency = importDedupeKeys(prepared, input.idempotencyKey).find(
+      (key) => key.kind === "idempotency"
+    );
+    let replay: RecipeDetails | null = null;
+    if (idempotency) {
+      const recipeId = await dedupe.findCompleted(
+        input.householdId,
+        "idempotency",
+        idempotency.key
+      );
+      if (recipeId) replay = await this.getRecipeDetails(recipeId);
+    }
+    const existing = preferCompletedImport({
+      idempotency: replay,
+      duplicate: replay ? null : await this.findImportDuplicate(input.householdId, prepared),
+    });
     if (existing) return { outcome: "existing", recipe: existing.recipe, match: existing.match };
 
-    const dedupe = new ImportDedupeService(this._db);
     const keys = importDedupeKeys(prepared, input.idempotencyKey);
     const claimed: typeof keys = [];
     let created: RecipeDetails | undefined;

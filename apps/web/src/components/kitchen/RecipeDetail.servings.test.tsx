@@ -111,4 +111,24 @@ describe("RecipeDetail default servings", () => {
     expect(screen.getByText("1 1/3 cups celery")).toBeInTheDocument();
     expect(screen.getByText("1 1/3 cups carrot")).toBeInTheDocument();
   });
+
+  it("lets the slider reach a 48-serving recipe yield", () => {
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Sheet-pan cookies", servings: 48 })}
+        cookbooks={[testCookbook()]}
+        servingsSettings={{
+          mode: "recipe",
+          servings: null,
+          familySize: 5,
+          defaultCookFor: 4,
+        }}
+      />
+    );
+
+    const slider = screen.getByLabelText("Servings");
+    expect(slider).toHaveAttribute("aria-valuenow", "48");
+    expect(slider).toHaveAttribute("aria-valuemax", "48");
+    expect(slider).toHaveAttribute("max", "48");
+  });
 });

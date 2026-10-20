@@ -39,6 +39,24 @@ describe("planMealPlanEntryMerge", () => {
     recipeId: recipeB,
   });
 
+  it("editing Monday leaves Tuesday and Wednesday untouched", () => {
+    const wednesday = entry({
+      id: "wed",
+      date: "2026-10-14",
+      mealSlot: "dinner",
+      recipeId: recipeB,
+    });
+    const week = [monday, tuesday, wednesday];
+    const afterMonday = planMealPlanEntryMerge(week, [
+      { date: "2026-10-12", meal: "dinner", recipeId: recipeB, servings: 4 },
+    ]);
+    expect(afterMonday.upserts).toHaveLength(1);
+    expect(afterMonday.upserts[0]?.next.date).toBe("2026-10-12");
+    expect(afterMonday.clearIds).toEqual([]);
+    expect(week.find((row) => row.date === "2026-10-13")?.recipeId).toBe(recipeB);
+    expect(week.find((row) => row.date === "2026-10-14")?.recipeId).toBe(recipeB);
+  });
+
   it("upserts one night and leaves the rest of the week", () => {
     const result = planMealPlanEntryMerge(
       [monday, tuesday],

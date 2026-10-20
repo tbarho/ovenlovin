@@ -1,6 +1,7 @@
-import type { RecipeImportDraft } from "../schemas/recipes";
+import { recipeSourceTypeSchema, type RecipeImportDraft } from "../schemas/recipes";
 import { ensureReviewMetadata } from "./import-review";
 import { cleanImportedTitle } from "./import-title";
+import { isFetchableRecipeImageUrl } from "./recipe-images";
 import { normalizeSourceUrl } from "./source-url";
 
 export type ImportDedupeKind = "idempotency" | "photo_sha" | "photo_phash" | "source_url";
@@ -98,6 +99,12 @@ export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null 
 
   const source = raw.source as RecipeImportDraft["source"];
   if (typeof source.importerName !== "string" || !source.importerName.trim()) return null;
+  if (!recipeSourceTypeSchema.safeParse(source.type).success) return null;
+  const images = Array.isArray(raw.images)
+    ? raw.images.filter(
+        (item): item is string => typeof item === "string" && isFetchableRecipeImageUrl(item)
+      )
+    : undefined;
   return prepareImportDraft({
     title: raw.title,
     description: typeof raw.description === "string" ? raw.description : undefined,
@@ -108,7 +115,7 @@ export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null 
     totalTimeMinutes: typeof raw.totalTimeMinutes === "number" ? raw.totalTimeMinutes : undefined,
     cuisine: typeof raw.cuisine === "string" ? raw.cuisine : undefined,
     course: typeof raw.course === "string" ? raw.course : undefined,
-    images: Array.isArray(raw.images) ? (raw.images as string[]) : undefined,
+    images,
     ingredients,
     steps,
     source: {
@@ -135,4 +142,13 @@ export function sourceUrlFromDraft(draft: RecipeImportDraft): string | null {
         ""
     ) ?? null
   );
+}
+
+/** Replay a completed Idempotency-Key before treating the same URL or photo as a duplicate. */
+export function preferCompletedImport<T>(lookups: {
+  idempotency?: T | null;
+  duplicate?: { recipe: T; match: ImportDuplicateMatch } | null;
+}): { recipe: T; match: ImportDuplicateMatch } | null {
+  if (lookups.idempotency) return { recipe: lookups.idempotency, match: "idempotency" };
+  return lookups.duplicate ?? null;
 }

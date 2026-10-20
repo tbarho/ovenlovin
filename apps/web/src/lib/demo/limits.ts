@@ -23,8 +23,9 @@ export function remainingImportsFromCount(importCount: number): number {
   return Math.max(0, DEMO_IMPORT_LIMIT - importCount);
 }
 
+/** Demo write quota: POST/PUT/PATCH only. Deletes stay free so testers can clean up. */
 export function isMutatingMethod(method: string): boolean {
-  return ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
+  return ["POST", "PUT", "PATCH"].includes(method.toUpperCase());
 }
 
 export function isDemoUploadPath(pathname: string): boolean {

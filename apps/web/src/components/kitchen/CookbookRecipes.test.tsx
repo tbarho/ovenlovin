@@ -52,6 +52,18 @@ describe("CookbookRecipes add and remove", () => {
     );
   });
 
+  it("shows a delete error in the confirm sheet", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValueOnce(new Error("This demo sandbox allows 60 writes per hour."));
+    render(<CookbookRecipes cookbook={testCookbook()} recipes={[testRecipe()]} catalog={[]} />);
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    const dialog = screen.getByRole("dialog", { name: /delete cookbook/i });
+    await user.click(within(dialog).getByRole("button", { name: "Delete cookbook" }));
+    expect(
+      await within(dialog).findByText("This demo sandbox allows 60 writes per hour.")
+    ).toBeVisible();
+  });
+
   it("removes a recipe from the cookbook inline", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockResolvedValueOnce(undefined);

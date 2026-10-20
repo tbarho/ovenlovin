@@ -25,6 +25,8 @@ function fixture(name: string): string {
 }
 
 const CHALLENGE = fixture("cloudflare-challenge.html");
+const VERCEL_CHECKPOINT = fixture("vercel-security-checkpoint.html");
+const CF_TURNSTILE = fixture("cloudflare-turnstile.html");
 const NATASHA = fixture("natashaskitchen-beef-stroganoff.html");
 const BUDGET = fixture("budgetbytes-beef-stroganoff.html");
 const WELLPLATED = fixture("wellplated-beef-stroganoff.html");
@@ -334,6 +336,73 @@ describe("fetchHtml layers", () => {
       expect((error as Error).message).toMatch(/tried direct, google-translate, jina/);
       expect((error as Error).message).not.toMatch(/No recipe found/);
     }
+  });
+
+  it("treats a Vercel Security Checkpoint 429 as blocked and tries the next layer", async () => {
+    expect(looksLikeBotChallenge(VERCEL_CHECKPOINT)).toBe(true);
+    expect(looksLikeCompleteDocument(VERCEL_CHECKPOINT)).toBe(false);
+    expect(shouldKeepLooking(VERCEL_CHECKPOINT, 429)).toBe(true);
+
+    const live = "https://food52.com/recipes/chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested === googleTranslateUrl(live) || requested.includes("translate.goog")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => NATASHA,
+        };
+      }
+      return {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: requested,
+        text: async () => VERCEL_CHECKPOINT,
+      };
+    });
+
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(result.layersTried).toEqual(["direct", "google-translate", "jina"]);
+    expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
+  });
+
+  it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
+    expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
+
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+          url: requested,
+          text: async () => CF_TURNSTILE,
+        };
+      }
+      return {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: requested,
+        text: async () => VERCEL_CHECKPOINT,
+      };
+    });
+
+    await expect(
+      fetchHtml("https://sallysbakingaddiction.com/cookies/", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
+    });
   });
 });
 

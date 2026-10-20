@@ -3,8 +3,9 @@
  */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { HouseholdAccessError, HouseholdService } from "@ovenlovin/core";
+import { HouseholdAccessError, HouseholdService, RecipeService } from "@ovenlovin/core";
 import * as db from "@ovenlovin/db";
+import * as importers from "@ovenlovin/importers";
 import {
   searchRecipesTool,
   getRecipeTool,
@@ -671,6 +672,45 @@ describe("MCP Tool Schemas", () => {
       if (result.success) {
         expect(result.data.skipReview).toBe(false);
       }
+    });
+
+    it("reports an already-saved URL as a duplicate without fetching", async () => {
+      const extract = vi.fn();
+      vi.spyOn(importers, "createUrlImporter").mockReturnValue({ extract } as never);
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "findUrlImportCollision").mockResolvedValue({
+        recipe: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          title: "Weeknight Chili",
+          status: "published",
+          notes: null,
+          servings: 6,
+          prepTimeMinutes: 15,
+          cookTimeMinutes: 30,
+          images: [],
+          reviewReasons: [],
+          uncertainFields: [],
+        } as never,
+        match: "source_url",
+      });
+
+      const result = await importRecipeTool.handler(
+        {
+          source: "url",
+          content: "https://example.com/chili-cheese-beef-n-mac/",
+          skipReview: false,
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          scopes: [],
+        }
+      );
+
+      expect(result.duplicate).toBe(true);
+      expect(result.created).toBe(false);
+      expect(result.title).toBe("Weeknight Chili");
+      expect(extract).not.toHaveBeenCalled();
     });
   });
 

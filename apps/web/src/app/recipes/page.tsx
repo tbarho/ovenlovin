@@ -4,6 +4,7 @@ import { getDatabase } from "@ovenlovin/db";
 import { CookbookRecipes } from "@/components/kitchen/CookbookRecipes";
 import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { householdLovePeople, sortRecipesByLoves } from "@/lib/household-loves";
+import { demoImportQuota } from "@/lib/import-save";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadRecipeSafetyById } from "@/lib/load-recipe-safety";
 
@@ -56,10 +57,11 @@ export default async function RecipesPage({
     );
   }
 
-  const [cards, uncategorized, all] = await Promise.all([
+  const [cards, uncategorized, all, importQuota] = await Promise.all([
     cookbooks.listCookbookCards(householdId),
     recipes.listRecipes(householdId, { uncategorized: true, pagination: { limit: 40 } }),
     recipes.listRecipes(householdId, { pagination: { limit: 40 } }),
+    demoImportQuota(householdId),
   ]);
 
   const safetyByRecipe = await loadRecipeSafetyById(
@@ -75,6 +77,8 @@ export default async function RecipesPage({
       recipes={sortRecipesByLoves(all.items, lovePeople)}
       lovePeople={lovePeople}
       safetyByRecipe={safetyByRecipe}
+      remainingImports={importQuota?.remainingImports}
+      importLimit={importQuota?.importLimit}
     />
   );
 }

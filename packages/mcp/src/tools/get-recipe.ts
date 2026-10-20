@@ -11,6 +11,7 @@ import {
   HouseholdService,
   PeopleService,
   RecipeService,
+  SERVINGS_HARD_MAX,
   backfillParsedIngredient,
   parseServingsQuery,
   recipeServingsPresentation,
@@ -34,7 +35,7 @@ export const getRecipeSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(24)
+    .max(SERVINGS_HARD_MAX)
     .optional()
     .describe("Override display servings. When omitted, kitchen Default servings is used."),
 });
