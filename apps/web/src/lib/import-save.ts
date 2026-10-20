@@ -144,6 +144,14 @@ export function isIdempotentReplay(result: PersistImportedDraftResult): boolean 
   return result.outcome === "existing" && result.match === "idempotency";
 }
 
+export function replayOrDuplicateUrlImport(collision: {
+  recipe: RecipeDetails;
+  match: "idempotency" | "source_url";
+}): { kind: "replay"; recipe: RecipeDetails } | { kind: "duplicate"; recipe: RecipeDetails } {
+  if (collision.match === "idempotency") return { kind: "replay", recipe: collision.recipe };
+  return { kind: "duplicate", recipe: collision.recipe };
+}
+
 export function recipeFromPersist(result: PersistImportedDraftResult): RecipeDetails {
   if (result.outcome === "created") return result.recipe;
   if (result.outcome === "existing" && result.match === "idempotency") return result.recipe;

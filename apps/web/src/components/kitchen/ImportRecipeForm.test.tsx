@@ -292,6 +292,11 @@ describe("ImportRecipeForm url and paste validation", () => {
     vi.mocked(api).mockReset();
   });
 
+  it("shows remaining demo imports up front", () => {
+    render(<ImportRecipeForm remainingImports={3} importLimit={5} />);
+    expect(screen.getByTestId("import-quota")).toHaveTextContent("3 of 5 left");
+  });
+
   it("keeps Paste import disabled until there is text", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);

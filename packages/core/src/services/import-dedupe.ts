@@ -89,6 +89,26 @@ export class ImportDedupeService extends BaseService {
     return { status: "claimed" };
   }
 
+  async findCompleted(
+    householdId: string,
+    kind: ImportDedupeKind,
+    key: string
+  ): Promise<string | null> {
+    const [row] = await this._db
+      .select({ recipeId: importDedupe.recipeId })
+      .from(importDedupe)
+      .where(
+        and(
+          eq(importDedupe.householdId, householdId),
+          eq(importDedupe.kind, kind),
+          eq(importDedupe.dedupeKey, key),
+          eq(importDedupe.status, "completed")
+        )
+      )
+      .limit(1);
+    return row?.recipeId ?? null;
+  }
+
   async complete(
     householdId: string,
     kind: ImportDedupeKind,

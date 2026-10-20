@@ -12,6 +12,7 @@ export type PhotoImportRequest = {
   save: boolean;
   allowDuplicate: boolean;
   cookbookId?: string;
+  draft?: unknown;
 };
 
 function asBoolean(value: unknown): boolean {
@@ -44,7 +45,17 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
       images.push({ blob: imageUrl.trim() });
     }
 
-    if (images.length === 0) {
+    const draftRaw = form.get("draft");
+    let draft: unknown;
+    if (typeof draftRaw === "string" && draftRaw.trim()) {
+      try {
+        draft = JSON.parse(draftRaw) as unknown;
+      } catch {
+        throw new BadRequestError("That previewed draft is not a recipe");
+      }
+    }
+
+    if (images.length === 0 && draft == null) {
       throw new BadRequestError("Provide one or more recipe photos (file or imageUrl)");
     }
 
@@ -56,6 +67,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
       allowDuplicate: asBoolean(form.get("allowDuplicate")),
       cookbookId:
         typeof cookbookId === "string" && cookbookId.trim() ? cookbookId.trim() : undefined,
+      draft,
     };
   }
 
@@ -69,10 +81,11 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
     save?: boolean;
     allowDuplicate?: boolean;
     cookbookId?: string;
+    draft?: unknown;
   };
 
   const images = collectPhotoImages(body);
-  if (images.length === 0) {
+  if (images.length === 0 && body.draft == null) {
     throw new BadRequestError(
       "Provide an imageUrl, imageBase64, or images[] (URL or base64) for photo import"
     );
@@ -84,5 +97,6 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
     save: Boolean(body.save),
     allowDuplicate: Boolean(body.allowDuplicate),
     cookbookId: body.cookbookId,
+    draft: body.draft,
   };
 }

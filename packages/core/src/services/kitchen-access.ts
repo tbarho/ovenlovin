@@ -44,6 +44,16 @@ export function inviteNeedsSignedInUserMessage(
 export const API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE =
   "An API key is bound to one kitchen and cannot switch. A signed-in person can switch kitchens. Use GET /api/v1/households/mine to see this key's kitchen.";
 
+export const API_KEY_KITCHEN_HEADER_MISMATCH =
+  "An API key is bound to one kitchen. X-Kitchen-Id must match that kitchen or be omitted.";
+
+export function apiKeyKitchenHeaderMismatch(
+  keyHouseholdId: string,
+  kitchenIdHeader?: string | null
+): boolean {
+  return Boolean(kitchenIdHeader && kitchenIdHeader !== keyHouseholdId);
+}
+
 export function canManageInvites(role: MembershipRole | undefined): boolean {
   return role === "owner" || role === "admin";
 }

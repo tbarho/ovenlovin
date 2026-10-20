@@ -5,32 +5,35 @@ export const membershipRoleSchema = z.enum(["owner", "admin", "member", "viewer"
 
 export const defaultServingsModeSchema = z.enum(["family", "fixed", "recipe"]);
 
+/** Matches `clampServings` / `servingsRangeMax` so REST, MCP, and settings agree. */
+export const SERVINGS_HARD_MAX = 99;
+
 export const householdSchema = baseEntitySchema.merge(createdBySchema).extend({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(255),
   clerkOrgId: z.string().max(255).nullable().optional(),
   defaultServingsMode: defaultServingsModeSchema.default("family"),
-  defaultServingsCount: z.number().int().min(1).max(24).nullable().optional(),
+  defaultServingsCount: z.number().int().min(1).max(SERVINGS_HARD_MAX).nullable().optional(),
 });
 
 export const householdServingsSettingsSchema = z.object({
   mode: defaultServingsModeSchema,
-  servings: z.number().int().min(1).max(24).nullable(),
+  servings: z.number().int().min(1).max(SERVINGS_HARD_MAX).nullable(),
   familySize: z.number().int().nonnegative(),
-  defaultCookFor: z.number().int().min(1).max(24),
+  defaultCookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX),
 });
 
 export const updateHouseholdServingsSettingsSchema = z
   .object({
     mode: defaultServingsModeSchema,
-    servings: z.number().int().min(1).max(24).optional().nullable(),
+    servings: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional().nullable(),
   })
   .superRefine((value, ctx) => {
     if (value.mode === "fixed" && !(value.servings && value.servings > 0)) {
       ctx.addIssue({
         code: "custom",
         path: ["servings"],
-        message: "Provide servings (1-24) when Default servings is a fixed number.",
+        message: `Provide servings (1-${SERVINGS_HARD_MAX}) when Default servings is a fixed number.`,
       });
     }
   });

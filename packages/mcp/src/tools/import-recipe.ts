@@ -10,6 +10,7 @@ import { requireWriteRole } from "../auth/index";
 import {
   copyRemoteImages,
   draftFromPlainText,
+  draftFromSavedPreview,
   keepMainRecipeImages,
   prepareImportDraft,
   RecipeService,
@@ -20,7 +21,8 @@ import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
 
 export const importRecipeSchema = z.object({
   source: z.enum(["url", "paste"]),
-  content: z.string().describe("URL or pasted recipe text"),
+  content: z.string().optional().describe("URL or pasted recipe text"),
+  draft: z.unknown().optional().describe("Previewed recipe from a prior import. Skips extract."),
   skipReview: z.boolean().default(false).describe("Skip review queue and publish immediately"),
   cookbookId: z.string().uuid().optional().describe("Optional cookbook to file the recipe in"),
 });
@@ -74,17 +76,48 @@ async function handler(
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
 
-  let draft;
-  if (input.source === "url") {
-    const importer = createUrlImporter();
-    const raw = await importer.extract({ url: input.content });
-    draft = await importer.toDraft(raw);
-  } else if (isAiGatewayConfigured(process.env)) {
-    const importer = createPasteImporter();
-    const raw = await importer.extract({ text: input.content });
-    draft = await importer.toDraft(raw);
-  } else {
-    draft = draftFromPlainText(input.content);
+  let draft = input.draft != null ? draftFromSavedPreview(input.draft) : null;
+  if (input.draft != null && !draft) {
+    throw new Error("That previewed draft is not a recipe");
+  }
+  if (!draft) {
+    if (!input.content?.trim()) {
+      throw new Error("Provide content or draft");
+    }
+    if (input.source === "url") {
+      const collision = await recipeService.findUrlImportCollision(
+        context.householdId,
+        input.content
+      );
+      if (collision) {
+        const recipe = collision.recipe;
+        return {
+          recipeId: recipe.id,
+          created: false,
+          duplicate: true,
+          status: recipe.status,
+          title: recipe.title,
+          notes: recipe.notes ?? null,
+          servings: recipe.servings ?? undefined,
+          prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
+          cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
+          images: recipe.images,
+          confidence: 1,
+          reviewReasons: recipe.reviewReasons,
+          uncertainFields: recipe.uncertainFields,
+          message: `This recipe was already imported as "${recipe.title}" (${recipe.id}). Open that recipe instead of importing again.`,
+        };
+      }
+      const importer = createUrlImporter();
+      const raw = await importer.extract({ url: input.content });
+      draft = await importer.toDraft(raw);
+    } else if (isAiGatewayConfigured(process.env)) {
+      const importer = createPasteImporter();
+      const raw = await importer.extract({ text: input.content });
+      draft = await importer.toDraft(raw);
+    } else {
+      draft = draftFromPlainText(input.content);
+    }
   }
 
   if (input.skipReview) {

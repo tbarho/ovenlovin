@@ -1,5 +1,9 @@
 import { extendZodWithOpenApi, OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
-import { createMealPlanBodySchema, updateMealPlanBodySchema } from "@ovenlovin/core";
+import {
+  SERVINGS_HARD_MAX,
+  createMealPlanBodySchema,
+  updateMealPlanBodySchema,
+} from "@ovenlovin/core";
 import { z } from "zod";
 
 extendZodWithOpenApi(z);
@@ -182,7 +186,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         .number()
         .int()
         .min(1)
-        .max(24)
+        .max(SERVINGS_HARD_MAX)
         .describe(
           "Kitchen Default servings, or the `servings` query override. `servings` remains the stored card yield."
         ),
@@ -211,7 +215,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     request: {
       params: z.object({ id: z.string().uuid() }),
       query: z.object({
-        servings: z.coerce.number().int().min(1).max(24).optional(),
+        servings: z.coerce.number().int().min(1).max(SERVINGS_HARD_MAX).optional(),
       }),
     },
     responses: {
@@ -298,14 +302,18 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     tags: ["recipes"],
     summary: "Import a recipe from a URL or pasted text",
     description:
-      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
+      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send the previewed `draft` with `save=true` to persist without extracting again. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
     request: {
       body: {
         content: {
           "application/json": {
             schema: z.object({
               source: z.enum(["url", "paste"]),
-              content: z.string(),
+              content: z.string().optional(),
+              draft: z
+                .unknown()
+                .optional()
+                .describe("Previewed recipe from a prior save:false call. Skips extract."),
               save: z
                 .boolean()
                 .optional()
@@ -419,6 +427,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
                 .optional(),
               isHandwritten: z.boolean().optional(),
               save: z.boolean().optional(),
+              draft: z
+                .unknown()
+                .optional()
+                .describe("Previewed recipe from a prior save:false call. Skips extract."),
               allowDuplicate: z
                 .boolean()
                 .optional()
@@ -1148,9 +1160,9 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
   const householdServingsSettingsSchema = z
     .object({
       mode: z.enum(["family", "fixed", "recipe"]),
-      servings: z.number().int().min(1).max(24).nullable(),
+      servings: z.number().int().min(1).max(SERVINGS_HARD_MAX).nullable(),
       familySize: z.number().int().nonnegative(),
-      defaultCookFor: z.number().int().min(1).max(24),
+      defaultCookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX),
     })
     .openapi("HouseholdServingsSettings");
 
@@ -1180,7 +1192,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           "application/json": {
             schema: z.object({
               mode: z.enum(["family", "fixed", "recipe"]),
-              servings: z.number().int().min(1).max(24).optional().nullable(),
+              servings: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional().nullable(),
             }),
           },
         },

@@ -3,8 +3,9 @@
  */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { HouseholdAccessError, HouseholdService } from "@ovenlovin/core";
+import { HouseholdAccessError, HouseholdService, RecipeService } from "@ovenlovin/core";
 import * as db from "@ovenlovin/db";
+import * as importers from "@ovenlovin/importers";
 import {
   searchRecipesTool,
   getRecipeTool,
@@ -300,6 +301,19 @@ describe("MCP Tool Schemas", () => {
       const result = importRecipeTool.inputSchema.safeParse({
         source: "paste",
         content: "Recipe text...",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts a previewed draft", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "paste",
+        draft: {
+          title: "Weeknight Tomato Pasta",
+          ingredients: [{ rawText: "12 oz pasta" }],
+          steps: [{ text: "Boil the pasta." }],
+          source: { type: "paste", importerName: "paste-importer", importerVersion: "0.1.0" },
+        },
       });
       expect(result.success).toBe(true);
     });
@@ -659,6 +673,45 @@ describe("MCP Tool Schemas", () => {
         expect(result.data.skipReview).toBe(false);
       }
     });
+
+    it("reports an already-saved URL as a duplicate without fetching", async () => {
+      const extract = vi.fn();
+      vi.spyOn(importers, "createUrlImporter").mockReturnValue({ extract } as never);
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "findUrlImportCollision").mockResolvedValue({
+        recipe: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          title: "Weeknight Chili",
+          status: "published",
+          notes: null,
+          servings: 6,
+          prepTimeMinutes: 15,
+          cookTimeMinutes: 30,
+          images: [],
+          reviewReasons: [],
+          uncertainFields: [],
+        } as never,
+        match: "source_url",
+      });
+
+      const result = await importRecipeTool.handler(
+        {
+          source: "url",
+          content: "https://example.com/chili-cheese-beef-n-mac/",
+          skipReview: false,
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          scopes: [],
+        }
+      );
+
+      expect(result.duplicate).toBe(true);
+      expect(result.created).toBe(false);
+      expect(result.title).toBe("Weeknight Chili");
+      expect(extract).not.toHaveBeenCalled();
+    });
   });
 
   describe("import_recipe_from_image", () => {
@@ -688,6 +741,19 @@ describe("MCP Tool Schemas", () => {
 
     it("rejects a call with no image", () => {
       expect(importRecipeFromImageTool.inputSchema.safeParse({}).success).toBe(false);
+    });
+
+    it("accepts a previewed draft without an image", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          draft: {
+            title: "Weeknight Tomato Pasta",
+            ingredients: [{ rawText: "12 oz pasta" }],
+            steps: [{ text: "Boil the pasta." }],
+            source: { type: "photo", importerName: "photo-importer", importerVersion: "0.1.0" },
+          },
+        }).success
+      ).toBe(true);
     });
   });
 

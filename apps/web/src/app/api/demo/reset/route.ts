@@ -15,8 +15,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const sandbox = await resetDemoSandbox(request.cookies.get(DEMO_COOKIE_NAME)?.value);
-  const response = NextResponse.redirect(new URL("/recipes", request.url), 303);
-  response.cookies.set(DEMO_COOKIE_NAME, sandbox.id, demoCookieOptions(cookieSecure()));
-  return response;
+  try {
+    const sandbox = await resetDemoSandbox(request.cookies.get(DEMO_COOKIE_NAME)?.value);
+    const response = NextResponse.json({ ok: true, next: "/recipes" });
+    response.cookies.set(DEMO_COOKIE_NAME, sandbox.id, demoCookieOptions(cookieSecure()));
+    return response;
+  } catch (error) {
+    console.error("demo reset failed", error);
+    return NextResponse.json(
+      { error: "Could not reset this kitchen. Try again." },
+      { status: 500 }
+    );
+  }
 }

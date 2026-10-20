@@ -4,7 +4,7 @@ Remote MCP server: `https://your-app.vercel.app/mcp`
 
 ## Auth
 
-Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have an OvenLovin kitchen (open the app in the browser once; MCP does not create one). Optional `X-Kitchen-Id` selects a kitchen you belong to when you have more than one. API keys stay bound to the kitchen that minted them.
+Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have an OvenLovin kitchen (open the app in the browser once; MCP does not create one). On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.
 
 ## Recipes
 
@@ -24,7 +24,7 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 ## Household and plans
 
 - `get_household_context` - people in household `sortOrder`, Default servings (`servingsSettings`: family / fixed / recipe), plus per-person Loves (never used to hide recipes)
-- `manage_household_settings` - get or update kitchen Default servings (`family` = max(recipe yield, People count), `fixed` = a number 1-24, `recipe` = stored yield)
+- `manage_household_settings` - get or update kitchen Default servings (`family` = max(recipe yield, People count), `fixed` = a number 1-99, `recipe` = stored yield)
 - `manage_kitchen_invites` - create, list, or revoke shareable kitchen invite links (owner or admin; default role member)
 - `manage_kitchen_members` - list signed-in kitchen members, change roles, remove a member, or leave
 - `get_person_rules` - Can't eat / Doesn't like rules plus Loves

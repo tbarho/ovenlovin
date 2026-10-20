@@ -71,13 +71,14 @@ export function planEntryServings(input: {
   const yieldServings = recipeYieldServings(input.recipeServings);
   const cookFor = clampServings(input.cookFor);
   if (input.mode === "recipe") return clampServings(yieldServings);
-  return cookFor;
+  if (input.mode === "fixed") return cookFor;
+  return clampServings(Math.max(yieldServings, cookFor));
 }
 
 /**
- * Servings used for a plan card and shopping line.
+ * Servings used for a plan card, recipe read, and shopping line.
  * Entry servings win; otherwise a stored scaleFactor other than 1; otherwise
- * recipe yield in recipe mode; otherwise household cook-for.
+ * recipe yield in recipe mode; otherwise max(yield, cook-for) in family mode.
  */
 export function effectivePlanServings(input: {
   entryServings?: number | null;
@@ -93,7 +94,8 @@ export function effectivePlanServings(input: {
     return clampServings(input.scaleFactor * yieldServings);
   }
   if (input.mode === "recipe") return clampServings(yieldServings);
-  return clampServings(input.defaultCookFor);
+  if (input.mode === "fixed") return clampServings(input.defaultCookFor);
+  return clampServings(Math.max(yieldServings, input.defaultCookFor));
 }
 
 /**
@@ -111,6 +113,13 @@ export function cookForServingsLabel(input: {
     return `Recipe makes ${recipeMakes} · cooking for ${cookFor}`;
   }
   return `${cookFor} ${cookFor === 1 ? "serving" : "servings"}`;
+}
+
+/** Shopping-list line for the week cook-for. */
+export function cookForPeopleLabel(count: number, mixed = false): string {
+  const n = clampServings(count);
+  const base = n === 1 ? "For 1 person" : `For ${n} people`;
+  return mixed ? `${base} (some recipes at full yield)` : base;
 }
 
 /** Optional `?servings=` override for REST/MCP recipe display. */

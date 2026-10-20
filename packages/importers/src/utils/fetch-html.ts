@@ -90,13 +90,20 @@ export function importBlockedMessage(
 }
 
 export function looksLikeBotChallenge(html: string): boolean {
-  const head = html.slice(0, 8000).toLowerCase();
+  const head = html.slice(0, 20_000).toLowerCase();
   return (
     head.includes("just a moment") ||
     head.includes("cf-browser-verification") ||
     head.includes("cdn-cgi/challenge") ||
     head.includes("cf-challenge") ||
+    head.includes("cf-turnstile") ||
+    head.includes("challenge-platform") ||
+    head.includes("challenges.cloudflare.com") ||
     head.includes("enable javascript and cookies to continue") ||
+    head.includes("verify you are human") ||
+    head.includes("checking your browser") ||
+    head.includes("vercel security checkpoint") ||
+    (head.includes("security checkpoint") && head.includes("vercel")) ||
     (head.includes("attention required") && head.includes("cloudflare"))
   );
 }
