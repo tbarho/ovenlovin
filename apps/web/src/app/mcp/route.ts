@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest, handleHttpRequest } from "@ovenlovin/mcp";
+import { authenticateRequest, handleHttpRequest, JsonRpcErrorCode } from "@ovenlovin/mcp";
 import { ForbiddenError } from "@/lib/api/errors";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { enforceDemoMcpGuards, isSuccessfulImportRecipeCall } from "@/lib/demo/mcp-guard";
@@ -40,12 +40,12 @@ function authErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function jsonRpcError(id: unknown, status: number, code: number, message: string) {
+function jsonRpcError(id: unknown, status: number, code: number, message: string, data?: unknown) {
   return NextResponse.json(
     {
       jsonrpc: "2.0",
       id: id ?? null,
-      error: { code, message },
+      error: data === undefined ? { code, message } : { code, message, data },
     },
     { status, headers: { "Content-Type": "application/json" } }
   );
@@ -104,15 +104,27 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = authErrorMessage(error, "Unauthorized");
     if (error instanceof ForbiddenError) {
-      return jsonRpcError(id, 403, -32003, error.detail ?? message);
+      const quota = error.extensions?.code;
+      const isQuota = quota === "write_rate" || quota === "import_cap";
+      return jsonRpcError(
+        id,
+        403,
+        isQuota ? JsonRpcErrorCode.quota : JsonRpcErrorCode.forbidden,
+        error.detail ?? message,
+        {
+          code: quota ?? "forbidden",
+          resetAt: error.extensions?.resetAt,
+          retryAfter: error.extensions?.retryAfter,
+        }
+      );
     }
     if (error && typeof error === "object" && "code" in error) {
       const code = (error as { code?: string }).code;
       if (code === "forbidden") {
-        return jsonRpcError(id, 403, -32003, message);
+        return jsonRpcError(id, 403, JsonRpcErrorCode.forbidden, message, { code: "forbidden" });
       }
       if (code === "unauthorized" || code === "invalid_token") {
-        return jsonRpcError(id, 401, -32001, message);
+        return jsonRpcError(id, 401, JsonRpcErrorCode.unauthorized, message, { code });
       }
     }
     console.error("MCP request error:", error);
