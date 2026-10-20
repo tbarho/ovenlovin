@@ -51,6 +51,13 @@ describe("e2e kitchen fixture", () => {
     expect(kungPao?.ingredients.some((item) => /peanut/i.test(item.rawText))).toBe(true);
   });
 
+  it("includes a 6-serving chili so a 5-person cook-for can disagree with yield", () => {
+    const chili = E2E_RECIPES.find((recipe) => recipe.slug === "beef-chili");
+    expect(chili?.servings).toBe(6);
+    expect(chili?.ingredients.some((item) => item.rawText === "1 lb ground beef")).toBe(true);
+    expect(chili?.ingredients.some((item) => item.rawText === "2 lemons")).toBe(true);
+  });
+
   it("stores schema.org-style 2/3 decimals on tomato soup so display can format them", () => {
     const soup = E2E_RECIPES.find((recipe) => recipe.slug === "tomato-soup");
     expect(soup?.servings).toBe(5);

@@ -1,8 +1,8 @@
-import { clampServings, DEFAULT_RECIPE_SERVINGS } from "./servings";
+import type { DefaultServingsMode } from "../schemas/households";
+import type { RecipeDetails } from "../schemas/recipes";
+import { clampServings, DEFAULT_RECIPE_SERVINGS, scaleIngredientDisplay } from "./servings";
 
 export const DEFAULT_SERVINGS_MODES = ["family", "fixed", "recipe"] as const;
-
-type DefaultServingsMode = (typeof DEFAULT_SERVINGS_MODES)[number];
 
 export type HouseholdServingsSetting = {
   mode: DefaultServingsMode;
@@ -71,8 +71,37 @@ export function planEntryServings(input: {
   const yieldServings = recipeYieldServings(input.recipeServings);
   const cookFor = clampServings(input.cookFor);
   if (input.mode === "recipe") return clampServings(yieldServings);
-  if (input.mode === "family") return clampServings(Math.max(yieldServings, cookFor));
   return cookFor;
+}
+
+/**
+ * Servings used for a plan card and shopping line.
+ * Entry servings win; otherwise a stored scaleFactor other than 1; otherwise
+ * recipe yield in recipe mode; otherwise household cook-for.
+ */
+export function effectivePlanServings(input: {
+  entryServings?: number | null;
+  defaultCookFor: number;
+  mode?: DefaultServingsMode;
+  recipeServings?: number | null;
+  scaleFactor?: number | null;
+}): number {
+  if (input.entryServings && input.entryServings > 0) return clampServings(input.entryServings);
+  const yieldServings = recipeYieldServings(input.recipeServings);
+  // shortcut: stored 1 is identity, treat as unset until entries omit it
+  if (input.scaleFactor && input.scaleFactor > 0 && Math.abs(input.scaleFactor - 1) > 1e-9) {
+    return clampServings(input.scaleFactor * yieldServings);
+  }
+  if (input.mode === "recipe") return clampServings(yieldServings);
+  return clampServings(input.defaultCookFor);
+}
+
+/** Optional `?servings=` override for REST/MCP recipe display. */
+export function parseServingsQuery(value: string | number | null | undefined): number | null {
+  if (value == null || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return clampServings(parsed);
 }
 
 export function scaledServingsNote(input: {
@@ -112,16 +141,20 @@ export function recipeServingsPresentation(input: {
   familySize: number;
   mode: DefaultServingsMode;
   fixedServings?: number | null;
+  servingsOverride?: number | null;
 }): {
   storedServings: number;
   displayServings: number;
   scaledNote: string | null;
 } {
   const storedServings = recipeYieldServings(input.recipeServings);
-  const displayServings = defaultDisplayedServings({
-    ...input,
-    recipeServings: storedServings,
-  });
+  const displayServings =
+    input.servingsOverride && input.servingsOverride > 0
+      ? clampServings(input.servingsOverride)
+      : defaultDisplayedServings({
+          ...input,
+          recipeServings: storedServings,
+        });
   return {
     storedServings,
     displayServings,
@@ -132,5 +165,43 @@ export function recipeServingsPresentation(input: {
       familySize: input.familySize,
       fixedServings: input.fixedServings,
     }),
+  };
+}
+
+/** Apply kitchen Default servings or a `?servings=` override to a recipe payload. */
+export function presentDisplayedRecipe(
+  recipe: RecipeDetails,
+  settings: {
+    familySize: number;
+    mode: DefaultServingsMode;
+    fixedServings?: number | null;
+    servingsOverride?: number | null;
+  }
+): RecipeDetails {
+  const presentation = recipeServingsPresentation({
+    recipeServings: recipe.servings,
+    familySize: settings.familySize,
+    mode: settings.mode,
+    fixedServings: settings.fixedServings,
+    servingsOverride: settings.servingsOverride,
+  });
+  return withDisplayedServings(recipe, presentation.displayServings, presentation.scaledNote);
+}
+
+/** Scale ingredient displayText to kitchen Default servings or a `?servings=` override. */
+export function withDisplayedServings(
+  recipe: RecipeDetails,
+  displayServings: number,
+  scaledNote: string | null
+): RecipeDetails {
+  const from = recipeYieldServings(recipe.servings);
+  return {
+    ...recipe,
+    displayServings,
+    scaledNote,
+    ingredients: recipe.ingredients.map((ingredient) => ({
+      ...ingredient,
+      displayText: scaleIngredientDisplay(ingredient, from, displayServings),
+    })),
   };
 }

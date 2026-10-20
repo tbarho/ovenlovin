@@ -1,11 +1,14 @@
 import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey } from "../schemas/shopping-trip";
+import type { DefaultServingsMode } from "../schemas/households";
 import {
   formatMeasureText,
   formatQuantity,
+  isCountableShopItem,
   scaleFactorForPlanEntry,
   toFriendlyMeasure,
+  wholeShopQuantity,
 } from "../scaling/servings";
 import {
   assignAisle,
@@ -98,6 +101,9 @@ export interface BuildShoppingListInput {
   includePantryItems?: boolean;
   warnings?: ShoppingListWarning[];
   generatedAt?: string;
+  /** Household Default servings cook-for when a plan entry has no servings. */
+  defaultCookFor?: number | null;
+  mode?: DefaultServingsMode;
 }
 
 /** Section name for salt/oil when staples are included - distinct from category "Pantry". */
@@ -259,7 +265,9 @@ export class ShoppingListService {
       const scale = scaleFactorForPlanEntry(
         source.entry.servings,
         source.recipeServings,
-        source.entry.scaleFactor
+        source.entry.scaleFactor,
+        input.defaultCookFor,
+        input.mode
       );
       const recipeId = source.entry.recipeId ?? "";
       const recipeTitle = source.recipeTitle || "Unknown Recipe";
@@ -317,7 +325,11 @@ export class ShoppingListService {
     const ingredients = Array.from(ingredientMap.values())
       .filter((item) => includeStaples || !item.isPantryItem)
       .map((item) => {
-        const quantity = item.quantity != null ? roundQuantity(item.quantity) : undefined;
+        const rawQuantity = item.quantity != null ? roundQuantity(item.quantity) : undefined;
+        const quantity =
+          rawQuantity != null && isCountableShopItem(item.unit)
+            ? wholeShopQuantity(rawQuantity)
+            : rawQuantity;
         const display = quantity != null ? toFriendlyMeasure(quantity, item.unit) : undefined;
         return {
           ...item,
@@ -364,12 +376,16 @@ export class ShoppingListService {
         unit?: string;
         ingredientId?: string;
       }>;
-    }>
+    }>,
+    defaultCookFor?: number | null,
+    mode?: DefaultServingsMode
   ): ShoppingListIngredient[] {
     return this.build({
       mealPlanId: "",
       weekStart: "",
       includeStaples: true,
+      defaultCookFor,
+      mode,
       entries: entries.map((source) => ({
         entry: source.entry,
         recipeTitle: source.recipeTitle,

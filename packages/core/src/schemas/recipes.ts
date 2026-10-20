@@ -153,6 +153,8 @@ export type RecipeDetails = Recipe & {
   source: RecipeSource | null;
   cookbooks: Array<{ id: string; name: string; slug: string }>;
   nutrition: RecipeNutritionFacts | null;
+  displayServings?: number;
+  scaledNote?: string | null;
 };
 
 export type RecipeContentUpdate = {

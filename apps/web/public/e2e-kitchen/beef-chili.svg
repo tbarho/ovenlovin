@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Beef chili">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f3c19a"/>
+      <stop offset="1" stop-color="#9c3b1b"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <ellipse cx="400" cy="250" rx="170" ry="42" fill="#f7efe6"/>
+  <path d="M230 250 v150 a170 62 0 0 0 340 0 v-150" fill="#b44522"/>
+  <ellipse cx="400" cy="250" rx="170" ry="42" fill="#c45c2a"/>
+  <text x="400" y="520" text-anchor="middle" fill="#161310" font-family="Georgia, serif" font-size="34">Beef chili</text>
+</svg>
