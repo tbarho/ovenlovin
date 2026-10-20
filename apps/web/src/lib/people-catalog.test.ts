@@ -46,11 +46,18 @@ describe("people catalog search", () => {
 
   it("adds the typed food on Enter instead of the first suggestion", () => {
     const resolved = resolveFoodAdd("Pea", { mode: "cant_eat" });
-    expect(resolved?.kind).toBe("unknown");
-    expect(resolved?.entry.name).toBe("Pea");
-    expect(resolved?.suggestion?.code).toBe("peanut");
+    expect(resolved).toMatchObject({
+      kind: "unknown",
+      entry: { name: "Pea" },
+      suggestion: { code: "peanut" },
+    });
     expect(resolveFoodAdd("peanut", { mode: "cant_eat" })?.entry.code).toBe("peanut");
-    expect(unknownAllergenWarning("Pea", resolved?.suggestion ?? null)).toContain("Peanut");
+    expect(
+      unknownAllergenWarning(
+        "Pea",
+        resolved?.kind === "unknown" ? resolved.suggestion : null
+      )
+    ).toContain("Peanut");
   });
 
   it("flags a free-text allergen that is not in the catalog", () => {
