@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { draftFromSavedPreview } from "@ovenlovin/core";
 import type { PhotoImportPreview } from "./photo-import";
 import {
   isUncertainReviewField,
@@ -56,6 +57,22 @@ describe("photo import review draft", () => {
     expect(draft.ingredientsText).toBe("12 oz pasta");
     expect(draft.stepsText).toBe("Boil pasta.");
     expect(recipeCreateBodyFromReview(draft).source.type).toBe("paste");
+    expect(
+      draftFromSavedPreview({
+        saved: false,
+        preview: true,
+        title: "Weeknight Tomato Pasta",
+        ingredients: [{ rawText: "12 oz pasta" }],
+        steps: [{ text: "Boil pasta." }],
+        source: {
+          type: "paste",
+          importerName: "paste-importer",
+          importerVersion: "0.1.0",
+          rawExtractionJson: {},
+        },
+        ...recipeCreateBodyFromReview(draft),
+      })?.title
+    ).toBe("Weeknight Tomato Pasta");
   });
 
   it("maps preview fields and keeps only the listed image urls for save", () => {
