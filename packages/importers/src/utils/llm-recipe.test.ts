@@ -53,6 +53,7 @@ describe("extractRecipeWithLlm", () => {
     expect(generate).toHaveBeenCalledWith(
       expect.objectContaining({
         maxRetries: 2,
+        abortSignal: expect.any(AbortSignal),
         providerOptions: {
           gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
         },
@@ -64,6 +65,17 @@ describe("extractRecipeWithLlm", () => {
 
   it("rethrows when the AI provider is unavailable", async () => {
     const error = Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" });
+    const generate = vi.fn().mockRejectedValue(error);
+    await expect(
+      extractRecipeWithLlm("Ingredients\n- pasta", {
+        env: { AI_GATEWAY_API_KEY: "test-key" },
+        generate,
+      })
+    ).rejects.toBe(error);
+  });
+
+  it("rethrows a hung-model timeout as AI unavailable", async () => {
+    const error = Object.assign(new Error("aborted"), { name: "TimeoutError" });
     const generate = vi.fn().mockRejectedValue(error);
     await expect(
       extractRecipeWithLlm("Ingredients\n- pasta", {

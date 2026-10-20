@@ -73,6 +73,38 @@ export function photoPerceptualHashFromDraft(draft: RecipeImportDraft): string |
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function savedPreviewIngredient(value: unknown): RecipeImportDraft["ingredients"][number] | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.rawText !== "string" || !raw.rawText.trim()) return null;
+  const quantityRaw = raw.quantity;
+  let quantity: { min: number; max?: number } | undefined;
+  if (quantityRaw && typeof quantityRaw === "object") {
+    const min = finiteNumber((quantityRaw as { min?: unknown }).min);
+    const max = finiteNumber((quantityRaw as { max?: unknown }).max);
+    if (min != null && min >= 0) {
+      quantity = { min };
+      if (max != null && max > 0) quantity.max = max;
+    }
+  }
+  const confidence = finiteNumber(raw.confidence);
+  return {
+    rawText: raw.rawText.trim(),
+    quantity,
+    unit: typeof raw.unit === "string" ? raw.unit.slice(0, 100) : undefined,
+    originalUnit: typeof raw.originalUnit === "string" ? raw.originalUnit.slice(0, 100) : undefined,
+    preparation: typeof raw.preparation === "string" ? raw.preparation.slice(0, 255) : undefined,
+    isOptional: raw.isOptional === true ? true : undefined,
+    substitutionNotes:
+      typeof raw.substitutionNotes === "string" ? raw.substitutionNotes : undefined,
+    confidence: confidence != null && confidence >= 0 && confidence <= 1 ? confidence : undefined,
+  };
+}
+
 /** Persist a previewed import without extracting again. */
 export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null {
   if (!value || typeof value !== "object") return null;
@@ -83,10 +115,8 @@ export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null 
 
   const ingredients: RecipeImportDraft["ingredients"] = [];
   for (const item of raw.ingredients) {
-    if (!item || typeof item !== "object") continue;
-    const rawText = (item as { rawText?: unknown }).rawText;
-    if (typeof rawText !== "string" || !rawText.trim()) continue;
-    ingredients.push(item as RecipeImportDraft["ingredients"][number]);
+    const ingredient = savedPreviewIngredient(item);
+    if (ingredient) ingredients.push(ingredient);
   }
   const steps: RecipeImportDraft["steps"] = [];
   for (const item of raw.steps) {

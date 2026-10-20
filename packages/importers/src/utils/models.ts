@@ -47,11 +47,16 @@ export const IMPORT_GATEWAY_FALLBACK_MODELS = [
 /** AI SDK waits 2+4+… seconds per retry. 5 retries is 62s and blows the 60s import limit. */
 export const IMPORT_GENERATE_MAX_RETRIES = 2;
 
-export function importGenerateOptions() {
+/** Paste/URL generateObject budget. Photo keeps 55s. Leaves room for a 503 before the 60s platform 504. */
+export const IMPORT_GENERATE_TIMEOUT_MS = 50_000;
+
+export function importGenerateOptions(primary?: string) {
   return {
     maxRetries: IMPORT_GENERATE_MAX_RETRIES,
     providerOptions: {
-      gateway: { models: [...IMPORT_GATEWAY_FALLBACK_MODELS] },
+      gateway: {
+        models: IMPORT_GATEWAY_FALLBACK_MODELS.filter((model) => model !== primary),
+      },
     },
   };
 }

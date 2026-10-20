@@ -1,4 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { lookup } from "dns/promises";
+
+vi.mock("dns/promises", () => ({
+  lookup: vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]),
+}));
 import {
   appOriginFromEnv,
   backfillInlineImageList,
@@ -43,6 +48,11 @@ describe("recipe images", () => {
     expect(isFetchableRecipeImageUrl("https://cdn.example/tomato.jpg")).toBe(true);
     expect(isFetchableRecipeImageUrl("http://127.0.0.1/secret.jpg")).toBe(false);
     expect(isFetchableRecipeImageUrl("http://169.254.169.254/latest/meta-data")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[fc00::1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[fe80::1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::ffff:127.0.0.1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::ffff:10.1.2.3]/secret.jpg")).toBe(false);
   });
 
   it("guesses an extension from the URL or content type", () => {
@@ -84,6 +94,35 @@ describe("recipe images", () => {
     const firstHeaders = fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> };
     expect(firstHeaders.headers?.["User-Agent"]).toMatch(/Mozilla\/5.0/);
     expect(firstHeaders.headers?.Referer).toBe("https://cdn.example/");
+    expect(firstHeaders.redirect).toBe("manual");
+    vi.unstubAllGlobals();
+  });
+
+  it("does not fetch a public hostname that resolves to loopback", async () => {
+    vi.mocked(lookup).mockResolvedValueOnce([{ address: "127.0.0.1", family: 4 }] as never);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await copyRemoteImages(["https://loopback.example/photo.jpg"], vi.fn(), "recipes/hh");
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("does not follow an image redirect onto a private address", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("cdn.example")) {
+        return {
+          ok: false,
+          status: 302,
+          headers: {
+            get: (name: string) => (name === "location" ? "http://127.0.0.1/secret.jpg" : null),
+          },
+        } as unknown as Response;
+      }
+      return { ok: true, status: 200, headers: { get: () => "image/jpeg" } } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await copyRemoteImages(["https://cdn.example/photo.jpg"], vi.fn(), "recipes/hh");
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(["https://cdn.example/photo.jpg"]);
     vi.unstubAllGlobals();
   });
 
