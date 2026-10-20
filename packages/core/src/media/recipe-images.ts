@@ -3,12 +3,18 @@ import { createHash } from "crypto";
 
 const BLOB_HOST_HINTS = ["public.blob.vercel-storage.com", "blob.vercel-storage.com"];
 
-export function recipeMainImage(images: string[] | null | undefined): string | null {
-  return images?.find((image) => image.trim().length > 0) ?? null;
+/** Stored jsonb may contain objects from a bad write. Only keep string URLs. */
+export function normalizeStoredRecipeImages(images: unknown): string[] {
+  if (!Array.isArray(images)) return [];
+  return images.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 }
 
-export function recipeGalleryImages(images: string[] | null | undefined): string[] {
-  return (images ?? []).filter((image) => image.trim().length > 0);
+export function recipeMainImage(images: unknown): string | null {
+  return normalizeStoredRecipeImages(images)[0] ?? null;
+}
+
+export function recipeGalleryImages(images: unknown): string[] {
+  return normalizeStoredRecipeImages(images);
 }
 
 /** Import and recipe-detail persist only the main photo. Cookbook mosaics still use one image per recipe. */
@@ -212,8 +218,8 @@ export function appOriginFromEnv(
 }
 
 /** Drop inline data URLs so list/search payloads stay small. */
-export function omitInlineImagePayloads(values: string[] | null | undefined): string[] {
-  return (values ?? []).filter((value) => value.trim().length > 0 && !isInlineImageDataUrl(value));
+export function omitInlineImagePayloads(values: unknown): string[] {
+  return normalizeStoredRecipeImages(values).filter((value) => !isInlineImageDataUrl(value));
 }
 
 /** Stable id for a photo import: URL as-is, or sha256 of inline bytes. */
