@@ -3,7 +3,11 @@ import { CookbookService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+} from "@/lib/api/middleware";
 import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
 
 async function loadOwnedCookbook(id: string, householdId: string) {
@@ -39,7 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const { id } = await params;
     await loadOwnedCookbook(id, householdId);
     const body = (await request.json()) as {
@@ -62,7 +66,7 @@ export async function DELETE(
 ) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const { id } = await params;
     await loadOwnedCookbook(id, householdId);
     const deleted = await new CookbookService(getDatabase()).deleteCookbook(id);

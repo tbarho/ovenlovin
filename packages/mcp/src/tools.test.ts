@@ -2,7 +2,9 @@
  * Unit tests for MCP tool schemas
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { HouseholdAccessError, HouseholdService } from "@ovenlovin/core";
+import * as db from "@ovenlovin/db";
 import {
   searchRecipesTool,
   getRecipeTool,
@@ -397,8 +399,187 @@ describe("MCP Tool Schemas", () => {
       expect(resolved.canonicalized).toBe(true);
     });
 
+    it("rejects manage_person_rules add and remove for a member's API key", async () => {
+      const personId = "550e8400-e29b-41d4-a716-446655440000";
+      const memberKey = {
+        householdId: "550e8400-e29b-41d4-a716-446655440001",
+        membershipRole: "member" as const,
+        apiKeyId: "33333333-3333-4333-8333-333333333333",
+        scopes: [],
+      };
+      await expect(
+        managePersonRulesTool.handler(
+          { action: "add", personId, kind: "allergen", target: "peanut", severity: "block" },
+          memberKey
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+      await expect(
+        managePersonRulesTool.handler(
+          { action: "remove", personId, id: "550e8400-e29b-41d4-a716-446655440002" },
+          memberKey
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
+    it("rejects manage_person_loves add and remove for a member's API key", async () => {
+      const personId = "550e8400-e29b-41d4-a716-446655440000";
+      const memberKey = {
+        householdId: "550e8400-e29b-41d4-a716-446655440001",
+        membershipRole: "member" as const,
+        apiKeyId: "33333333-3333-4333-8333-333333333333",
+        scopes: [],
+      };
+      await expect(
+        managePersonLovesTool.handler({ action: "add", personId, value: "salmon" }, memberKey)
+      ).rejects.toMatchObject({ code: "forbidden" });
+      await expect(
+        managePersonLovesTool.handler(
+          { action: "remove", personId, id: "550e8400-e29b-41d4-a716-446655440002" },
+          memberKey
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
+    const viewer = {
+      householdId: "550e8400-e29b-41d4-a716-446655440001",
+      membershipRole: "viewer" as const,
+      scopes: [],
+    };
+
+    it.each([
+      ["create_recipe", () => createRecipeTool.handler({ title: "Toast" }, viewer)],
+      [
+        "import_recipe",
+        () =>
+          importRecipeTool.handler(
+            { source: "url", content: "https://example.com/recipe", skipReview: false },
+            viewer
+          ),
+      ],
+      [
+        "import_recipe_from_image",
+        () =>
+          importRecipeFromImageTool.handler(
+            { imageUrl: "https://example.com/photo.jpg", skipReview: false },
+            viewer
+          ),
+      ],
+      [
+        "delete_recipe",
+        () => deleteRecipeTool.handler({ id: "550e8400-e29b-41d4-a716-446655440000" }, viewer),
+      ],
+      [
+        "save_meal_plan",
+        () =>
+          saveMealPlanTool.handler(
+            {
+              weekStart: "2026-10-12",
+              entries: [],
+              checkReportJson: {},
+              status: "draft",
+            },
+            viewer
+          ),
+      ],
+      [
+        "edit_meal_plan",
+        () =>
+          editMealPlanTool.handler(
+            { planId: "550e8400-e29b-41d4-a716-446655440000", action: "undo", meal: "dinner" },
+            viewer
+          ),
+      ],
+      [
+        "delete_meal_plan",
+        () => deleteMealPlanTool.handler({ id: "550e8400-e29b-41d4-a716-446655440000" }, viewer),
+      ],
+      [
+        "manage_cookbook",
+        () => manageCookbookTool.handler({ action: "create", name: "Weeknights" }, viewer),
+      ],
+      [
+        "reorder_people",
+        () =>
+          reorderPeopleTool.handler(
+            { personIds: ["550e8400-e29b-41d4-a716-446655440000"] },
+            viewer
+          ),
+      ],
+      [
+        "manage_people",
+        () => managePeopleTool.handler({ action: "create", displayName: "Parent A" }, viewer),
+      ],
+      [
+        "manage_person_rules",
+        () =>
+          managePersonRulesTool.handler(
+            {
+              action: "add",
+              personId: "550e8400-e29b-41d4-a716-446655440000",
+              kind: "allergen",
+              target: "peanut",
+              severity: "block",
+            },
+            viewer
+          ),
+      ],
+      [
+        "manage_person_loves",
+        () =>
+          managePersonLovesTool.handler(
+            { action: "add", personId: "550e8400-e29b-41d4-a716-446655440000", value: "salmon" },
+            viewer
+          ),
+      ],
+      [
+        "manage_household_schedule",
+        () => manageHouseholdScheduleTool.handler({ action: "replace", week: [] }, viewer),
+      ],
+      [
+        "manage_household_settings",
+        () => manageHouseholdSettingsTool.handler({ action: "update", mode: "family" }, viewer),
+      ],
+      [
+        "manage_kitchen_invites",
+        () => manageKitchenInvitesTool.handler({ action: "create" }, viewer),
+      ],
+      [
+        "manage_kitchen_members",
+        () =>
+          manageKitchenMembersTool.handler(
+            {
+              action: "update_role",
+              userId: "550e8400-e29b-41d4-a716-446655440000",
+              role: "member",
+            },
+            viewer
+          ),
+      ],
+    ] as const)("%s forbids a viewer", async (_name, run) => {
+      await expect(run()).rejects.toMatchObject({ code: "forbidden" });
+    });
+
+    it("rejects manage_people update and delete for members, including a member's API key", async () => {
+      const personId = "550e8400-e29b-41d4-a716-446655440000";
+      const member = {
+        householdId: "550e8400-e29b-41d4-a716-446655440001",
+        membershipRole: "member" as const,
+        scopes: [],
+      };
+      const memberKey = { ...member, apiKeyId: "33333333-3333-4333-8333-333333333333" };
+      for (const context of [member, memberKey]) {
+        await expect(
+          managePeopleTool.handler({ action: "delete", personId }, context)
+        ).rejects.toMatchObject({ code: "forbidden" });
+        await expect(
+          managePeopleTool.handler({ action: "update", personId, displayName: "Parent A" }, context)
+        ).rejects.toMatchObject({ code: "forbidden" });
+      }
+    });
+
     it("validates manage_people and manage_person_rules", () => {
       expect(managePeopleTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
+      expect(managePeopleTool.inputSchema.safeParse({ action: "create" }).success).toBe(false);
       expect(
         managePeopleTool.inputSchema.safeParse({ action: "create", displayName: "Parent A" })
           .success
@@ -559,6 +740,20 @@ describe("MCP Tool Schemas", () => {
       ).toBe(false);
     });
 
+    it("rejects manage_kitchen_invites create for a member's API key", async () => {
+      await expect(
+        manageKitchenInvitesTool.handler(
+          { action: "create", role: "member" },
+          {
+            householdId: "550e8400-e29b-41d4-a716-446655440001",
+            membershipRole: "member",
+            apiKeyId: "33333333-3333-4333-8333-333333333333",
+            scopes: [],
+          }
+        )
+      ).rejects.toMatchObject({ code: "forbidden" });
+    });
+
     it("validates manage_kitchen_members", () => {
       expect(manageKitchenMembersTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
       expect(manageKitchenMembersTool.inputSchema.safeParse({ action: "leave" }).success).toBe(
@@ -572,5 +767,43 @@ describe("MCP Tool Schemas", () => {
         }).success
       ).toBe(true);
     });
+
+    it("lets an owner's API key change roles and blocks an admin's key", async () => {
+      const householdId = "22222222-2222-4222-8222-222222222222";
+      const userId = "99999999-9999-4999-8999-999999999999";
+      const key = {
+        householdId,
+        apiKeyId: "33333333-3333-4333-8333-333333333333",
+        apiKeyCreatedBy: "11111111-1111-4111-8111-111111111111",
+        scopes: [],
+      };
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      await expect(
+        manageKitchenMembersTool.handler(
+          { action: "update_role", userId, role: "member" },
+          { ...key, membershipRole: "admin" }
+        )
+      ).rejects.toBeInstanceOf(HouseholdAccessError);
+
+      vi.spyOn(HouseholdService.prototype, "updateMemberRole").mockResolvedValue({
+        id: "44444444-4444-4444-8444-444444444444",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        deletedAt: null,
+        userId,
+        householdId,
+        role: "member",
+      });
+      await expect(
+        manageKitchenMembersTool.handler(
+          { action: "update_role", userId, role: "member" },
+          { ...key, membershipRole: "owner" }
+        )
+      ).resolves.toMatchObject({ userId, role: "member", status: "updated" });
+    });
   });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });

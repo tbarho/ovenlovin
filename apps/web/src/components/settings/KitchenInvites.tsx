@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CopyBox } from "@/components/landing/CopyBox";
+import { ConfirmDialog } from "@/components/kitchen/ConfirmDialog";
 import { api } from "@/lib/browser-api";
+import { useVisibleRefresh } from "@/lib/use-visible-refresh";
 
 type Invite = {
   id: string;
@@ -27,6 +29,8 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
+  const createdRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     if (!canManage) return;
@@ -39,6 +43,13 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
       setError(err instanceof Error ? err.message : "Could not load invites");
     });
   }, [load]);
+
+  useVisibleRefresh(load);
+
+  useEffect(() => {
+    if (!createdUrl) return;
+    createdRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [createdUrl]);
 
   if (!canManage) return null;
 
@@ -59,14 +70,16 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
     }
   }
 
-  async function revokeInvite(id: string) {
-    if (!window.confirm("Revoke this invite link?")) return;
+  async function revokeInvite() {
+    if (!confirmRevokeId) return;
+    const id = confirmRevokeId;
     setRevokingId(id);
     setError(null);
     try {
       await api(`/api/v1/households/invites/${id}`, { method: "DELETE" });
       setInvites((current) => current.filter((invite) => invite.id !== id));
       setCreatedUrl(null);
+      setConfirmRevokeId(null);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not revoke this invite");
@@ -109,14 +122,14 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
         >
           {pending ? "Creating…" : "Create invite link"}
         </button>
+        {createdUrl ? (
+          <div className="invite-created" ref={createdRef} data-testid="invite-created">
+            <p>Copy this link and send it yourself.</p>
+            <CopyBox label="Invite link" content={createdUrl} />
+          </div>
+        ) : null}
       </div>
       {error ? <p className="muted">{error}</p> : null}
-      {createdUrl ? (
-        <div className="key-secret">
-          <p>Copy this link and send it yourself.</p>
-          <CopyBox label="Invite link" content={createdUrl} />
-        </div>
-      ) : null}
       {invites.length === 0 ? (
         <p className="empty-note">No pending invite links.</p>
       ) : (
@@ -126,13 +139,15 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
               <div>
                 <strong>{invite.role}</strong>
                 <p className="muted">Expires {formatWhen(invite.expiresAt)}</p>
-                {invite.url ? <CopyBox label="Invite link" content={invite.url} /> : null}
+                {invite.url && invite.url !== createdUrl ? (
+                  <CopyBox label="Invite link" content={invite.url} />
+                ) : null}
               </div>
               <button
                 className="btn ghost"
                 type="button"
                 disabled={revokingId === invite.id}
-                onClick={() => void revokeInvite(invite.id)}
+                onClick={() => setConfirmRevokeId(invite.id)}
               >
                 {revokingId === invite.id ? "Revoking…" : "Revoke"}
               </button>
@@ -140,6 +155,16 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={Boolean(confirmRevokeId)}
+        title="Revoke invite?"
+        body="People with this link will not be able to join."
+        confirmLabel="Revoke link"
+        danger
+        pending={Boolean(revokingId)}
+        onCancel={() => setConfirmRevokeId(null)}
+        onConfirm={() => void revokeInvite()}
+      />
     </section>
   );
 }

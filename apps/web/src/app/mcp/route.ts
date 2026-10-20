@@ -110,7 +110,8 @@ export async function POST(request: NextRequest) {
       error &&
       typeof error === "object" &&
       "code" in error &&
-      (error as { code?: string }).code === "unauthorized"
+      ((error as { code?: string }).code === "unauthorized" ||
+        (error as { code?: string }).code === "invalid_token")
     ) {
       return jsonRpcError(id, 401, -32001, message);
     }

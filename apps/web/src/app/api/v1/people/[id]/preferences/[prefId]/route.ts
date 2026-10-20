@@ -4,6 +4,7 @@ import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { assertPersonHousehold } from "@/lib/api/people";
 
 export async function GET(
   request: NextRequest,
@@ -11,16 +12,14 @@ export async function GET(
 ) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId, prefId } = await params;
     const db = getDatabase();
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const preference = await service.getPreference(prefId);
     if (!preference || preference.personId !== personId) {
@@ -40,16 +39,14 @@ export async function DELETE(
   try {
     const context = await getRequestContext(request);
     requireAdminRole(context);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId, prefId } = await params;
     const db = getDatabase();
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const preference = await service.getPreference(prefId);
     if (!preference || preference.personId !== personId) {

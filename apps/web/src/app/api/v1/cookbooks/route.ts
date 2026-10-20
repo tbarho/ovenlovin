@@ -3,7 +3,11 @@ import { CookbookService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { handleApiError, BadRequestError } from "@/lib/api/errors";
 import { createdResponse, paginatedResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+} from "@/lib/api/middleware";
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const body = (await request.json()) as { name?: string; description?: string };
     if (!body.name?.trim()) {
       throw new BadRequestError("Cookbook name is required");

@@ -110,12 +110,12 @@ export function checkMeal(
   return { findings: findingsFromCheck(check), checkStatus: check.status };
 }
 
-function pickSafety(
+export function pickSafety(
   people: Person[],
   rules: PersonRule[],
   ingredients: CheckableIngredient[]
 ): Pick<PlanRecipePick, "safety" | "warning"> {
-  if (people.length === 0) return { safety: "unknown", warning: null };
+  if (people.length === 0) return { safety: "ok", warning: null };
   if (ingredients.length === 0) {
     return { safety: "unknown", warning: "We couldn't finish checking this recipe." };
   }

@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireAdminRole } from "../auth/index";
 import { PeopleService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import { LOVE_PREFERENCE_TYPE, loveLabel } from "@ovenlovin/allergens";
@@ -27,6 +28,9 @@ export const managePersonLovesSchema = z.object({
 export type ManagePersonLovesInput = z.infer<typeof managePersonLovesSchema>;
 
 async function handler(input: ManagePersonLovesInput, context: AuthContext) {
+  if (input.action !== "list") {
+    requireAdminRole(context);
+  }
   const db = createDbClient(process.env.DATABASE_URL!);
   const people = new PeopleService(db);
 

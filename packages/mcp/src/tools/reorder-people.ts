@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { PeopleOrderError, PeopleService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
@@ -19,6 +20,7 @@ export const reorderPeopleSchema = z.object({
 export type ReorderPeopleInput = z.infer<typeof reorderPeopleSchema>;
 
 async function handler(input: ReorderPeopleInput, context: AuthContext) {
+  requireWriteRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const people = new PeopleService(db);
 

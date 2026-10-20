@@ -130,11 +130,13 @@ export function PeopleHome({
   people,
   rules,
   loves = EMPTY_LOVES,
+  canWrite = true,
 }: {
   householdName: string;
   people: Person[];
   rules: PersonRule[];
   loves?: Preference[];
+  canWrite?: boolean;
 }) {
   const router = useRouter();
   const summary = useMemo(() => summarizePeople(people, rules), [people, rules]);
@@ -174,8 +176,11 @@ export function PeopleHome({
         </header>
 
         {people.length === 0 ? (
-          <EmptyState title="No one yet" body="Add a name and avatar." />
-        ) : (
+          <EmptyState
+            title="No one yet"
+            body={canWrite ? "Add a name and avatar." : "No people in this kitchen yet."}
+          />
+        ) : canWrite ? (
           <PeopleReorder
             people={people}
             renderPerson={(person, handle) => (
@@ -194,9 +199,20 @@ export function PeopleHome({
               router.refresh();
             }}
           />
+        ) : (
+          <div className="olp-person-row">
+            {people.map((person) => (
+              <PersonCard
+                key={person.id}
+                person={person}
+                rules={rulesByPerson.get(person.id) ?? []}
+                loves={lovesByPerson.get(person.id) ?? []}
+              />
+            ))}
+          </div>
         )}
 
-        <AddPersonLauncher />
+        {canWrite ? <AddPersonLauncher /> : null}
       </div>
     </div>
   );

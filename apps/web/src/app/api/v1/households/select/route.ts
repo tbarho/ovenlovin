@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { cookies } from "next/headers";
-import { HouseholdService } from "@ovenlovin/core";
+import { API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE, HouseholdService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
-import { ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
+import { ForbiddenError, handleApiError, NotFoundError, UnauthorizedError } from "@/lib/api/errors";
 import { getRequestContext, requireUserId } from "@/lib/api/middleware";
 import { jsonResponse } from "@/lib/api/response";
 import { HOUSEHOLD_COOKIE, householdCookieOptions } from "@/lib/kitchen-cookies";
@@ -15,6 +15,9 @@ const bodySchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
+    if (context.clientId && !context.userId) {
+      throw new UnauthorizedError(API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE);
+    }
     const userId = requireUserId(context);
     const body = bodySchema.parse(await request.json().catch(() => ({})));
     const service = new HouseholdService(getDatabase());

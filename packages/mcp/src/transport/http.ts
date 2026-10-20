@@ -85,14 +85,16 @@ export async function handleHttpRequest(
         return envelope(401, jsonRpcError(id, JsonRpcErrorCode.unauthorized, "Unauthorized"));
       }
     } catch (error) {
-      return envelope(
-        401,
-        jsonRpcError(
-          id,
-          JsonRpcErrorCode.unauthorized,
-          error instanceof Error ? error.message : "Invalid credentials"
-        )
-      );
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : error &&
+              typeof error === "object" &&
+              "message" in error &&
+              typeof (error as { message: unknown }).message === "string"
+            ? (error as { message: string }).message
+            : "Invalid credentials";
+      return envelope(401, jsonRpcError(id, JsonRpcErrorCode.unauthorized, message));
     }
   } else if (options.onAuth) {
     const authHeader = request.headers.authorization || request.headers.Authorization;

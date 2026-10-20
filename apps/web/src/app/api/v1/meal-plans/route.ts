@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
 import { handleApiError } from "@/lib/api/errors";
 import { jsonResponse, paginatedResponse, createdResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId, getIdempotencyKey } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+  getIdempotencyKey,
+} from "@/lib/api/middleware";
 import { createMealPlanBodySchema, PlanService, resolveWriteActor } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
@@ -37,7 +42,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const idempotencyKey = getIdempotencyKey(request);
 
     const body = createMealPlanBodySchema.parse(await request.json());

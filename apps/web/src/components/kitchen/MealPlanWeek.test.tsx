@@ -59,6 +59,16 @@ const recipes: PlanRecipePick[] = [
     safety: "block",
     warning: "Contains peanuts, so Child B can't eat this. Anaphylaxis risk",
   },
+  {
+    id: "recipe-ziti",
+    title: "Baked ziti",
+    image: null,
+    servings: 6,
+    cookTimeMinutes: 40,
+    prepTimeMinutes: 15,
+    safety: "warn",
+    warning: "Contains dairy, so check with Parent B first",
+  },
 ];
 
 describe("MealPlanWeek", () => {
@@ -434,6 +444,8 @@ describe("MealPlanWeek", () => {
     const editor = screen.getByTestId("plan-editor-2026-10-18");
     expect(within(editor).getByText("Safer picks")).toBeVisible();
     expect(within(editor).getByRole("button", { name: /veggie tacos/i })).toBeVisible();
+    expect(within(editor).getByRole("button", { name: /baked ziti/i })).toBeVisible();
+    expect(within(editor).getByText(/check with Parent B first/i)).toBeVisible();
     expect(
       within(editor).queryByRole("button", { name: /kung pao chicken/i })
     ).not.toBeInTheDocument();

@@ -7,6 +7,7 @@ import {
   findingsFromCheck,
   formatWeekRange,
   groupMealsByDate,
+  pickSafety,
   slotLabel,
   startOfWeekMonday,
   weekDates,
@@ -108,6 +109,13 @@ describe("week-plan view", () => {
     });
     expect(attendingPeopleForEntry([parentA, childB], [])).toEqual([parentA, childB]);
     expect(attendingPeopleForEntry([], [])).toEqual([]);
+  });
+
+  it("does not treat dinner picks as unknown when the kitchen has no people", () => {
+    expect(pickSafety([], [], [{ id: "ing-pasta", name: "pasta" }])).toEqual({
+      safety: "ok",
+      warning: null,
+    });
   });
 
   it("marks a dinner unfinished only when the household has no people", () => {

@@ -6,6 +6,8 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
+import { McpInvalidParamsError } from "../json-rpc";
 import {
   copyRemoteImages,
   fingerprintImageBlob,
@@ -100,6 +102,7 @@ async function persistMainPhoto(blob: string, householdId: string): Promise<stri
 }
 
 async function handler(input: ImportRecipeFromImageInput, context: AuthContext) {
+  requireWriteRole(context);
   if (!isAiGatewayConfigured(process.env)) {
     throw new Error(AI_GATEWAY_MISSING_MESSAGE);
   }
@@ -107,7 +110,7 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   const images = collectImages(input);
   const first = images[0]?.blob;
   if (!first) {
-    throw new Error("Provide imageUrl, imageBase64, or images[]");
+    throw new McpInvalidParamsError("Provide imageUrl, imageBase64, or images[]");
   }
 
   const db = createDbClient(process.env.DATABASE_URL!);
@@ -115,7 +118,7 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   const fingerprint = fingerprintImageBlob(first);
   const duplicate = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
   if (duplicate) {
-    throw new Error(
+    throw new McpInvalidParamsError(
       `This photo was already imported as "${duplicate.title}" (${duplicate.id}). Skip or open that recipe.`
     );
   }

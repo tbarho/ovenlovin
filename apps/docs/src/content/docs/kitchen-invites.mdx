@@ -38,8 +38,8 @@ If you already belong to more than one kitchen, OvenLovin keeps the last kitchen
 
 Authenticated, scoped to the active kitchen:
 
-- `GET /api/v1/households/mine`
-- `POST /api/v1/households/select`
+- `GET /api/v1/households/mine` - signed-in users see every kitchen they belong to, each with `active`. An API key is read-only and returns only its own kitchen with `active: true`.
+- `POST /api/v1/households/select` - signed-in users only. An API key cannot switch kitchens.
 - `GET /api/v1/households/members`
 - `PATCH /api/v1/households/members/{userId}` (owner)
 - `DELETE /api/v1/households/members/{userId}` (owner)
@@ -51,11 +51,11 @@ Authenticated, scoped to the active kitchen:
 Public / accept:
 
 - `GET /api/v1/invites/{token}` (no auth)
-- `POST /api/v1/invites/{token}/accept`
+- `POST /api/v1/invites/{token}/accept` - signed-in person only. An API key cannot join another kitchen; the problem detail names the `/invite/{token}` link a person must open.
 
 ## MCP
 
 - [`manage_kitchen_invites`](/docs/reference/mcp/manage-kitchen-invites) - `list`, `create`, `revoke`
 - [`manage_kitchen_members`](/docs/reference/mcp/manage-kitchen-members) - `list`, `update_role`, `remove`, `leave`
 
-API keys are household-scoped. They may list, create, and revoke invite links for the kitchen they belong to (same as MCP `manage_kitchen_invites`). They cannot accept an invite, switch kitchens, leave, or change members: those need a signed-in user. Share the returned `path`; the server does not send email.
+API keys are household-scoped. They may list, create, and revoke invite links for the kitchen they belong to (same as MCP `manage_kitchen_invites`). `GET /api/v1/households/mine` works for an API key (read-only, that kitchen, `active: true`). They cannot accept an invite, switch kitchens, leave, or change members: those need a signed-in user. If an API key calls `POST /api/v1/invites/{token}/accept`, the problem response tells a signed-in person to open the invite link. Share the returned `path`; the server does not send email.

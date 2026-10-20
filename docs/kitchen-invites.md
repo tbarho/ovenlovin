@@ -35,8 +35,8 @@ If you already belong to more than one kitchen, OvenLovin keeps the last kitchen
 
 Authenticated, scoped to the active kitchen:
 
-- `GET /api/v1/households/mine` - kitchens you belong to
-- `POST /api/v1/households/select` - `{ householdId }`
+- `GET /api/v1/households/mine` - kitchens you belong to (API keys: the key's kitchen only, read-only, with `active: true`)
+- `POST /api/v1/households/select` - `{ householdId }` (signed-in users only)
 - `GET /api/v1/households/members`
 - `PATCH /api/v1/households/members/{userId}` - `{ role }` (owner)
 - `DELETE /api/v1/households/members/{userId}` (owner)
@@ -48,11 +48,11 @@ Authenticated, scoped to the active kitchen:
 Public / accept:
 
 - `GET /api/v1/invites/{token}` - preview (no auth)
-- `POST /api/v1/invites/{token}/accept` - join as the signed-in user
+- `POST /api/v1/invites/{token}/accept` - join as the signed-in user (API keys cannot join; the error includes the `/invite/{token}` link)
 
 ## MCP
 
 - `manage_kitchen_invites` - `list`, `create`, `revoke`
 - `manage_kitchen_members` - `list`, `update_role`, `remove`, `leave`
 
-API keys are household-scoped. They may list, create, and revoke invite links for the kitchen they belong to (same as MCP `manage_kitchen_invites`). They cannot accept an invite, switch kitchens, leave, or change members: those need a signed-in user. Share the returned `path` (`/invite/<token>`); the server does not send email.
+API keys are household-scoped. They may list, create, and revoke invite links for the kitchen they belong to (same as MCP `manage_kitchen_invites`). `GET /api/v1/households/mine` works for an API key (read-only, that kitchen, `active: true`). They cannot accept an invite, switch kitchens, leave, or change members: those need a signed-in user. If an API key calls accept, the problem detail names the invite link a signed-in person must open. Share the returned `path` (`/invite/<token>`); the server does not send email.

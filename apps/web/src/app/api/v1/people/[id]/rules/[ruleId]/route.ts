@@ -4,11 +4,13 @@ import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
 import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
 import {
+  ambiguousRuleTargetMessage,
   canonicalizePersonRuleTarget,
   unknownRuleTargetMessage,
   type PersonRuleKind,
 } from "@ovenlovin/allergens";
 import { getDatabase } from "@ovenlovin/db";
+import { assertPersonHousehold } from "@/lib/api/people";
 
 export async function GET(
   request: NextRequest,
@@ -16,7 +18,7 @@ export async function GET(
 ) {
   try {
     const context = await getRequestContext(request);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId, ruleId } = await params;
 
@@ -24,9 +26,7 @@ export async function GET(
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const rule = await service.getRule(ruleId);
     if (!rule) {
@@ -50,7 +50,7 @@ export async function PATCH(
   try {
     const context = await getRequestContext(request);
     requireAdminRole(context);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId, ruleId } = await params;
     const body = await request.json();
@@ -59,9 +59,7 @@ export async function PATCH(
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const existingRule = await service.getRule(ruleId);
     if (!existingRule) {
@@ -82,6 +80,9 @@ export async function PATCH(
     const nextKind = (body.kind ?? existingRule.kind) as PersonRuleKind;
     const nextTarget = String(body.target ?? existingRule.target);
     const canonical = canonicalizePersonRuleTarget(nextKind, nextTarget);
+    if (canonical.ambiguous?.length) {
+      throw new BadRequestError(ambiguousRuleTargetMessage(nextTarget, canonical.ambiguous));
+    }
     if (nextKind === "allergen" && !canonical.resolved && !confirmUnknown) {
       throw new BadRequestError(unknownRuleTargetMessage(nextTarget));
     }
@@ -111,7 +112,7 @@ export async function DELETE(
   try {
     const context = await getRequestContext(request);
     requireAdminRole(context);
-    requireHouseholdId(context);
+    const householdId = requireHouseholdId(context);
 
     const { id: personId, ruleId } = await params;
 
@@ -119,9 +120,7 @@ export async function DELETE(
     const service = new PeopleService(db);
 
     const person = await service.getPerson(personId);
-    if (!person) {
-      throw new NotFoundError("Person", personId);
-    }
+    assertPersonHousehold(person, householdId, personId);
 
     const existingRule = await service.getRule(ruleId);
     if (!existingRule) {

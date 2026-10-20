@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { ScheduleService, type HouseholdScheduleView } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
@@ -27,6 +28,7 @@ async function handler(
   const actor = context.userId ?? context.apiKeyId ?? context.householdId;
 
   if (input.action === "replace") {
+    requireWriteRole(context);
     if (!input.week) throw new Error("week is required to replace the household schedule");
     return schedules.replaceSchedule(context.householdId, input.week, actor);
   }

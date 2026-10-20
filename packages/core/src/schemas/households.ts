@@ -35,6 +35,10 @@ export const updateHouseholdServingsSettingsSchema = z
     }
   });
 
+export const updateHouseholdNameSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+});
+
 export const userSchema = baseEntitySchema.extend({
   clerkUserId: z.string().max(255),
   email: z.string().email().max(255),
@@ -127,6 +131,7 @@ export const userHouseholdSchema = z.object({
 export type DefaultServingsMode = z.infer<typeof defaultServingsModeSchema>;
 export type HouseholdServingsSettings = z.infer<typeof householdServingsSettingsSchema>;
 export type UpdateHouseholdServingsSettings = z.infer<typeof updateHouseholdServingsSettingsSchema>;
+export type UpdateHouseholdName = z.infer<typeof updateHouseholdNameSchema>;
 export type MembershipRole = z.infer<typeof membershipRoleSchema>;
 export type InviteRole = z.infer<typeof inviteRoleSchema>;
 export type InviteStatus = z.infer<typeof inviteStatusSchema>;

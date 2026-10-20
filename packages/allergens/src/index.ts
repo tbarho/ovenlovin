@@ -79,6 +79,7 @@ export {
   resolveCatalogTarget,
   canonicalizePersonRuleTarget,
   unknownRuleTargetMessage,
+  ambiguousRuleTargetMessage,
   catalogGroupForRuleKind,
   ruleKindForCatalogGroup,
   humanizeTarget,
