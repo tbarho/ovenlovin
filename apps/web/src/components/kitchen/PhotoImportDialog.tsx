@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import {
   PHOTO_IMPORT_ESTIMATE,
@@ -427,7 +426,7 @@ export function PhotoImportDialog({
               className="btn primary compact"
               onClick={() => retryPhotoImportJob()}
             >
-              {job?.errorMessage === IMPORT_AI_UNAVAILABLE_MESSAGE ? "Try again" : "Retry"}
+              Retry
             </button>
           </div>
         </div>
