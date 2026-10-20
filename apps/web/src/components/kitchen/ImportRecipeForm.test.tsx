@@ -329,9 +329,39 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://example.com/chocolate-chip-cookies"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByText("No recipe found on this page.")).toBeVisible();
+    expect(screen.getByText("This is not a recipe page.")).toBeVisible();
     expect(document.querySelector(".import-error")?.textContent).not.toMatch(/blocked/i);
     expect(api).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
+  it("names a gone page and an unsupported site", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValueOnce(new Error("That page is gone."));
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/example.com/i),
+      "https://www.foodnetwork.com/recipes/old"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("That page is gone.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
+  it("shows Try again on a paste failure", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValue(new Error("An unexpected error occurred"));
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Soup\nServes 2");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("An unexpected error occurred")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Paste the recipe text" })).not.toBeInTheDocument();
   });
 
   it("offers paste and photo when a site blocks the URL importer", async () => {

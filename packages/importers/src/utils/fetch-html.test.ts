@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
+  RecipePageGoneError,
   fetchHtml,
   googleTranslateUrl,
   importBlockedMessage,
@@ -401,6 +402,50 @@ describe("fetchHtml layers", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("says a 404 is gone instead of no recipe", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      url: "https://www.foodnetwork.com/recipes/old",
+      text: async () =>
+        "<!doctype html><html><head><title>Not Found</title></head><body><h1>Not Found</h1><p>This recipe has been removed.</p></body></html>",
+    });
+    await expect(
+      fetchHtml("https://www.foodnetwork.com/recipes/old", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      })
+    ).rejects.toBeInstanceOf(RecipePageGoneError);
+  });
+
+  it("throws blocked when a challenge is followed by a non-recipe cache page", async () => {
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => EXAMPLE_COM,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    await expect(
+      fetchHtml("https://www.halfbakedharvest.com/cookies/", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toBeInstanceOf(RecipeImportFetchError);
+  });
+
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
     expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
 
@@ -451,7 +496,7 @@ describe("url importer extract messages", () => {
         createUrlImporter().extract({ url: "https://example.com/" })
       ).rejects.toMatchObject({
         name: "RecipeNotFoundError",
-        message: "No recipe found on this page.",
+        message: "This is not a recipe page.",
       });
     } finally {
       vi.unstubAllGlobals();
