@@ -12,6 +12,7 @@ import type {
   ImporterConfig,
 } from "../types/importer";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
+import { importGenerateOptions } from "../utils/models";
 
 const IMPORTER_VERSION = "0.1.0";
 
@@ -67,6 +68,7 @@ export function createPasteImporter(config: ImporterConfig = {}): Importer<Paste
         // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
         model: gateway(modelId) as any,
         schema: recipeSchema,
+        ...importGenerateOptions(),
         prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.
 
 Text:

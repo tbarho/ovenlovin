@@ -47,10 +47,17 @@ describe("extractRecipeWithLlm", () => {
     const recipe = await extractRecipeWithLlm("Weeknight Tomato Pasta\nIngredients\n12 oz pasta", {
       env: { AI_GATEWAY_API_KEY: "test-key" },
       generate,
-      modelId: "openai/gpt-4o-mini",
+      modelId: "spacexai/grok-4.7",
     });
 
-    expect(generate).toHaveBeenCalled();
+    expect(generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxRetries: 2,
+        providerOptions: {
+          gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
+        },
+      })
+    );
     expect(recipe?.name).toBe("Weeknight Tomato Pasta");
     expect(recipe?.recipeIngredient).toHaveLength(2);
   });
