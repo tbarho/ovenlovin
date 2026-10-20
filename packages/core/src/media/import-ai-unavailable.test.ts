@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { importAiUnavailableMeta, isImportAiUnavailable } from "./import-ai-unavailable";
+import {
+  importAiUnavailableMeta,
+  isImportAiUnavailable,
+  tagImportAiTimeout,
+} from "./import-ai-unavailable";
 
 describe("importAiUnavailableMeta", () => {
   it("reads provider, model, statusCode, and generationId from nested AI errors", () => {
@@ -24,12 +28,12 @@ describe("importAiUnavailableMeta", () => {
     });
   });
 
-  it("treats a generateObject timeout as unavailable", () => {
-    expect(
-      isImportAiUnavailable(Object.assign(new Error("aborted"), { name: "TimeoutError" }))
-    ).toBe(true);
-    expect(isImportAiUnavailable(Object.assign(new Error("aborted"), { name: "AbortError" }))).toBe(
-      true
-    );
+  it("treats only a tagged importer timeout as unavailable", () => {
+    const timeout = Object.assign(new Error("aborted"), { name: "TimeoutError" });
+    const abort = Object.assign(new Error("aborted"), { name: "AbortError" });
+    expect(isImportAiUnavailable(timeout)).toBe(false);
+    expect(isImportAiUnavailable(abort)).toBe(false);
+    expect(isImportAiUnavailable(tagImportAiTimeout(timeout))).toBe(true);
+    expect(isImportAiUnavailable(tagImportAiTimeout(abort))).toBe(true);
   });
 });

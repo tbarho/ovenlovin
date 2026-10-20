@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { HouseholdAccessError } from "@ovenlovin/core";
-import { IMPORT_AI_UNAVAILABLE_CODE, IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core";
+import {
+  IMPORT_AI_UNAVAILABLE_CODE,
+  IMPORT_AI_UNAVAILABLE_MESSAGE,
+  tagImportAiTimeout,
+} from "@ovenlovin/core";
 import {
   handleApiError,
   isNextRedirectError,
@@ -102,6 +106,28 @@ describe("handleApiError", () => {
     expect(body.status).toBe(503);
     expect(body.code).toBe(IMPORT_AI_UNAVAILABLE_CODE);
     expect(body.detail).toBe(IMPORT_AI_UNAVAILABLE_MESSAGE);
+  });
+
+  it("does not map a bare TimeoutError from some other route to import_ai_unavailable", () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = handleApiError(
+      Object.assign(new Error("aborted"), { name: "TimeoutError" }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes"
+    );
+    errorLog.mockRestore();
+    expect(response.status).toBe(500);
+  });
+
+  it("maps a tagged importer AI timeout to 503 import_ai_unavailable", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const response = handleApiError(
+      tagImportAiTimeout(Object.assign(new Error("aborted"), { name: "TimeoutError" })),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    warn.mockRestore();
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as { code?: string };
+    expect(body.code).toBe(IMPORT_AI_UNAVAILABLE_CODE);
   });
 
   it("logs provider metadata when recipe reading is unavailable", async () => {

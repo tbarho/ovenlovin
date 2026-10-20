@@ -48,6 +48,7 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
     },
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
+      const startedAt = Date.now();
       const captured = Boolean(input.html?.trim() || input.jsonLd);
       const { html, finalUrl, layersTried } = captured
         ? { html: input.html ?? "", finalUrl: input.url, layersTried: ["device"] }
@@ -64,7 +65,10 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
         htmlRecipe ??
         (await (config.extractWithLlm
           ? config.extractWithLlm(pageTextFromHtml(html))
-          : extractRecipeWithLlm(pageTextFromHtml(html), { modelId: config.modelId })));
+          : extractRecipeWithLlm(pageTextFromHtml(html), {
+              modelId: config.modelId,
+              startedAt,
+            })));
 
       if (!structured) {
         throw new RecipeNotFoundError(finalUrl, layersTried);

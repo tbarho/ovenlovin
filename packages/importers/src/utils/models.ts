@@ -50,6 +50,10 @@ export const IMPORT_GENERATE_MAX_RETRIES = 2;
 /** Paste/URL generateObject budget. Photo keeps 55s. Leaves room for a 503 before the 60s platform 504. */
 export const IMPORT_GENERATE_TIMEOUT_MS = 50_000;
 
+export function remainingImportBudgetMs(startedAt: number, now = Date.now()): number {
+  return Math.max(0, IMPORT_GENERATE_TIMEOUT_MS - (now - startedAt));
+}
+
 export function importGenerateOptions(primary?: string) {
   return {
     maxRetries: IMPORT_GENERATE_MAX_RETRIES,

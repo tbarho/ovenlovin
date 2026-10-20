@@ -67,11 +67,20 @@ export function importAiUnavailableMeta(error: unknown): ImportAiUnavailableMeta
   return meta;
 }
 
+/** Mark a generateObject timeout so only importer AI aborts become import_ai_unavailable. */
+export function tagImportAiTimeout(error: unknown): unknown {
+  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+    Object.assign(error, { importAiTimeout: true });
+  }
+  return error;
+}
+
 /** AI Gateway / model down, overloaded, or rate-limited. Not a recipe-site 503. */
 export function isImportAiUnavailable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
+  if ((error as { importAiTimeout?: unknown }).importAiTimeout === true) return true;
   const name = errorName(error);
-  if (name === "AI_RetryError" || name === "TimeoutError" || name === "AbortError") return true;
+  if (name === "AI_RetryError") return true;
   if (name.startsWith("AI_") && UNAVAILABLE_STATUSES.has(errorStatus(error) ?? -1)) return true;
   const nested = error as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
   if (nested.lastError && isImportAiUnavailable(nested.lastError)) return true;

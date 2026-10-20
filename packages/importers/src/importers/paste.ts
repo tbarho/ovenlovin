@@ -11,6 +11,7 @@ import type {
   ParsedStep,
   ImporterConfig,
 } from "../types/importer";
+import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { IMPORT_GENERATE_TIMEOUT_MS, importGenerateOptions } from "../utils/models";
 
@@ -63,18 +64,23 @@ export function createPasteImporter(config: ImporterConfig = {}): Importer<Paste
     },
 
     async extract(input: PasteImportInput): Promise<RawExtraction> {
-      const result = await generateObject({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
-        model: gateway(modelId) as any,
-        schema: recipeSchema,
-        abortSignal: AbortSignal.timeout(IMPORT_GENERATE_TIMEOUT_MS),
-        ...importGenerateOptions(modelId),
-        prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.
+      let result;
+      try {
+        result = await generateObject({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
+          model: gateway(modelId) as any,
+          schema: recipeSchema,
+          abortSignal: AbortSignal.timeout(IMPORT_GENERATE_TIMEOUT_MS),
+          ...importGenerateOptions(modelId),
+          prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.
 
 Text:
 ${input.text}`,
-      });
+        });
+      } catch (error) {
+        throw tagImportAiTimeout(error);
+      }
 
       return {
         sourceType: "paste",

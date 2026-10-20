@@ -125,6 +125,17 @@ describe("Photo Importer", () => {
         })
       );
     });
+
+    it("tags a generateObject timeout as import AI unavailable", async () => {
+      const { generateObject } = await import("ai");
+      const { isImportAiUnavailable } = await import("@ovenlovin/core/import-ai-unavailable");
+      const error = Object.assign(new Error("aborted"), { name: "TimeoutError" });
+      (generateObject as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
+      await expect(
+        importer.extract({ images: [{ blob: imageDataUrl("printed-tomato-pasta.png") }] })
+      ).rejects.toBe(error);
+      expect(isImportAiUnavailable(error)).toBe(true);
+    });
   });
 
   describe("toDraft", () => {

@@ -14,6 +14,7 @@ import type {
 import { stripLeadingStepNumber } from "@ovenlovin/core";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { classifyDraftIngredients } from "../utils/classify-allergens";
+import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
 import { importGenerateOptions, resolveVisionModelId } from "../utils/models";
 import { listUncertainFields, type FieldConfidence } from "../utils/uncertain-fields";
 
@@ -109,19 +110,21 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         ? "\n\nIMPORTANT: This is a HANDWRITTEN recipe card. Handwriting recognition is challenging:\n- Mark ingredients/steps as 'illegible' if you cannot read them with high confidence\n- Mark as 'low' confidence for uncertain readings\n- Preserve exact text as written, including quirks\n- Note any legibility issues in handwrittenNotes"
         : "";
 
-      const result = await generateObject({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
-        model: gateway(visionModelId) as any,
-        abortSignal: combineAbortSignals(AbortSignal.timeout(55_000), config.abortSignal),
-        ...importGenerateOptions(visionModelId),
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
+      let result;
+      try {
+        result = await generateObject({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
+          model: gateway(visionModelId) as any,
+          abortSignal: combineAbortSignals(AbortSignal.timeout(55_000), config.abortSignal),
+          ...importGenerateOptions(visionModelId),
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
 
 Extract:
 - title, servings, prep/cook/total times
@@ -134,13 +137,16 @@ Mark confidence for the title, servings, times, each ingredient, and each step: 
 
 Rate overall ocrQuality: excellent (printed, perfect), good (printed, minor issues), fair (handwritten but mostly legible), poor (blurry, cropped, or significant legibility issues).
 Set looksLikeRecipe false when the photo is not a recipe (a receipt, landscape, random object, or blank page).`,
-              },
-              ...imageMessages,
-            ],
-          },
-        ],
-        schema: recipeSchema,
-      });
+                },
+                ...imageMessages,
+              ],
+            },
+          ],
+          schema: recipeSchema,
+        });
+      } catch (error) {
+        throw tagImportAiTimeout(error);
+      }
 
       return {
         sourceType: "photo",

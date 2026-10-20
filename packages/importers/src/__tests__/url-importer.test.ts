@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createUrlImporter } from "../importers/url";
 import { extractJsonLd, RecipeNotFoundError } from "../utils/url";
+import * as llmRecipe from "../utils/llm-recipe";
 import chocolateChipCookiesJson from "./fixtures/url/chocolate-chip-cookies.json";
 
 describe("URL Importer", () => {
@@ -361,6 +362,36 @@ describe("URL Importer", () => {
       const raw = await importer.extract({ url: "https://example-blog.test/grandma-soup" });
       expect(raw.rawData.name).toBe("Grandma soup");
       expect(raw.rawData.recipeIngredient).toHaveLength(3);
+    });
+
+    it("starts the AI time budget before the page fetch", async () => {
+      const extract = vi.spyOn(llmRecipe, "extractRecipeWithLlm").mockResolvedValue({
+        "@type": "Recipe",
+        name: "Grandma soup",
+        recipeIngredient: ["1 chicken", "2 carrots"],
+        recipeInstructions: [{ "@type": "HowToStep", text: "Simmer." }],
+      });
+      let fetchedAt = 0;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          fetchedAt = Date.now();
+          return {
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            url: "https://example-blog.test/grandma-soup",
+            text: async () => prosePage,
+          };
+        })
+      );
+
+      const started = Date.now();
+      await createUrlImporter().extract({ url: "https://example-blog.test/grandma-soup" });
+      const startedAt = extract.mock.calls[0]?.[1]?.startedAt;
+      expect(startedAt).toBeGreaterThanOrEqual(started);
+      expect(startedAt).toBeLessThanOrEqual(fetchedAt);
+      extract.mockRestore();
     });
 
     it("says no recipe found when every extract layer misses", async () => {

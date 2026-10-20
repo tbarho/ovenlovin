@@ -2,9 +2,9 @@
 import { generateObject } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
-import { isImportAiUnavailable } from "@ovenlovin/core/import-ai-unavailable";
+import { isImportAiUnavailable, tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
-import { IMPORT_GENERATE_TIMEOUT_MS, importGenerateOptions, resolveExtractModelId } from "./models";
+import { importGenerateOptions, remainingImportBudgetMs, resolveExtractModelId } from "./models";
 
 const llmRecipeSchema = z.object({
   isRecipe: z.boolean().describe("True only if the page text is a cookable recipe"),
@@ -27,6 +27,8 @@ export type LlmRecipeExtractOptions = {
   modelId?: string;
   env?: Record<string, string | undefined>;
   generate?: typeof generateObject;
+  /** URL import: clock starts at extract(), so a slow page fetch shrinks the AI budget. */
+  startedAt?: number;
 };
 
 function minutesToIso(minutes: number | undefined): string | undefined {
@@ -72,13 +74,17 @@ export async function extractRecipeWithLlm(
 
   const modelId = resolveExtractModelId(options.modelId, env);
   const generate = options.generate ?? generateObject;
+  const remaining = remainingImportBudgetMs(options.startedAt ?? Date.now());
+  if (remaining === 0) {
+    throw tagImportAiTimeout(Object.assign(new Error("aborted"), { name: "TimeoutError" }));
+  }
 
   try {
     const result = await generate({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       model: gateway(modelId) as any,
       schema: llmRecipeSchema,
-      abortSignal: AbortSignal.timeout(IMPORT_GENERATE_TIMEOUT_MS),
+      abortSignal: AbortSignal.timeout(remaining),
       ...importGenerateOptions(modelId),
       prompt: `Extract a recipe from this page text if one is present. Preserve exact ingredient lines. If this is not a recipe (a homepage, paywall, or generic article), set isRecipe to false and omit the rest. Do not invent quantities.
 
@@ -88,7 +94,8 @@ ${pageText}`,
 
     return llmRecipeToJsonLd(result.object as z.infer<typeof llmRecipeSchema>);
   } catch (error) {
-    if (isImportAiUnavailable(error)) throw error;
+    const tagged = tagImportAiTimeout(error);
+    if (isImportAiUnavailable(tagged)) throw tagged;
     return null;
   }
 }
