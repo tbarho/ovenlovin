@@ -283,6 +283,7 @@ export function CookbookRecipes({
         confirmLabel="Delete cookbook"
         danger
         pending={pending}
+        error={error}
         onCancel={() => setDeleteOpen(false)}
         onConfirm={removeCookbook}
       />

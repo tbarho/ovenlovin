@@ -2,8 +2,10 @@ import { verifyToken } from "@clerk/backend";
 import { getDatabase } from "@ovenlovin/db";
 import {
   API_KEY_CREATOR_NOT_A_MEMBER,
+  API_KEY_KITCHEN_HEADER_MISMATCH,
   ApiKeyService,
   HouseholdService,
+  apiKeyKitchenHeaderMismatch,
   apiKeyMembershipRole,
   canWriteKitchen,
   selectActiveMembership,
@@ -44,7 +46,7 @@ export async function authenticateRequest(headers: Record<string, string>): Prom
   try {
     const scheme = parseAuthorizationHeader(headers["authorization"] || headers["Authorization"]);
     if (scheme.kind === "apiKey") {
-      return parseApiKey(scheme.token);
+      return parseApiKey(scheme.token, headers);
     }
     return parseClerkToken(scheme.token, headers);
   } catch (error) {
@@ -143,7 +145,7 @@ async function parseClerkToken(
   }
 }
 
-async function parseApiKey(apiKey: string): Promise<AuthContext> {
+async function parseApiKey(apiKey: string, headers: Record<string, string>): Promise<AuthContext> {
   if (!apiKey) {
     throw {
       code: "unauthorized",
@@ -159,6 +161,14 @@ async function parseApiKey(apiKey: string): Promise<AuthContext> {
     throw {
       code: "unauthorized",
       message: "Invalid or expired API key",
+    } as AuthError;
+  }
+
+  const preferred = headers["x-kitchen-id"] ?? headers["X-Kitchen-Id"];
+  if (apiKeyKitchenHeaderMismatch(result.key.householdId, preferred)) {
+    throw {
+      code: "forbidden",
+      message: API_KEY_KITCHEN_HEADER_MISMATCH,
     } as AuthError;
   }
 
