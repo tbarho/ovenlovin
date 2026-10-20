@@ -17,6 +17,38 @@ export type PhotoReviewDraft = {
   source: PhotoImportPreview["source"];
 };
 
+export function reviewDraftFromImportPreview(preview: {
+  title?: string;
+  notes?: string;
+  servings?: number;
+  prepTimeMinutes?: number;
+  cookTimeMinutes?: number;
+  ingredients?: PhotoImportPreview["ingredients"];
+  steps?: PhotoImportPreview["steps"];
+  images?: string[];
+  source: PhotoImportPreview["source"];
+  needsReview?: boolean;
+  reviewReasons?: string[];
+  uncertainFields?: string[];
+}): PhotoReviewDraft {
+  return reviewDraftFromPreview({
+    title: preview.title ?? "",
+    notes: preview.notes,
+    servings: preview.servings,
+    prepTimeMinutes: preview.prepTimeMinutes,
+    cookTimeMinutes: preview.cookTimeMinutes,
+    ingredients: preview.ingredients ?? [],
+    steps: preview.steps ?? [],
+    images: preview.images ?? [],
+    source: preview.source,
+    overallConfidence: 1,
+    needsReview: Boolean(preview.needsReview),
+    reviewReasons: preview.reviewReasons ?? [],
+    uncertainFields: preview.uncertainFields ?? [],
+    allergenClassifications: [],
+  });
+}
+
 export function reviewDraftFromPreview(preview: PhotoImportPreview): PhotoReviewDraft {
   return {
     title: preview.title ?? "",
@@ -68,7 +100,7 @@ export function recipeCreateBodyFromReview(draft: PhotoReviewDraft) {
       .map((text) => ({ text })),
     source: {
       ...draft.source,
-      type: "photo" as const,
+      type: draft.source.type,
       attribution: draft.sourceAttribution.trim() || draft.source.attribution,
       rawExtractionJson: review.rawExtractionJson,
     },

@@ -10,6 +10,7 @@ import { requireWriteRole } from "../auth/index";
 import { McpInvalidParamsError } from "../json-rpc";
 import {
   copyRemoteImages,
+  draftFromSavedPreview,
   fingerprintImageBlob,
   keepMainRecipeImages,
   persistRecipeImageUrl,
@@ -38,6 +39,7 @@ export const importRecipeFromImageSchema = z
       .optional()
       .describe("Extra pages of the same recipe; the first photo is the main image"),
     isHandwritten: z.boolean().optional(),
+    draft: z.unknown().optional().describe("Previewed recipe from a prior import. Skips extract."),
     skipReview: z.boolean().default(false),
     cookbookId: z.string().uuid().optional(),
   })
@@ -46,9 +48,10 @@ export const importRecipeFromImageSchema = z
       Boolean(
         value.imageUrl?.trim() ||
         value.imageBase64?.trim() ||
-        (value.images && value.images.length > 0)
+        (value.images && value.images.length > 0) ||
+        value.draft != null
       ),
-    { message: "Provide imageUrl, imageBase64, or images[]" }
+    { message: "Provide imageUrl, imageBase64, images[], or draft" }
   );
 
 export type ImportRecipeFromImageInput = z.infer<typeof importRecipeFromImageSchema>;
@@ -108,40 +111,56 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
     throw new Error(AI_GATEWAY_MISSING_MESSAGE);
   }
 
+  const savedDraft = input.draft != null ? draftFromSavedPreview(input.draft) : null;
+  if (input.draft != null && !savedDraft) {
+    throw new McpInvalidParamsError("That previewed draft is not a recipe");
+  }
+
   const images = collectImages(input);
   const first = images[0]?.blob;
-  if (!first) {
+  if (!first && !savedDraft) {
     throw new McpInvalidParamsError("Provide imageUrl, imageBase64, or images[]");
   }
 
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
-  const fingerprint = fingerprintImageBlob(first);
-  const perceptualHash = perceptualHashFromImageBlob(first);
-  const exact = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
-  if (exact) {
-    throw new McpInvalidParamsError(
-      `This photo was already imported as "${exact.title}" (${exact.id}). Skip or open that recipe.`
-    );
+  const fingerprint = first ? fingerprintImageBlob(first) : null;
+  const perceptualHash = first ? perceptualHashFromImageBlob(first) : null;
+  if (fingerprint) {
+    const exact = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
+    if (exact) {
+      throw new McpInvalidParamsError(
+        `This photo was already imported as "${exact.title}" (${exact.id}). Skip or open that recipe.`
+      );
+    }
   }
-  const extracted = await runPhotoImport({ images, isHandwritten: input.isHandwritten }, {});
-  const draft = extracted.draft;
-  draft.images = await persistMainPhoto(first, context.householdId);
-  draft.source = {
-    ...draft.source,
-    rawExtractionJson: {
-      ...(draft.source.rawExtractionJson ?? {}),
-      photoFingerprint: fingerprint,
-      photoPerceptualHash: perceptualHash ?? undefined,
-    },
-  };
+
+  let draft = savedDraft;
+  let extracted: Awaited<ReturnType<typeof runPhotoImport>> | null = null;
+  if (!draft) {
+    extracted = await runPhotoImport({ images, isHandwritten: input.isHandwritten }, {});
+    draft = extracted.draft;
+  }
+  if (first) {
+    draft.images = await persistMainPhoto(first, context.householdId);
+    draft.source = {
+      ...draft.source,
+      rawExtractionJson: {
+        ...(draft.source.rawExtractionJson ?? {}),
+        photoFingerprint: fingerprint,
+        photoPerceptualHash: perceptualHash ?? undefined,
+      },
+    };
+  }
   if (input.skipReview) {
     draft.needsReview = false;
-  } else if (extracted.uncertainFields.length > 0) {
+  } else if (extracted && extracted.uncertainFields.length > 0) {
     draft.needsReview = true;
   }
-  draft.reviewReasons = extracted.draft.reviewReasons;
-  draft.uncertainFields = extracted.uncertainFields;
+  if (extracted) {
+    draft.reviewReasons = extracted.draft.reviewReasons;
+    draft.uncertainFields = extracted.uncertainFields;
+  }
 
   const persisted = await recipeService.persistImportedDraft(draft, {
     householdId: context.householdId,
@@ -173,17 +192,22 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
     prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
     images: mcpRecipeImages(recipe.id, recipe.images),
-    confidence: draft.overallConfidence,
+    confidence: extracted?.draft.overallConfidence ?? 1,
     reviewReasons: recipe.reviewReasons,
     uncertainFields:
-      recipe.uncertainFields.length > 0 ? recipe.uncertainFields : extracted.uncertainFields,
-    allergenClassifications: extracted.allergenClassifications,
-    lowConfidenceFields: draft.needsReview ? extracted.uncertainFields : undefined,
+      recipe.uncertainFields.length > 0
+        ? recipe.uncertainFields
+        : (extracted?.uncertainFields ?? draft.uncertainFields ?? []),
+    allergenClassifications: extracted?.allergenClassifications ?? [],
+    lowConfidenceFields: draft.needsReview
+      ? (extracted?.uncertainFields ?? draft.uncertainFields)
+      : undefined,
     message: !created
       ? `This photo was already imported as "${recipe.title}" (${recipe.id}). Open that recipe instead of importing again.`
-      : draft.needsReview || extracted.uncertainFields.length > 0
+      : draft.needsReview || (extracted?.uncertainFields.length ?? 0) > 0
         ? `Recipe imported from photo but needs review. Uncertain: ${
-            extracted.uncertainFields.join(", ") || "see reviewReasons"
+            (extracted?.uncertainFields ?? draft.uncertainFields ?? []).join(", ") ||
+            "see reviewReasons"
           }`
         : "Recipe imported from photo",
   };

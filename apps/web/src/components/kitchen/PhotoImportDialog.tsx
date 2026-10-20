@@ -78,7 +78,7 @@ function PhotoImportProgress({
   );
 }
 
-function PhotoReviewForm({
+export function ImportReviewForm({
   draft,
   heroSrc,
   pending,
@@ -86,6 +86,7 @@ function PhotoReviewForm({
   existingRecipeUrl,
   possibleDuplicate,
   savedRecipeId,
+  showPhotoChrome = true,
   onOpenSaved,
   onChange,
   onSave,
@@ -97,6 +98,7 @@ function PhotoReviewForm({
   existingRecipeUrl: string | null;
   possibleDuplicate: { recipeId: string; title: string } | null;
   savedRecipeId: string | null;
+  showPhotoChrome?: boolean;
   onOpenSaved: () => void;
   onChange: (next: PhotoReviewDraft) => void;
   onSave: (event: React.FormEvent) => void;
@@ -109,13 +111,15 @@ function PhotoReviewForm({
   const stepsNote = uncertainFieldNote(uncertain, "steps");
   return (
     <form className="form-card photo-review-form" style={{ margin: 0 }} onSubmit={onSave}>
-      <ol className="sheet-steps">
-        {PHOTO_IMPORT_STEPS.map((step) => (
-          <li key={step.id} className="is-current">
-            {step.label}
-          </li>
-        ))}
-      </ol>
+      {showPhotoChrome ? (
+        <ol className="sheet-steps">
+          {PHOTO_IMPORT_STEPS.map((step) => (
+            <li key={step.id} className="is-current">
+              {step.label}
+            </li>
+          ))}
+        </ol>
+      ) : null}
       {possibleDuplicate ? (
         <p className="import-warn">
           Similar to{" "}
@@ -129,7 +133,8 @@ function PhotoReviewForm({
         </p>
       ) : (
         <p className="sheet-lead" role="status" aria-live="polite">
-          Ready to review. Fix anything that looks off, then save. One main photo is kept.
+          Ready to review. Fix anything that looks off, then save
+          {showPhotoChrome ? ". One main photo is kept." : "."}
         </p>
       )}
       {heroSrc ? (
@@ -433,7 +438,7 @@ export function PhotoImportDialog({
         </div>
       ) : null}
       {phase === "review" && draft ? (
-        <PhotoReviewForm
+        <ImportReviewForm
           draft={draft}
           heroSrc={
             job?.previewUrl ||

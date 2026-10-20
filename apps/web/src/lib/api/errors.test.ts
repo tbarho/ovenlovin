@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { HouseholdAccessError } from "@ovenlovin/core";
 import { IMPORT_AI_UNAVAILABLE_CODE, IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core";
 import {
@@ -80,6 +80,7 @@ describe("handleApiError", () => {
   });
 
   it("maps AI_RetryError to 503 import_ai_unavailable with Retry-After", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const error = Object.assign(
       new Error(
         "Failed after 3 attempts. Last error: Service temporarily unavailable. Please try again shortly."
@@ -90,6 +91,7 @@ describe("handleApiError", () => {
       error,
       "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
     );
+    warn.mockRestore();
     expect(response.status).toBe(503);
     expect(response.headers.get("retry-after")).toBe("60");
     const body = (await response.json()) as {
@@ -100,5 +102,25 @@ describe("handleApiError", () => {
     expect(body.status).toBe(503);
     expect(body.code).toBe(IMPORT_AI_UNAVAILABLE_CODE);
     expect(body.detail).toBe(IMPORT_AI_UNAVAILABLE_MESSAGE);
+  });
+
+  it("logs provider metadata when recipe reading is unavailable", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const error = Object.assign(new Error("Failed after 3 attempts"), {
+      name: "AI_RetryError",
+      lastError: {
+        statusCode: 503,
+        modelId: "spacexai/grok-4.7",
+        data: { provider: "xai", generationId: "gen_test_123" },
+      },
+    });
+    handleApiError(error, "https://ovenlovin-demo.vercel.app/api/v1/recipes/import");
+    expect(warn).toHaveBeenCalledWith("import_ai_unavailable", {
+      provider: "xai",
+      model: "spacexai/grok-4.7",
+      statusCode: 503,
+      generationId: "gen_test_123",
+    });
+    warn.mockRestore();
   });
 });
