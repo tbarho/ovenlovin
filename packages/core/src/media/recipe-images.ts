@@ -6,7 +6,9 @@ const BLOB_HOST_HINTS = ["public.blob.vercel-storage.com", "blob.vercel-storage.
 /** Stored jsonb may contain objects from a bad write. Only keep string URLs. */
 export function normalizeStoredRecipeImages(images: unknown): string[] {
   if (!Array.isArray(images)) return [];
-  return images.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  return images.filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0
+  );
 }
 
 export function recipeMainImage(images: unknown): string | null {
