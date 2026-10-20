@@ -41,7 +41,10 @@ export const importRecipeFromImageSchema = z
       .describe("Extra pages of the same recipe; the first photo is the main image"),
     isHandwritten: z.boolean().optional(),
     draft: z.unknown().optional().describe("Previewed recipe from a prior import. Skips extract."),
-    save: z.boolean().optional().describe("false returns a preview without saving; omit to persist"),
+    save: z
+      .boolean()
+      .optional()
+      .describe("false returns a preview without saving; omit to persist"),
     idempotencyKey: z.string().optional().describe("Same key replays the same saved recipe"),
     allowDuplicate: z
       .boolean()
