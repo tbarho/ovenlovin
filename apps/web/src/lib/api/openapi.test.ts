@@ -56,16 +56,26 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hidden");
     expect(spec.paths?.["/recipes"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/import"]?.post).toBeTruthy();
+    expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("save");
+    expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("saved:false");
+    expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("Idempotency-Key");
+    expect(JSON.stringify(spec.paths?.["/recipes/import/photo"]?.post)).toContain("allowDuplicate");
+    expect(JSON.stringify(spec.paths?.["/recipes/import/photo"]?.post)).toContain("PNG");
     expect(spec.paths?.["/recipes/import/page"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/import/photo"]?.post).toBeTruthy();
     const photoPreview = spec.components?.schemas?.PhotoImportPreview as {
       properties?: Record<string, unknown>;
     };
     expect(photoPreview?.properties).toHaveProperty("uncertainFields");
+    expect(photoPreview?.properties).toHaveProperty("reviewReasons");
     expect(photoPreview?.properties).toHaveProperty("allergenClassifications");
     expect(spec.paths?.["/recipes/{id}"]?.delete).toBeTruthy();
     const recipe = spec.components?.schemas?.Recipe as { properties?: Record<string, unknown> };
     expect(recipe?.properties).toHaveProperty("notes");
+    expect(recipe?.properties).toHaveProperty("reviewReasons");
+    expect(recipe?.properties).toHaveProperty("remainingImports");
+    expect(JSON.stringify(spec.paths?.["/recipes/{id}"]?.get)).toContain("displayServings");
+    expect(JSON.stringify(spec.paths?.["/recipes/{id}"]?.get)).toContain("?servings");
     expect(spec.paths?.["/meal-plans/{id}"]?.delete).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}/check"]?.get).toBeTruthy();
     expect(spec.paths?.["/meal-plans/{id}/check"]?.post).toBeTruthy();

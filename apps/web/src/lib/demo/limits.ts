@@ -9,8 +9,19 @@ export type DemoLimitCounters = {
 };
 
 export type DemoLimitDecision =
-  | { ok: true; next: DemoLimitCounters }
-  | { ok: false; reason: string; code: "import_cap" | "write_rate" | "uploads_off" | "ai_off" };
+  | { ok: true; next: DemoLimitCounters; remainingImports: number }
+  | {
+      ok: false;
+      reason: string;
+      code: "import_cap" | "write_rate" | "uploads_off" | "ai_off";
+      remainingImports?: number;
+      importLimit?: number;
+      importCount?: number;
+    };
+
+export function remainingImportsFromCount(importCount: number): number {
+  return Math.max(0, DEMO_IMPORT_LIMIT - importCount);
+}
 
 export function isMutatingMethod(method: string): boolean {
   return ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
@@ -44,7 +55,11 @@ export function decideDemoWrite(input: {
   now?: Date;
 }): DemoLimitDecision {
   if (!isMutatingMethod(input.method)) {
-    return { ok: true, next: input.counters };
+    return {
+      ok: true,
+      next: input.counters,
+      remainingImports: remainingImportsFromCount(input.counters.importCount),
+    };
   }
   if (isDemoUploadPath(input.pathname)) {
     return {
@@ -62,7 +77,10 @@ export function decideDemoWrite(input: {
       return {
         ok: false,
         code: "import_cap",
-        reason: `This demo sandbox allows ${DEMO_IMPORT_LIMIT} recipe imports.`,
+        remainingImports: 0,
+        importLimit: DEMO_IMPORT_LIMIT,
+        importCount: next.importCount,
+        reason: `This demo sandbox allows ${DEMO_IMPORT_LIMIT} recipe imports. 0 remaining.`,
       };
     }
     // Import count increments only after a successful import (see recordSuccessfulDemoImport).
@@ -78,6 +96,7 @@ export function decideDemoWrite(input: {
 
   return {
     ok: true,
+    remainingImports: remainingImportsFromCount(next.importCount),
     next: {
       ...next,
       writesInWindow: next.writesInWindow + 1,

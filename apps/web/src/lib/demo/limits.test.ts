@@ -47,7 +47,14 @@ describe("decideDemoWrite", () => {
       method: "POST",
       counters: { ...counters, importCount: 5 },
     });
-    expect(decision).toMatchObject({ ok: false, code: "import_cap" });
+    expect(decision).toMatchObject({
+      ok: false,
+      code: "import_cap",
+      remainingImports: 0,
+      importLimit: 5,
+    });
+    expect(decision.ok).toBe(false);
+    if (!decision.ok) expect(decision.reason).toContain("0 remaining");
   });
 
   it("counts a bookmarklet page import against the demo import cap", () => {
@@ -65,7 +72,11 @@ describe("decideDemoWrite", () => {
       method: "POST",
       counters: { ...counters, importCount: 5 },
     });
-    expect(decision).toMatchObject({ ok: false, code: "import_cap" });
+    expect(decision).toMatchObject({
+      ok: false,
+      code: "import_cap",
+      remainingImports: 0,
+    });
   });
 
   it("rate-limits writes after 60 in the hour", () => {

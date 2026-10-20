@@ -18,6 +18,7 @@ describe("readPhotoImportRequest", () => {
 
     const parsed = await readPhotoImportRequest(request);
     expect(parsed.save).toBe(false);
+    expect(parsed.allowDuplicate).toBe(false);
     expect(parsed.isHandwritten).toBe(true);
     expect(parsed.images).toEqual([{ blob: "https://blob.vercel-storage.com/card.jpg" }]);
   });
@@ -27,6 +28,7 @@ describe("readPhotoImportRequest", () => {
     const form = new FormData();
     form.append("image", new File([bytes], "card.png", { type: "image/png" }));
     form.append("save", "true");
+    form.append("allowDuplicate", "true");
     form.append("isHandwritten", "1");
 
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
@@ -36,6 +38,7 @@ describe("readPhotoImportRequest", () => {
 
     const parsed = await readPhotoImportRequest(request);
     expect(parsed.save).toBe(true);
+    expect(parsed.allowDuplicate).toBe(true);
     expect(parsed.isHandwritten).toBe(true);
     expect(parsed.images).toHaveLength(1);
     expect(parsed.images[0]?.blob).toMatch(/^data:image\/png;base64,/);

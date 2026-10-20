@@ -5,6 +5,7 @@ export * from "./invites";
 export * from "./people";
 export * from "./plans";
 export * from "./recipes";
+export * from "./import-dedupe";
 export * from "./cookbooks";
 export * from "./plans";
 export * from "./api-keys";

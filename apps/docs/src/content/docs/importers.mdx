@@ -40,8 +40,8 @@ Any website that includes Schema.org Recipe JSON-LD markup, including:
 {
   "tool": "import_recipe",
   "input": {
-    "type": "url",
-    "url": "https://example.com/recipe/chocolate-chip-cookies"
+    "source": "url",
+    "content": "https://example.com/recipe/chocolate-chip-cookies"
   }
 }
 ```
@@ -53,8 +53,9 @@ curl -X POST https://your-app.vercel.app/api/v1/recipes/import \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "url",
-    "url": "https://example.com/recipe/chocolate-chip-cookies"
+    "source": "url",
+    "content": "https://example.com/recipe/chocolate-chip-cookies",
+    "save": true
   }'
 ```
 
@@ -215,8 +216,8 @@ The paste importer:
 {
   "tool": "import_recipe",
   "input": {
-    "type": "paste",
-    "text": "Chocolate Chip Cookies\n\nIngredients:\n2 1/4 cups flour\n..."
+    "source": "paste",
+    "content": "Chocolate Chip Cookies\n\nIngredients:\n2 1/4 cups flour\n..."
   }
 }
 ```
@@ -228,8 +229,9 @@ curl -X POST https://your-app.vercel.app/api/v1/recipes/import \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "paste",
-    "text": "Chocolate Chip Cookies\n\nIngredients:\n2 1/4 cups flour\n1 cup butter\n..."
+    "source": "paste",
+    "content": "Chocolate Chip Cookies\n\nIngredients:\n2 1/4 cups flour\n1 cup butter\n...",
+    "save": true
   }'
 ```
 

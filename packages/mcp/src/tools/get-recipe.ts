@@ -12,6 +12,7 @@ import {
   PeopleService,
   RecipeService,
   backfillParsedIngredient,
+  parseServingsQuery,
   recipeServingsPresentation,
   scaleIngredientDisplay,
 } from "@ovenlovin/core";
@@ -29,6 +30,13 @@ export const getRecipeSchema = z.object({
   id: z.string().uuid(),
   includeNutrition: z.boolean().default(true),
   includeSource: z.boolean().default(true),
+  servings: z
+    .number()
+    .int()
+    .min(1)
+    .max(24)
+    .optional()
+    .describe("Override display servings. When omitted, kitchen Default servings is used."),
 });
 
 export type GetRecipeInput = z.infer<typeof getRecipeSchema>;
@@ -167,6 +175,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
     familySize: servingsSettings.familySize,
     mode: servingsSettings.mode,
     fixedServings: servingsSettings.servings,
+    servingsOverride: parseServingsQuery(input.servings),
   });
 
   const ingredients = ingredientRows.map((ing) => {
@@ -257,7 +266,7 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
 export const getRecipeTool = {
   name: "get_recipe",
   description:
-    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL. servings is the stored card yield; displayServings applies the kitchen Default servings setting (family = max(yield, people count)). ingredients.displayText is the cooking-fraction line at displayServings; rawText is the stored import string.",
+    "Get full recipe details including ingredients, steps, prep/cook times, notes, images, cookbooks, and source URL. servings is the stored card yield; displayServings applies the kitchen Default servings setting (family = max(yield, people count)) or the optional servings argument. ingredients.displayText is the cooking-fraction line at displayServings; rawText is the stored import string.",
   inputSchema: getRecipeSchema,
   handler,
 } as const;

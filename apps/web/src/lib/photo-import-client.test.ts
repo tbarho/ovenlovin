@@ -6,6 +6,7 @@ import {
   PHOTO_IMPORT_NOT_RECIPE_MESSAGE,
   PHOTO_IMPORT_TIMEOUT_MESSAGE,
   PHOTO_IMPORT_TIMEOUT_MS,
+  PHOTO_SAVE_NO_IMAGE_MESSAGE,
   classifyPhotoImportProblem,
   dataUrlPayloadBytes,
   extractPhotoPreviewFromFiles,
@@ -105,6 +106,11 @@ describe("photo import copy helpers", () => {
     expect(photoImportErrorMessage(new Error(PHOTO_IMPORT_NOT_RECIPE_MESSAGE))).toBe(
       PHOTO_IMPORT_NOT_RECIPE_MESSAGE
     );
+  });
+
+  it("tells the cook the recipe saved when only the photo upload failed", () => {
+    expect(PHOTO_SAVE_NO_IMAGE_MESSAGE).toContain("Recipe saved");
+    expect(PHOTO_SAVE_NO_IMAGE_MESSAGE).toContain("do not import it again");
   });
 
   it("counts the decoded bytes of a data URL", () => {

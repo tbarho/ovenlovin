@@ -11,6 +11,7 @@ import {
   copyRemoteImages,
   draftFromPlainText,
   keepMainRecipeImages,
+  prepareImportDraft,
   RecipeService,
 } from "@ovenlovin/core";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
@@ -28,6 +29,8 @@ export type ImportRecipeInput = z.infer<typeof importRecipeSchema>;
 
 export interface ImportRecipeOutput {
   recipeId: string;
+  created?: boolean;
+  duplicate?: boolean;
   status: "draft" | "needs_review" | "published";
   title: string;
   notes: string | null;
@@ -37,6 +40,8 @@ export interface ImportRecipeOutput {
   images: string[];
   confidence: number;
   lowConfidenceFields?: string[];
+  reviewReasons?: string[];
+  uncertainFields?: string[];
   message: string;
 }
 
@@ -86,14 +91,41 @@ async function handler(
     draft.needsReview = false;
   }
 
+  draft = prepareImportDraft(draft);
+  const existing = await recipeService.findImportDuplicate(context.householdId, draft);
+  if (existing) {
+    const recipe = existing.recipe;
+    return {
+      recipeId: recipe.id,
+      created: false,
+      duplicate: true,
+      status: recipe.status,
+      title: recipe.title,
+      notes: recipe.notes ?? null,
+      servings: recipe.servings ?? undefined,
+      prepTimeMinutes: recipe.prepTimeMinutes ?? undefined,
+      cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
+      images: recipe.images,
+      confidence: 1,
+      reviewReasons: recipe.reviewReasons,
+      uncertainFields: recipe.uncertainFields,
+      message: `This recipe was already imported as "${recipe.title}" (${recipe.id}). Open that recipe instead of importing again.`,
+    };
+  }
+
   draft.images = await persistImages(keepMainRecipeImages(draft.images), context.householdId);
 
-  const recipe = await recipeService.createRecipeFromDraft(draft, {
+  const persisted = await recipeService.persistImportedDraft(draft, {
     householdId: context.householdId,
     createdBy: context.userId ?? context.apiKeyId ?? context.householdId,
   });
+  if (persisted.outcome === "in_flight") {
+    throw new Error("This import is already in progress. Retry the same request.");
+  }
+  const recipe = persisted.recipe;
+  const created = persisted.outcome === "created";
 
-  if (input.cookbookId) {
+  if (input.cookbookId && created) {
     const { CookbookService } = await import("@ovenlovin/core");
     const cookbooks = new CookbookService(db);
     const cookbook = await cookbooks.getCookbook(input.cookbookId);
@@ -110,6 +142,8 @@ async function handler(
 
   return {
     recipeId: recipe.id,
+    created,
+    duplicate: !created,
     status: recipe.status,
     title: recipe.title,
     notes: recipe.notes ?? null,
@@ -119,9 +153,13 @@ async function handler(
     images: recipe.images,
     confidence,
     lowConfidenceFields: draft.needsReview ? scored.reviewReasons : undefined,
-    message: draft.needsReview
-      ? `Recipe imported but needs review (confidence: ${Math.round(confidence * 100)}%)`
-      : `Recipe imported successfully`,
+    reviewReasons: recipe.reviewReasons,
+    uncertainFields: recipe.uncertainFields,
+    message: !created
+      ? `This recipe was already imported as "${recipe.title}" (${recipe.id}). Open that recipe instead of importing again.`
+      : draft.needsReview
+        ? `Recipe imported but needs review (confidence: ${Math.round(confidence * 100)}%)`
+        : `Recipe imported successfully`,
   };
 }
 

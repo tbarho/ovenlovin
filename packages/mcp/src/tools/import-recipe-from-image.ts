@@ -16,6 +16,7 @@ import {
   RecipeService,
   type ImagePutInput,
 } from "@ovenlovin/core";
+import { perceptualHashFromImageBlob } from "@ovenlovin/core/photo-hash";
 import { mcpRecipeImages } from "../media";
 import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
@@ -116,13 +117,13 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipeService = new RecipeService(db);
   const fingerprint = fingerprintImageBlob(first);
-  const duplicate = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
-  if (duplicate) {
+  const perceptualHash = perceptualHashFromImageBlob(first);
+  const exact = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
+  if (exact) {
     throw new McpInvalidParamsError(
-      `This photo was already imported as "${duplicate.title}" (${duplicate.id}). Skip or open that recipe.`
+      `This photo was already imported as "${exact.title}" (${exact.id}). Skip or open that recipe.`
     );
   }
-
   const extracted = await runPhotoImport({ images, isHandwritten: input.isHandwritten }, {});
   const draft = extracted.draft;
   draft.images = await persistMainPhoto(first, context.householdId);
@@ -131,6 +132,7 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
     rawExtractionJson: {
       ...(draft.source.rawExtractionJson ?? {}),
       photoFingerprint: fingerprint,
+      photoPerceptualHash: perceptualHash ?? undefined,
     },
   };
   if (input.skipReview) {
@@ -138,13 +140,20 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   } else if (extracted.uncertainFields.length > 0) {
     draft.needsReview = true;
   }
+  draft.reviewReasons = extracted.draft.reviewReasons;
+  draft.uncertainFields = extracted.uncertainFields;
 
-  const recipe = await recipeService.createRecipeFromDraft(draft, {
+  const persisted = await recipeService.persistImportedDraft(draft, {
     householdId: context.householdId,
     createdBy: context.userId ?? context.apiKeyId ?? context.householdId,
   });
+  if (persisted.outcome === "in_flight") {
+    throw new Error("This import is already in progress. Retry the same request.");
+  }
+  const recipe = persisted.recipe;
+  const created = persisted.outcome === "created";
 
-  if (input.cookbookId) {
+  if (input.cookbookId && created) {
     const { CookbookService } = await import("@ovenlovin/core");
     const cookbooks = new CookbookService(db);
     const cookbook = await cookbooks.getCookbook(input.cookbookId);
@@ -155,6 +164,8 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
 
   return {
     recipeId: recipe.id,
+    created,
+    duplicate: !created,
     status: recipe.status,
     title: recipe.title,
     notes: recipe.notes ?? null,
@@ -163,11 +174,14 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
     cookTimeMinutes: recipe.cookTimeMinutes ?? undefined,
     images: mcpRecipeImages(recipe.id, recipe.images),
     confidence: draft.overallConfidence,
-    uncertainFields: extracted.uncertainFields,
+    reviewReasons: recipe.reviewReasons,
+    uncertainFields:
+      recipe.uncertainFields.length > 0 ? recipe.uncertainFields : extracted.uncertainFields,
     allergenClassifications: extracted.allergenClassifications,
     lowConfidenceFields: draft.needsReview ? extracted.uncertainFields : undefined,
-    message:
-      draft.needsReview || extracted.uncertainFields.length > 0
+    message: !created
+      ? `This photo was already imported as "${recipe.title}" (${recipe.id}). Open that recipe instead of importing again.`
+      : draft.needsReview || extracted.uncertainFields.length > 0
         ? `Recipe imported from photo but needs review. Uncertain: ${
             extracted.uncertainFields.join(", ") || "see reviewReasons"
           }`

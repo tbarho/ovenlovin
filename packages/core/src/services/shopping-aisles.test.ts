@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assignAisle, canonicalIngredientName, isPantryStaple } from "./shopping-aisles";
+import {
+  assignAisle,
+  canonicalIngredientName,
+  canonicalShopName,
+  isPantryStaple,
+} from "./shopping-aisles";
 
 describe("assignAisle", () => {
   it("maps fixture grocery names to store sections", () => {
@@ -59,6 +64,12 @@ describe("canonicalIngredientName", () => {
     expect(canonicalIngredientName("kosher salt")).toBe("salt");
     expect(canonicalIngredientName("sea salt")).toBe("salt");
     expect(canonicalIngredientName("table salt")).toBe("salt");
+  });
+
+  it("merges lemon and lemons to lemon", () => {
+    expect(canonicalShopName("lemon")).toBe("lemon");
+    expect(canonicalShopName("lemons")).toBe("lemon");
+    expect(canonicalShopName("eggs")).toBe("egg");
   });
 });
 

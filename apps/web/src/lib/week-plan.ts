@@ -297,7 +297,9 @@ export async function loadWeekKitchen(
           unit: row.unit,
         })),
       };
-    })
+    }),
+    servingsSettings.defaultCookFor,
+    servingsSettings.mode
   );
 
   const shopItems: ShopItem[] = aggregated.map((item) => {

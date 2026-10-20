@@ -7,6 +7,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import {
+  HouseholdService,
   PlanService,
   RecipeService,
   PeopleService,
@@ -151,6 +152,10 @@ async function handler(
     throw new Error("Invalid timeZone. Use an IANA name such as America/Chicago.");
   }
 
+  const servingsSettings = await new HouseholdService(db).loadKitchenServingsSettings(
+    context.householdId
+  );
+
   const shoppingList = applyShoppingTrip(
     shoppingListService.build({
       mealPlanId: plan.id,
@@ -159,6 +164,8 @@ async function handler(
       groupBy: input.groupBy,
       includeStaples: resolveIncludeStaples(input),
       warnings,
+      defaultCookFor: servingsSettings.defaultCookFor,
+      mode: servingsSettings.mode,
     }),
     parseShoppingTripState(plan.shoppingState)
   );

@@ -153,6 +153,10 @@ export type RecipeDetails = Recipe & {
   source: RecipeSource | null;
   cookbooks: Array<{ id: string; name: string; slug: string }>;
   nutrition: RecipeNutritionFacts | null;
+  reviewReasons: string[];
+  uncertainFields: string[];
+  displayServings?: number;
+  scaledNote?: string | null;
 };
 
 export type RecipeContentUpdate = {
@@ -227,6 +231,8 @@ export type RecipeImportDraft = {
     licenseNote?: string;
   };
   needsReview?: boolean;
+  reviewReasons?: string[];
+  uncertainFields?: string[];
 };
 
 export function slugifyTitle(title: string): string {

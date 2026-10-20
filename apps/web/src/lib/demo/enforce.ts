@@ -33,7 +33,12 @@ export async function enforceDemoRequestGuards(
   });
 
   if (!decision.ok) {
-    throw new ForbiddenError(decision.reason);
+    throw new ForbiddenError(decision.reason, {
+      code: decision.code,
+      remainingImports: decision.remainingImports,
+      importLimit: decision.importLimit,
+      importCount: decision.importCount,
+    });
   }
 
   if (!isMutatingMethod(request.method)) return;

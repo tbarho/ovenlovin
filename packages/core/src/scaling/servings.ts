@@ -3,6 +3,8 @@ import {
   splitLeadingQuantity,
   splitLeadingUnit,
 } from "../parsing/ingredient-line";
+import type { DefaultServingsMode } from "../schemas/households";
+import { effectivePlanServings } from "./default-servings";
 
 /**
  * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
@@ -17,14 +19,19 @@ export const DEFAULT_RECIPE_SERVINGS = 4;
 export function scaleFactorForPlanEntry(
   entryServings?: number | null,
   recipeServings?: number | null,
-  scaleFactor?: number | null
+  scaleFactor?: number | null,
+  defaultCookFor?: number | null,
+  mode?: DefaultServingsMode
 ): number {
-  if (entryServings && entryServings > 0) {
-    const base = recipeServings && recipeServings > 0 ? recipeServings : DEFAULT_RECIPE_SERVINGS;
-    return roundScaleFactor(entryServings / base);
-  }
-  if (scaleFactor && scaleFactor > 0) return roundScaleFactor(scaleFactor);
-  return 1;
+  const base = recipeServings && recipeServings > 0 ? recipeServings : DEFAULT_RECIPE_SERVINGS;
+  const servings = effectivePlanServings({
+    entryServings,
+    defaultCookFor: defaultCookFor && defaultCookFor > 0 ? defaultCookFor : base,
+    mode,
+    recipeServings,
+    scaleFactor,
+  });
+  return roundScaleFactor(servings / base);
 }
 
 function roundScaleFactor(value: number): number {
@@ -257,8 +264,39 @@ function canonicalUnit(unit: string): string {
   return unit.trim();
 }
 
+const MEASURED_SHOP_UNITS = new Set([
+  "tsp",
+  "tbsp",
+  "cup",
+  "ml",
+  "l",
+  "g",
+  "kg",
+  "oz",
+  "lb",
+  "pt",
+  "qt",
+  "gal",
+]);
+
+/** Eggs, cans, whole chickens, and other buy-whole items - not cups or pounds. */
+export function isCountableShopItem(unit?: string | null): boolean {
+  const normalized = unit?.trim().toLowerCase();
+  if (!normalized) return true;
+  return !MEASURED_SHOP_UNITS.has(normalized);
+}
+
+/** Round countable grocery amounts up to a whole unit so the list never asks for 2/3 can. */
+export function wholeShopQuantity(quantity: number): number {
+  if (!Number.isFinite(quantity) || quantity <= 0) return quantity;
+  const nearest = Math.round(quantity);
+  if (Math.abs(quantity - nearest) < 1e-6) return nearest;
+  return Math.max(1, Math.ceil(quantity - 1e-9));
+}
+
 export function formatMeasureText(quantity: number, unit?: string | null): string {
-  const { displayQuantity, displayUnit } = toFriendlyMeasure(quantity, unit);
+  const amount = isCountableShopItem(unit) ? wholeShopQuantity(quantity) : quantity;
+  const { displayQuantity, displayUnit } = toFriendlyMeasure(amount, unit);
   return displayUnit ? pluralizeUnit(displayQuantity, displayUnit) : displayQuantity;
 }
 

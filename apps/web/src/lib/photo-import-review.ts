@@ -1,3 +1,4 @@
+import { ensureReviewMetadata } from "@ovenlovin/core/import-review";
 import { keepMainRecipeImages } from "@ovenlovin/core/media";
 import type { PhotoImportPreview } from "./photo-import";
 
@@ -43,6 +44,11 @@ export function recipeCreateBodyFromReview(draft: PhotoReviewDraft) {
   const servings = draft.servings.trim() ? Number(draft.servings) : undefined;
   const prep = draft.prepTimeMinutes.trim() ? Number(draft.prepTimeMinutes) : undefined;
   const cook = draft.cookTimeMinutes.trim() ? Number(draft.cookTimeMinutes) : undefined;
+  const review = ensureReviewMetadata({
+    needsReview: draft.uncertainFields.length > 0,
+    uncertainFields: draft.uncertainFields,
+    rawExtractionJson: draft.source.rawExtractionJson,
+  });
   return {
     title: draft.title.trim() || "Untitled recipe",
     notes: draft.notes.trim() || undefined,
@@ -64,7 +70,10 @@ export function recipeCreateBodyFromReview(draft: PhotoReviewDraft) {
       ...draft.source,
       type: "photo" as const,
       attribution: draft.sourceAttribution.trim() || draft.source.attribution,
+      rawExtractionJson: review.rawExtractionJson,
     },
+    reviewReasons: review.reviewReasons,
+    uncertainFields: review.uncertainFields,
     status: draft.uncertainFields.length > 0 ? "needs_review" : "published",
   };
 }

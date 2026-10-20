@@ -10,6 +10,12 @@ import {
 import { RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import {
+  isIdempotentReplay,
+  recipeFromPersist,
+  saveImportedRecipe,
+  withDemoImportQuota,
+} from "@/lib/import-save";
+import {
   excludeRecipesBlockedForAttendees,
   parseForAttendeesParam,
 } from "@/lib/recipe-attendee-filter";
@@ -89,7 +95,7 @@ export async function POST(request: NextRequest) {
             .filter((item: { text: string }) => item.text.length > 0)
         : [];
 
-      const details = await service.createRecipeFromDraft(
+      const { result, quota } = await saveImportedRecipe(
         {
           title: body.title,
           description: body.description,
@@ -113,11 +119,14 @@ export async function POST(request: NextRequest) {
             rawExtractionJson: body.source?.rawExtractionJson ?? { via: "POST /api/v1/recipes" },
           },
           needsReview: body.status === "needs_review" || body.status === "draft",
+          reviewReasons: Array.isArray(body.reviewReasons) ? body.reviewReasons : undefined,
+          uncertainFields: Array.isArray(body.uncertainFields) ? body.uncertainFields : undefined,
         },
-        { householdId, createdBy }
+        { householdId, createdBy, idempotencyKey }
       );
+      const details = recipeFromPersist(result);
 
-      if (typeof body.cookbookId === "string") {
+      if (typeof body.cookbookId === "string" && result.outcome === "created") {
         const { CookbookService } = await import("@ovenlovin/core");
         const cookbooks = new CookbookService(db);
         const cookbook = await cookbooks.getCookbook(body.cookbookId);
@@ -126,10 +135,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return createdResponse(
+      const presented = withDemoImportQuota(
         presentListedRecipe(details, requestApiOrigin(request)),
-        `/api/v1/recipes/${details.id}`
+        quota
       );
+      if (isIdempotentReplay(result)) {
+        return jsonResponse(presented);
+      }
+      return createdResponse(presented, `/api/v1/recipes/${details.id}`);
     }
 
     const recipe = await service.createRecipe({

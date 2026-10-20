@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { DEMO_COOKIE_NAME, DEMO_TTL_SECONDS } from "./fixture";
+import { getTableName } from "drizzle-orm";
 import {
+  DEMO_SANDBOX_IMPORT_TABLES,
   DEMO_SANDBOX_RECIPE_CHILD_TABLES,
   demoCookieOptions,
   isDemoCookieName,
   isSandboxExpired,
   resetDemoSandbox,
+  wipeExpiredDemoSandboxes,
 } from "./sandbox";
 import type { DbClient } from "@ovenlovin/db";
 
@@ -38,6 +41,59 @@ describe("demo sandbox cookie", () => {
       "recipe_rating",
       "cook_log",
     ]);
+    expect(DEMO_SANDBOX_IMPORT_TABLES).toEqual(["import_dedupe"]);
+  });
+
+  it("wipes a sandbox that has an import_dedupe row before recipes or the household", async () => {
+    const deleted: string[] = [];
+    const leftover = new Set(["import_dedupe"]);
+    const thenable = <T>(value: T) => ({
+      from() {
+        return this;
+      },
+      innerJoin() {
+        return this;
+      },
+      where() {
+        return this;
+      },
+      limit() {
+        return Promise.resolve(value);
+      },
+      then(onFulfilled: (value: T) => unknown, onRejected?: (reason: unknown) => unknown) {
+        return Promise.resolve(value).then(onFulfilled, onRejected);
+      },
+    });
+    const db = {
+      select: (shape?: Record<string, unknown>) => {
+        if (shape && "householdId" in shape && "userId" in shape) {
+          return thenable([
+            {
+              id: "sandbox-1",
+              householdId: "household-1",
+              userId: "user-1",
+            },
+          ]);
+        }
+        return thenable([]);
+      },
+      delete: (table: unknown) => ({
+        where: async () => {
+          const name = getTableName(table as never);
+          if ((name === "recipe" || name === "household") && leftover.has("import_dedupe")) {
+            throw new Error(`FK import_dedupe still references ${name}`);
+          }
+          leftover.delete(name);
+          deleted.push(name);
+        },
+      }),
+    } as unknown as DbClient;
+
+    await wipeExpiredDemoSandboxes(db, new Date("2026-10-19T00:00:00.000Z"));
+    expect(deleted).toContain("import_dedupe");
+    expect(leftover.has("import_dedupe")).toBe(false);
+    expect(deleted.indexOf("import_dedupe")).toBeLessThan(deleted.indexOf("recipe"));
+    expect(deleted.indexOf("import_dedupe")).toBeLessThan(deleted.indexOf("household"));
   });
 
   it("reseeds inside a transaction so a failed seed leaves the old kitchen", async () => {

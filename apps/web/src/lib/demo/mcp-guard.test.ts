@@ -22,6 +22,15 @@ describe("isSuccessfulImportRecipeCall", () => {
     ).toBe(false);
   });
 
+  it("does not count a duplicate replay toward the demo import cap", () => {
+    expect(
+      isSuccessfulImportRecipeCall(
+        importCall,
+        JSON.stringify({ result: { content: [{ type: "text", text: '{"created": false}' }] } })
+      )
+    ).toBe(false);
+  });
+
   it("counts import_recipe_from_image as an import", () => {
     expect(
       isSuccessfulImportRecipeCall(

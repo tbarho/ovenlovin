@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/browser-api";
+import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
 import {
   BLOCKED_IMPORT_COPY,
@@ -149,6 +149,7 @@ export function ImportRecipeForm() {
   const [url, setUrl] = useState("");
   const [paste, setPaste] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [existingRecipeUrl, setExistingRecipeUrl] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>(() => getPhotoImportJob()?.files ?? []);
   const [photoOpen, setPhotoOpen] = useState(() => {
@@ -162,6 +163,10 @@ export function ImportRecipeForm() {
     id: string;
     notice: string;
   } | null>(null);
+  const importKeyRef = useRef("");
+  useEffect(() => {
+    importKeyRef.current = "";
+  }, [source, url, paste]);
   const fieldValue = source === "paste" ? paste : url;
   const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(fieldValue.trim());
   const jobBusy = photoJob?.phase === "uploading" || photoJob?.phase === "reading";
@@ -212,11 +217,16 @@ export function ImportRecipeForm() {
     }
     setPending(true);
     setError(null);
+    setExistingRecipeUrl(null);
     try {
+      if (!importKeyRef.current) importKeyRef.current = crypto.randomUUID();
       const recipe = await api<RecipeDetails>("/api/v1/recipes/import", {
         method: "POST",
-        body: JSON.stringify({ source, content: fieldValue }),
+        keepalive: false,
+        headers: { "Idempotency-Key": importKeyRef.current },
+        body: JSON.stringify({ source, content: fieldValue, save: true }),
       });
+      importKeyRef.current = "";
       setImported({
         id: recipe.id,
         notice: importGuessedNotice(recipe.title, recipe.servings ?? null),
@@ -229,6 +239,7 @@ export function ImportRecipeForm() {
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not import recipe");
+      setExistingRecipeUrl(apiErrorRecipeUrl(err));
     } finally {
       setPending(false);
     }
@@ -309,6 +320,7 @@ export function ImportRecipeForm() {
                   onChange={(event) => {
                     setUrl(event.target.value);
                     setError(null);
+                    setExistingRecipeUrl(null);
                   }}
                   placeholder="https://example.com/chocolate-chip-cookies"
                   required
@@ -319,6 +331,7 @@ export function ImportRecipeForm() {
                   onChange={(event) => {
                     setPaste(event.target.value);
                     setError(null);
+                    setExistingRecipeUrl(null);
                   }}
                   placeholder={
                     "Weeknight tomato pasta\n\nIngredients\n- 12 oz pasta\n- 1 jar tomatoes\n\nSteps\nBoil pasta. Warm sauce. Combine."
@@ -363,7 +376,15 @@ export function ImportRecipeForm() {
             </div>
           </div>
         ) : error ? (
-          <p className="muted import-error">{error}</p>
+          <p className="muted import-error">
+            {error}
+            {existingRecipeUrl ? (
+              <>
+                {" "}
+                <a href={existingRecipeUrl}>Open that recipe</a>
+              </>
+            ) : null}
+          </p>
         ) : null}
         {imported ? (
           <p className="muted" data-testid="import-review">

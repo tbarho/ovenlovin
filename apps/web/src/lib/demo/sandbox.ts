@@ -17,6 +17,7 @@ import {
   personLabelNote,
   personRule,
   preference,
+  importDedupe,
   recipe,
   recipeIngredient,
   recipeIngredientGroup,
@@ -233,6 +234,9 @@ export const DEMO_SANDBOX_RECIPE_CHILD_TABLES = [
   "cook_log",
 ] as const;
 
+/** import_dedupe FKs are ON DELETE no action - wipe these before recipes and the household. */
+export const DEMO_SANDBOX_IMPORT_TABLES = ["import_dedupe"] as const;
+
 async function wipeSandboxHousehold(
   db: DbClient,
   row: { id: string; householdId: string; userId: string }
@@ -266,6 +270,8 @@ async function wipeSandboxHousehold(
     await db.delete(collectionRecipe).where(eq(collectionRecipe.collectionId, book.id));
   }
   await db.delete(collection).where(eq(collection.householdId, householdId));
+
+  await db.delete(importDedupe).where(eq(importDedupe.householdId, householdId));
 
   const recipes = await db
     .select({ id: recipe.id })

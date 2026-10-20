@@ -84,7 +84,7 @@
     "host": "en.wikibooks.org",
     "url": "https://en.wikibooks.org/wiki/Cookbook:Pancake",
     "extractor": "html",
-    "title": "Cookbook:Pancakes",
+    "title": "Pancakes",
     "ingredientCount": 6,
     "stepCount": 3,
     "status": "ok"

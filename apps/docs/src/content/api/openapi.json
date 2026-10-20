@@ -156,6 +156,22 @@
           "course": {
             "type": "string",
             "nullable": true
+          },
+          "reviewReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "uncertainFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remainingImports": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": ["id", "householdId", "title", "slug", "images", "status"]
@@ -237,6 +253,12 @@
           "needsReview": {
             "type": "boolean"
           },
+          "reviewReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "uncertainFields": {
             "type": "array",
             "items": {
@@ -272,6 +294,7 @@
           "images",
           "overallConfidence",
           "needsReview",
+          "reviewReasons",
           "uncertainFields",
           "allergenClassifications"
         ]
@@ -1171,7 +1194,8 @@
     "/recipes/import": {
       "post": {
         "tags": ["recipes"],
-        "summary": "Import a recipe from a URL or pasted text, copying the main image into Vercel Blob",
+        "summary": "Import a recipe from a URL or pasted text",
+        "description": "Preview by default (`save` omitted or false). Persist only when `save=true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1184,6 +1208,10 @@
                   },
                   "content": {
                     "type": "string"
+                  },
+                  "save": {
+                    "type": "boolean",
+                    "description": "When true, persist the recipe. Default is preview only."
                   }
                 },
                 "required": ["source", "content"]
@@ -1192,8 +1220,8 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Imported recipe",
+          "200": {
+            "description": "Extracted draft for review (save omitted or false), or an idempotent replay",
             "content": {
               "application/json": {
                 "schema": {
@@ -1201,6 +1229,19 @@
                 }
               }
             }
+          },
+          "201": {
+            "description": "Imported recipe when save=true",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate or in-flight import. Includes recipeId, title, and recipeUrl."
           }
         }
       }
@@ -1248,7 +1289,7 @@
     "/recipes/import/photo": {
       "post": {
         "tags": ["recipes"],
-        "summary": "Extract a recipe from one or more photos (review by default). Multipart upload or a Blob/image URL. Saves only the first photo as the main image.",
+        "summary": "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact and near-duplicate photos return 409 with the existing recipeId. Send Idempotency-Key on save so retries do not create a second recipe.",
         "requestBody": {
           "content": {
             "application/json": {

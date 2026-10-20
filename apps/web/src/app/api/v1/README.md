@@ -69,7 +69,7 @@ Response:
 
 ## Idempotency
 
-Write operations (POST, PATCH, DELETE) support idempotency keys:
+Write operations (POST, PATCH, DELETE) support idempotency keys. Import persist (`POST /recipes/import` with `save=true`, `POST /recipes/import/photo` with `save=true`, and `POST /recipes`) uses `Idempotency-Key` plus photo/URL locks so a dropped connection can be retried without a second recipe.
 
 ```bash
 curl -X POST \
