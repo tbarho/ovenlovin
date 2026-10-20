@@ -113,5 +113,6 @@ describe("splitLeadingUnit", () => {
       unit: null,
       rest: "shredded mozzarella",
     });
+    expect(splitLeadingUnit("lb. ground beef")).toEqual({ unit: "lb", rest: "ground beef" });
   });
 });

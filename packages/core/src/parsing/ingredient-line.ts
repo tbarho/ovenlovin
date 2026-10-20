@@ -138,9 +138,10 @@ export function splitLeadingUnit(text: string): { unit: string | null; rest: str
   const trimmed = text.trim();
   if (!trimmed) return { unit: null, rest: "" };
   for (const alias of UNIT_ALIASES_BY_LENGTH) {
-    const pattern = new RegExp(`^${escapeRegExp(alias.match)}(?=\\s|$|\\b)`, "i");
-    if (!pattern.test(trimmed)) continue;
-    return { unit: alias.unit, rest: trimmed.slice(alias.match.length).trim() };
+    const pattern = new RegExp(`^${escapeRegExp(alias.match)}\\.?(?=\\s|$)`, "i");
+    const match = trimmed.match(pattern);
+    if (!match) continue;
+    return { unit: alias.unit, rest: trimmed.slice(match[0].length).trim() };
   }
   return { unit: null, rest: trimmed };
 }

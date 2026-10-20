@@ -211,10 +211,18 @@ const UNIT_PLURALS: Record<string, string> = {
   slice: "slices",
   can: "cans",
   package: "packages",
+  dash: "dashes",
+  sprig: "sprigs",
+  stick: "sticks",
+  head: "heads",
+  piece: "pieces",
 };
 
 function quantityValue(amount: string): number {
-  const parts = amount.trim().split(/\s+/);
+  const upper = amount.includes("-")
+    ? amount.slice(amount.lastIndexOf("-") + 1).trim() || amount
+    : amount;
+  const parts = upper.trim().split(/\s+/);
   let total = 0;
   for (const part of parts) {
     if (part.includes("/")) {
@@ -243,7 +251,8 @@ export function pluralizeUnit(amount: string, unit: string): string {
   const canonical = canonicalUnit(trimmed);
   if (quantity > 0 && quantity <= 1) return `${amount} ${canonical}`;
   const lower = canonical.toLowerCase();
-  const plural = UNIT_PLURALS[lower] ?? (canonical.endsWith("s") ? canonical : `${canonical}s`);
+  const plural = UNIT_PLURALS[lower];
+  if (!plural) return `${amount} ${canonical}`;
   const cased =
     canonical[0] === canonical[0]?.toUpperCase()
       ? plural[0]?.toUpperCase() + plural.slice(1)
@@ -252,16 +261,16 @@ export function pluralizeUnit(amount: string, unit: string): string {
 }
 
 function canonicalUnit(unit: string): string {
-  const lower = unit.trim().toLowerCase();
+  const trimmed = unit.trim();
+  const lower = trimmed.toLowerCase().replace(/\.$/, "");
   for (const [singular, plural] of Object.entries(UNIT_PLURALS)) {
     if (lower === singular || lower === plural.toLowerCase()) {
-      return unit[0] === unit[0]?.toUpperCase()
+      return trimmed[0] === trimmed[0]?.toUpperCase()
         ? singular[0]?.toUpperCase() + singular.slice(1)
         : singular;
     }
   }
-  if (lower.endsWith("s") && lower.length > 1) return unit.slice(0, -1);
-  return unit.trim();
+  return trimmed.replace(/\.$/, "");
 }
 
 const MEASURED_SHOP_UNITS = new Set([

@@ -99,6 +99,10 @@ describe("toFriendlyMeasure", () => {
     expect(pluralizeUnit("2", "clove")).toBe("2 cloves");
     expect(pluralizeUnit("1", "clove")).toBe("1 clove");
     expect(pluralizeUnit("2/3", "cup")).toBe("2/3 cup");
+    expect(pluralizeUnit("2", "dash")).toBe("2 dashes");
+    expect(pluralizeUnit("2", "glass")).toBe("2 glass");
+    expect(pluralizeUnit("1/2-1", "lb")).toBe("1/2-1 lb");
+    expect(pluralizeUnit("2", "tsp.")).toBe("2 tsp");
   });
 
   it("keeps a third-cup instead of 0.33 cup", () => {
@@ -177,6 +181,15 @@ describe("scaleIngredientDisplay", () => {
         4
       )
     ).toBe("2 (14 oz) cans diced tomatoes");
+  });
+
+  it("keeps abbreviated units that end in a period", () => {
+    expect(scaleIngredientDisplay({ rawText: "½ lb. ground beef" }, 4, 4)).toBe(
+      "1/2 lb ground beef"
+    );
+    expect(
+      scaleIngredientDisplay({ rawText: "2 tsp. baking soda", quantityMin: 2, unit: "tsp." }, 4, 4)
+    ).toBe("2 tsp baking soda");
   });
 });
 
