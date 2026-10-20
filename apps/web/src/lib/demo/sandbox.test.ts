@@ -3,6 +3,7 @@ import { DEMO_COOKIE_NAME, DEMO_TTL_SECONDS } from "./fixture";
 import { getTableName } from "drizzle-orm";
 import {
   DEMO_SANDBOX_IMPORT_TABLES,
+  DEMO_SANDBOX_INVITE_TABLES,
   DEMO_SANDBOX_RECIPE_CHILD_TABLES,
   demoCookieOptions,
   isDemoCookieName,
@@ -42,11 +43,12 @@ describe("demo sandbox cookie", () => {
       "cook_log",
     ]);
     expect(DEMO_SANDBOX_IMPORT_TABLES).toEqual(["import_dedupe"]);
+    expect(DEMO_SANDBOX_INVITE_TABLES).toEqual(["household_invite"]);
   });
 
-  it("wipes a sandbox that has an import_dedupe row before recipes or the household", async () => {
+  it("wipes a sandbox that has leftover invite and import rows before the household", async () => {
     const deleted: string[] = [];
-    const leftover = new Set(["import_dedupe"]);
+    const leftover = new Set(["import_dedupe", "household_invite"]);
     const thenable = <T>(value: T) => ({
       from() {
         return this;
@@ -80,8 +82,11 @@ describe("demo sandbox cookie", () => {
       delete: (table: unknown) => ({
         where: async () => {
           const name = getTableName(table as never);
-          if ((name === "recipe" || name === "household") && leftover.has("import_dedupe")) {
+          if (name === "recipe" && leftover.has("import_dedupe")) {
             throw new Error(`FK import_dedupe still references ${name}`);
+          }
+          if (name === "household" && leftover.size > 0) {
+            throw new Error(`FK ${[...leftover].join(",")} still references ${name}`);
           }
           leftover.delete(name);
           deleted.push(name);
@@ -91,9 +96,11 @@ describe("demo sandbox cookie", () => {
 
     await wipeExpiredDemoSandboxes(db, new Date("2026-10-19T00:00:00.000Z"));
     expect(deleted).toContain("import_dedupe");
-    expect(leftover.has("import_dedupe")).toBe(false);
+    expect(deleted).toContain("household_invite");
+    expect(leftover.size).toBe(0);
     expect(deleted.indexOf("import_dedupe")).toBeLessThan(deleted.indexOf("recipe"));
     expect(deleted.indexOf("import_dedupe")).toBeLessThan(deleted.indexOf("household"));
+    expect(deleted.indexOf("household_invite")).toBeLessThan(deleted.indexOf("household"));
   });
 
   it("reseeds inside a transaction so a failed seed leaves the old kitchen", async () => {

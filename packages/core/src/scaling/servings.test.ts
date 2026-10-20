@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DECIMAL_TWO_THIRDS_CARROT, DECIMAL_TWO_THIRDS_CELERY } from "./quantity-display.fixture";
 import {
   clampServings,
+  servingsRangeMax,
   formatDurationMinutes,
   formatMeasureText,
   formatQuantity,
@@ -33,9 +34,9 @@ describe("scaleFactorForPlanEntry", () => {
     expect(scaleFactorForPlanEntry()).toBe(1);
   });
 
-  it("uses household Default servings before recipe yield when the entry has no servings", () => {
-    expect(scaleFactorForPlanEntry(null, 6, 1, 5)).toBe(0.8333);
-    expect(scaleFactorForPlanEntry(undefined, 6, 1, 5)).toBe(0.8333);
+  it("uses the larger of recipe yield and cook-for when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 6, 1, 5)).toBe(1);
+    expect(scaleFactorForPlanEntry(undefined, 6, 1, 5)).toBe(1);
     expect(scaleFactorForPlanEntry(5, 6, 1, 8)).toBe(0.8333);
   });
 
@@ -228,8 +229,10 @@ describe("formatDurationMinutes", () => {
 describe("clampServings", () => {
   it("keeps servings in a usable cooking range", () => {
     expect(clampServings(0)).toBe(1);
-    expect(clampServings(48)).toBe(24);
+    expect(clampServings(48)).toBe(48);
     expect(clampServings(6.4)).toBe(6);
+    expect(servingsRangeMax(4, 5)).toBe(24);
+    expect(servingsRangeMax(48, 5)).toBe(48);
   });
 });
 

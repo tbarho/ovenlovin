@@ -32,6 +32,7 @@ export default async function ShoppingListPage() {
         planId={kitchen.plan?.id ?? null}
         checkedKeys={kitchen.shoppingState.checkedKeys}
         extras={kitchen.shoppingState.extras}
+        scaledFor={kitchen.defaultServings}
       />
     </>
   );
