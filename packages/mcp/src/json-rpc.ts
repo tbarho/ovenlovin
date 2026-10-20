@@ -1,3 +1,9 @@
+import {
+  IMPORT_AI_UNAVAILABLE_CODE,
+  IMPORT_AI_UNAVAILABLE_MESSAGE,
+  isImportAiUnavailable,
+} from "@ovenlovin/core";
+
 export const JSONRPC_VERSION = "2.0" as const;
 
 export const JsonRpcErrorCode = {
@@ -82,6 +88,11 @@ export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure
   }
   if (error instanceof McpInvalidParamsError) {
     return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, error.data);
+  }
+  if (isImportAiUnavailable(error)) {
+    return jsonRpcError(id, JsonRpcErrorCode.internal, IMPORT_AI_UNAVAILABLE_MESSAGE, {
+      code: IMPORT_AI_UNAVAILABLE_CODE,
+    });
   }
   const messageText = error instanceof Error ? error.message : "Internal error";
   return jsonRpcError(id, JsonRpcErrorCode.internal, messageText);
