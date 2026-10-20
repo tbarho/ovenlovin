@@ -2,6 +2,10 @@
 
 Remote MCP server: `https://your-app.vercel.app/mcp`
 
+## Auth
+
+Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have an OvenLovin kitchen (open the app in the browser once; MCP does not create one). Optional `X-Kitchen-Id` selects a kitchen you belong to when you have more than one. API keys stay bound to the kitchen that minted them.
+
 ## Recipes
 
 - `search_recipes` - search by text, method tags, and attendee warnings. `forAttendees` hides block hits and returns `hiddenCount` / `hidden` (recipe, person, ingredient, why). `images` is a thumbnail URL only (never inline `data:` bytes)

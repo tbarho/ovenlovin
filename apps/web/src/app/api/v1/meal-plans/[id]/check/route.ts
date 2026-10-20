@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { handleApiError, requireResourceId } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import { getRequestContext, requireHouseholdId, requireWriteRole } from "@/lib/api/middleware";
 import { persistMealPlanCheck, runMealPlanCheck } from "@/lib/run-meal-plan-check";
 
 async function handleCheck(request: NextRequest, params: Promise<{ id: string }>, persist = false) {
   const context = await getRequestContext(request);
   const householdId = requireHouseholdId(context);
+  if (persist) requireWriteRole(context);
 
   const { id } = await params;
   requireResourceId("MealPlan", id);

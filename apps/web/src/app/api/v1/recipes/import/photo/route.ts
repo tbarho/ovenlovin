@@ -8,7 +8,7 @@ import { createdResponse, jsonResponse } from "@/lib/api/response";
 import {
   getIdempotencyKey,
   getRequestContext,
-  requireHouseholdId,
+  requireWritableHousehold,
   requireUserId,
 } from "@/lib/api/middleware";
 import { createVercelImagePut } from "@/lib/blob-store";
@@ -53,7 +53,7 @@ async function rejectExistingPhoto(householdId: string, blob: string | undefined
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const createdBy = context.userId || context.clientId;
     if (!createdBy) {
       requireUserId(context);

@@ -3,7 +3,11 @@ import { ScheduleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+} from "@/lib/api/middleware";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +23,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const createdBy = context.userId || context.clientId || householdId;
     const body = (await request.json()) as { week?: unknown };
     if (!Array.isArray(body.week)) {

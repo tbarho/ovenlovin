@@ -56,6 +56,10 @@ export function canRenameKitchen(role: MembershipRole | undefined): boolean {
   return role === "owner";
 }
 
+export function canWriteKitchen(role: MembershipRole | undefined): boolean {
+  return role === "owner" || role === "admin" || role === "member";
+}
+
 export function assertCanManageInvites(role: MembershipRole | undefined): void {
   if (!canManageInvites(role)) {
     throw new HouseholdAccessError(

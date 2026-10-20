@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { requireAdminRole } from "../auth/index";
+import { requireAdminRole, requireWriteRole } from "../auth/index";
 import { PeopleService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 import { McpInvalidParamsError } from "../json-rpc";
@@ -32,6 +32,8 @@ export const managePeopleSchema = z
 async function handler(input: z.infer<typeof managePeopleSchema>, context: AuthContext) {
   if (input.action === "update" || input.action === "delete") {
     requireAdminRole(context);
+  } else if (input.action === "create") {
+    requireWriteRole(context);
   }
   const db = createDbClient(process.env.DATABASE_URL!);
   const people = new PeopleService(db);

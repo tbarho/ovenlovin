@@ -5,6 +5,7 @@ import {
   requireOwnerRole,
   requireUserId,
   requireUserOrKeyOwner,
+  requireWriteRole,
 } from "./middleware";
 
 describe("invite actor helpers", () => {
@@ -55,6 +56,13 @@ describe("API key kitchen roles", () => {
       ForbiddenError
     );
     expect(() => requireOwnerRole({ isBot: true, clientId: ownerKey.clientId })).toThrow(
+      ForbiddenError
+    );
+  });
+
+  it("lets a member write and rejects a viewer", () => {
+    expect(() => requireWriteRole({ ...adminKey, membershipRole: "member" })).not.toThrow();
+    expect(() => requireWriteRole({ ...adminKey, membershipRole: "viewer" })).toThrow(
       ForbiddenError
     );
   });

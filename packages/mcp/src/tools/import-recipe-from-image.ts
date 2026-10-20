@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
+import { requireWriteRole } from "../auth/index";
 import { McpInvalidParamsError } from "../json-rpc";
 import {
   copyRemoteImages,
@@ -102,6 +103,7 @@ async function persistMainPhoto(blob: string, householdId: string): Promise<stri
 }
 
 async function handler(input: ImportRecipeFromImageInput, context: AuthContext) {
+  requireWriteRole(context);
   if (!isAiGatewayConfigured(process.env)) {
     throw new Error(AI_GATEWAY_MISSING_MESSAGE);
   }

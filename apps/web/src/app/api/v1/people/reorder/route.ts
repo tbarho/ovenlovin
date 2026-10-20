@@ -3,7 +3,7 @@ import { z } from "zod";
 import { PeopleOrderError, PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 import { jsonResponse } from "@/lib/api/response";
 
 const reorderPeopleSchema = z.object({
@@ -13,7 +13,7 @@ const reorderPeopleSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const body = reorderPeopleSchema.parse(await request.json());
 
     const service = new PeopleService(getDatabase());

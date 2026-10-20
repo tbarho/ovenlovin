@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleApiError, NotFoundError, BadRequestError } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
-import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireHouseholdId,
+  requireWritableHousehold,
+} from "@/lib/api/middleware";
 import { assertRecipeHousehold } from "@/lib/api/recipes";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
@@ -57,7 +61,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const context = await getRequestContext(request);
-    const householdId = requireHouseholdId(context);
+    const householdId = requireWritableHousehold(context);
     const { id } = await params;
     const service = new RecipeService(getDatabase());
     const recipe = await service.getRecipe(id);
