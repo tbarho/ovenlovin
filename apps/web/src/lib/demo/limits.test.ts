@@ -79,6 +79,17 @@ describe("decideDemoWrite", () => {
     });
   });
 
+  it("lets deletes through after the write cap so testers can clean up", () => {
+    const decision = decideDemoWrite({
+      pathname: "/api/v1/recipes/recipe-1",
+      method: "DELETE",
+      counters: { ...counters, writesInWindow: 60 },
+      now: new Date("2026-10-14T00:30:00.000Z"),
+    });
+    expect(decision.ok).toBe(true);
+    if (decision.ok) expect(decision.next.writesInWindow).toBe(60);
+  });
+
   it("rate-limits writes after 60 in the hour", () => {
     const decision = decideDemoWrite({
       pathname: "/api/v1/recipes",
