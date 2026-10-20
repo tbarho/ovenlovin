@@ -361,7 +361,16 @@ export function scaleIngredientDisplay(
   return `${measure}${name ? ` ${name}` : ""}`.trim();
 }
 
-export function clampServings(value: number, min = 1, max = 24): number {
+/** Slider and stepper ceiling: at least 24, and at least the recipe or cook-for. */
+export function servingsRangeMax(...hints: Array<number | null | undefined>): number {
+  let max = 24;
+  for (const hint of hints) {
+    if (typeof hint === "number" && hint > max) max = Math.round(hint);
+  }
+  return max;
+}
+
+export function clampServings(value: number, min = 1, max = 99): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, Math.round(value)));
 }

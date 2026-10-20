@@ -19,7 +19,7 @@ export function generateOpenApiDocument(origin?: string): oas30.OpenAPIObject {
     in: "header",
     name: "Authorization",
     description:
-      "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings.",
+      "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.",
   });
 
   registry.registerComponent("securitySchemes", "bearerAuth", {
@@ -27,7 +27,7 @@ export function generateOpenApiDocument(origin?: string): oas30.OpenAPIObject {
     scheme: "bearer",
     bearerFormat: "API key or Clerk JWT",
     description:
-      "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to.",
+      "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.",
   });
 
   const generator = new OpenApiGeneratorV3(registry.definitions);

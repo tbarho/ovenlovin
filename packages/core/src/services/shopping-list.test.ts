@@ -71,8 +71,8 @@ describe("servingsScale", () => {
     expect(servingsScale(undefined, null, 1)).toBe(1);
   });
 
-  it("uses household Default servings before recipe yield when the entry has no servings", () => {
-    expect(servingsScale(null, 6, 1, 5)).toBe(0.8333);
+  it("uses the larger of recipe yield and cook-for when the entry has no servings", () => {
+    expect(servingsScale(null, 6, 1, 5)).toBe(1);
   });
 
   it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
@@ -528,7 +528,7 @@ describe("ShoppingListService", () => {
     expect(JSON.parse(service.exportAsJSON(list)).ingredients[0].displayUnit).toBe("cloves");
   });
 
-  it("totals two chili nights at household Default servings, not recipe yield", () => {
+  it("totals a yield-sized chili night with an explicit smaller cook-for night", () => {
     const list = build(
       [
         {
@@ -549,11 +549,12 @@ describe("ShoppingListService", () => {
 
     expect(list.ingredients[0]).toMatchObject({
       name: "ground beef",
-      displayQuantity: "1 2/3",
+      displayQuantity: "1 5/6",
       displayUnit: "lbs",
     });
-    expect(service.exportAsMarkdown(list)).toContain("1 2/3 lbs ground beef");
-    expect(service.exportAsMarkdown(list)).not.toContain("1 5/6");
+    expect(list.scaledFor).toBe(5);
+    expect(service.exportAsMarkdown(list)).toContain("For 5 people");
+    expect(service.exportAsMarkdown(list)).toContain("1 5/6 lbs ground beef");
   });
 
   it("rounds countable shop items up and keeps measured cooking fractions", () => {

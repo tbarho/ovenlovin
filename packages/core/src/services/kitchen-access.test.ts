@@ -17,6 +17,8 @@ import {
   invitePath,
   inviteNeedsSignedInUserMessage,
   API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE,
+  API_KEY_KITCHEN_HEADER_MISMATCH,
+  apiKeyKitchenHeaderMismatch,
   inviteStatus,
   isInviteToken,
   isSoleOwner,
@@ -178,5 +180,14 @@ describe("kitchen access policy", () => {
     expect(message).toMatch(/signed-in person must open/i);
     expect(message).not.toBe("User authentication required");
     expect(API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE).toMatch(/\/api\/v1\/households\/mine/);
+  });
+
+  it("rejects an API key X-Kitchen-Id that does not match the key kitchen", () => {
+    const kitchenA = "22222222-2222-4222-8222-222222222222";
+    const kitchenB = "33333333-3333-4333-8333-333333333333";
+    expect(apiKeyKitchenHeaderMismatch(kitchenA, kitchenB)).toBe(true);
+    expect(apiKeyKitchenHeaderMismatch(kitchenA, kitchenA)).toBe(false);
+    expect(apiKeyKitchenHeaderMismatch(kitchenA, null)).toBe(false);
+    expect(API_KEY_KITCHEN_HEADER_MISMATCH).toMatch(/X-Kitchen-Id/);
   });
 });

@@ -2,8 +2,10 @@ import { NextRequest } from "next/server";
 import { getDatabase } from "@ovenlovin/db";
 import {
   API_KEY_CREATOR_NOT_A_MEMBER,
+  API_KEY_KITCHEN_HEADER_MISMATCH,
   ApiKeyService,
   HouseholdService,
+  apiKeyKitchenHeaderMismatch,
   apiKeyMembershipRole,
   canWriteKitchen,
 } from "@ovenlovin/core";
@@ -25,7 +27,8 @@ export type RequestContext = {
 
 export async function getRequestContext(request: NextRequest): Promise<RequestContext> {
   const auth = restAuthFromHeader(request.headers.get("Authorization"));
-  const context = auth.kind === "apiKey" ? await parseApiKey(auth.token) : await parseClerkAuth();
+  const context =
+    auth.kind === "apiKey" ? await parseApiKey(auth.token, request) : await parseClerkAuth();
   await enforceDemoRequestGuards(request, context);
   return context;
 }
@@ -34,7 +37,7 @@ async function parseClerkAuth(): Promise<RequestContext> {
   return getSessionContext({ allowRedirect: false });
 }
 
-async function parseApiKey(apiKey: string): Promise<RequestContext> {
+async function parseApiKey(apiKey: string, request: NextRequest): Promise<RequestContext> {
   if (!apiKey) {
     throw new UnauthorizedError("Invalid API key");
   }
@@ -45,6 +48,10 @@ async function parseApiKey(apiKey: string): Promise<RequestContext> {
 
   if (!result.valid) {
     throw new UnauthorizedError("Invalid or expired API key");
+  }
+
+  if (apiKeyKitchenHeaderMismatch(result.key.householdId, request.headers.get("x-kitchen-id"))) {
+    throw new ForbiddenError(API_KEY_KITCHEN_HEADER_MISMATCH);
   }
 
   const memberships = await new HouseholdService(db).getMembershipsForUser(result.key.createdBy);

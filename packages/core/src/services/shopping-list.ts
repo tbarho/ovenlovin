@@ -2,6 +2,7 @@ import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/in
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
+import { cookForPeopleLabel } from "../scaling/default-servings";
 import {
   formatMeasureText,
   formatQuantity,
@@ -77,6 +78,8 @@ export interface ShoppingListData {
   itemCount: number;
   generatedAt: string;
   warnings: ShoppingListWarning[];
+  /** Week cook-for shown as "For N people". */
+  scaledFor?: number;
 }
 
 export interface ShoppingListLineInput {
@@ -369,6 +372,8 @@ export class ShoppingListService {
       itemCount: ingredients.length,
       generatedAt: input.generatedAt ?? new Date().toISOString(),
       warnings: input.warnings ?? [],
+      scaledFor:
+        input.defaultCookFor && input.defaultCookFor > 0 ? input.defaultCookFor : undefined,
     };
   }
 
@@ -464,6 +469,7 @@ export class ShoppingListService {
       ``,
       `**Week Starting:** ${data.weekStart}`,
       `**Generated:** ${formatShoppingListGeneratedAt(data.generatedAt, options.timeZone)}`,
+      ...(data.scaledFor ? [``, `**${cookForPeopleLabel(data.scaledFor)}**`] : []),
       ``,
     ];
 
@@ -494,6 +500,7 @@ export class ShoppingListService {
       ``,
       `Week Starting: ${data.weekStart}`,
       `Generated: ${formatShoppingListGeneratedAt(data.generatedAt, options.timeZone)}`,
+      ...(data.scaledFor ? [``, cookForPeopleLabel(data.scaledFor)] : []),
       ``,
     ];
 
