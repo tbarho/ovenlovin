@@ -6,6 +6,8 @@ import {
 import { SERVINGS_HARD_MAX, type DefaultServingsMode } from "../schemas/households";
 import { effectivePlanServings } from "./default-servings";
 
+export { SERVINGS_HARD_MAX };
+
 /**
  * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
  * entry's servings still produce a stored `scaleFactor`.

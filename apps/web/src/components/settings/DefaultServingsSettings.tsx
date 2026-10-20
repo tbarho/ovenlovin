@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { SERVINGS_HARD_MAX, type HouseholdServingsSettings } from "@ovenlovin/core";
+import type { HouseholdServingsSettings } from "@ovenlovin/core";
+import { SERVINGS_HARD_MAX } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 
 const MODES = [
