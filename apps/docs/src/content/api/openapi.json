@@ -187,7 +187,7 @@
               "displayServings": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 24,
+                "maximum": 99,
                 "description": "Kitchen Default servings, or the `servings` query override. `servings` remains the stored card yield."
               },
               "scaledNote": {
@@ -606,7 +606,7 @@
             "type": "integer",
             "nullable": true,
             "minimum": 1,
-            "maximum": 24
+            "maximum": 99
           },
           "familySize": {
             "type": "integer",
@@ -615,7 +615,7 @@
           "defaultCookFor": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 24
+            "maximum": 99
           }
         },
         "required": ["mode", "servings", "familySize", "defaultCookFor"]
@@ -1046,7 +1046,7 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 24
+              "maximum": 99
             },
             "required": false,
             "name": "servings",
@@ -2730,7 +2730,7 @@
                     "type": "integer",
                     "nullable": true,
                     "minimum": 1,
-                    "maximum": 24
+                    "maximum": 99
                   }
                 },
                 "required": ["mode"]
