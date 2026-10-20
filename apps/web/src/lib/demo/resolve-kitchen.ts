@@ -8,16 +8,24 @@ export type SandboxIdentity = {
 };
 
 /**
- * Demo sandboxes pin a visitor to their own kitchen only when they have no
- * memberships yet. After they join another kitchen, newest membership wins
- * unless a preferred kitchen cookie matches.
+ * Demo sandboxes pin a visitor to their own kitchen. A preferred cookie or
+ * pending invite wins. With no cookie, land on the kitchen they joined
+ * (newest). MCP/REST/leave still use oldest via selectActiveMembership.
  */
 export function resolveSandboxSession(input: {
   sandbox: SandboxIdentity;
   memberships: Membership[];
   preferredHouseholdId?: string | null;
 }): RequestContext {
-  const selected = selectActiveMembership(input.memberships, input.preferredHouseholdId);
+  const newest = [...input.memberships].sort((a, b) => {
+    const created = b.createdAt.localeCompare(a.createdAt);
+    if (created !== 0) return created;
+    return b.id.localeCompare(a.id);
+  })[0];
+  const selected = selectActiveMembership(
+    input.memberships,
+    input.preferredHouseholdId ?? newest?.householdId
+  );
   if (selected) {
     return {
       userId: input.sandbox.userId,

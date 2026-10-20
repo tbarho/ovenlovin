@@ -47,14 +47,23 @@ describe("resolveSandboxSession", () => {
     expect(session.userId).toBe(sandbox.userId);
   });
 
-  it("uses the kitchen they joined when no preferred kitchen matches", () => {
+  it("lands on the joined kitchen when no preferred cookie is set", () => {
+    const session = resolveSandboxSession({
+      sandbox,
+      memberships: [own, joined],
+    });
+    expect(session.householdId).toBe(joinedKitchen);
+    expect(session.membershipRole).toBe("member");
+  });
+
+  it("keeps the sandbox pin when no preferred kitchen matches a membership", () => {
     const session = resolveSandboxSession({
       sandbox,
       memberships: [own, joined],
       preferredHouseholdId: "33333333-3333-4333-8333-333333333333",
     });
-    expect(session.householdId).toBe(joinedKitchen);
-    expect(session.membershipRole).toBe("member");
+    expect(session.householdId).toBe(ownKitchen);
+    expect(session.membershipRole).toBe("owner");
   });
 
   it("falls back to the sandbox kitchen when the visitor has no memberships yet", () => {

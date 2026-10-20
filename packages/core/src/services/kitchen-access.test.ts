@@ -126,7 +126,7 @@ describe("kitchen access policy", () => {
     expect(selectActiveMembership([second, first], second.householdId)?.id).toBe(second.id);
   });
 
-  it("picks the newest kitchen deterministically when no preferred id matches", () => {
+  it("picks the oldest kitchen deterministically when no preferred id matches", () => {
     const later = membership({
       id: "aaaaaaa2-1111-4111-8111-111111111111",
       householdId: "hhhhhhh2-1111-4111-8111-111111111111",
@@ -137,8 +137,8 @@ describe("kitchen access policy", () => {
       householdId: "hhhhhhh1-1111-4111-8111-111111111111",
       createdAt: "2026-01-01T00:00:00.000Z",
     });
-    expect(selectActiveMembership([later, earlier], "missing")?.id).toBe(later.id);
-    expect(selectActiveMembership([later, earlier])?.id).toBe(later.id);
+    expect(selectActiveMembership([later, earlier], "missing")?.id).toBe(earlier.id);
+    expect(selectActiveMembership([later, earlier])?.id).toBe(earlier.id);
   });
 
   it("classifies invite links as pending, expired, or revoked", () => {
