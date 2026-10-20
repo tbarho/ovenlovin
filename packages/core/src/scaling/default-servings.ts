@@ -128,17 +128,7 @@ export function planListScale(
   const first = values[0] ?? cookFor;
   const mixed = values.some((n) => n !== first);
   if (!mixed) return { scaledFor: first, mixed: false };
-  const counts = new Map<number, number>();
-  for (const n of values) counts.set(n, (counts.get(n) ?? 0) + 1);
-  let scaledFor = first;
-  let best = 0;
-  for (const [n, count] of counts) {
-    if (count > best || (count === best && n === cookFor)) {
-      scaledFor = n;
-      best = count;
-    }
-  }
-  return { scaledFor, mixed: true };
+  return { scaledFor: cookFor, mixed: true };
 }
 
 /** Shopping-list line for the week cook-for. */

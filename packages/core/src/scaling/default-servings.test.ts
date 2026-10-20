@@ -128,7 +128,8 @@ describe("notes and settings", () => {
     expect(cookForPeopleLabel(5, true)).toBe("For 5 people (some recipes scaled differently)");
     expect(planListScale([7, 7, 7], 4)).toEqual({ scaledFor: 7, mixed: false });
     expect(planListScale([6, 5], 5)).toEqual({ scaledFor: 5, mixed: true });
-    expect(planListScale([7, 12], 4)).toEqual({ scaledFor: 7, mixed: true });
+    expect(planListScale([7, 12], 4)).toEqual({ scaledFor: 4, mixed: true });
+    expect(planListScale([6, 4, 5, 4], 5)).toEqual({ scaledFor: 5, mixed: true });
     expect(planListScale([], 4)).toEqual({ scaledFor: 4, mixed: false });
   });
 
