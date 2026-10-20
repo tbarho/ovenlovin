@@ -22,9 +22,9 @@ export default async function ConnectYourAgentPage() {
         <code>Authorization: ApiKey rkapi_…</code> (Bearer + the same key also works).
       </p>
       <p className="intro">
-        Copy the API key from Settings (the public demo already shows a sandbox key), then paste
-        it into the snippet. Allergen findings name the person and the ingredient - not medical
-        advice. Always check labels.
+        Copy the API key from Settings (the public demo already shows a sandbox key), then paste it
+        into the snippet. Allergen findings name the person and the ingredient - not medical advice.
+        Always check labels.
       </p>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>

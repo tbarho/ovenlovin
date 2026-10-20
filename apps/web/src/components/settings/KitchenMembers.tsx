@@ -107,7 +107,7 @@ export function KitchenMembers({
         <p className="empty-note">No members loaded yet.</p>
       ) : (
         <ul className="member-list">
-          {          members.map((member) => {
+          {members.map((member) => {
             const name = member.displayName?.trim();
             const nameClash =
               Boolean(name) &&
