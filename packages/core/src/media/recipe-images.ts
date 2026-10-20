@@ -1,7 +1,5 @@
 /* eslint-disable no-undef */
 import { createHash } from "crypto";
-import { lookup } from "dns/promises";
-import { BlockList, isIP } from "net";
 
 const BLOB_HOST_HINTS = ["public.blob.vercel-storage.com", "blob.vercel-storage.com"];
 
@@ -28,26 +26,45 @@ export function isStoredBlobUrl(url: string): boolean {
   }
 }
 
-const PRIVATE_IMAGE_NETS = new BlockList();
-PRIVATE_IMAGE_NETS.addAddress("0.0.0.0");
-PRIVATE_IMAGE_NETS.addSubnet("127.0.0.0", 8, "ipv4");
-PRIVATE_IMAGE_NETS.addSubnet("10.0.0.0", 8, "ipv4");
-PRIVATE_IMAGE_NETS.addSubnet("172.16.0.0", 12, "ipv4");
-PRIVATE_IMAGE_NETS.addSubnet("192.168.0.0", 16, "ipv4");
-PRIVATE_IMAGE_NETS.addSubnet("169.254.0.0", 16, "ipv4");
-PRIVATE_IMAGE_NETS.addAddress("::1", "ipv6");
-PRIVATE_IMAGE_NETS.addSubnet("fc00::", 7, "ipv6");
-PRIVATE_IMAGE_NETS.addSubnet("fe80::", 10, "ipv6");
-
 const PRIVATE_IMAGE_HOST = /^(localhost|0\.0\.0\.0)$|(\.localhost|\.local|\.internal)$/i;
+const IPV4_LITERAL = /^(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+
+function isIpv4Literal(host: string): boolean {
+  return IPV4_LITERAL.test(host);
+}
+
+function isIpLiteral(host: string): boolean {
+  return host.includes(":") || isIpv4Literal(host);
+}
+
+function ipv4FromMapped(host: string): string | null {
+  if (!host.startsWith("::ffff:")) return null;
+  const rest = host.slice(7);
+  if (isIpv4Literal(rest)) return rest;
+  const parts = rest.split(":");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const hi = Number.parseInt(parts[0], 16);
+  const lo = Number.parseInt(parts[1], 16);
+  if (!Number.isInteger(hi) || !Number.isInteger(lo)) return null;
+  return `${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`;
+}
 
 function isPrivateRecipeImageIp(address: string): boolean {
   const host = address.toLowerCase().replace(/^\[|\]$/g, "");
-  const mapped = host.startsWith("::ffff:") ? host.slice(7) : "";
-  if (mapped && isIP(mapped) === 4) return isPrivateRecipeImageIp(mapped);
-  if (isIP(host) === 4) return PRIVATE_IMAGE_NETS.check(host, "ipv4");
-  if (isIP(host) === 6) return PRIVATE_IMAGE_NETS.check(host, "ipv6");
-  return false;
+  const mapped = ipv4FromMapped(host);
+  if (mapped) return isPrivateRecipeImageIp(mapped);
+  if (isIpv4Literal(host)) {
+    const [a, b] = host.split(".").map(Number);
+    if (a === 0 || a === 10 || a === 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b != null && b >= 16 && b <= 31) return true;
+    return false;
+  }
+  if (!host.includes(":")) return false;
+  if (host === "::1") return true;
+  const first = host.split(":")[0] ?? "";
+  return /^f[cd][0-9a-f]{2}$/.test(first) || /^fe[89ab][0-9a-f]$/.test(first);
 }
 
 function imageHostName(url: string): string | null {
@@ -79,8 +96,10 @@ export function isFetchableRecipeImageUrl(url: string): boolean {
 async function assertPublicImageUrl(url: string): Promise<void> {
   if (!isFetchableRecipeImageUrl(url)) throw new Error("blocked image url");
   const host = imageHostName(url);
-  if (!host || isStoredBlobUrl(url) || isIP(host)) return;
+  if (!host || isStoredBlobUrl(url) || isIpLiteral(host)) return;
   try {
+    // Client bundles import this file for URL helpers; only the server fetch path loads dns.
+    const { lookup } = await import(/* webpackIgnore: true */ "dns/promises");
     const answers = await lookup(host, { all: true });
     if (answers.some((entry) => isPrivateRecipeImageIp(entry.address))) {
       throw new Error("blocked image url");
