@@ -24,7 +24,7 @@ import {
   type PhotoImportJobSnapshot,
 } from "@/lib/photo-import-job";
 import { isImageFile } from "@/lib/photo-import-review";
-import { ImportReviewForm, PhotoImportDialog } from "./PhotoImportDialog";
+import { ImportReviewForm, PhotoImportDialog, PhotoImportProgress } from "./PhotoImportDialog";
 import { ImportFromDevice } from "./ImportFromDevice";
 import { BottomSheet } from "./BottomSheet";
 import {
@@ -180,6 +180,7 @@ export function ImportRecipeForm({
   const [review, setReview] = useState<PhotoReviewDraft | null>(null);
   const [reviewPreview, setReviewPreview] = useState<unknown>(null);
   const importKeyRef = useRef("");
+  const previewAbortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     importKeyRef.current = "";
     setReview(null);
@@ -233,6 +234,9 @@ export function ImportRecipeForm({
       setError(inputError);
       return;
     }
+    previewAbortRef.current?.abort();
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
     setPending(true);
     setError(null);
     setRetryable(false);
@@ -243,18 +247,27 @@ export function ImportRecipeForm({
         {
           method: "POST",
           keepalive: false,
+          signal: controller.signal,
           body: JSON.stringify({ source, content: fieldValue }),
         }
       );
       setReviewPreview(preview);
       setReview(reviewDraftFromImportPreview(preview));
     } catch (err) {
+      if (controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : "Could not import recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
       setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
     } finally {
+      if (previewAbortRef.current === controller) previewAbortRef.current = null;
       setPending(false);
     }
+  }
+
+  function cancelPreview() {
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = null;
+    setPending(false);
   }
 
   async function saveReview(event: React.FormEvent) {
@@ -400,13 +413,20 @@ export function ImportRecipeForm({
                 />
               )}
             </div>
-            <button
-              className="btn primary import-submit"
-              type="submit"
-              disabled={pending || !canSubmit}
-            >
-              {pending ? "Importing…" : "Import"}
-            </button>
+            {pending ? (
+              <div data-testid="import-progress">
+                <PhotoImportProgress phase="reading" percent={100} previewUrl={null} />
+                <div className="sheet-actions">
+                  <button type="button" className="btn compact" onClick={cancelPreview}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button className="btn primary import-submit" type="submit" disabled={!canSubmit}>
+                Import
+              </button>
+            )}
           </div>
         )}
         {error && isBlockedImportError(error) ? (
