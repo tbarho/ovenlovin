@@ -61,15 +61,6 @@ describe("photo import review draft", () => {
       draftFromSavedPreview({
         saved: false,
         preview: true,
-        title: "Weeknight Tomato Pasta",
-        ingredients: [{ rawText: "12 oz pasta" }],
-        steps: [{ text: "Boil pasta." }],
-        source: {
-          type: "paste",
-          importerName: "paste-importer",
-          importerVersion: "0.1.0",
-          rawExtractionJson: {},
-        },
         ...recipeCreateBodyFromReview(draft),
       })?.title
     ).toBe("Weeknight Tomato Pasta");
