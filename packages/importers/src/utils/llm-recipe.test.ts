@@ -55,6 +55,17 @@ describe("extractRecipeWithLlm", () => {
     expect(recipe?.recipeIngredient).toHaveLength(2);
   });
 
+  it("rethrows when the AI provider is unavailable", async () => {
+    const error = Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" });
+    const generate = vi.fn().mockRejectedValue(error);
+    await expect(
+      extractRecipeWithLlm("Ingredients\n- pasta", {
+        env: { AI_GATEWAY_API_KEY: "test-key" },
+        generate,
+      })
+    ).rejects.toBe(error);
+  });
+
   it("returns null when the model marks the page as not a recipe", async () => {
     const generate = vi.fn().mockResolvedValue({
       object: { isRecipe: false },

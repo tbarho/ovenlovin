@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
 import {
@@ -163,6 +164,7 @@ export function ImportRecipeForm() {
     id: string;
     notice: string;
   } | null>(null);
+  const [retryable, setRetryable] = useState(false);
   const importKeyRef = useRef("");
   useEffect(() => {
     importKeyRef.current = "";
@@ -217,6 +219,7 @@ export function ImportRecipeForm() {
     }
     setPending(true);
     setError(null);
+    setRetryable(false);
     setExistingRecipeUrl(null);
     try {
       if (!importKeyRef.current) importKeyRef.current = crypto.randomUUID();
@@ -240,6 +243,7 @@ export function ImportRecipeForm() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not import recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
+      setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
     } finally {
       setPending(false);
     }
@@ -376,15 +380,24 @@ export function ImportRecipeForm() {
             </div>
           </div>
         ) : error ? (
-          <p className="muted import-error">
-            {error}
-            {existingRecipeUrl ? (
-              <>
-                {" "}
-                <a href={existingRecipeUrl}>Open that recipe</a>
-              </>
+          <div role="status">
+            <p className="muted import-error">
+              {error}
+              {existingRecipeUrl ? (
+                <>
+                  {" "}
+                  <a href={existingRecipeUrl}>Open that recipe</a>
+                </>
+              ) : null}
+            </p>
+            {retryable ? (
+              <div className="import-blocked-actions">
+                <button type="submit" className="btn" disabled={pending || !canSubmit}>
+                  Try again
+                </button>
+              </div>
             ) : null}
-          </p>
+          </div>
         ) : null}
         {imported ? (
           <p className="muted" data-testid="import-review">

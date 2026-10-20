@@ -1,4 +1,9 @@
-import { HouseholdAccessError } from "@ovenlovin/core";
+import {
+  HouseholdAccessError,
+  IMPORT_AI_UNAVAILABLE_CODE,
+  IMPORT_AI_UNAVAILABLE_MESSAGE,
+  isImportAiUnavailable,
+} from "@ovenlovin/core";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -147,6 +152,24 @@ export class InternalServerError extends ApiError {
   }
 }
 
+export class ServiceUnavailableError extends ApiError {
+  constructor(detail?: string, extensions?: Record<string, unknown>) {
+    super(
+      503,
+      "https://your-app.vercel.app/problems/service-unavailable",
+      "Service Unavailable",
+      detail,
+      extensions
+    );
+  }
+
+  toResponse(instance?: string): NextResponse {
+    const response = super.toResponse(instance);
+    response.headers.set("Retry-After", "60");
+    return response;
+  }
+}
+
 export function isNextRedirectError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -209,6 +232,12 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
   // REST handler, return problem+json 401 instead of a 500.
   if (isNextRedirectError(error)) {
     return new UnauthorizedError("Authentication required").toResponse(instance);
+  }
+
+  if (isImportAiUnavailable(error)) {
+    return new ServiceUnavailableError(IMPORT_AI_UNAVAILABLE_MESSAGE, {
+      code: IMPORT_AI_UNAVAILABLE_CODE,
+    }).toResponse(instance);
   }
 
   console.error("Unhandled API error:", error);

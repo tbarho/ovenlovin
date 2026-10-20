@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./onboarding": "./src/onboarding/index.ts",
     "./media": "./src/media/recipe-images.ts",
+    "./import-ai-unavailable": "./src/media/import-ai-unavailable.ts",
     "./import-review": "./src/media/import-review.ts",
     "./photo-hash": "./src/media/photo-hash.ts",
     "./parsing": "./src/parsing/ingredient-line.ts",

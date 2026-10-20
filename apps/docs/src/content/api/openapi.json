@@ -176,6 +176,56 @@
         },
         "required": ["id", "householdId", "title", "slug", "images", "status"]
       },
+      "RecipeDetails": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Recipe"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "displayServings": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 24,
+                "description": "Kitchen Default servings, or the `servings` query override. `servings` remains the stored card yield."
+              },
+              "scaledNote": {
+                "type": "string",
+                "nullable": true
+              },
+              "ingredients": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "rawText": {
+                      "type": "string"
+                    },
+                    "displayText": {
+                      "type": "string"
+                    },
+                    "quantityMin": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "unit": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["id", "rawText"]
+                }
+              }
+            },
+            "required": ["displayServings"]
+          }
+        ]
+      },
       "PhotoImportPreview": {
         "type": "object",
         "properties": {
@@ -981,6 +1031,7 @@
       "get": {
         "tags": ["recipes"],
         "summary": "Get a recipe with ingredients, steps, times, notes, images, and source",
+        "description": "displayServings applies kitchen Default servings (family = max(yield, People count)). Pass ?servings= to override. ingredients.displayText is scaled to displayServings; rawText is the stored import string.",
         "parameters": [
           {
             "schema": {
@@ -990,6 +1041,16 @@
             "required": true,
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 24
+            },
+            "required": false,
+            "name": "servings",
+            "in": "query"
           }
         ],
         "responses": {
@@ -998,7 +1059,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Recipe"
+                  "$ref": "#/components/schemas/RecipeDetails"
                 }
               }
             }
@@ -1195,7 +1256,7 @@
       "post": {
         "tags": ["recipes"],
         "summary": "Import a recipe from a URL or pasted text",
-        "description": "Preview by default (`save` omitted or false). Persist only when `save=true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
+        "description": "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1242,6 +1303,9 @@
           },
           "409": {
             "description": "Duplicate or in-flight import. Includes recipeId, title, and recipeUrl."
+          },
+          "503": {
+            "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
           }
         }
       }
@@ -1282,6 +1346,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
           }
         }
       }
@@ -1289,7 +1356,7 @@
     "/recipes/import/photo": {
       "post": {
         "tags": ["recipes"],
-        "summary": "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact and near-duplicate photos return 409 with the existing recipeId. Send Idempotency-Key on save so retries do not create a second recipe.",
+        "summary": "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact SHA matches return 409 with the existing recipeId. Near-duplicate PNG photos (perceptual hash of PNG bytes only) are a warning: preview includes possibleDuplicate {recipeId,title}; save:true without allowDuplicate:true returns 409 with the same field. Send allowDuplicate:true to persist anyway. Send Idempotency-Key on save so retries do not create a second recipe.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1334,6 +1401,10 @@
                   "save": {
                     "type": "boolean"
                   },
+                  "allowDuplicate": {
+                    "type": "boolean",
+                    "description": "When true, persist even if a similar PNG photo already exists."
+                  },
                   "cookbookId": {
                     "type": "string",
                     "format": "uuid"
@@ -1356,6 +1427,9 @@
                     "type": "string"
                   },
                   "save": {
+                    "type": "string"
+                  },
+                  "allowDuplicate": {
                     "type": "string"
                   },
                   "cookbookId": {
@@ -1400,6 +1474,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
           }
         }
       }
