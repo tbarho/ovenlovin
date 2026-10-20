@@ -53,10 +53,7 @@ describe("people catalog search", () => {
     });
     expect(resolveFoodAdd("peanut", { mode: "cant_eat" })?.entry.code).toBe("peanut");
     expect(
-      unknownAllergenWarning(
-        "Pea",
-        resolved?.kind === "unknown" ? resolved.suggestion : null
-      )
+      unknownAllergenWarning("Pea", resolved?.kind === "unknown" ? resolved.suggestion : null)
     ).toContain("Peanut");
   });
 
