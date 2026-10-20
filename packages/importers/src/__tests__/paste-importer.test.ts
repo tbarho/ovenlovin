@@ -65,7 +65,7 @@ describe("Paste Importer", () => {
         expect.objectContaining({
           schema: expect.any(Object),
           prompt: expect.stringContaining("Extract recipe data"),
-          maxRetries: 5,
+          maxRetries: 2,
           providerOptions: {
             gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
           },

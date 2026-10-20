@@ -3,8 +3,10 @@ import {
   splitLeadingQuantity,
   splitLeadingUnit,
 } from "../parsing/ingredient-line";
-import type { DefaultServingsMode } from "../schemas/households";
+import { SERVINGS_HARD_MAX, type DefaultServingsMode } from "../schemas/households";
 import { effectivePlanServings } from "./default-servings";
+
+export { SERVINGS_HARD_MAX };
 
 /**
  * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
@@ -38,18 +40,16 @@ function roundScaleFactor(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
 
-const COOKING_FRACTIONS: Array<[number, number]> = [
-  [1, 8],
-  [1, 6],
-  [1, 4],
-  [1, 3],
-  [3, 8],
-  [1, 2],
-  [5, 8],
-  [2, 3],
-  [3, 4],
-  [5, 6],
-  [7, 8],
+/** Kitchen-usable fractions, plus 0 and 1 so near-wholes do not snap to 3/4. */
+const FRACTION_STEPS: Array<[number, string]> = [
+  [0, ""],
+  [1 / 8, "1/8"],
+  [1 / 4, "1/4"],
+  [1 / 3, "1/3"],
+  [1 / 2, "1/2"],
+  [2 / 3, "2/3"],
+  [3 / 4, "3/4"],
+  [1, ""],
 ];
 
 export function scaleQuantity(quantity: number, fromServings: number, toServings: number): number {
@@ -57,42 +57,41 @@ export function scaleQuantity(quantity: number, fromServings: number, toServings
   return quantity * (toServings / fromServings);
 }
 
-export function formatQuantity(value: number): string {
+function nearestFraction(frac: number): { value: number; label: string } {
+  let best = FRACTION_STEPS[0] ?? [0, ""];
+  let bestDelta = 1;
+  for (const step of FRACTION_STEPS) {
+    const delta = Math.abs(frac - step[0]);
+    if (delta < bestDelta - 1e-9) {
+      bestDelta = delta;
+      best = step;
+    }
+  }
+  return { value: best[0], label: best[1] };
+}
+
+function snapFraction(frac: number, roundUp: boolean): { value: number; label: string } {
+  const nearest = nearestFraction(frac);
+  // stored 0.6667 and schema.org 2/3 leftovers sit a hair above the step
+  if (!roundUp || frac - nearest.value < 1e-4) return nearest;
+  for (const [value, label] of FRACTION_STEPS) {
+    if (value + 1e-9 >= frac) return { value, label };
+  }
+  return { value: 1, label: "" };
+}
+
+export function formatQuantity(value: number, roundUp = false): string {
   if (!Number.isFinite(value)) return "";
   if (Math.abs(value) < 1e-9) return "0";
 
   const sign = value < 0 ? "-" : "";
   const abs = Math.abs(value);
   const whole = Math.floor(abs + 1e-9);
-  const frac = abs - whole;
+  const snapped = snapFraction(abs - whole, roundUp);
 
-  if (frac < 0.02) {
-    return `${sign}${whole}`;
-  }
-
-  let best = frac;
-  let label = "";
-  let bestDelta = 1;
-  for (const [num, den] of COOKING_FRACTIONS) {
-    const candidate = num / den;
-    const delta = Math.abs(frac - candidate);
-    if (delta < bestDelta - 1e-9) {
-      bestDelta = delta;
-      best = candidate;
-      label = `${num}/${den}`;
-    }
-  }
-
-  if (bestDelta > 0.04) {
-    const rounded = Math.round(abs * 100) / 100;
-    return `${sign}${Number.isInteger(rounded) ? String(rounded) : String(rounded)}`;
-  }
-
-  if (Math.abs(best - 1) < 1e-9) {
-    return `${sign}${whole + 1}`;
-  }
-
-  return whole > 0 ? `${sign}${whole} ${label}` : `${sign}${label}`;
+  if (snapped.value < 1e-9) return `${sign}${whole}`;
+  if (Math.abs(snapped.value - 1) < 1e-9) return `${sign}${whole + 1}`;
+  return whole > 0 ? `${sign}${whole} ${snapped.label}` : `${sign}${snapped.label}`;
 }
 
 type UnitFamily = Array<{ unit: string; toBase: number }>;
@@ -121,10 +120,9 @@ function cookingFractionDelta(value: number): number {
   const abs = Math.abs(value);
   const whole = Math.floor(abs + 1e-9);
   const frac = abs - whole;
-  if (frac < 0.02 || frac > 0.98) return 0;
   let best = 1;
-  for (const [num, den] of COOKING_FRACTIONS) {
-    best = Math.min(best, Math.abs(frac - num / den));
+  for (const [step] of FRACTION_STEPS) {
+    best = Math.min(best, Math.abs(frac - step));
   }
   return best;
 }
@@ -138,23 +136,31 @@ function candidateScore(
   unit: string,
   originalUnit: string,
   originalQuantity: number,
-  toBase: number
+  toBase: number,
+  originalToBase: number
 ): number {
   const delta = cookingFractionDelta(quantity);
   let score = delta;
-  if (delta > 0.04) score += 8;
   if (quantity < 0.125) score += 4;
   if (quantity > 24) score += (quantity - 24) * 0.05;
   if (quantity < 1 && unit !== originalUnit) {
-    const niceCup = unit === "cup" && delta <= 0.04 && quantity >= 0.25;
+    const niceCup = unit === "cup" && quantity >= 0.25;
     if (!niceCup) score += 1.5;
   }
   if (unit === "cup" && quantity > 0 && quantity < 0.25) {
     score += 3;
   }
-  if (cookingFractionDelta(originalQuantity) <= 0.02 && unit !== originalUnit && delta > 0.01) {
+  if (toBase < originalToBase && originalQuantity >= 0.25) score += 8;
+  const largeSpoons = (originalUnit === "tbsp" || originalUnit === "tsp") && originalQuantity >= 8;
+  if (
+    !largeSpoons &&
+    cookingFractionDelta(originalQuantity) <= 0.02 &&
+    unit !== originalUnit &&
+    delta > 0.01
+  ) {
     score += 6;
   }
+  if (largeSpoons && (unit === "tbsp" || unit === "tsp")) score += 3;
   score -= Math.log(toBase) * 0.02;
   if (unit === originalUnit) score -= 0.015;
   return score;
@@ -169,30 +175,71 @@ export type FriendlyMeasure = {
  * Pick a shoppable unit and cooking-fraction label. Raw `quantity`/`unit`
  * stay unchanged; this is display-only.
  */
-export function toFriendlyMeasure(quantity: number, unit?: string | null): FriendlyMeasure {
+function mixedCupTbsp(tbsp: number): FriendlyMeasure | null {
+  const cups = tbsp / 16;
+  if (cups < 0.25) return null;
+  const whole = Math.floor(cups + 1e-9);
+  const frac = cups - whole;
+  let cupDown = whole;
+  for (const [step] of FRACTION_STEPS) {
+    if (step <= frac + 1e-9 && step < 1) cupDown = whole + step;
+  }
+  if (cupDown < 0.25) return null;
+  const rem = tbsp - cupDown * 16;
+  if (rem < 0.5) return null;
+  return {
+    displayQuantity: `${formatQuantity(cupDown)} cup + ${formatQuantity(rem)} tbsp`,
+  };
+}
+
+export function toFriendlyMeasure(
+  quantity: number,
+  unit?: string | null,
+  roundUp = false
+): FriendlyMeasure {
   if (!Number.isFinite(quantity)) {
     return { displayQuantity: "", displayUnit: unit?.trim() || undefined };
   }
   const normalized = unit?.trim() || undefined;
-  if (!normalized) return { displayQuantity: formatQuantity(quantity) };
+  if (!normalized) return { displayQuantity: formatQuantity(quantity, roundUp) };
 
   const family = familyFor(normalized);
   const from = family?.find((item) => item.unit === normalized);
   if (!family || !from) {
-    return { displayQuantity: formatQuantity(quantity), displayUnit: normalized };
+    return { displayQuantity: formatQuantity(quantity, roundUp), displayUnit: normalized };
   }
 
   const base = quantity * from.toBase;
   let best = { unit: normalized, quantity, score: Number.POSITIVE_INFINITY };
   for (const candidate of family) {
     const q = base / candidate.toBase;
-    const score = candidateScore(q, candidate.unit, normalized, quantity, candidate.toBase);
+    const score = candidateScore(
+      q,
+      candidate.unit,
+      normalized,
+      quantity,
+      candidate.toBase,
+      from.toBase
+    );
     if (score < best.score - 1e-9) {
       best = { unit: candidate.unit, quantity: q, score };
     }
   }
 
-  return { displayQuantity: formatQuantity(best.quantity), displayUnit: best.unit };
+  if (normalized === "tbsp" && best.unit === "cup") {
+    const cups = quantity / 16;
+    const shown = quantityValue(formatQuantity(best.quantity, roundUp));
+    if (shown <= 0 || Math.abs(shown - cups) / cups > 0.05) {
+      return (
+        mixedCupTbsp(quantity) ?? {
+          displayQuantity: formatQuantity(quantity, roundUp),
+          displayUnit: "tbsp",
+        }
+      );
+    }
+  }
+
+  return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };
 }
 
 const UNIT_PLURALS: Record<string, string> = {
@@ -303,9 +350,9 @@ export function wholeShopQuantity(quantity: number): number {
   return Math.max(1, Math.ceil(quantity - 1e-9));
 }
 
-export function formatMeasureText(quantity: number, unit?: string | null): string {
+export function formatMeasureText(quantity: number, unit?: string | null, roundUp = false): string {
   const amount = isCountableShopItem(unit) ? wholeShopQuantity(quantity) : quantity;
-  const { displayQuantity, displayUnit } = toFriendlyMeasure(amount, unit);
+  const { displayQuantity, displayUnit } = toFriendlyMeasure(amount, unit, roundUp);
   return displayUnit ? pluralizeUnit(displayQuantity, displayUnit) : displayQuantity;
 }
 
@@ -340,28 +387,64 @@ export function scaleIngredientDisplay(
   const quantityMax = ingredient.quantityMax ?? leading.max;
   if (quantityMin == null) return ingredient.rawText;
 
-  const min = formatQuantity(scaleQuantity(quantityMin, from, to));
-  const max = quantityMax != null ? formatQuantity(scaleQuantity(quantityMax, from, to)) : null;
-  const qty = max ? `${min}-${max}` : min;
+  const size = leading.rest.match(/^(\([^)]+\)\s*)(.*)$/);
+  const sizePrefix = size?.[1] ?? "";
+  const afterSize = size?.[2] ?? leading.rest;
+  const leadingUnit = splitLeadingUnit(afterSize);
+  const parsed = parseIngredientLine(ingredient.rawText);
+  const unit =
+    leading.min != null ? leadingUnit.unit : (ingredient.unit ?? parsed.unit ?? leadingUnit.unit);
 
-  if (leading.min != null) {
-    const leadingUnit = splitLeadingUnit(leading.rest);
-    if (leadingUnit.unit) {
-      return leadingUnit.rest
-        ? `${pluralizeUnit(qty, leadingUnit.unit)} ${leadingUnit.rest}`
-        : pluralizeUnit(qty, leadingUnit.unit);
+  const scaledMin = scaleQuantity(quantityMin, from, to);
+  const scaledMax = quantityMax != null ? scaleQuantity(quantityMax, from, to) : null;
+
+  if (scaledMax != null) {
+    const minN = isCountableShopItem(unit) ? wholeShopQuantity(scaledMin) : scaledMin;
+    const maxN = isCountableShopItem(unit) ? wholeShopQuantity(scaledMax) : scaledMax;
+    const qty = `${formatQuantity(minN)}-${formatQuantity(maxN)}`;
+    if (leading.min != null) {
+      if (leadingUnit.unit) {
+        const head = sizePrefix
+          ? `${qty} ${sizePrefix}${inflectedUnit(qty, leadingUnit.unit)}`
+          : pluralizeUnit(qty, leadingUnit.unit);
+        return leadingUnit.rest ? `${head} ${leadingUnit.rest}` : head;
+      }
+      return leading.rest ? `${qty} ${leading.rest}` : qty;
     }
-    return leading.rest ? `${qty} ${leading.rest}` : qty;
+    const name = parsed.name;
+    const measure = unit ? pluralizeUnit(qty, unit) : qty;
+    return `${measure}${name ? ` ${name}` : ""}`.trim();
   }
 
-  const parsed = parseIngredientLine(ingredient.rawText);
-  const unit = ingredient.unit ?? parsed.unit;
+  if (sizePrefix && leadingUnit.unit) {
+    const amount = isCountableShopItem(unit) ? wholeShopQuantity(scaledMin) : scaledMin;
+    const { displayQuantity, displayUnit } = toFriendlyMeasure(amount, unit);
+    const labeled = displayUnit ? inflectedUnit(displayQuantity, displayUnit) : "";
+    const head = `${displayQuantity} ${sizePrefix}${labeled}`.trim();
+    return leadingUnit.rest ? `${head} ${leadingUnit.rest}` : head;
+  }
+
+  const measure = formatMeasureText(scaledMin, unit);
+  if (leading.min != null) {
+    const rest = leadingUnit.unit
+      ? leadingUnit.rest
+      : leading.rest.replace(/^(eggs|egg)\b/i, quantityValue(measure) === 1 ? "egg" : "eggs");
+    return rest ? `${measure} ${rest}` : measure;
+  }
   const name = parsed.name;
-  const measure = unit ? pluralizeUnit(qty, unit) : qty;
-  return `${measure}${name ? ` ${name}` : ""}`.trim();
+  return name ? `${measure} ${name}` : measure;
 }
 
-export function clampServings(value: number, min = 1, max = 24): number {
+/** Slider and stepper ceiling: at least 24, and at least the recipe or cook-for. */
+export function servingsRangeMax(...hints: Array<number | null | undefined>): number {
+  let max = 24;
+  for (const hint of hints) {
+    if (typeof hint === "number" && hint > max) max = Math.round(hint);
+  }
+  return max;
+}
+
+export function clampServings(value: number, min = 1, max = SERVINGS_HARD_MAX): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, Math.round(value)));
 }

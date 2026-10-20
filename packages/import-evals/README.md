@@ -10,4 +10,4 @@ Needs `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN`, and Node.js 24+ for the eve C
 
 Eve cannot drive our photo importer through `t.send` / `t.sendFile` (no vision fixture path into `createPhotoImporter`). Cases call the existing extractors and record `t.score` / `t.check`. A mock-model fixture agent exists only so `eve eval` can boot.
 
-Eve 0.81 also requires Node 24 and peers `ai@7`. Those stay here; importers remain on AI SDK 5.
+Eve 0.81 also requires Node 24 and peers `ai@7`. Those stay in this package's `devDependencies`; importers remain on AI SDK 5. `eve eval` only treats a folder as a project when `dependencies.eve` is set, so the runner copies that field for the process and writes the file back.

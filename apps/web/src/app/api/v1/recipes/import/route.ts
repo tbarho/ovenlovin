@@ -26,9 +26,11 @@ import { draftFromPlainText } from "@/lib/plain-import";
 import { createVercelImagePut } from "@/lib/blob-store";
 import {
   conflictFromImportResult,
+  demoImportQuota,
   isIdempotentReplay,
   presentImportPreview,
   recipeFromPersist,
+  replayOrDuplicateUrlImport,
   saveImportedRecipe,
   wantsPersist,
   withDemoImportQuota,
@@ -56,11 +58,36 @@ export async function POST(request: NextRequest) {
       throw new BadRequestError("Provide source (url or paste) and content");
     }
 
-    let draft;
+    const idempotencyKey = getIdempotencyKey(request);
     if (body.source === "url") {
       if (!looksLikeHttpUrl(body.content)) {
         throw new BadRequestError("That doesn't look like a web address");
       }
+      const collision = await new RecipeService(getDatabase()).findUrlImportCollision(
+        householdId,
+        body.content.trim(),
+        idempotencyKey
+      );
+      if (collision) {
+        const resolved = replayOrDuplicateUrlImport(collision);
+        if (resolved.kind === "replay") {
+          return jsonResponse(
+            withDemoImportQuota(
+              presentListedRecipe(resolved.recipe, requestApiOrigin(request)),
+              await demoImportQuota(householdId)
+            )
+          );
+        }
+        throw conflictFromImportResult({
+          outcome: "existing",
+          recipe: resolved.recipe,
+          match: "source_url",
+        });
+      }
+    }
+
+    let draft;
+    if (body.source === "url") {
       const importer = createUrlImporter();
       const raw = await importer.extract({ url: body.content.trim() });
       draft = await importer.toDraft(raw);
@@ -96,7 +123,7 @@ export async function POST(request: NextRequest) {
     const { result, quota } = await saveImportedRecipe(draft, {
       householdId,
       createdBy: createdBy as string,
-      idempotencyKey: getIdempotencyKey(request),
+      idempotencyKey,
     });
     const recipe = recipeFromPersist(result);
     const presented = withDemoImportQuota(

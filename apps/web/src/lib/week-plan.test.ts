@@ -7,6 +7,7 @@ import {
   findingsFromCheck,
   formatWeekRange,
   groupMealsByDate,
+  pickPlanForWeek,
   pickSafety,
   slotLabel,
   startOfWeekMonday,
@@ -41,6 +42,24 @@ describe("week-plan dates", () => {
 
   it("adds days across month boundaries without local TZ drift", () => {
     expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
+  });
+});
+
+describe("pickPlanForWeek", () => {
+  it("picks the newest plan when two rows share a week", () => {
+    const older = {
+      id: "plan-a",
+      weekStart: "2026-10-12",
+      updatedAt: "2026-10-12T00:00:00.000Z",
+    };
+    const newer = {
+      id: "plan-b",
+      weekStart: "2026-10-12",
+      updatedAt: "2026-10-13T18:00:00.000Z",
+    };
+    expect(pickPlanForWeek([older, newer], "2026-10-12")?.id).toBe("plan-b");
+    expect(pickPlanForWeek([newer, older], "2026-10-12")?.id).toBe("plan-b");
+    expect(pickPlanForWeek([older, newer], "2026-10-19")).toBeNull();
   });
 });
 

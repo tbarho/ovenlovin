@@ -9,12 +9,12 @@
     "clean": "rm -rf node_modules .turbo .eve"
   },
   "dependencies": {
-    "@ovenlovin/importers": "workspace:*",
-    "ai": "^7.0.137",
-    "eve": "0.81.1"
+    "@ovenlovin/importers": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "ai": "^7.0.137",
+    "eve": "0.81.1",
     "typescript": "^5.7.2",
     "zod": "^4.0.0"
   }

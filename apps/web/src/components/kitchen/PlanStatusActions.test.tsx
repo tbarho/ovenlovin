@@ -53,6 +53,28 @@ describe("PlanStatusActions", () => {
     expect(screen.getByText("Plan marked as final.")).toBeVisible();
   });
 
+  it("reopens after finalize without sending other nights", async () => {
+    const user = userEvent.setup();
+    render(<PlanStatusActions planId="plan-1" status="draft" />);
+    await user.click(screen.getByRole("button", { name: "Mark as final" }));
+    vi.mocked(api).mockResolvedValueOnce({ id: "plan-1", status: "draft" });
+    await user.click(screen.getByRole("button", { name: "Reopen as draft" }));
+    expect(api).toHaveBeenNthCalledWith(1, "/api/v1/meal-plans/plan-1", {
+      method: "PATCH",
+      body: JSON.stringify({ status: "approved" }),
+    });
+    expect(api).toHaveBeenNthCalledWith(2, "/api/v1/meal-plans/plan-1", {
+      method: "PATCH",
+      body: JSON.stringify({ status: "draft" }),
+    });
+    expect(JSON.parse(String(vi.mocked(api).mock.calls[0]?.[1]?.body))).not.toHaveProperty(
+      "entries"
+    );
+    expect(JSON.parse(String(vi.mocked(api).mock.calls[1]?.[1]?.body))).not.toHaveProperty(
+      "entries"
+    );
+  });
+
   it("clears Saving after a failed mark so the button is not stuck", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockRejectedValueOnce(new Error("offline"));

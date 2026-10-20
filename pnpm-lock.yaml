@@ -302,16 +302,16 @@ importers:
       '@ovenlovin/importers':
         specifier: workspace:*
         version: link:../importers
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.5
       ai:
         specifier: ^7.0.137
         version: 7.0.147(zod@4.6.7)
       eve:
         specifier: 0.81.1
         version: 0.81.1(@opentelemetry/api@1.9.0)(ai@7.0.147(zod@4.6.7))
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.20.5
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

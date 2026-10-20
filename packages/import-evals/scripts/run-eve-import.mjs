@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -32,9 +32,22 @@ const eveRoot = dirname(createRequire(import.meta.url).resolve("eve/package.json
 const eve = join(eveRoot, "bin/eve.js");
 const args = process.argv.slice(2);
 const cwd = join(dirname(fileURLToPath(import.meta.url)), "..");
-const result = spawnSync(node, [eve, "eval", ...(args.length > 0 ? args : ["import"])], {
-  cwd,
-  stdio: "inherit",
-  env: process.env,
-});
-process.exit(result.status ?? 1);
+const pkgPath = join(cwd, "package.json");
+const originalPkg = readFileSync(pkgPath, "utf8");
+const pkg = JSON.parse(originalPkg);
+// shortcut: eve's project finder only reads dependencies.eve, not devDependencies.
+if (!pkg.dependencies?.eve && pkg.devDependencies?.eve) {
+  pkg.dependencies = { ...pkg.dependencies, eve: pkg.devDependencies.eve };
+  writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+}
+let result;
+try {
+  result = spawnSync(node, [eve, "eval", ...(args.length > 0 ? args : ["import"])], {
+    cwd,
+    stdio: "inherit",
+    env: process.env,
+  });
+} finally {
+  writeFileSync(pkgPath, originalPkg);
+}
+process.exit(result?.status ?? 1);
