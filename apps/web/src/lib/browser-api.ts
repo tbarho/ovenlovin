@@ -14,9 +14,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     credentials: "include",
-    // Keepalive POSTs drop in Chrome after 64KB or a long wait. Import and
-    // image save can be both large and slow, so never default keepalive on.
-    keepalive: init?.keepalive ?? false,
+    keepalive: init?.keepalive ?? (init?.method === "PATCH" || init?.method === "POST"),
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),

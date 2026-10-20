@@ -222,6 +222,7 @@ export function ImportRecipeForm() {
       if (!importKeyRef.current) importKeyRef.current = crypto.randomUUID();
       const recipe = await api<RecipeDetails>("/api/v1/recipes/import", {
         method: "POST",
+        keepalive: false,
         headers: { "Idempotency-Key": importKeyRef.current },
         body: JSON.stringify({ source, content: fieldValue, save: true }),
       });
