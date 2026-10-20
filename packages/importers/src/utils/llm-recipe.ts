@@ -4,7 +4,7 @@ import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
 import { isImportAiUnavailable } from "@ovenlovin/core/import-ai-unavailable";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
-import { resolveExtractModelId } from "./models";
+import { importGenerateOptions, resolveExtractModelId } from "./models";
 
 const llmRecipeSchema = z.object({
   isRecipe: z.boolean().describe("True only if the page text is a cookable recipe"),
@@ -78,6 +78,7 @@ export async function extractRecipeWithLlm(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       model: gateway(modelId) as any,
       schema: llmRecipeSchema,
+      ...importGenerateOptions(),
       prompt: `Extract a recipe from this page text if one is present. Preserve exact ingredient lines. If this is not a recipe (a homepage, paywall, or generic article), set isRecipe to false and omit the rest. Do not invent quantities.
 
 Text:

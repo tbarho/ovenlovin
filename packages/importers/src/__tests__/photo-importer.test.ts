@@ -73,6 +73,10 @@ describe("Photo Importer", () => {
             }),
           ]),
           schema: expect.any(Object),
+          maxRetries: 2,
+          providerOptions: {
+            gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
+          },
         })
       );
 

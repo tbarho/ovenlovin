@@ -14,7 +14,7 @@ import type {
 import { stripLeadingStepNumber } from "@ovenlovin/core";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { classifyDraftIngredients } from "../utils/classify-allergens";
-import { resolveVisionModelId } from "../utils/models";
+import { importGenerateOptions, resolveVisionModelId } from "../utils/models";
 import { listUncertainFields, type FieldConfidence } from "../utils/uncertain-fields";
 
 const IMPORTER_VERSION = "0.1.0";
@@ -114,6 +114,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
         model: gateway(visionModelId) as any,
         abortSignal: combineAbortSignals(AbortSignal.timeout(55_000), config.abortSignal),
+        ...importGenerateOptions(),
         messages: [
           {
             role: "user",
