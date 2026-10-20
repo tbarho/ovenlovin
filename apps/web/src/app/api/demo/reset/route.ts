@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ ok: true, next: "/recipes" });
     response.cookies.set(DEMO_COOKIE_NAME, sandbox.id, demoCookieOptions(cookieSecure()));
     return response;
-  } catch {
+  } catch (error) {
+    console.error("demo reset failed", error);
     return NextResponse.json(
       { error: "Could not reset this kitchen. Try again." },
       { status: 500 }
