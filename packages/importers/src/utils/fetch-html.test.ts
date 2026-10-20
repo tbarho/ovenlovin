@@ -372,6 +372,35 @@ describe("fetchHtml layers", () => {
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
   });
 
+  it("keeps a recipe page that embeds Turnstile when JSON-LD Recipe is present", async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <title>Tomato pasta</title>
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
+      <script type="application/ld+json">{"@type":"Recipe","name":"Tomato pasta","recipeIngredient":["pasta"]}</script>
+      </head><body>
+      <div class="cf-turnstile" data-sitekey="example"></div>
+      <p>Verify you are human to continue.</p>
+      </body></html>`;
+    expect(looksLikeBotChallenge(html)).toBe(true);
+    expect(isUsableRecipeHtml(html)).toBe(true);
+    expect(shouldKeepLooking(html, 200)).toBe(false);
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://example.com/tomato-pasta",
+      text: async () => html,
+    });
+    const result = await fetchHtml("https://example.com/tomato-pasta", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+    });
+    expect(result.via).toBe("direct");
+    expect(extractJsonLd(result.html)?.name).toMatch(/tomato pasta/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
     expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
 

@@ -141,10 +141,11 @@ export function looksLikeMarkdownRecipe(text: string): boolean {
 }
 
 export function isUsableRecipeHtml(html: string): boolean {
-  if (!html || looksLikeBotChallenge(html)) return false;
+  if (!html) return false;
+  if (/application\/ld\+json/i.test(html) && /"@type"\s*:\s*"Recipe"/i.test(html)) return true;
+  if (looksLikeBotChallenge(html)) return false;
   const compact = html.replace(/\s+/g, " ").trim();
   if (compact.length < 400) return false;
-  if (/application\/ld\+json/i.test(html) && /"@type"\s*:\s*"Recipe"/i.test(html)) return true;
   if (/itemprop=["']recipe/i.test(html)) return true;
   if (/h-ingredient|p-ingredient|ingredient-name/i.test(html)) return true;
   if (
