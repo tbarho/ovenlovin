@@ -12,6 +12,7 @@ export function KitchenNameSettings({ canRename }: { canRename: boolean }) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const load = useCallback(async () => {
     const data = await api<HouseholdName>("/api/v1/households");
@@ -30,6 +31,7 @@ export function KitchenNameSettings({ canRename }: { canRename: boolean }) {
     if (!next || next === name) return;
     setPending(true);
     setError(null);
+    setSaved(false);
     try {
       const data = await api<HouseholdName>("/api/v1/households", {
         method: "PATCH",
@@ -37,6 +39,7 @@ export function KitchenNameSettings({ canRename }: { canRename: boolean }) {
       });
       setName(data.name);
       setDraft(data.name);
+      setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not rename this kitchen");
     } finally {
@@ -85,6 +88,11 @@ export function KitchenNameSettings({ canRename }: { canRename: boolean }) {
       ) : (
         <p>{name || "This kitchen"}</p>
       )}
+      {saved ? (
+        <p className="default-servings-saved" role="status" data-testid="kitchen-name-saved">
+          Saved
+        </p>
+      ) : null}
       {error ? <p className="muted">{error}</p> : null}
     </section>
   );

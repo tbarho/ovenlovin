@@ -95,12 +95,16 @@ export function RecipesKitchen({
   recipes,
   lovePeople = EMPTY_LOVE_PEOPLE,
   safetyByRecipe = {},
+  remainingImports,
+  importLimit,
 }: {
   cookbooks: CookbookCard[];
   uncategorized: Recipe[];
   recipes: Recipe[];
   lovePeople?: PersonLove[];
   safetyByRecipe?: Record<string, RecipeSafetySummary>;
+  remainingImports?: number;
+  importLimit?: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -164,7 +168,7 @@ export function RecipesKitchen({
       </div>
       {showImport ? (
         <div id="add-recipe-panel">
-          <ImportRecipeForm />
+          <ImportRecipeForm remainingImports={remainingImports} importLimit={importLimit} />
         </div>
       ) : null}
 

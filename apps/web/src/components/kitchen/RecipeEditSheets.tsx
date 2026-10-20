@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
 import { keepMainRecipeImages, recipeMainImage } from "@ovenlovin/core/media";
-import { clampServings } from "@ovenlovin/core/scaling";
+import { clampServings, servingsRangeMax } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 
@@ -102,6 +102,7 @@ export function DetailsSheet({
   onSavedServings: (servings: number) => void;
 }) {
   const storedServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 4;
+  const servingsMax = servingsRangeMax(storedServings);
   const [title, setTitle] = useState(recipe.title);
   const [notes, setNotes] = useState(recipe.notes ?? "");
   const [prep, setPrep] = useState(recipe.prepTimeMinutes?.toString() ?? "");
@@ -122,7 +123,7 @@ export function DetailsSheet({
 
   async function saveDetails(event: React.FormEvent) {
     event.preventDefault();
-    const nextServings = clampServings(Number(baseServings) || storedServings);
+    const nextServings = clampServings(Number(baseServings) || storedServings, 1, servingsMax);
     const saved = await patch({
       title,
       notes: notes.trim() ? notes.trim() : null,
@@ -162,7 +163,7 @@ export function DetailsSheet({
           <input
             type="number"
             min={1}
-            max={24}
+            max={servingsMax}
             value={baseServings}
             onChange={(event) => setBaseServings(event.target.value)}
           />
