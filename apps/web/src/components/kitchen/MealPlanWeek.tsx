@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DefaultServingsMode } from "@ovenlovin/core";
-import { cookForServingsLabel, planEntryServings, servingsRangeMax } from "@ovenlovin/core/scaling";
+import {
+  cookForServingsLabel,
+  planEntryServings,
+  planListScale,
+  SERVINGS_HARD_MAX,
+} from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -329,10 +334,11 @@ export function MealPlanWeek({
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [servings, setServings] = useState(defaultServings);
-  const servingsMax = servingsRangeMax(
-    defaultServings,
-    ...days.flatMap((day) => day.meals.flatMap((meal) => [meal.servings, meal.recipeServings]))
+  const [servings, setServings] = useState(
+    planListScale(
+      days.flatMap((day) => day.meals.filter((meal) => meal.recipeId).map((meal) => meal.servings)),
+      defaultServings
+    ).scaledFor
   );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -508,7 +514,7 @@ export function MealPlanWeek({
             disabled={pending}
             onChange={(event) => applyServings(Number(event.target.value))}
           >
-            {Array.from({ length: servingsMax }, (_, index) => index + 1).map((count) => (
+            {Array.from({ length: SERVINGS_HARD_MAX }, (_, index) => index + 1).map((count) => (
               <option key={count} value={count}>
                 {count}
               </option>

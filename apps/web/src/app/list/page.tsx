@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { planListScale } from "@ovenlovin/core/scaling";
 import { ShoppingList } from "@/components/kitchen/ShoppingList";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadWeekKitchen } from "@/lib/week-plan";
@@ -7,6 +8,12 @@ export default async function ShoppingListPage() {
   const context = await requireKitchenContext();
 
   const kitchen = await loadWeekKitchen(context.householdId);
+  const listScale = planListScale(
+    kitchen.days.flatMap((day) =>
+      day.meals.filter((meal) => meal.recipeId).map((meal) => meal.servings)
+    ),
+    kitchen.defaultServings
+  );
 
   return (
     <>
@@ -32,10 +39,8 @@ export default async function ShoppingListPage() {
         planId={kitchen.plan?.id ?? null}
         checkedKeys={kitchen.shoppingState.checkedKeys}
         extras={kitchen.shoppingState.extras}
-        scaledFor={kitchen.defaultServings}
-        scaledForMixed={kitchen.days.some((day) =>
-          day.meals.some((meal) => meal.recipeId && meal.servings !== kitchen.defaultServings)
-        )}
+        scaledFor={listScale.scaledFor}
+        scaledForMixed={listScale.mixed}
       />
     </>
   );
