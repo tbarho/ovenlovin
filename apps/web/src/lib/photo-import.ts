@@ -1,5 +1,6 @@
 import {
   copyRemoteImages,
+  ensureReviewMetadata,
   fingerprintImageBlob,
   keepMainRecipeImages,
   omitInlineImagePayloads,
@@ -8,6 +9,7 @@ import {
   type RecipeImportDraft,
   type StoredImagePut,
 } from "@ovenlovin/core";
+import { perceptualHashFromImageBlob } from "@ovenlovin/core/photo-hash";
 import { runPhotoImport, type DraftAllergenHit, type RecipeDraft } from "@ovenlovin/importers";
 
 export const PHOTO_IMPORT_MIME_TYPES = new Set([
@@ -21,6 +23,9 @@ export const PHOTO_IMPORT_MIME_TYPES = new Set([
 export type PhotoImageInput = { blob: string; filename?: string };
 
 export type PhotoImportPreview = {
+  saved?: boolean;
+  preview?: boolean;
+  possibleDuplicate?: { recipeId: string; title: string };
   title: string;
   description?: string;
   notes?: string;
@@ -177,6 +182,13 @@ export function presentPhotoImportPreview(preview: PhotoImportPreview): PhotoImp
 }
 
 export function draftFromPhotoPreview(preview: PhotoImportPreview): RecipeImportDraft {
+  const needsReview = preview.needsReview || preview.uncertainFields.length > 0;
+  const review = ensureReviewMetadata({
+    needsReview,
+    reviewReasons: preview.reviewReasons,
+    uncertainFields: preview.uncertainFields,
+    rawExtractionJson: preview.source.rawExtractionJson ?? { via: "photo-import" },
+  });
   return {
     title: preview.title || "Untitled recipe",
     description: preview.description,
@@ -207,9 +219,11 @@ export function draftFromPhotoPreview(preview: PhotoImportPreview): RecipeImport
       type: "photo",
       importerName: preview.source.importerName || "photo-importer",
       importerVersion: preview.source.importerVersion || "0.1.0",
-      rawExtractionJson: preview.source.rawExtractionJson ?? { via: "photo-import" },
+      rawExtractionJson: review.rawExtractionJson,
     },
-    needsReview: preview.needsReview || preview.uncertainFields.length > 0,
+    needsReview,
+    reviewReasons: review.reviewReasons,
+    uncertainFields: review.uncertainFields,
   };
 }
 
@@ -250,6 +264,7 @@ export async function extractPhotoPreview(
       rawExtractionJson: {
         ...(extracted.draft.source.rawExtractionJson ?? {}),
         photoFingerprint: fingerprintImageBlob(first),
+        photoPerceptualHash: perceptualHashFromImageBlob(first) ?? undefined,
       },
     };
   }

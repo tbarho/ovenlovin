@@ -18,6 +18,11 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/lib/browser-api", () => ({
   api: vi.fn(),
+  apiErrorRecipeUrl: (error: unknown) => {
+    if (!error || typeof error !== "object") return null;
+    const url = (error as { recipeUrl?: unknown }).recipeUrl;
+    return typeof url === "string" && url.startsWith("/") ? url : null;
+  },
 }));
 
 if (typeof window !== "undefined") {

@@ -108,8 +108,8 @@ export class UnauthorizedError extends ApiError {
 }
 
 export class ForbiddenError extends ApiError {
-  constructor(detail?: string) {
-    super(403, "https://your-app.vercel.app/problems/forbidden", "Forbidden", detail);
+  constructor(detail?: string, extensions?: Record<string, unknown>) {
+    super(403, "https://your-app.vercel.app/problems/forbidden", "Forbidden", detail, extensions);
   }
 }
 

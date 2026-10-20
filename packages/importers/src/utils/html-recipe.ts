@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 import * as cheerio from "cheerio";
+import { cleanImportedTitle } from "@ovenlovin/core";
 
 const INGREDIENT_HEADING = /\b(ingredients?|you will need|what you need)\b/i;
 const STEP_HEADING =
@@ -117,7 +118,7 @@ function extractCardMarkdown(text: string): Record<string, unknown> | null {
   if (!title) return null;
   return {
     "@type": "Recipe",
-    name: title.replace(/\s+[-|].*$/, "").trim(),
+    name: cleanImportedTitle(title.replace(/\s+[-|].*$/, "").trim()) || title.trim(),
     recipeIngredient: ingredients,
     recipeInstructions: steps.map((step) => ({ "@type": "HowToStep", text: step })),
   };
@@ -151,7 +152,7 @@ export function extractHtmlRecipe(html: string): Record<string, unknown> | null 
   if (title && ingredients.length >= 2 && steps.length >= 1) {
     return {
       "@type": "Recipe",
-      name: title,
+      name: cleanImportedTitle(title) || title,
       recipeIngredient: ingredients,
       recipeInstructions: steps.map((text) => ({ "@type": "HowToStep", text })),
     };

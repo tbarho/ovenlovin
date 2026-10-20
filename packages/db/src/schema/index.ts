@@ -8,3 +8,4 @@ export * from "./plans";
 export * from "./shopping";
 export * from "./sharing";
 export * from "./demo";
+export * from "./import-dedupe";

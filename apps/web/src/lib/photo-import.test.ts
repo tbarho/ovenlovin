@@ -113,6 +113,8 @@ describe("preview and save draft", () => {
     expect(saved.source.type).toBe("photo");
     expect(saved.ingredients[0]?.quantity).toEqual({ min: 0.5 });
     expect(saved.needsReview).toBe(true);
+    expect(saved.reviewReasons?.length).toBeGreaterThan(0);
+    expect(saved.source.rawExtractionJson.reviewReasons).toEqual(saved.reviewReasons);
   });
 
   it("does not copy inline photo bytes into source.blobRefs", () => {

@@ -45,6 +45,9 @@ describe("photo import review draft", () => {
     const body = recipeCreateBodyFromReview(draft);
     expect(body.images).toEqual(["https://blob.example/main.jpg"]);
     expect(body.status).toBe("needs_review");
+    expect(body.reviewReasons.length).toBeGreaterThan(0);
+    expect(body.uncertainFields).toEqual(["title"]);
+    expect(body.source.rawExtractionJson.reviewReasons).toEqual(body.reviewReasons);
     expect(body.source.type).toBe("photo");
     expect(body.ingredients).toHaveLength(2);
   });

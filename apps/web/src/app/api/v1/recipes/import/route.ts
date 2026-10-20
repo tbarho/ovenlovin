@@ -5,16 +5,35 @@ import {
   RecipeImportFetchError,
   RecipeNotFoundError,
 } from "@ovenlovin/importers";
-import { copyRemoteImages, keepMainRecipeImages, RecipeService } from "@ovenlovin/core";
-import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
+import {
+  copyRemoteImages,
+  keepMainRecipeImages,
+  prepareImportDraft,
+  RecipeService,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
-import { createdResponse } from "@/lib/api/response";
-import { getRequestContext, requireWritableHousehold, requireUserId } from "@/lib/api/middleware";
+import { createdResponse, jsonResponse } from "@/lib/api/response";
+import {
+  getIdempotencyKey,
+  getRequestContext,
+  requireWritableHousehold,
+  requireUserId,
+} from "@/lib/api/middleware";
 import { looksLikeHttpUrl } from "@/lib/import-input";
 import { draftFromPlainText } from "@/lib/plain-import";
 import { createVercelImagePut } from "@/lib/blob-store";
-import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
+import {
+  conflictFromImportResult,
+  isIdempotentReplay,
+  presentImportPreview,
+  recipeFromPersist,
+  saveImportedRecipe,
+  wantsPersist,
+  withDemoImportQuota,
+} from "@/lib/import-save";
+import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,7 +47,11 @@ export async function POST(request: NextRequest) {
       requireUserId(context);
     }
 
-    const body = (await request.json()) as { source?: string; content?: string };
+    const body = (await request.json()) as {
+      source?: string;
+      content?: string;
+      save?: boolean | string;
+    };
     if (!body.content?.trim() || (body.source !== "url" && body.source !== "paste")) {
       throw new BadRequestError("Provide source (url or paste) and content");
     }
@@ -49,22 +72,41 @@ export async function POST(request: NextRequest) {
       draft = draftFromPlainText(body.content);
     }
 
+    draft = prepareImportDraft(draft);
+
+    if (!wantsPersist(body.save)) {
+      return jsonResponse(presentImportPreview(draft));
+    }
+
+    const existing = await new RecipeService(getDatabase()).findImportDuplicate(householdId, draft);
+    if (existing) {
+      throw conflictFromImportResult({
+        outcome: "existing",
+        recipe: existing.recipe,
+        match: existing.match,
+      });
+    }
+
     draft.images = await copyRemoteImages(
       keepMainRecipeImages(draft.images),
       createVercelImagePut(),
       `recipes/${householdId}`
     );
 
-    const db = getDatabase();
-    const service = new RecipeService(db);
-    const recipe = await service.createRecipeFromDraft(draft, {
+    const { result, quota } = await saveImportedRecipe(draft, {
       householdId,
       createdBy: createdBy as string,
+      idempotencyKey: getIdempotencyKey(request),
     });
-
-    await recordSuccessfulDemoImport(householdId);
-
-    return createdResponse(recipe, `/api/v1/recipes/${recipe.id}`);
+    const recipe = recipeFromPersist(result);
+    const presented = withDemoImportQuota(
+      presentListedRecipe(recipe, requestApiOrigin(request)),
+      quota
+    );
+    if (isIdempotentReplay(result)) {
+      return jsonResponse(presented);
+    }
+    return createdResponse(presented, `/api/v1/recipes/${recipe.id}`);
   } catch (error) {
     if (error instanceof RecipeImportFetchError || error instanceof RecipeNotFoundError) {
       return handleApiError(new BadRequestError(error.message), request.url);

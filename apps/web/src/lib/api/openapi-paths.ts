@@ -25,6 +25,9 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       status: z.enum(["draft", "needs_review", "published"]),
       cuisine: z.string().nullable().optional(),
       course: z.string().nullable().optional(),
+      reviewReasons: z.array(z.string()).optional(),
+      uncertainFields: z.array(z.string()).optional(),
+      remainingImports: z.number().int().nonnegative().optional(),
     })
     .openapi("Recipe");
 
@@ -289,7 +292,9 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "post",
     path: "/recipes/import",
     tags: ["recipes"],
-    summary: "Import a recipe from a URL or pasted text, copying the main image into Vercel Blob",
+    summary: "Import a recipe from a URL or pasted text",
+    description:
+      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
     request: {
       body: {
         content: {
@@ -297,15 +302,26 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
             schema: z.object({
               source: z.enum(["url", "paste"]),
               content: z.string(),
+              save: z
+                .boolean()
+                .optional()
+                .describe("When true, persist the recipe. Default is preview only."),
             }),
           },
         },
       },
     },
     responses: {
-      201: {
-        description: "Imported recipe",
+      200: {
+        description: "Extracted draft for review (save omitted or false), or an idempotent replay",
         content: { "application/json": { schema: recipeSchema } },
+      },
+      201: {
+        description: "Imported recipe when save=true",
+        content: { "application/json": { schema: recipeSchema } },
+      },
+      409: {
+        description: "Duplicate or in-flight import. Includes recipeId, title, and recipeUrl.",
       },
     },
   });
@@ -358,6 +374,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       images: z.array(z.string()),
       overallConfidence: z.number(),
       needsReview: z.boolean(),
+      reviewReasons: z.array(z.string()),
       uncertainFields: z.array(z.string()),
       allergenClassifications: z.array(
         z.object({
@@ -375,7 +392,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/recipes/import/photo",
     tags: ["recipes"],
     summary:
-      "Extract a recipe from one or more photos (review by default). Multipart upload or a Blob/image URL. Saves only the first photo as the main image.",
+      "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact SHA matches return 409 with the existing recipeId. Near-duplicate PNG photos (perceptual hash of PNG bytes only) are a warning: preview includes possibleDuplicate {recipeId,title}; save:true without allowDuplicate:true returns 409 with the same field. Send allowDuplicate:true to persist anyway. Send Idempotency-Key on save so retries do not create a second recipe.",
     request: {
       body: {
         content: {
@@ -396,6 +413,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
                 .optional(),
               isHandwritten: z.boolean().optional(),
               save: z.boolean().optional(),
+              allowDuplicate: z
+                .boolean()
+                .optional()
+                .describe("When true, persist even if a similar PNG photo already exists."),
               cookbookId: z.string().uuid().optional(),
             }),
           },
@@ -408,6 +429,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
               imageUrl: z.string().optional(),
               isHandwritten: z.string().optional(),
               save: z.string().optional(),
+              allowDuplicate: z.string().optional(),
               cookbookId: z.string().uuid().optional(),
             }),
           },

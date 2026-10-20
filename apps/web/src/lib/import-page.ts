@@ -3,11 +3,16 @@ import {
   RecipeImportFetchError,
   RecipeNotFoundError,
 } from "@ovenlovin/importers";
-import { copyRemoteImages, keepMainRecipeImages, RecipeService } from "@ovenlovin/core";
+import {
+  copyRemoteImages,
+  keepMainRecipeImages,
+  prepareImportDraft,
+  RecipeService,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { createVercelImagePut } from "@/lib/blob-store";
-import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
 import { BadRequestError } from "@/lib/api/errors";
+import { conflictFromImportResult, recipeFromPersist, saveImportedRecipe } from "@/lib/import-save";
 import {
   parseCapturedPage as parseCapturedPageInput,
   parseCaptureHash as parseCaptureHashInput,
@@ -44,18 +49,25 @@ export async function importCapturedPage(
       html: input.html,
       jsonLd: input.jsonLd,
     });
-    const draft = await importer.toDraft(raw);
+    const draft = prepareImportDraft(await importer.toDraft(raw));
+    const existing = await new RecipeService(getDatabase()).findImportDuplicate(householdId, draft);
+    if (existing) {
+      throw conflictFromImportResult({
+        outcome: "existing",
+        recipe: existing.recipe,
+        match: existing.match,
+      });
+    }
     draft.images = await copyRemoteImages(
       keepMainRecipeImages(draft.images),
       createVercelImagePut(),
       `recipes/${householdId}`
     );
-    const recipe = await new RecipeService(getDatabase()).createRecipeFromDraft(draft, {
+    const { result } = await saveImportedRecipe(draft, {
       householdId,
       createdBy,
     });
-    await recordSuccessfulDemoImport(householdId);
-    return recipe;
+    return recipeFromPersist(result);
   } catch (error) {
     if (error instanceof RecipeImportFetchError || error instanceof RecipeNotFoundError) {
       throw new BadRequestError(error.message);
