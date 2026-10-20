@@ -9,6 +9,7 @@ describe("generateOpenApiDocument", () => {
     expect(spec.info.version).toBe("0.1.0");
     expect(spec.components?.securitySchemes).toHaveProperty("apiKey");
     expect(spec.security).toEqual([{ apiKey: [] }, { bearerAuth: [] }]);
+    expect(JSON.stringify(spec.components?.securitySchemes)).toMatch(/mismatched `X-Kitchen-Id`/);
   });
 
   it("includes meal plans, households, people, and api-keys", () => {
@@ -59,6 +60,7 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("save");
     expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("saved:false");
     expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("Idempotency-Key");
+    expect(JSON.stringify(spec.paths?.["/recipes/import"]?.post)).toContain("draft");
     expect(JSON.stringify(spec.paths?.["/recipes/import/photo"]?.post)).toContain("allowDuplicate");
     expect(JSON.stringify(spec.paths?.["/recipes/import/photo"]?.post)).toContain("PNG");
     expect(spec.paths?.["/recipes/import/page"]?.post).toBeTruthy();

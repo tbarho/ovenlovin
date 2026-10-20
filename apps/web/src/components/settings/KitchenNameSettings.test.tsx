@@ -33,6 +33,8 @@ describe("KitchenNameSettings", () => {
       });
     });
     expect(input).toHaveValue("Weeknight kitchen");
+    expect(await screen.findByTestId("kitchen-name-saved")).toHaveTextContent("Saved");
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
 
   it("shows the name as text when the viewer cannot rename", async () => {

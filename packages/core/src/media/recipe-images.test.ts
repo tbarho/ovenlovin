@@ -7,6 +7,7 @@ import {
   imageExtensionFromUrl,
   isBlobStoreConfigured,
   isInlineImageDataUrl,
+  isFetchableRecipeImageUrl,
   isStoredBlobUrl,
   keepMainRecipeImages,
   omitInlineImagePayloads,
@@ -36,6 +37,12 @@ describe("recipe images", () => {
   it("recognizes Vercel Blob URLs", () => {
     expect(isStoredBlobUrl("https://abc.public.blob.vercel-storage.com/cookies.jpg")).toBe(true);
     expect(isStoredBlobUrl("https://example.com/cookies.jpg")).toBe(false);
+  });
+
+  it("refuses to fetch localhost or link-local image URLs", () => {
+    expect(isFetchableRecipeImageUrl("https://cdn.example/tomato.jpg")).toBe(true);
+    expect(isFetchableRecipeImageUrl("http://127.0.0.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://169.254.169.254/latest/meta-data")).toBe(false);
   });
 
   it("guesses an extension from the URL or content type", () => {
@@ -71,6 +78,9 @@ describe("recipe images", () => {
     expect(result[1]).toBe("https://cdn.example/fail.jpg");
     expect(result[2]).toBe("https://abc.public.blob.vercel-storage.com/already.jpg");
     expect(fetchMock).toHaveBeenCalled();
+    const blocked = await copyRemoteImages(["http://127.0.0.1/secret.jpg"], put, "recipes/hh");
+    expect(blocked).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalledWith("http://127.0.0.1/secret.jpg", expect.anything());
     const firstHeaders = fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> };
     expect(firstHeaders.headers?.["User-Agent"]).toMatch(/Mozilla\/5.0/);
     expect(firstHeaders.headers?.Referer).toBe("https://cdn.example/");

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { importDedupeKeys, prepareImportDraft } from "./prepare-import-draft";
+import {
+  draftFromSavedPreview,
+  importDedupeKeys,
+  preferCompletedImport,
+  prepareImportDraft,
+} from "./prepare-import-draft";
 import type { RecipeImportDraft } from "../schemas/recipes";
 
 function draft(overrides: Partial<RecipeImportDraft> = {}): RecipeImportDraft {
@@ -66,4 +71,53 @@ describe("prepareImportDraft", () => {
     );
     expect(importDedupeKeys(prepared)).toEqual([]);
   });
+
+  it("rebuilds a recipe draft from a preview payload", () => {
+    const preview = presentablePreview();
+    const rebuilt = draftFromSavedPreview(preview);
+    expect(rebuilt?.title).toBe("Weeknight Tomato Pasta");
+    expect(rebuilt?.ingredients).toHaveLength(1);
+    expect(rebuilt?.steps).toHaveLength(1);
+    expect(rebuilt?.source.importerName).toBe("paste-importer");
+    expect(draftFromSavedPreview({ title: "Nope" })).toBeNull();
+  });
+
+  it("drops private image URLs from a client-sent preview", () => {
+    const rebuilt = draftFromSavedPreview({
+      ...presentablePreview(),
+      images: [
+        "https://cdn.example/tomato.jpg",
+        "http://127.0.0.1/secret.jpg",
+        "http://169.254.169.254/latest/meta-data",
+      ],
+    });
+    expect(rebuilt?.images).toEqual(["https://cdn.example/tomato.jpg"]);
+  });
+
+  it("replays a completed Idempotency-Key instead of a source_url duplicate", () => {
+    const replay = { id: "recipe-replay" };
+    const duplicate = { recipe: { id: "recipe-url" }, match: "source_url" as const };
+    expect(preferCompletedImport({ idempotency: replay, duplicate })).toEqual({
+      recipe: replay,
+      match: "idempotency",
+    });
+    expect(preferCompletedImport({ idempotency: null, duplicate })).toEqual(duplicate);
+    expect(preferCompletedImport({ idempotency: null, duplicate: null })).toBeNull();
+  });
 });
+
+function presentablePreview() {
+  return {
+    saved: false,
+    preview: true,
+    title: "Weeknight Tomato Pasta",
+    ingredients: [{ rawText: "12 oz pasta" }],
+    steps: [{ text: "Boil the pasta." }],
+    source: {
+      type: "paste",
+      importerName: "paste-importer",
+      importerVersion: "0.1.0",
+      rawExtractionJson: { via: "preview" },
+    },
+  };
+}
