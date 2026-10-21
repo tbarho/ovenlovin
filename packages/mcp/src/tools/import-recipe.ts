@@ -233,7 +233,7 @@ async function handler(
 export const importRecipeTool = {
   name: "import_recipe",
   description:
-    "Import a recipe from a URL or pasted text. Pulls schema.org prep/cook times, servings, and the main image (copied into Vercel Blob).",
+    "Import a recipe from a URL or pasted text. Pulls schema.org prep/cook times, servings, and the main image (copied into Vercel Blob). save:false returns a preview; omit save to persist. skipReview clears needsReview. idempotencyKey replays a save.",
   inputSchema: importRecipeSchema,
   handler,
 } as const;

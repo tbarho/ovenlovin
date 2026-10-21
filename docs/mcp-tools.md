@@ -12,8 +12,8 @@ Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk 
 - `search_recipes` - search by text, method tags, and attendee warnings. `forAttendees` hides block hits and returns `hiddenCount` / `hidden` (recipe, person, ingredient, why). `images` is a thumbnail URL only (never inline `data:` bytes)
 - `get_recipe` - full recipe including servings (stored yield), `displayServings` (kitchen Default servings), `scaledNote`, prep/cook times, images, cookbooks, and source URL (`includeSource` defaults to true). Same thumbnail-URL rule for `images`. `ingredients.displayText` is the cooking-fraction line at `displayServings`; `rawText` is the stored import string.
 - `create_recipe` - create from title, ingredients, and steps (no URL). Prefer `import_recipe` when a public URL exists
-- `import_recipe` - URL or paste import. `save:false` returns a preview (same as REST). `idempotencyKey` replays a save. `allowDuplicate` skips the existing-URL short circuit. Pulls schema.org times and the main image, then copies that image into Vercel Blob. Retries of the same URL return the existing recipe (`created: false`) instead of a second copy. Optional `cookbookId`. Paste uses `RK_MODEL_DEFAULT`; URL extract uses `RK_MODEL_EXTRACT` then `RK_MODEL_DEFAULT`; default `deepseek/deepseek-v4.1-flash`. DeepSeek failures retry `openai/gpt-6-luna`. Classified import failures are JSON-RPC `-32602`; `import_ai_unavailable` is `-32603`.
-- `import_recipe_from_image` - photo import from an `imageUrl` or `imageBase64` (optional extra `images[]` pages). Uses AI Gateway vision (`RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`). `save:false` previews. `idempotencyKey` / `allowDuplicate` match REST. Exact duplicate photos return `duplicate:true` with the existing recipe id (not `-32602`). Saves the first photo as the single main image (Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise list/search expose `GET /api/v1/recipes/{id}/image`). Returns `reviewReasons` / `uncertainFields` when the photo is hard to read.
+- `import_recipe` - URL or paste. Inputs: `source` (required), `content` (or `draft`), `save` (`false` previews; omit to persist), `idempotencyKey`, `allowDuplicate`, `skipReview` (clears `needsReview`), `cookbookId`. Pulls schema.org times and the main image into Vercel Blob. Duplicate URL/draft returns `duplicate:true`. Classified import failures are JSON-RPC `-32602`; `import_ai_unavailable` is `-32603`.
+- `import_recipe_from_image` - photo. Inputs: `imageUrl` / `imageBase64` / `images[]` / `draft`, plus `save`, `idempotencyKey`, `allowDuplicate`, `skipReview`, `cookbookId`. First photo is the main image. Returns `uncertainFields` when the photo is hard to read.
 - `delete_recipe` - soft-delete a recipe. Does not delete cookbooks.
 
 ## Cookbooks
@@ -37,9 +37,9 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 - `reorder_people` - persist household people order (`personIds` must list everyone once)
 - `manage_person_loves` - `list`, `add`, `remove` a food, cuisine, or style someone loves
 - `search_recipes` - attendee warnings plus love boosts and “Name loves this” tags
-- `save_meal_plan`
-- `get_meal_plan` - recipe nights plus `freeformMeal` / servings for leftovers or no-cook
-- `edit_meal_plan` - `set`, `swap`, or `clear` a single night (or `undo` the last entries edit) without rewriting the week
+- `save_meal_plan` - requires `weekStart`, `entries`, and `checkReportJson` from `check_meal_plan`. Nights require `date`, `meal`, `attendees`. `recipeId` and `servings` are optional; use `freeformMeal` for leftovers / no-cook
+- `get_meal_plan` - `planId` or `weekStart`. Recipe nights plus `freeformMeal` / servings for leftovers or no-cook
+- `edit_meal_plan` - `set`, `swap`, or `clear` a single night (or `undo` the last entries edit). `set`/`swap` need `recipeId` or `freeformMeal`
 - `delete_meal_plan` - soft-delete a meal plan
-- `check_meal_plan` - per-person findings plus informational `loveTags` (never a filter). Freeform leftovers are not flagged as cooking on a no-cook night
-- `export_shopping_list`
+- `check_meal_plan` - `plan.weekStart` + `plan.entries` (`date`, `meal`, `attendees`; optional `recipeId` / `freeformMeal` / `servings`). Per-person findings plus informational `loveTags` (never a filter)
+- `export_shopping_list` - `planId` required. `format` default `markdown`; `groupBy` default `aisle`. Optional `includeStaples` (alias `includePantryItems`), `includeRuleWarnings` (default true), `timeZone`

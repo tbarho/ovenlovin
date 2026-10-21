@@ -1,0 +1,14 @@
+---
+title: whoami
+description: Authenticated household, scopes, and key identity
+---
+
+Return the authenticated household, scopes, and key identity. Use this first to confirm you are talking to the right kitchen.
+
+## Input
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `verbose` | boolean | No | Include household name when true (always included today) |
+
+Returns `householdId`, `householdName`, `userId`, `apiKeyId`, `scopes`, and `membershipRole`.

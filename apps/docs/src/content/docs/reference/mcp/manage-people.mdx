@@ -1,0 +1,23 @@
+---
+title: manage_people
+description: List, create, update, or delete people
+---
+
+List, create, update, or delete people in this household.
+
+## Input
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `action` | `"list"` \| `"create"` \| `"update"` \| `"delete"` | Yes | What to do |
+| `personId` | string (UUID) | For update / delete | Person to change |
+| `displayName` | string | For create | 1-255 characters |
+| `notes` | string | No | - |
+
+People are dietary profiles. Signed-in kitchen members are a separate tool.
+
+## Related
+
+- [reorder_people](/docs/reference/mcp/reorder-people)
+- [manage_person_rules](/docs/reference/mcp/manage-person-rules)
+- [manage_kitchen_members](/docs/reference/mcp/manage-kitchen-members)

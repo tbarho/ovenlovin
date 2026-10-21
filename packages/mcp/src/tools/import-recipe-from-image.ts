@@ -65,7 +65,7 @@ export const importRecipeFromImageSchema = z
       .boolean()
       .optional()
       .describe("Persist a near-duplicate photo instead of returning the existing recipe"),
-    skipReview: z.boolean().default(false),
+    skipReview: z.boolean().default(false).describe("Skip review queue and publish immediately"),
     cookbookId: z.string().uuid().optional(),
   })
   .refine(
@@ -298,7 +298,7 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
 export const importRecipeFromImageTool = {
   name: "import_recipe_from_image",
   description:
-    "Import a recipe from a photo (URL or base64). Uses AI Gateway vision. The first image is stored as the single main photo. Returns uncertainFields when the photo is hard to read.",
+    "Import a recipe from a photo (URL or base64). Uses AI Gateway vision. The first image is stored as the single main photo. save:false returns a preview; omit save to persist. skipReview clears needsReview. Returns uncertainFields when the photo is hard to read.",
   inputSchema: importRecipeFromImageSchema,
   handler,
 } as const;

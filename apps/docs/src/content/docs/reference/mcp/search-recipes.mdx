@@ -1,126 +1,34 @@
 ---
 title: search_recipes
-description: Search for recipes with optional safety filters and annotations
+description: Search recipes with attendee block filtering
 ---
 
-Search for recipes with optional text query, method filters, and automatic safety checking for specified attendees. Returns recipes with inline warnings when potential allergen or dietary issues are detected.
+Search for recipes. `forAttendees` hides recipes with a `block` finding and returns `hiddenCount` / `hidden` (id, title, who, ingredient, why). Warn / prefer_avoid stay as warnings. Loves never hide a recipe; matching dishes get `loveTags`. Not medical advice - always check ingredient labels before serving.
 
-## Input Schema
+## Input
 
 | Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | string | No | - | Text search query (title, description, ingredients) |
-| `forAttendees` | array of strings | No | - | Person IDs to check for blocking rules and annotate warnings |
-| `methodTags` | array of strings | No | - | Filter by cooking method tags (e.g., "slow-cooker", "instant-pot") |
-| `maxResults` | number | No | `20` | Maximum number of results to return (positive integer) |
-| `cursor` | string | No | - | Pagination cursor from previous response |
+| --- | --- | --- | --- | --- |
+| `query` | string | No | - | Text search |
+| `forAttendees` | string[] | No | - | Person IDs. Block hits are hidden |
+| `methodTags` | string[] | No | - | Keep recipes that include at least one tag |
+| `maxResults` | integer | No | `20` | Page size |
+| `cursor` | string | No | - | Pagination cursor |
 
-## Output Schema
-
-```typescript
-{
-  recipes: Array<{
-    id: string,
-    title: string,
-    description?: string,
-    prepTimeMinutes?: number,
-    cookTimeMinutes?: number,
-    servings?: number,
-    methodTags: string[],
-    images: string[],
-    warnings?: Array<{
-      personId: string,
-      severity: "block" | "warn" | "prefer_avoid",
-      message: string
-    }>
-  }>,
-  nextCursor?: string
-}
-```
-
-## Example Call
+## Example
 
 ```json
 {
   "query": "chicken pasta",
-  "forAttendees": ["person-001", "person-002"],
-  "methodTags": ["one-pot"],
+  "forAttendees": ["550e8400-e29b-41d4-a716-446655440001"],
   "maxResults": 10
 }
 ```
 
-## Example Result
+Each recipe can include `warnings` and `loveTags`. Images are thumbnail URLs only (never inline `data:` bytes).
 
-```json
-{
-  "recipes": [
-    {
-      "id": "recipe-abc-123",
-      "title": "One-Pot Chicken Alfredo",
-      "description": "Creamy pasta with grilled chicken",
-      "prepTimeMinutes": 10,
-      "cookTimeMinutes": 25,
-      "servings": 4,
-      "methodTags": ["one-pot", "stovetop"],
-      "images": ["https://example.com/image.jpg"],
-      "warnings": [
-        {
-          "personId": "person-001",
-          "severity": "prefer_avoid",
-          "message": "Contains dairy (lactose intolerant preference)"
-        }
-      ]
-    },
-    {
-      "id": "recipe-def-456",
-      "title": "Lemon Herb Chicken Pasta",
-      "description": "Light and fresh with olive oil",
-      "prepTimeMinutes": 15,
-      "cookTimeMinutes": 20,
-      "servings": 4,
-      "methodTags": ["one-pot", "stovetop"],
-      "images": []
-    }
-  ],
-  "nextCursor": "cursor-xyz-789"
-}
-```
+## Related
 
-## Filtering Behavior
-
-### Safety Filtering
-
-When `forAttendees` is provided:
-- Recipes with **blocking** severity findings are filtered out automatically
-- Recipes with **warn** or **prefer_avoid** findings are included with inline `warnings` annotations
-- Each warning names the affected person and provides context
-
-### Method Tags
-
-When `methodTags` is provided:
-- Only recipes matching at least one tag are returned
-- Common tags: `slow-cooker`, `instant-pot`, `air-fryer`, `one-pot`, `sheet-pan`, `stovetop`, `oven`, `grill`, `no-cook`
-
-### Text Search
-
-When `query` is provided:
-- Searches recipe title, description, and ingredient names
-- Case-insensitive partial matching
-
-## Pagination
-
-- Use `maxResults` to control page size (default 20)
-- If `nextCursor` is present, pass it back to get the next page
-- Continue until `nextCursor` is absent
-
-## Usage Notes
-
-1. **Automatic safety filtering**: Recipes with blocking allergens for specified attendees are excluded from results
-2. **Inline warnings**: Review `warnings` arrays to understand dietary considerations
-3. **Get full details**: Use [get_recipe](/docs/reference/mcp/get-recipe) to see complete ingredient lists and nutrition
-
-## Related Tools
-
-- [get_recipe](/docs/reference/mcp/get-recipe) - Get full recipe details with ingredients and steps
-- [get_household_context](/docs/reference/mcp/get-household-context) - Get household member IDs for `forAttendees`
-- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Full safety check for a complete meal plan
+- [get_recipe](/docs/reference/mcp/get-recipe)
+- [get_household_context](/docs/reference/mcp/get-household-context)
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan)

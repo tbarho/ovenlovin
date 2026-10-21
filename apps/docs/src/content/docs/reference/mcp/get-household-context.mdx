@@ -1,130 +1,32 @@
 ---
 title: get_household_context
-description: Get household schedule, people, rules, preferences, and recent meal history
+description: Household schedule, people, rules, preferences, and recent meals
 ---
 
-Get comprehensive household context including weekly schedule, member information with rule summaries, preferences, and recent meal history. Essential starting point for meal planning.
+Get household context including Default servings (family size, mode, cook-for), schedule, attendees, rule summaries, preferences, and recent meal history. People include `sortOrder` and `loves` (never used to hide recipes). Essential for meal planning. Not medical advice - always check ingredient labels before serving.
 
-## Input Schema
+## Input
 
 | Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `includeSchedule` | boolean | No | `true` | Include weekly schedule template and overrides |
-| `includePeople` | boolean | No | `true` | Include household members with rule summaries |
-| `includePreferences` | boolean | No | `true` | Include household cuisine preferences and avoidances |
-| `includeRecentMeals` | boolean | No | `true` | Include recent meal history |
+| --- | --- | --- | --- | --- |
+| `includeSchedule` | boolean | No | `true` | Weekly schedule |
+| `includePeople` | boolean | No | `true` | People with rule summaries and Loves |
+| `includePreferences` | boolean | No | `true` | Cuisine preferences, avoidances, and Loves |
+| `includeRecentMeals` | boolean | No | `true` | Recent meal history |
 
-## Output Schema
-
-```typescript
-{
-  household: {
-    id: string,
-    name: string,
-    servingsSettings: {
-      mode: "family" | "fixed" | "recipe",
-      servings: number | null,
-      familySize: number,
-      defaultCookFor: number
-    }
-  },
-  schedule?: {
-    weeklyTemplate: Array<{
-      day: string,
-      meal: string,
-      busyLevel: "low" | "medium" | "high",
-      timeBudgetMinutes?: number,
-      cooking: boolean,
-      attendees: string[],
-      constraints: string[]
-    }>,
-    overrides: Array<{
-      date: string,
-      meal: string,
-      note: string
-    }>
-  },
-  people?: Array<{
-    id: string,
-    displayName: string,
-    age?: number,
-    activityProfile?: string,
-    rulesSummary: {
-      blockCount: number,
-      warnCount: number,
-      preferAvoidCount: number
-    },
-    labelNotes?: string[]
-  }>,
-  preferences?: {
-    cuisines: string[],
-    avoidances: string[]
-  },
-  recentMeals?: Array<{
-    date: string,
-    meal: string,
-    recipeTitle: string
-  }>
-}
-```
-
-## Example Call
+## Example
 
 ```json
 {
   "includeSchedule": true,
-  "includePeople": true,
-  "includePreferences": true,
-  "includeRecentMeals": true
+  "includePeople": true
 }
 ```
 
-## Example Result
+Call `whoami` first if you need to confirm the kitchen. Use [get_person_rules](/docs/reference/mcp/get-person-rules) for full rule rows.
 
-```json
-{
-  "household": {
-    "id": "household-123",
-    "name": "The Smith Family"
-  },
-  "people": [
-    {
-      "id": "person-001",
-      "displayName": "Parent A",
-      "age": 42,
-      "activityProfile": "moderate",
-      "rulesSummary": {
-        "blockCount": 0,
-        "warnCount": 1,
-        "preferAvoidCount": 2
-      },
-      "labelNotes": ["Prefers low-carb meals"]
-    },
-    {
-      "id": "person-002",
-      "displayName": "Child B",
-      "age": 9,
-      "activityProfile": "very_active",
-      "rulesSummary": {
-        "blockCount": 2,
-        "warnCount": 0,
-        "preferAvoidCount": 0
-      },
-      "labelNotes": ["Severe peanut allergy", "Tree nut allergy"]
-    }
-  ]
-}
-```
+## Related
 
-## Usage Notes
-
-1. **Start with context**: Call this tool at the beginning of meal planning sessions to understand household needs
-2. **Rule summaries**: The `rulesSummary` provides quick counts; use [get_person_rules](/docs/reference/mcp/get-person-rules) for full rule details
-3. **Activity profiles**: Use activity levels to estimate caloric needs when selecting recipes
-4. **Label notes**: Quick-reference labels (e.g., "Severe peanut allergy") for safety-critical information
-
-## Related Tools
-
-- [get_person_rules](/docs/reference/mcp/get-person-rules) - Get detailed per-person rules
-- [search_recipes](/docs/reference/mcp/search-recipes) - Search recipes filtered by attendee rules
-- [check_meal_plan](/docs/reference/mcp/check-meal-plan) - Verify meal plan against rules
+- [whoami](/docs/reference/mcp/whoami)
+- [manage_household_schedule](/docs/reference/mcp/manage-household-schedule)
+- [get_person_rules](/docs/reference/mcp/get-person-rules)
