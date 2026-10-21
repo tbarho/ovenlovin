@@ -8,7 +8,6 @@ import {
   apiKeyKitchenHeaderMismatch,
   apiKeyMembershipRole,
   canWriteKitchen,
-  missingScopeMessage,
   selectActiveMembership,
 } from "@ovenlovin/core";
 import { parseAuthorizationHeader } from "./authorization";
@@ -214,18 +213,6 @@ function deriveScopes(role: "owner" | "admin" | "member" | "viewer"): string[] {
       return baseScopes;
     default:
       return baseScopes;
-  }
-}
-
-/**
- * Check if auth context has required scope
- */
-export function requireScope(context: AuthContext, scope: string): void {
-  if (!context.scopes.includes(scope)) {
-    throw {
-      code: "forbidden",
-      message: missingScopeMessage(scope),
-    } as AuthError;
   }
 }
 

@@ -114,11 +114,15 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/API key/);
     expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/active/);
     expect(JSON.stringify(spec.paths?.["/invites/{token}/accept"]?.post)).toMatch(/signed-in/);
-    expect(spec.paths?.["/recipes"]?.get?.responses).toHaveProperty("403");
-    expect(spec.paths?.["/recipes"]?.post?.responses).toHaveProperty("403");
-    expect(JSON.stringify(spec.paths?.["/recipes"]?.post?.responses?.["403"])).toMatch(
-      /problems\/forbidden/
-    );
+    expect(spec.paths?.["/recipes"]?.get?.responses?.["403"]).toEqual({
+      $ref: "#/components/responses/Forbidden",
+    });
+    expect(spec.paths?.["/recipes"]?.post?.responses?.["403"]).toEqual({
+      $ref: "#/components/responses/Forbidden",
+    });
+    expect(JSON.stringify(spec.components?.responses?.Forbidden)).toMatch(/problems\/forbidden/);
+    expect(spec.paths?.["/api-keys"]?.get?.responses).toHaveProperty("403");
+    expect(spec.paths?.["/api-keys"]?.post?.responses).not.toHaveProperty("403");
     expect(spec.paths?.["/status"]?.get?.responses).not.toHaveProperty("403");
   });
 

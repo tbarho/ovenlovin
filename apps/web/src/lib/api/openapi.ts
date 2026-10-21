@@ -98,13 +98,20 @@ function attachForbiddenResponses(doc: oas30.OpenAPIObject): oas30.OpenAPIObject
       },
     },
   };
-  for (const pathItem of Object.values(doc.paths ?? {})) {
+  doc.components = doc.components ?? {};
+  doc.components.responses = {
+    ...doc.components.responses,
+    Forbidden: forbidden as oas30.ResponseObject,
+  };
+  const ref = { $ref: "#/components/responses/Forbidden" };
+  for (const [path, pathItem] of Object.entries(doc.paths ?? {})) {
     if (!pathItem || typeof pathItem !== "object") continue;
     for (const method of OPENAPI_METHODS) {
       const operation = pathItem[method];
       if (!operation || typeof operation !== "object" || !operation.responses) continue;
       if (Array.isArray(operation.security) && operation.security.length === 0) continue;
-      operation.responses["403"] = forbidden;
+      if (path === "/api-keys" && method === "post") continue;
+      operation.responses["403"] = ref;
     }
   }
   return doc;

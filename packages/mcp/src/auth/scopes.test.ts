@@ -18,6 +18,17 @@ vi.mock("@ovenlovin/core", async (importOriginal) => {
       async listRecipes() {
         return { items: [], nextCursor: null, hasMore: false };
       }
+      async createRecipeFromDraft(draft: { title: string }) {
+        return {
+          id: "55555555-5555-4555-8555-555555555555",
+          title: draft.title,
+          status: "published",
+          servings: null,
+          images: [],
+          ingredients: [],
+          steps: [],
+        };
+      }
     },
     PeopleService: class {
       async listPeopleByHousehold() {
@@ -89,6 +100,7 @@ describe("MCP API key scopes", () => {
       error: {
         code: JsonRpcErrorCode.forbidden,
         message: missingScopeMessage("recipes:write"),
+        data: { code: "forbidden" },
       },
     });
   });
@@ -99,17 +111,18 @@ describe("MCP API key scopes", () => {
         jsonrpc: "2.0",
         id: 3,
         method: "tools/call",
-        params: { name: "create_recipe", arguments: {} },
+        params: { name: "create_recipe", arguments: { title: "Toast" } },
       },
       {
         householdId,
         apiKeyId: "33333333-3333-4333-8333-333333333333",
         scopes: [...API_KEY_SCOPES],
+        membershipRole: "owner",
       },
       serverInfo
     );
     expect(response).toMatchObject({
-      error: { code: JsonRpcErrorCode.invalidParams },
+      result: { structuredContent: { title: "Toast" } },
     });
   });
 
@@ -119,13 +132,13 @@ describe("MCP API key scopes", () => {
         jsonrpc: "2.0",
         id: 4,
         method: "tools/call",
-        params: { name: "create_recipe", arguments: {} },
+        params: { name: "create_recipe", arguments: { title: "Toast" } },
       },
-      { householdId, scopes: [] },
+      { householdId, scopes: [], membershipRole: "owner" },
       serverInfo
     );
     expect(response).toMatchObject({
-      error: { code: JsonRpcErrorCode.invalidParams },
+      result: { structuredContent: { title: "Toast" } },
     });
   });
 });

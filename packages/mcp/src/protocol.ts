@@ -42,7 +42,9 @@ function requireAuth(authContext: AuthContext | undefined, id: JsonRpcId): AuthC
 function denyApiKeyResource(auth: AuthContext, id: JsonRpcId): void {
   if (!auth.apiKeyId) return;
   if (!auth.scopes.includes(MCP_RESOURCE_SCOPE)) {
-    throw jsonRpcError(id, JsonRpcErrorCode.forbidden, missingScopeMessage(MCP_RESOURCE_SCOPE));
+    throw jsonRpcError(id, JsonRpcErrorCode.forbidden, missingScopeMessage(MCP_RESOURCE_SCOPE), {
+      code: "forbidden",
+    });
   }
 }
 
@@ -62,6 +64,13 @@ async function callTool(params: Record<string, unknown>, authContext: AuthContex
     throw jsonRpcError(id, JsonRpcErrorCode.methodNotFound, `Unknown tool: ${name}`);
   }
 
+  if (authContext.apiKeyId) {
+    const denial = mcpApiKeyScopeDenial(authContext.scopes, tool.name);
+    if (denial) {
+      throw jsonRpcError(id, JsonRpcErrorCode.forbidden, denial, { code: "forbidden" });
+    }
+  }
+
   const parsed = tool.inputSchema.safeParse(args);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
@@ -74,13 +83,6 @@ async function callTool(params: Record<string, unknown>, authContext: AuthContex
         : (issue?.message ?? "Invalid tool arguments"),
       parsed.error.issues
     );
-  }
-
-  if (authContext.apiKeyId) {
-    const denial = mcpApiKeyScopeDenial(authContext.scopes, tool.name);
-    if (denial) {
-      throw jsonRpcError(id, JsonRpcErrorCode.forbidden, denial);
-    }
   }
 
   const result = await tool.handler(parsed.data as never, authContext);

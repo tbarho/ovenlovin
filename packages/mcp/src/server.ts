@@ -13,11 +13,13 @@ import {
   CallToolRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  McpError,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { MCP_RESOURCE_SCOPE, mcpApiKeyScopeDenial, missingScopeMessage } from "@ovenlovin/core";
 import type { AuthContext } from "./auth/index";
+import { JsonRpcErrorCode } from "./json-rpc";
 import { listResources, readResource } from "./resources/index";
 import { listedTools, wrapToolResult } from "./protocol";
 import { MCP_TOOLS } from "./tools/registry";
@@ -44,14 +46,16 @@ function denyApiKeyScope(auth: AuthContext, toolName: string): void {
   if (!auth.apiKeyId) return;
   const denial = mcpApiKeyScopeDenial(auth.scopes, toolName);
   if (denial) {
-    throw { code: "forbidden", message: denial };
+    throw new McpError(JsonRpcErrorCode.forbidden, denial, { code: "forbidden" });
   }
 }
 
 function denyApiKeyResource(auth: AuthContext): void {
   if (!auth.apiKeyId) return;
   if (!auth.scopes.includes(MCP_RESOURCE_SCOPE)) {
-    throw { code: "forbidden", message: missingScopeMessage(MCP_RESOURCE_SCOPE) };
+    throw new McpError(JsonRpcErrorCode.forbidden, missingScopeMessage(MCP_RESOURCE_SCOPE), {
+      code: "forbidden",
+    });
   }
 }
 
