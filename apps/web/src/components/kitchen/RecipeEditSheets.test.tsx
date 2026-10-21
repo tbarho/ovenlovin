@@ -59,4 +59,20 @@ describe("dirty recipe edit sheets", () => {
     await user.click(within(dialog).getByRole("button", { name: "Save details" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Saved");
   });
+
+  it("shows Saved after adding a recipe to a cookbook", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValueOnce({});
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Parent A pasta", cookbooks: [] })}
+        cookbooks={[testCookbook({ name: "Weekend treats" })]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /cookbooks/i }));
+    const dialog = screen.getByRole("dialog", { name: "Cookbooks" });
+    await user.click(within(dialog).getByLabelText("Weekend treats"));
+    await user.click(within(dialog).getByRole("button", { name: "Save cookbooks" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Saved");
+  });
 });

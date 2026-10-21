@@ -40,7 +40,9 @@ export function DemoBanner() {
   return (
     <div className="demo-banner" role="status">
       <span>
-        <strong>Demo, resets daily</strong>
+        <strong>
+          Demo<span className="demo-banner-daily">, resets daily</span>
+        </strong>
         <span className="demo-banner-copy"> Your sandbox lasts about 24 hours.</span>
       </span>
       <div className="demo-banner-actions">

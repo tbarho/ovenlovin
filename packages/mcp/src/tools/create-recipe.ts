@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
-import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { CookbookService, recipeImagesSchema, RecipeService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const createRecipeSchema = z.object({
@@ -14,7 +14,7 @@ export const createRecipeSchema = z.object({
   totalTimeMinutes: z.number().int().nonnegative().optional(),
   cuisine: z.string().optional(),
   course: z.string().optional(),
-  images: z.array(z.string()).optional(),
+  images: recipeImagesSchema.optional(),
   ingredients: z
     .array(z.object({ rawText: z.string().min(1) }))
     .optional()

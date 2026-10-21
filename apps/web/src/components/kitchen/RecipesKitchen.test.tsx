@@ -32,7 +32,7 @@ describe("RecipesKitchen add recipe", () => {
       screen.queryByRole("heading", { name: "Save from your browser" })
     ).not.toBeInTheDocument();
     expect(screen.getByText("Save from Safari on iPhone")).toBeVisible();
-    expect(screen.getByText("Advanced")).toBeVisible();
+    expect(screen.getByText("Bookmarklet for desktop browsers")).toBeVisible();
   });
 
   it("shows import methods immediately when the kitchen has no recipes", () => {

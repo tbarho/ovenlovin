@@ -23,6 +23,12 @@ export const importRecipeSchema = z.object({
   source: z.enum(["url", "paste"]),
   content: z.string().optional().describe("URL or pasted recipe text"),
   draft: z.unknown().optional().describe("Previewed recipe from a prior import. Skips extract."),
+  save: z.boolean().optional().describe("false returns a preview without saving; omit to persist"),
+  idempotencyKey: z.string().optional().describe("Same key replays the same saved recipe"),
+  allowDuplicate: z
+    .boolean()
+    .optional()
+    .describe("Persist even when this URL or draft already exists"),
   skipReview: z.boolean().default(false).describe("Skip review queue and publish immediately"),
   cookbookId: z.string().uuid().optional().describe("Optional cookbook to file the recipe in"),
 });
@@ -30,10 +36,12 @@ export const importRecipeSchema = z.object({
 export type ImportRecipeInput = z.infer<typeof importRecipeSchema>;
 
 export interface ImportRecipeOutput {
-  recipeId: string;
+  recipeId?: string;
   created?: boolean;
   duplicate?: boolean;
-  status: "draft" | "needs_review" | "published";
+  saved?: boolean;
+  preview?: boolean;
+  status?: "draft" | "needs_review" | "published";
   title: string;
   notes: string | null;
   servings?: number;
@@ -87,9 +95,10 @@ async function handler(
     if (input.source === "url") {
       const collision = await recipeService.findUrlImportCollision(
         context.householdId,
-        input.content
+        input.content,
+        input.idempotencyKey
       );
-      if (collision) {
+      if (collision && (collision.match === "idempotency" || !input.allowDuplicate)) {
         const recipe = collision.recipe;
         return {
           recipeId: recipe.id,
@@ -125,7 +134,25 @@ async function handler(
   }
 
   draft = prepareImportDraft(draft);
-  const existing = await recipeService.findImportDuplicate(context.householdId, draft);
+  if (input.save === false) {
+    return {
+      saved: false,
+      preview: true,
+      title: draft.title,
+      notes: draft.notes ?? null,
+      servings: draft.servings,
+      prepTimeMinutes: draft.prepTimeMinutes,
+      cookTimeMinutes: draft.cookTimeMinutes,
+      images: draft.images ?? [],
+      confidence: 1,
+      reviewReasons: draft.reviewReasons,
+      uncertainFields: draft.uncertainFields,
+      message: "Preview only. Send save:true with this draft to persist.",
+    };
+  }
+  const existing = input.allowDuplicate
+    ? null
+    : await recipeService.findImportDuplicate(context.householdId, draft);
   if (existing) {
     const recipe = existing.recipe;
     return {
@@ -151,6 +178,7 @@ async function handler(
   const persisted = await recipeService.persistImportedDraft(draft, {
     householdId: context.householdId,
     createdBy: context.userId ?? context.apiKeyId ?? context.householdId,
+    idempotencyKey: input.idempotencyKey,
   });
   if (persisted.outcome === "in_flight") {
     throw new Error("This import is already in progress. Retry the same request.");

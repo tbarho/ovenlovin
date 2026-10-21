@@ -8,12 +8,31 @@ import {
 import {
   handleApiError,
   isNextRedirectError,
+  ForbiddenError,
   NotFoundError,
   requireResourceId,
   UnauthorizedError,
 } from "./errors";
 
 describe("handleApiError", () => {
+  it("sets Retry-After and resetAt on a demo write-limit 403", async () => {
+    const response = handleApiError(
+      new ForbiddenError("This demo sandbox allows 60 writes per hour.", {
+        code: "write_rate",
+        resetAt: "2026-10-14T01:00:00.000Z",
+        retryAfter: 1800,
+      }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes"
+    );
+    expect(response.status).toBe(403);
+    expect(response.headers.get("retry-after")).toBe("1800");
+    expect(await response.json()).toMatchObject({
+      code: "write_rate",
+      resetAt: "2026-10-14T01:00:00.000Z",
+      retryAfter: 1800,
+    });
+  });
+
   it("returns problem+json 401 for UnauthorizedError", async () => {
     const response = handleApiError(
       new UnauthorizedError("Authentication required"),

@@ -7,7 +7,7 @@ import {
   requireWritableHousehold,
   getIdempotencyKey,
 } from "@/lib/api/middleware";
-import { RecipeService } from "@ovenlovin/core";
+import { parseRecipeImages, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import {
   isIdempotentReplay,
@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
     const idempotencyKey = getIdempotencyKey(request);
 
     const body = await request.json();
+    const images = parseRecipeImages(body.images);
 
     const db = getDatabase();
     const service = new RecipeService(db);
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
           totalTimeMinutes: body.totalTimeMinutes,
           cuisine: body.cuisine,
           course: body.course,
-          images: Array.isArray(body.images) ? body.images : [],
+          images,
           ingredients,
           steps,
           source: {
@@ -149,6 +150,7 @@ export async function POST(request: NextRequest) {
       ...body,
       householdId,
       createdBy,
+      images,
     });
 
     return createdResponse(
