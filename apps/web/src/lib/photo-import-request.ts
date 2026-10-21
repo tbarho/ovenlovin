@@ -1,5 +1,7 @@
+import { z } from "zod";
 import { assertAllowedRecipeImageUrls } from "@ovenlovin/core";
 import { BadRequestError } from "@/lib/api/errors";
+import { readJsonBody } from "@/lib/api/read-json";
 import {
   collectPhotoImages,
   fileToImageInput,
@@ -74,18 +76,37 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
     };
   }
 
-  const body = (await request.json()) as {
-    imageUrl?: string;
-    imageUrls?: string[];
-    imageBase64?: string;
-    mimeType?: string;
-    images?: Array<{ url?: string; base64?: string; mimeType?: string }>;
-    isHandwritten?: boolean;
-    save?: boolean;
-    allowDuplicate?: boolean;
-    cookbookId?: string;
-    draft?: unknown;
-  };
+  const body = await readJsonBody(
+    request,
+    z.object({
+      imageUrl: z.string().max(2048).optional(),
+      imageUrls: z.array(z.string().max(2048)).max(20).optional(),
+      imageBase64: z
+        .string()
+        .max(16 * 1024 * 1024)
+        .optional(),
+      mimeType: z.string().max(100).optional(),
+      images: z
+        .array(
+          z.object({
+            url: z.string().max(2048).optional(),
+            base64: z
+              .string()
+              .max(16 * 1024 * 1024)
+              .optional(),
+            mimeType: z.string().max(100).optional(),
+            filename: z.string().max(255).optional(),
+          })
+        )
+        .max(20)
+        .optional(),
+      isHandwritten: z.boolean().optional(),
+      save: z.union([z.boolean(), z.string()]).optional(),
+      allowDuplicate: z.union([z.boolean(), z.string()]).optional(),
+      cookbookId: z.string().uuid().optional(),
+      draft: z.unknown().optional(),
+    })
+  );
 
   const images = collectPhotoImages(body);
   assertAllowedRecipeImageUrls(images.map((image) => image.blob));

@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
     const householdId = requireHouseholdId(context);
     const createdBy = requireUserId(context);
 
-    const body = await request.json().catch(() => ({}));
+    const raw = await request.json().catch(() => ({}));
+    const body = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
     const input = createApiKeyInputSchema.parse({
       householdId,
       name: typeof body.name === "string" && body.name.trim() ? body.name.trim() : "Agent key",

@@ -22,6 +22,8 @@ export interface CatalogEntry {
   parent?: string;
   parentName?: string;
   aliases: string[];
+  /** Ingredient lines this entry matches. Not used to canonicalize typed names. */
+  matchPhrases?: string[];
   featured?: boolean;
 }
 
@@ -339,7 +341,33 @@ export const dislikeCatalog: CatalogEntry[] = [
     name: "Spicy food",
     phraseName: "spicy food",
     group: "ingredient",
-    aliases: ["spice", "hot"],
+    aliases: [],
+    matchPhrases: [
+      "cayenne",
+      "chile",
+      "chili",
+      "chilli",
+      "chiles",
+      "chilies",
+      "chillies",
+      "chili powder",
+      "chilli powder",
+      "chile powder",
+      "jalapeno",
+      "jalapeño",
+      "serrano",
+      "habanero",
+      "sriracha",
+      "gochujang",
+      "hot sauce",
+      "chili flake",
+      "chile flake",
+      "red pepper flake",
+      "crushed red pepper",
+      "chipotle",
+      "harissa",
+      "sambal",
+    ],
   },
 ];
 
@@ -577,8 +605,18 @@ export function canonicalizePersonRuleTarget(
   };
 }
 
-export function unknownRuleTargetMessage(target: string): string {
-  return `We can't check '${target.trim()}' against recipes. If you meant this exact food, retry with confirmUnknown: true.`;
+export function supportedRuleTargetCodes(kind?: string): string[] {
+  if (kind === "diet") return dietCatalog.map((entry) => entry.code);
+  if (kind === "allergen") return allergenCatalog().map((entry) => entry.code);
+  if (kind === "ingredient" || kind === "ingredient_category" || kind === "tag") {
+    return dislikeCatalog.map((entry) => entry.code);
+  }
+  return [...dislikeCatalog.map((entry) => entry.code), ...dietCatalog.map((entry) => entry.code)];
+}
+
+export function unknownRuleTargetMessage(target: string, kind?: string): string {
+  const supported = supportedRuleTargetCodes(kind).join(", ");
+  return `We can't check '${target.trim()}' against recipes. Supported targets: ${supported}. If you meant this exact food, retry with confirmUnknown: true.`;
 }
 
 export function ambiguousRuleTargetMessage(target: string, codes: string[]): string {
@@ -648,6 +686,7 @@ export function matchPhrasesForTarget(target: string, kind?: string): string[] {
     phrases.add(entry.name);
     phrases.add(entry.phraseName);
     for (const alias of entry.aliases) phrases.add(alias);
+    for (const phrase of entry.matchPhrases ?? []) phrases.add(phrase);
   }
   return [...phrases];
 }

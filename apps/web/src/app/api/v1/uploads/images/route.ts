@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { put } from "@vercel/blob";
 import { assertAllowedRecipeImageUrls, copyRemoteImages } from "@ovenlovin/core";
+import { z } from "zod";
+import { readJsonBody } from "@/lib/api/read-json";
 import { BadRequestError, ForbiddenError, handleApiError } from "@/lib/api/errors";
 import { createdResponse } from "@/lib/api/response";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
@@ -19,8 +21,10 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get("content-type") ?? "";
 
     if (contentType.includes("application/json")) {
-      const body = (await request.json()) as { url?: string };
-      if (!body.url) throw new BadRequestError("Provide an image url");
+      const body = await readJsonBody(
+        request,
+        z.object({ url: z.string().trim().min(1).max(2048) })
+      );
       assertAllowedRecipeImageUrls([body.url]);
       const [stored] = await copyRemoteImages(
         [body.url],

@@ -39,6 +39,18 @@ describe("handleApiError", () => {
     });
   });
 
+  it("maps a JSON parse failure to 400, not 500", async () => {
+    const response = handleApiError(
+      new SyntaxError("Unexpected end of JSON input"),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes"
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      title: "Bad Request",
+      detail: "Request body must be JSON",
+    });
+  });
+
   it("returns problem+json 401 for UnauthorizedError", async () => {
     const response = handleApiError(
       new UnauthorizedError("Authentication required"),

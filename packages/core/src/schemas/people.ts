@@ -72,6 +72,44 @@ export const nutritionGoalSchema = baseEntitySchema.merge(createdBySchema).exten
   activeUntil: z.string().date().nullable().optional(),
 });
 
+export const createPersonBodySchema = z.object({
+  displayName: z.string().trim().min(1).max(255),
+  notes: z.string().max(10_000).nullable().optional(),
+  birthYear: z.number().int().min(1900).max(2100).nullable().optional(),
+  birthMonth: z.number().int().min(1).max(12).nullable().optional(),
+  sex: sexSchema.nullable().optional(),
+  activityProfile: z.string().max(255).nullable().optional(),
+});
+
+export const updatePersonBodySchema = createPersonBodySchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, { message: "Request body cannot be empty" });
+
+export const createPersonRuleBodySchema = z.object({
+  kind: ruleKindSchema.optional(),
+  target: z.string().trim().min(1).max(255),
+  severity: severitySchema,
+  includeMayContain: z.boolean().optional(),
+  includeCrossContact: z.boolean().optional(),
+  sharedFacility: sharedFacilitySchema.optional(),
+  includeUnmappedIngredients: z.boolean().optional(),
+  includeDescendants: z.boolean().optional(),
+  treatCoconutAsTreeNut: z.boolean().optional(),
+  label: z.string().max(255).nullable().optional(),
+  note: z.string().max(2000).nullable().optional(),
+  confirmUnknown: z.boolean().optional(),
+});
+
+export const updatePersonRuleBodySchema = createPersonRuleBodySchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, { message: "Request body cannot be empty" });
+
+export const createPreferenceBodySchema = z.object({
+  type: z.string().trim().min(1).max(50).optional(),
+  value: z.string().trim().min(1).max(255),
+  weight: z.number().int().min(-10).max(10).optional(),
+});
+
 export type Sex = z.infer<typeof sexSchema>;
 export type RuleKind = z.infer<typeof ruleKindSchema>;
 export type Severity = z.infer<typeof severitySchema>;

@@ -1,7 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { personRuleSchema, severitySchema, ruleKindSchema } from "./people";
+import {
+  createPersonBodySchema,
+  createPersonRuleBodySchema,
+  createPreferenceBodySchema,
+  personRuleSchema,
+  severitySchema,
+  ruleKindSchema,
+  updatePersonBodySchema,
+} from "./people";
 
 describe("people schemas", () => {
+  it("rejects blank and empty person writes", () => {
+    expect(createPersonBodySchema.safeParse({}).success).toBe(false);
+    expect(createPersonBodySchema.safeParse({ displayName: "   " }).success).toBe(false);
+    expect(updatePersonBodySchema.safeParse({}).success).toBe(false);
+    expect(createPersonRuleBodySchema.safeParse({}).success).toBe(false);
+    expect(createPreferenceBodySchema.safeParse({ type: 1, value: 1 }).success).toBe(false);
+    expect(createPersonBodySchema.parse({ displayName: " Parent A " }).displayName).toBe(
+      "Parent A"
+    );
+  });
+
   describe("severitySchema", () => {
     it("accepts valid severities", () => {
       expect(severitySchema.parse("block")).toBe("block");

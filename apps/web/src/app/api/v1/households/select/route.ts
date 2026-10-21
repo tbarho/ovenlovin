@@ -6,6 +6,7 @@ import { getDatabase } from "@ovenlovin/db";
 import { ForbiddenError, handleApiError, NotFoundError, UnauthorizedError } from "@/lib/api/errors";
 import { getRequestContext, requireUserId } from "@/lib/api/middleware";
 import { jsonResponse } from "@/lib/api/response";
+import { readJsonBody } from "@/lib/api/read-json";
 import { HOUSEHOLD_COOKIE, householdCookieOptions } from "@/lib/kitchen-cookies";
 
 const bodySchema = z.object({
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       throw new UnauthorizedError(API_KEY_CANNOT_SWITCH_KITCHEN_MESSAGE);
     }
     const userId = requireUserId(context);
-    const body = bodySchema.parse(await request.json().catch(() => ({})));
+    const body = await readJsonBody(request, bodySchema);
     const service = new HouseholdService(getDatabase());
     const kitchens = await service.listHouseholdsForUser(userId);
     const selected = kitchens.find((item) => item.household.id === body.householdId);
