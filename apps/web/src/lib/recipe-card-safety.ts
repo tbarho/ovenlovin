@@ -5,7 +5,7 @@ export type RecipeSafetySummary = {
   blockPersonIds: string[];
   warnPersonIds: string[];
   warnings: string[];
-  blockTitles?: string[];
+  blockTitles: string[];
 };
 
 export const EMPTY_RECIPE_SAFETY: RecipeSafetySummary = {

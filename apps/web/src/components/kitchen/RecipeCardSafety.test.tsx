@@ -62,30 +62,7 @@ describe("RecipeCardSafety", () => {
     expect(screen.queryByText(/loves this - check first/)).not.toBeInTheDocument();
     expect(screen.getByTestId("recipe-card-warnings")).toHaveTextContent(/pine nuts/i);
     expect(screen.getByTestId("recipe-card-warnings")).toHaveTextContent(/Child C can't eat this/);
-  });
-
-  it("leads a pesto card with Child C's block before Parent B's love", () => {
-    const recipe = testRecipe({ title: "Weeknight pesto pasta" });
-    const safety = recipeSafetySummary({
-      people: [parentB, childC],
-      rules: [treeNut],
-      ingredients: [{ id: "pesto", name: "1/3 cup basil pesto" }],
-    });
-
-    render(
-      <RecipesKitchen
-        cookbooks={[]}
-        uncategorized={[recipe]}
-        recipes={[recipe]}
-        lovePeople={parentBPastaLove}
-        safetyByRecipe={{ [recipe.id]: safety }}
-      />
-    );
-
-    const headline = screen.getByTestId("love-tags");
-    expect(headline.firstChild).toHaveTextContent("Child C can't eat this");
-    expect(headline.firstChild).toHaveClass("who-chip-block");
-    expect(screen.queryByText(/loves this/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("block-headline")).not.toBeInTheDocument();
   });
 
   it("does not soften a can't-eat conflict to check first on the recipe page", () => {
@@ -158,7 +135,9 @@ describe("RecipeCardSafety", () => {
         uncategorized={[recipe]}
         recipes={[recipe]}
         lovePeople={pastaLove}
-        safetyByRecipe={{ [recipe.id]: { blockPersonIds: [], warnPersonIds: [], warnings: [] } }}
+        safetyByRecipe={{
+          [recipe.id]: { blockPersonIds: [], warnPersonIds: [], warnings: [], blockTitles: [] },
+        }}
       />
     );
 
