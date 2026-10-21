@@ -1,4 +1,10 @@
 /* eslint-disable no-undef */
+import {
+  IMPORT_BLOCKED_MESSAGE,
+  IMPORT_NOT_A_RECIPE_MESSAGE,
+  IMPORT_PAGE_GONE_MESSAGE,
+  IMPORT_UNSUPPORTED_SITE_MESSAGE,
+} from "@ovenlovin/core";
 import { remainingImportBudgetMs } from "./models";
 import { publicCopyRequests, relatedRecipeUrls, type PublicCopy } from "./public-copies";
 
@@ -54,7 +60,7 @@ export class RecipeImportFetchError extends Error {
   readonly layersTried: string[];
 
   constructor(url: string, status: number, statusText: string, layersTried: string[] = []) {
-    super(importBlockedMessage(layersTried, status, statusText || "Forbidden"));
+    super(IMPORT_BLOCKED_MESSAGE);
     this.name = "RecipeImportFetchError";
     this.status = status;
     this.url = url;
@@ -68,7 +74,7 @@ export class RecipeNotFoundError extends Error {
   readonly layersTried: string[];
 
   constructor(url: string, layersTried: string[] = []) {
-    super("This is not a recipe page.");
+    super(IMPORT_NOT_A_RECIPE_MESSAGE);
     this.name = "RecipeNotFoundError";
     this.url = url;
     this.layersTried = layersTried;
@@ -80,7 +86,7 @@ export class RecipePageGoneError extends Error {
   readonly url: string;
 
   constructor(url: string) {
-    super("That page is gone.");
+    super(IMPORT_PAGE_GONE_MESSAGE);
     this.name = "RecipePageGoneError";
     this.url = url;
   }
@@ -91,7 +97,7 @@ export class RecipeUnsupportedSiteError extends Error {
   readonly url: string;
 
   constructor(url: string) {
-    super("We can't import from this site. Paste the text or add a photo.");
+    super(IMPORT_UNSUPPORTED_SITE_MESSAGE);
     this.name = "RecipeUnsupportedSiteError";
     this.url = url;
   }
@@ -115,12 +121,11 @@ export function formatLayersTried(layersTried: string[]): string {
 }
 
 export function importBlockedMessage(
-  layersTried: string[] | number = [],
+  _layersTried: string[] | number = [],
   _status?: number,
   _statusText?: string
 ): string {
-  const layers = Array.isArray(layersTried) ? formatLayersTried(layersTried) : "direct";
-  return `This site blocked the importer (tried ${layers}).`;
+  return IMPORT_BLOCKED_MESSAGE;
 }
 
 export function looksLikeBotChallenge(html: string): boolean {
@@ -138,7 +143,19 @@ export function looksLikeBotChallenge(html: string): boolean {
     head.includes("checking your browser") ||
     head.includes("vercel security checkpoint") ||
     (head.includes("security checkpoint") && head.includes("vercel")) ||
-    (head.includes("attention required") && head.includes("cloudflare"))
+    (head.includes("attention required") && head.includes("cloudflare")) ||
+    head.includes("_vercel_s") ||
+    head.includes("vercel-challenge")
+  );
+}
+
+export function looksLikeGonePage(html: string): boolean {
+  if (!html || looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) return false;
+  const head = html.slice(0, 12_000).toLowerCase();
+  return (
+    /<title>[^<]*(404|page not found|not found)[^<]*<\/title>/.test(head) ||
+    /this recipe has been (removed|moved|deleted)/.test(head) ||
+    /the recipe you.{0,60}has been (moved|removed)/.test(head)
   );
 }
 
@@ -432,6 +449,9 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   }
 
   if (directStatus === 404) throw new RecipePageGoneError(url);
+  if (state.fallback && looksLikeGonePage(state.fallback.html)) {
+    throw new RecipePageGoneError(url);
+  }
   if (state.fallback) return state.fallback;
 
   throw new RecipeImportFetchError(url, lastStatus, lastStatusText, layersTried);

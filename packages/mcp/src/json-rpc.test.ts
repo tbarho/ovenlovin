@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { InvalidImageUrlError } from "@ovenlovin/core";
+import {
+  IMPORT_BLOCKED_CODE,
+  IMPORT_BLOCKED_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
+  IMPORT_NOT_A_RECIPE_MESSAGE,
+  IMPORT_PAGE_GONE_CODE,
+  IMPORT_PAGE_GONE_MESSAGE,
+  InvalidImageUrlError,
+} from "@ovenlovin/core";
 import { JsonRpcErrorCode, McpInvalidParamsError, jsonRpcFromThrown } from "./json-rpc";
 
 describe("jsonRpcFromThrown", () => {
@@ -73,7 +81,36 @@ describe("jsonRpcFromThrown", () => {
       })
     );
     expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
-    expect(response.error.message).toBe("We couldn't find a recipe in that text/photo");
-    expect(response.error.data).toEqual({ code: "import_not_a_recipe" });
+    expect(response.error.message).toBe(IMPORT_NOT_A_RECIPE_MESSAGE);
+    expect(response.error.data).toEqual({ code: IMPORT_NOT_A_RECIPE_CODE });
+  });
+
+  it("maps checkpoint, 404, and not-a-recipe to data.code, not -32603", () => {
+    const blocked = jsonRpcFromThrown(
+      6,
+      Object.assign(new Error("This site blocked the importer."), {
+        name: "RecipeImportFetchError",
+      })
+    );
+    expect(blocked.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(blocked.error.code).not.toBe(JsonRpcErrorCode.internal);
+    expect(blocked.error.message).toBe(IMPORT_BLOCKED_MESSAGE);
+    expect(blocked.error.data).toEqual({ code: IMPORT_BLOCKED_CODE });
+
+    const gone = jsonRpcFromThrown(
+      7,
+      Object.assign(new Error("That page is gone."), { name: "RecipePageGoneError" })
+    );
+    expect(gone.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(gone.error.message).toBe(IMPORT_PAGE_GONE_MESSAGE);
+    expect(gone.error.data).toEqual({ code: IMPORT_PAGE_GONE_CODE });
+
+    const notRecipe = jsonRpcFromThrown(
+      8,
+      Object.assign(new Error("This is not a recipe page."), { name: "RecipeNotFoundError" })
+    );
+    expect(notRecipe.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(notRecipe.error.message).toBe(IMPORT_NOT_A_RECIPE_MESSAGE);
+    expect(notRecipe.error.data).toEqual({ code: IMPORT_NOT_A_RECIPE_CODE });
   });
 });

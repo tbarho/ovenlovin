@@ -12,6 +12,7 @@ import {
   isUsableRecipeHtml,
   looksLikeBotChallenge,
   looksLikeCompleteDocument,
+  looksLikeGonePage,
   jinaReaderUrl,
   relatedRecipeUrls,
   shouldKeepLooking,
@@ -98,11 +99,13 @@ describe("page classification", () => {
       <p>The Recipe you are looking for has been moved. Browse more recipes on Food Network.</p>
       </body></html>`;
     expect(isUsableRecipeHtml(notFound)).toBe(false);
+    expect(looksLikeGonePage(notFound)).toBe(true);
+    expect(looksLikeBotChallenge(notFound)).toBe(false);
   });
 
-  it("lists tried layers in the blocked message", () => {
+  it("lists paste and photo in the blocked message", () => {
     expect(importBlockedMessage(["direct", "google-translate", "jina"])).toBe(
-      "This site blocked the importer (tried direct, google-translate, jina)."
+      "This site blocked the importer. Paste the recipe text or add a photo instead."
     );
   });
 });
@@ -435,7 +438,8 @@ describe("fetchHtml layers", () => {
       });
     } catch (error) {
       expect(error).toBeInstanceOf(RecipeImportFetchError);
-      expect((error as Error).message).toMatch(/tried direct, google-translate, jina/);
+      expect((error as Error).message).toMatch(/blocked the importer/);
+      expect((error as Error).message).toMatch(/Paste the recipe text or add a photo/);
       expect((error as Error).message).not.toMatch(/No recipe found/);
     }
   });
@@ -501,6 +505,30 @@ describe("fetchHtml layers", () => {
     expect(result.via).toBe("direct");
     expect(extractJsonLd(result.html)?.name).toMatch(/tomato pasta/i);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("says a 200 gone page is gone instead of not a recipe", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://www.foodnetwork.com/recipes/old",
+      text: async () =>
+        `<!DOCTYPE HTML><html lang="en"><head>
+        <title>Page Not Found | Food Network</title>
+        </head><body><h1>Page Not Found</h1>
+        <p>The Recipe you are looking for has been moved.</p>
+        </body></html>`,
+    });
+    await expect(
+      fetchHtml("https://www.foodnetwork.com/recipes/old", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      })
+    ).rejects.toMatchObject({
+      name: "RecipePageGoneError",
+      message: expect.stringMatching(/page is gone[\s\S]*Paste the recipe text or add a photo/),
+    });
   });
 
   it("says a 404 is gone instead of no recipe", async () => {
@@ -626,7 +654,7 @@ describe("url importer extract messages", () => {
         createUrlImporter().extract({ url: "https://example.com/" })
       ).rejects.toMatchObject({
         name: "RecipeNotFoundError",
-        message: "This is not a recipe page.",
+        message: expect.stringMatching(/couldn't find a recipe/),
       });
     } finally {
       vi.unstubAllGlobals();

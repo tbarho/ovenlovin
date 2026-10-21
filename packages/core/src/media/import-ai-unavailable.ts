@@ -3,9 +3,21 @@ export const IMPORT_AI_UNAVAILABLE_CODE = "import_ai_unavailable";
 export const IMPORT_AI_UNAVAILABLE_MESSAGE =
   "Recipe reading is busy right now. Try again in a minute.";
 
+export const IMPORT_PASTE_OR_PHOTO = "Paste the recipe text or add a photo instead.";
+
+export const IMPORT_BLOCKED_CODE = "import_blocked";
+export const IMPORT_BLOCKED_MESSAGE = `This site blocked the importer. ${IMPORT_PASTE_OR_PHOTO}`;
+
+export const IMPORT_PAGE_GONE_CODE = "import_page_gone";
+export const IMPORT_PAGE_GONE_MESSAGE = `That page is gone. ${IMPORT_PASTE_OR_PHOTO}`;
+
 export const IMPORT_NOT_A_RECIPE_CODE = "import_not_a_recipe";
 
-export const IMPORT_NOT_A_RECIPE_MESSAGE = "We couldn't find a recipe in that text/photo";
+export const IMPORT_NOT_A_RECIPE_MESSAGE = `We couldn't find a recipe. ${IMPORT_PASTE_OR_PHOTO}`;
+
+export const IMPORT_UNSUPPORTED_SITE_CODE = "import_unsupported_site";
+export const IMPORT_UNSUPPORTED_SITE_MESSAGE =
+  "We can't import from this site. Paste the recipe text or add a photo.";
 
 const UNAVAILABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
 
@@ -112,4 +124,32 @@ export function isImportAiNotARecipe(error: unknown): boolean {
   if (nested.lastError && isImportAiNotARecipe(nested.lastError)) return true;
   if (nested.cause && nested.cause !== error && isImportAiNotARecipe(nested.cause)) return true;
   return Array.isArray(nested.errors) && nested.errors.some(isImportAiNotARecipe);
+}
+
+export type ImportFailure = { code: string; message: string };
+
+/** Blocked / gone / not-a-recipe / unsupported. Same codes on REST and MCP. */
+export function classifyImportFailure(error: unknown): ImportFailure | null {
+  const name = errorName(error);
+  const message = error instanceof Error ? error.message : "";
+  if (name === "RecipeImportFetchError" || /blocked the importer/i.test(message)) {
+    return { code: IMPORT_BLOCKED_CODE, message: IMPORT_BLOCKED_MESSAGE };
+  }
+  if (name === "RecipePageGoneError" || message.startsWith("That page is gone")) {
+    return { code: IMPORT_PAGE_GONE_CODE, message: IMPORT_PAGE_GONE_MESSAGE };
+  }
+  if (
+    name === "RecipeUnsupportedSiteError" ||
+    message.startsWith("We can't import from this site")
+  ) {
+    return { code: IMPORT_UNSUPPORTED_SITE_CODE, message: IMPORT_UNSUPPORTED_SITE_MESSAGE };
+  }
+  if (
+    name === "RecipeNotFoundError" ||
+    isImportAiNotARecipe(error) ||
+    /not a recipe page|couldn't find a recipe|no recipe found/i.test(message)
+  ) {
+    return { code: IMPORT_NOT_A_RECIPE_CODE, message: IMPORT_NOT_A_RECIPE_MESSAGE };
+  }
+  return null;
 }

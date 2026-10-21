@@ -424,15 +424,51 @@ describe("URL Importer", () => {
     });
 
     it("says blocked when captured HTML is a bot check", async () => {
+      const extractWithLlm = vi.fn(async () => null);
       await expect(
-        createUrlImporter({ extractWithLlm: async () => null }).extract({
+        createUrlImporter({ extractWithLlm }).extract({
           url: "https://www.halfbakedharvest.com/giant-chocolate-chip-cookies/",
           html: `<html><body><h1>Just a moment...</h1><p>Enable JavaScript and cookies to continue</p></body></html>`,
         })
       ).rejects.toMatchObject({
         name: "RecipeImportFetchError",
-        message: expect.stringMatching(/blocked the importer/),
+        message: expect.stringMatching(
+          /blocked the importer[\s\S]*Paste the recipe text or add a photo/
+        ),
       });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
+    it("says blocked for a Vercel Security Checkpoint before the LLM", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://food52.com/recipes/chili",
+          html: `<html><head><title>Vercel Security Checkpoint</title></head>
+            <body><h1>Vercel Security Checkpoint</h1><p>This request was blocked (429).</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeImportFetchError",
+        message: expect.stringMatching(
+          /blocked the importer[\s\S]*Paste the recipe text or add a photo/
+        ),
+      });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
+    it("says gone for a 404 chrome page before the LLM", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://www.foodnetwork.com/recipes/old",
+          html: `<html><head><title>Page Not Found | Food Network</title></head>
+            <body><h1>Page Not Found</h1><p>The Recipe you are looking for has been moved.</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipePageGoneError",
+        message: expect.stringMatching(/page is gone[\s\S]*Paste the recipe text or add a photo/),
+      });
+      expect(extractWithLlm).not.toHaveBeenCalled();
     });
 
     it("rejects Instagram before fetching", async () => {
@@ -444,7 +480,7 @@ describe("URL Importer", () => {
         })
       ).rejects.toMatchObject({
         name: "RecipeUnsupportedSiteError",
-        message: "We can't import from this site. Paste the text or add a photo.",
+        message: "We can't import from this site. Paste the recipe text or add a photo.",
       });
       expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -471,7 +507,9 @@ describe("URL Importer", () => {
         })
       ).rejects.toMatchObject({
         name: "RecipeNotFoundError",
-        message: "This is not a recipe page.",
+        message: expect.stringMatching(
+          /couldn't find a recipe[\s\S]*Paste the recipe text or add a photo/
+        ),
       });
       expect(RecipeNotFoundError).toBeTruthy();
     });

@@ -15,6 +15,7 @@ export {
   importBlockedMessage,
   isUsableRecipeHtml,
   looksLikeBotChallenge,
+  looksLikeGonePage,
   looksLikeCompleteDocument,
   looksLikePaywall,
   looksLikeSoftBlock,
