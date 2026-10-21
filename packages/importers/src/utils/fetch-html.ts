@@ -530,8 +530,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
       copies.map(async (copy) => {
         try {
           return await readResponse(fetchImpl, copy.url, cacheCopyHeaders(copy));
-        } catch (error) {
-          if (error instanceof NotAPublicUrlError) throw error;
+        } catch {
           return null;
         }
       })

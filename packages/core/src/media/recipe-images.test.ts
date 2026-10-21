@@ -151,6 +151,19 @@ describe("recipe images", () => {
     vi.unstubAllGlobals();
   });
 
+  it("maps an unreachable image host to InvalidImageUrlError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      })
+    );
+    await expect(inlinePublicImageBlob("https://cdn.example/card.jpg")).rejects.toBeInstanceOf(
+      InvalidImageUrlError
+    );
+    vi.unstubAllGlobals();
+  });
+
   it("does not fetch a public hostname that resolves to loopback", async () => {
     vi.mocked(lookup).mockResolvedValueOnce([{ address: "127.0.0.1", family: 4 }] as never);
     const fetchMock = vi.fn();

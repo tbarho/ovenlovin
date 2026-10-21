@@ -260,7 +260,8 @@ export async function backfillInlineImageList(
 
 async function fetchRemoteImage(url: string): Promise<Response> {
   await assertPublicImageUrl(url);
-  let response = await fetchPublicHttp(url, { headers: headersForRemoteImage(url) });
+  const signal = AbortSignal.timeout(12_000);
+  let response = await fetchPublicHttp(url, { headers: headersForRemoteImage(url), signal });
   if (!response.ok && BLOCKED_IMAGE_STATUSES.has(response.status)) {
     const current = response.url || url;
     await assertPublicImageUrl(current);
@@ -269,6 +270,7 @@ async function fetchRemoteImage(url: string): Promise<Response> {
         ...headersForRemoteImage(current),
         "Cache-Control": "no-cache",
       },
+      signal,
     });
   }
   return response;
@@ -279,15 +281,27 @@ export async function inlinePublicImageBlob(blob: string): Promise<string> {
   const trimmed = blob.trim();
   if (isInlineImageDataUrl(trimmed)) return trimmed;
   if (!isPublicHttpUrl(trimmed)) throw new NotAPublicUrlError();
-  const response = await fetchRemoteImage(trimmed);
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!response.ok || !contentType.startsWith("image/")) throw new InvalidImageUrlError();
-  const body = Buffer.from(await response.arrayBuffer());
-  if (body.byteLength === 0 || body.byteLength > 12 * 1024 * 1024) {
+  try {
+    const response = await fetchRemoteImage(trimmed);
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!response.ok || !contentType.startsWith("image/")) throw new InvalidImageUrlError();
+    const contentLength = Number(response.headers.get("content-length"));
+    if (
+      Number.isFinite(contentLength) &&
+      (contentLength <= 0 || contentLength > 12 * 1024 * 1024)
+    ) {
+      throw new InvalidImageUrlError();
+    }
+    const body = Buffer.from(await response.arrayBuffer());
+    if (body.byteLength === 0 || body.byteLength > 12 * 1024 * 1024) {
+      throw new InvalidImageUrlError();
+    }
+    const mime = contentType.split(";")[0]?.trim() || "image/jpeg";
+    return `data:${mime};base64,${body.toString("base64")}`;
+  } catch (error) {
+    if (error instanceof NotAPublicUrlError || error instanceof InvalidImageUrlError) throw error;
     throw new InvalidImageUrlError();
   }
-  const mime = contentType.split(";")[0]?.trim() || "image/jpeg";
-  return `data:${mime};base64,${body.toString("base64")}`;
 }
 
 export async function copyRemoteImages(
