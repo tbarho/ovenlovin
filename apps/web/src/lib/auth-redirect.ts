@@ -21,7 +21,9 @@ function hasDotSegment(path: string): boolean {
 export function safeAuthRedirect(raw: string | null | undefined): string {
   if (!raw) return "/recipes";
   if (!raw.startsWith("/")) return "/recipes";
-  if (raw.startsWith("//") || raw.includes("://") || raw.includes("\\")) return "/recipes";
+  if (raw.startsWith("//") || raw.includes("://") || raw.includes("\\") || /[\t\n\r]/.test(raw)) {
+    return "/recipes";
+  }
   if (raw.startsWith("/api") || raw.startsWith("/mcp")) return "/recipes";
   const path = raw.split(/[?#]/)[0] ?? "";
   if (hasDotSegment(path)) return "/recipes";

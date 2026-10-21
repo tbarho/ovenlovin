@@ -23,5 +23,6 @@ describe("safeAuthRedirect", () => {
     expect(safeAuthRedirect("/settings/.\n./api/v1/x")).toBe("/recipes");
     expect(safeAuthRedirect("/settings/..\t/api/v1/x")).toBe("/recipes");
     expect(safeAuthRedirect("/settings/%2e%0a%2e/api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/\t/evil.com")).toBe("/recipes");
   });
 });
