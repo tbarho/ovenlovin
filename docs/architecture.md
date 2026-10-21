@@ -7,13 +7,13 @@ title: Architecture
 
 > **System design and monorepo structure**
 
-OvenLovin is built as a pnpm + Turborepo monorepo with clear separation of concerns. Business logic lives in pure TypeScript packages, while interfaces (REST API, MCP server, CLI, web UI) are thin adapters.
+OvenLovin is built as a pnpm + Turborepo monorepo with clear separation of concerns. Business logic lives in pure TypeScript packages, while interfaces (REST API, MCP server, web UI) are thin adapters. The CLI package is not shipped.
 
 ## Design Principles
 
 ### 1. Business Logic in `@ovenlovin/core`
 
-All business logic, validation, and services live in `packages/core` as pure TypeScript. REST APIs, MCP tools, CLI commands, and UI are thin adapters that call core services.
+All business logic, validation, and services live in `packages/core` as pure TypeScript. REST APIs, MCP tools, and UI are thin adapters that call core services.
 
 **Why**: External bots (Grok, ChatGPT, Claude) must get identical behavior through any interface.
 
@@ -125,16 +125,7 @@ ovenlovin/
 │   │   │   └── server.ts   # MCP server entry point
 │   │   └── package.json
 │   │
-│   ├── cli/                # CLI tool
-│   │   ├── src/
-│   │   │   ├── commands/   # CLI commands
-│   │   │   └── cli.ts      # CLI entry point
-│   │   └── package.json
-│   │
-│   └── ui/                 # Shared UI components
-│       ├── src/
-│       │   └── components/ # Reusable React components
-│       └── package.json
+│   └── brand/              # Wordmark, deploy URL, tokens
 │
 ├── docs/                   # Documentation
 │   ├── index.md
@@ -301,25 +292,14 @@ export const importFromUrl = async (url: string): Promise<ImportResult> => {
 
 Model Context Protocol server for AI agents.
 
-**Tools**:
-- `search_recipes` - Search with filters
-- `get_recipe` - Get full details
-- `import_recipe` - Import from URL or pasted text
-- `import_recipe_from_image` - Import from a photo URL or base64
-- `get_household_context` - Get members and rules
-- `save_meal_plan` - Create/update plan
-- `check_meal_plan` - Run allergen checks
-- `export_shopping_list` - Generate list with warnings
+**Tools** (`MCP_TOOLS`): `whoami`, `search_recipes`, `get_recipe`, `create_recipe`, `import_recipe`, `import_recipe_from_image`, `delete_recipe`, `get_household_context`, `manage_household_schedule`, `manage_household_settings`, `manage_kitchen_invites`, `manage_kitchen_members`, `get_person_rules`, `manage_people`, `manage_person_rules`, `manage_person_loves`, `check_meal_plan`, `export_shopping_list`, `save_meal_plan`, `get_meal_plan`, `edit_meal_plan`, `delete_meal_plan`, `list_cookbooks`, `get_cookbook`, `manage_cookbook`, `reorder_people`.
 
 **Resources**:
-- `ovenlovin://household/{id}` - Household details
-- `ovenlovin://person/{id}` - Person profile
-- `ovenlovin://recipe/{id}` - Recipe data
-- `ovenlovin://meal-plan/{id}` - Meal plan
+- `ovenlovin://household/{id}/profile`
+- `ovenlovin://household/{id}/schedule`
+- `ovenlovin://household/{id}/people`
 
-**Transports**:
-- Stdio: `npx @ovenlovin/mcp`
-- HTTP: `https://your-app.vercel.app/mcp`
+**Transport**: HTTP `https://your-app.vercel.app/mcp`. `@ovenlovin/mcp` is a private workspace package, not an npm CLI.
 
 **Example tool**:
 
@@ -341,32 +321,6 @@ export const searchRecipesTool = {
     return await recipeService.search(input);
   },
 };
-```
-
-### @ovenlovin/cli
-
-Command-line interface for scripting and automation.
-
-**Commands**:
-- `ovenlovin recipes search <query>` - Search recipes
-- `ovenlovin recipes import --url <url>` - Import recipe
-- `ovenlovin plans check <planId>` - Check meal plan
-- `ovenlovin plans shopping-list <planId>` - Export shopping list
-
-**Example**:
-
-```bash
-# Search recipes
-ovenlovin recipes search "vegetarian pasta" --cuisine Italian
-
-# Import recipe
-ovenlovin recipes import --url https://example.com/carbonara
-
-# Check meal plan
-ovenlovin plans check plan-123 --attendees person-1,person-2
-
-# Export shopping list
-ovenlovin plans shopping-list plan-123 --format text
 ```
 
 ## Web App (@ovenlovin/web)

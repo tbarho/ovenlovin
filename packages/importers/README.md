@@ -34,7 +34,7 @@ interface Importer<TInput> {
 - Fetch layers: live Firefox document headers (including Accept-Encoding so Food Network gzip works), related URLs on 404, then Google Translate and Jina public copies
 - schema.org Recipe JSON-LD (primary)
 - HTML / markdown recipe-card fallback (Wikibooks, Jina)
-- LLM fallback (`deepseek/deepseek-v4.1-flash` via Vercel AI Gateway, same as paste; override with `RK_MODEL_EXTRACT`)
+- LLM fallback (`RK_MODEL_EXTRACT` → `RK_MODEL_DEFAULT` → `deepseek/deepseek-v4.1-flash` via Vercel AI Gateway). DeepSeek failures retry `openai/gpt-6-luna`
 - "No recipe found on this page" when the page loaded but is not a recipe (example.com)
 - "This site blocked the importer (tried ...)" only after every layer failed
 - Device capture: `extract({ url, html })` or `extract({ url, jsonLd })` skips the server fetch (Safari shortcut and Advanced browser save)
@@ -84,17 +84,17 @@ Eve's documented grading API is `t.score` / `t.check` on a locally computed valu
 
 All LLM calls use the Vercel AI SDK with AI Gateway:
 
-- Model strings like `grok/grok-2-latest`
+- Model strings like `deepseek/deepseek-v4.1-flash`
 - OIDC auth on Vercel (no provider API keys)
-- Provider fallbacks and usage observability
-- Default models from env: `RK_MODEL_DEFAULT`, `RK_MODEL_VISION`, `RK_MODEL_STT`
+- DeepSeek failures retry `openai/gpt-6-luna`
+- Default models from env: `RK_MODEL_DEFAULT` (paste), `RK_MODEL_VISION` (photo), `RK_MODEL_EXTRACT` (URL)
 
 ## Usage
 
 ```typescript
 import { createUrlImporter, createPasteImporter, createPhotoImporter } from "@ovenlovin/importers";
 
-const urlImporter = createUrlImporter({ modelId: "grok/grok-2-latest" });
+const urlImporter = createUrlImporter({ modelId: "deepseek/deepseek-v4.1-flash" });
 const extraction = await urlImporter.extract({ url: "https://example.com/recipe" });
 const draft = await urlImporter.toDraft(extraction);
 ```

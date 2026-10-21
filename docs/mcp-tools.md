@@ -8,10 +8,13 @@ Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk 
 
 ## Recipes
 
+- `whoami` - authenticated household, scopes, and key identity
 - `search_recipes` - search by text, method tags, and attendee warnings. `forAttendees` hides block hits and returns `hiddenCount` / `hidden` (recipe, person, ingredient, why). `images` is a thumbnail URL only (never inline `data:` bytes)
 - `get_recipe` - full recipe including servings (stored yield), `displayServings` (kitchen Default servings), `scaledNote`, prep/cook times, images, cookbooks, and source URL (`includeSource` defaults to true). Same thumbnail-URL rule for `images`. `ingredients.displayText` is the cooking-fraction line at `displayServings`; `rawText` is the stored import string.
-- `import_recipe` - URL or paste import. `save:false` returns a preview (same as REST). `idempotencyKey` replays a save. `allowDuplicate` skips the existing-URL short circuit. Pulls schema.org times and the main image, then copies that image into Vercel Blob. Retries of the same URL return the existing recipe (`created: false`) instead of a second copy. Optional `cookbookId`
-- `import_recipe_from_image` - photo import from an `imageUrl` or `imageBase64` (optional extra `images[]` pages). Uses AI Gateway vision (`RK_MODEL_VISION`). `save:false` previews. `idempotencyKey` / `allowDuplicate` match REST. Exact duplicate photos return `duplicate:true` with the existing recipe id (not `-32602`). Saves the first photo as the single main image (Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise list/search expose `GET /api/v1/recipes/{id}/image`). Returns `reviewReasons` / `uncertainFields` when the photo is hard to read.
+- `create_recipe` - create from title, ingredients, and steps (no URL). Prefer `import_recipe` when a public URL exists
+- `import_recipe` - URL or paste import. `save:false` returns a preview (same as REST). `idempotencyKey` replays a save. `allowDuplicate` skips the existing-URL short circuit. Pulls schema.org times and the main image, then copies that image into Vercel Blob. Retries of the same URL return the existing recipe (`created: false`) instead of a second copy. Optional `cookbookId`. Paste uses `RK_MODEL_DEFAULT`; URL extract uses `RK_MODEL_EXTRACT` then `RK_MODEL_DEFAULT`; default `deepseek/deepseek-v4.1-flash`. DeepSeek failures retry `openai/gpt-6-luna`. Classified import failures are JSON-RPC `-32602`; `import_ai_unavailable` is `-32603`.
+- `import_recipe_from_image` - photo import from an `imageUrl` or `imageBase64` (optional extra `images[]` pages). Uses AI Gateway vision (`RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`). `save:false` previews. `idempotencyKey` / `allowDuplicate` match REST. Exact duplicate photos return `duplicate:true` with the existing recipe id (not `-32602`). Saves the first photo as the single main image (Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise list/search expose `GET /api/v1/recipes/{id}/image`). Returns `reviewReasons` / `uncertainFields` when the photo is hard to read.
+- `delete_recipe` - soft-delete a recipe. Does not delete cookbooks.
 
 ## Cookbooks
 
@@ -24,10 +27,12 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 ## Household and plans
 
 - `get_household_context` - people in household `sortOrder`, Default servings (`servingsSettings`: family / fixed / recipe), plus per-person Loves (never used to hide recipes)
+- `manage_household_schedule` - get or replace weekly availability and busy-night dinner budgets
 - `manage_household_settings` - get or update kitchen Default servings (`family` = max(recipe yield, People count), `fixed` = a number 1-99, `recipe` = stored yield)
 - `manage_kitchen_invites` - create, list, or revoke shareable kitchen invite links (owner or admin; default role member)
 - `manage_kitchen_members` - list signed-in kitchen members, change roles, remove a member, or leave
 - `get_person_rules` - Can't eat / Doesn't like rules plus Loves
+- `manage_people` - list, create, update, or delete people
 - `manage_person_rules` - list / add / remove rules. Dislikes spicy: `kind=ingredient` or `tag`, `target=spicy`, `severity=prefer_avoid` (matches cayenne, chiles, chili powder, hot sauce, and similar heat). Other taste dislikes: cilantro, olives, mushrooms, onions, garlic. Unknown targets need `confirmUnknown=true`. Tree-nut rules accept `treatCoconutAsTreeNut` (default `false`; coconut is not a tree nut unless set)
 - `reorder_people` - persist household people order (`personIds` must list everyone once)
 - `manage_person_loves` - `list`, `add`, `remove` a food, cuisine, or style someone loves
@@ -35,5 +40,6 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 - `save_meal_plan`
 - `get_meal_plan` - recipe nights plus `freeformMeal` / servings for leftovers or no-cook
 - `edit_meal_plan` - `set`, `swap`, or `clear` a single night (or `undo` the last entries edit) without rewriting the week
+- `delete_meal_plan` - soft-delete a meal plan
 - `check_meal_plan` - per-person findings plus informational `loveTags` (never a filter). Freeform leftovers are not flagged as cooking on a no-cook night
 - `export_shopping_list`

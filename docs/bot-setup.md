@@ -56,8 +56,7 @@ pnpm --filter @ovenlovin/mcp dev
 ```
 
 The MCP server will be available at:
-- **Stdio transport**: `npx @ovenlovin/mcp`
-- **HTTP transport**: `http://localhost:3000/mcp` (via Next.js web server)
+- **HTTP transport**: `http://localhost:3000/mcp` (via Next.js web server). `@ovenlovin/mcp` is a private workspace package, not an npm CLI.
 
 ### Production Deployment
 
@@ -109,34 +108,9 @@ Grok will use the `search_recipes` MCP tool and return results from your OvenLov
 
 ## Claude Desktop / Claude Code
 
-Claude Desktop and Claude Code support MCP via both stdio and HTTP transports.
+Claude Desktop and Claude Code connect over HTTP. `@ovenlovin/mcp` is not published to npm.
 
-### Stdio Transport (Recommended for Local Development)
-
-Edit Claude's config file:
-
-**macOS/Linux**: `~/.config/claude/claude_desktop_config.json`
-
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "ovenlovin": {
-      "command": "npx",
-      "args": ["@ovenlovin/mcp"],
-      "env": {
-        "DATABASE_URL": "postgresql://...",
-        "API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
-
-### HTTP Transport (Production)
-
-For deployed instances:
+### HTTP Transport
 
 ```json
 {
@@ -387,18 +361,13 @@ OvenLovin supports three authentication methods:
 
 Generate in the OvenLovin dashboard under Settings → API Keys.
 
-**Scopes**:
-- `recipes:read` - Read recipes
-- `recipes:write` - Create/update/import recipes
-- `plans:read` - Read meal plans
-- `plans:write` - Create/update meal plans
-- `household:read` - Read household context
-- `household:admin` - Manage household members and rules
+**Scopes**: `recipes:read`, `recipes:write`, `plans:read`, `plans:write`, `people:read`, `people:write`, `lists:export`.
 
 Include in the `Authorization` header:
 ```
-Authorization: Bearer olvn_key_abc123...
+Authorization: Bearer rkapi_...
 ```
+or `Authorization: ApiKey rkapi_...`.
 
 ### 2. OAuth 2.1 (via Clerk)
 
@@ -418,36 +387,15 @@ For the Next.js web UI, session cookies are automatically included in same-origi
 
 ### MCP Tools
 
-The MCP server provides these tools:
+Registered tools: `whoami`, `search_recipes`, `get_recipe`, `create_recipe`, `import_recipe`, `import_recipe_from_image`, `delete_recipe`, `get_household_context`, `manage_household_schedule`, `manage_household_settings`, `manage_kitchen_invites`, `manage_kitchen_members`, `get_person_rules`, `manage_people`, `manage_person_rules`, `manage_person_loves`, `check_meal_plan`, `export_shopping_list`, `save_meal_plan`, `get_meal_plan`, `edit_meal_plan`, `delete_meal_plan`, `list_cookbooks`, `get_cookbook`, `manage_cookbook`, `reorder_people`.
 
-#### Recipe Management
-- `search_recipes` - Search recipes by text, filters (cuisine, tags, prep time, etc.)
-- `get_recipe` - Get full recipe details by ID
-- `import_recipe` - Import recipe from URL or pasted text
-- `import_recipe_from_image` - Import a recipe from a photo URL or base64 (AI Gateway vision)
-
-#### Household Context
-- `get_household_context` - Get household members, dietary rules, and constraints
-- `get_person_rules` - Get detailed rules for a specific person
-
-#### Meal Planning
-- `save_meal_plan` - Create or update a weekly meal plan
-- `get_meal_plan` - Retrieve meal plan details
-- `check_meal_plan` - Run allergen and dietary rule checks on a plan
-
-#### Shopping
-- `export_shopping_list` - Generate aggregated shopping list with quantities and rule warnings
+See [MCP tools](mcp-tools.md).
 
 ### MCP Resources
 
-The MCP server also exposes structured data via resource URIs:
-
-- `ovenlovin://household/{id}` - Household details
-- `ovenlovin://person/{id}` - Person profile
-- `ovenlovin://recipe/{id}` - Recipe data
-- `ovenlovin://meal-plan/{id}` - Meal plan
-
-Bots can request these for context without explicit tool calls.
+- `ovenlovin://household/{id}/profile`
+- `ovenlovin://household/{id}/schedule`
+- `ovenlovin://household/{id}/people`
 
 ## Example Workflows
 
@@ -508,35 +456,14 @@ Bot responds with:
      https://your-app.vercel.app/api/v1/recipes
    ```
 
-3. For stdio transport, ensure `@ovenlovin/mcp` is published or use local path:
-   ```json
-   {
-     "command": "node",
-     "args": ["/path/to/ovenlovin/packages/mcp/dist/server.js"]
-   }
-   ```
-
 ### Authentication Errors
 
 **Problem**: 401 Unauthorized
 
 **Solutions**:
-- Verify API key format: `Authorization: Bearer olvn_key_...`
-- Check key hasn't expired in dashboard
-- Ensure key has required scopes for the operation
-
-### Rate Limiting
-
-**Problem**: 429 Too Many Requests
-
-**Response headers**:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 1704067200
-```
-
-**Solution**: Wait until `X-RateLimit-Reset` timestamp or upgrade plan
+- Verify API key format: `Authorization: ApiKey rkapi_...` or `Bearer rkapi_...`
+- Check the key is still listed under Settings
+- Ensure the key has the required scopes
 
 ### Vercel Email Verification
 

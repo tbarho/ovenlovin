@@ -7,7 +7,6 @@ OvenLovin provides multiple interfaces for AI agents:
 
 - **MCP Server** - Model Context Protocol for structured tool access
 - **REST API** - OpenAPI-compliant HTTP endpoints
-- **CLI** - Command-line interface for scripting
 
 ## Prerequisites
 
@@ -51,49 +50,9 @@ Grok will use the `search_recipes` MCP tool and return results from your instanc
 
 ## Claude Desktop / Claude Code
 
-Claude supports MCP via stdio (local) and HTTP (remote) transports.
+Claude connects over HTTP. `@ovenlovin/mcp` is a private workspace package, not an npm CLI.
 
-### Stdio Transport (Local Development)
-
-Edit Claude's config file:
-
-**macOS/Linux:** `~/.config/claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "ovenlovin": {
-      "command": "npx",
-      "args": ["@ovenlovin/mcp"],
-      "env": {
-        "DATABASE_URL": "postgresql://...",
-        "API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
-
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "ovenlovin": {
-      "command": "npx",
-      "args": ["@ovenlovin/mcp"],
-      "env": {
-        "DATABASE_URL": "postgresql://...",
-        "API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
-
-### HTTP Transport (Production)
-
-For deployed instances:
+### HTTP Transport
 
 ```json
 {
@@ -158,23 +117,7 @@ Any MCP-compatible client can connect to OvenLovin.
 
 ### Environment Variables
 
-For local development with stdio transport:
-
-```bash
-export DATABASE_URL="postgresql://..."
-export API_KEY="your-api-key"
-# Optional off Vercel. On Vercel, AI Gateway uses OIDC.
-export AI_GATEWAY_API_KEY="your-vercel-ai-gateway-key"
-```
-
-### Stdio Transport
-
-```json
-{
-  "command": "npx",
-  "args": ["@ovenlovin/mcp"]
-}
-```
+Use HTTP. `@ovenlovin/mcp` is not published to npm.
 
 ### HTTP Transport
 
@@ -248,26 +191,7 @@ curl https://your-app.vercel.app/api/v1/openapi.yaml > openapi.yaml
 
 Once connected, agents can use these tools:
 
-### Recipe Management
-
-- `search_recipes` - Search recipes by text, cuisine, prep time, tags, etc.
-- `get_recipe` - Get full recipe details by ID
-- `import_recipe` - Import recipe from URL, text, or photo
-
-### Household Context
-
-- `get_household_context` - Get household members, dietary rules, and constraints
-- `get_person_rules` - Get detailed rules for a specific person
-
-### Meal Planning
-
-- `save_meal_plan` - Create or update a weekly meal plan
-- `get_meal_plan` - Retrieve meal plan details
-- `check_meal_plan` - Run allergen and dietary rule checks
-
-### Shopping
-
-- `export_shopping_list` - Generate aggregated shopping list with quantities and warnings
+Registered tools: `whoami`, `search_recipes`, `get_recipe`, `create_recipe`, `import_recipe`, `import_recipe_from_image`, `delete_recipe`, `get_household_context`, `manage_household_schedule`, `manage_household_settings`, `manage_kitchen_invites`, `manage_kitchen_members`, `get_person_rules`, `manage_people`, `manage_person_rules`, `manage_person_loves`, `check_meal_plan`, `export_shopping_list`, `save_meal_plan`, `get_meal_plan`, `edit_meal_plan`, `delete_meal_plan`, `list_cookbooks`, `get_cookbook`, `manage_cookbook`, `reorder_people`.
 
 ## Example Workflows
 
@@ -324,28 +248,11 @@ Should return MCP server metadata. If not, check:
 ### Authentication Errors (401)
 
 Verify:
-- API key format: `Authorization: Bearer olvn_key_...`
-- Key hasn't expired in dashboard
+- API key format: `Authorization: ApiKey rkapi_...` or `Bearer rkapi_...`
+- Key is still listed under Settings
 - Key has required scopes for the operation
-
-### Stdio Transport Not Working
-
-For local development, ensure `@ovenlovin/mcp` is accessible:
-
-```bash
-npx @ovenlovin/mcp
-```
-
-Or use absolute path:
-
-```json
-{
-  "command": "node",
-  "args": ["/path/to/ovenlovin/packages/mcp/dist/server.js"]
-}
-```
 
 ## Next Steps
 
 - [API Reference](./api) - Explore REST endpoints and MCP tools
-- [CLI Reference](./cli) - Use the command-line interface
+- [Import Recipes](./importers) - URL, paste, and photo import
