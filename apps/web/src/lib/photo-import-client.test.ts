@@ -197,6 +197,22 @@ describe("extractPhotoPreviewFromFiles", () => {
     expect(photoImportErrorMessage(error)).toBe("Photo import cancelled");
   });
 
+  it("uploads the original file without a client resize", async () => {
+    const createImageBitmap = vi.fn();
+    vi.stubGlobal("createImageBitmap", createImageBitmap);
+    const xhr = mockXhr();
+    const file = new File([new Uint8Array(3 * 1024 * 1024)], "test-card.png", {
+      type: "image/png",
+    });
+    await extractPhotoPreviewFromFiles([file]);
+    expect(createImageBitmap).not.toHaveBeenCalled();
+    const sent = xhr.send.mock.calls[0]?.[0] as FormData;
+    const uploaded = sent.get("image") as File;
+    expect(uploaded.size).toBe(file.size);
+    expect(uploaded.name).toBe("test-card.png");
+    expect(uploaded.type).toBe("image/png");
+  });
+
   it("maps a PHOTO_BLURRY problem to the blurry message", async () => {
     mockXhr((xhr) => {
       xhr.status = 400;

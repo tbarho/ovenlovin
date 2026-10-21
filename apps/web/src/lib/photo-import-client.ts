@@ -1,7 +1,6 @@
 import type { PhotoImportPreview } from "./photo-import";
 
 export const PHOTO_IMPORT_TIMEOUT_MS = 60_000;
-export const PHOTO_IMPORT_MAX_EDGE = 1600;
 /** Stay under Vercel's 4.5MB body limit after base64. Demo has no Blob. */
 export const PHOTO_SAVE_MAX_EDGE = 1280;
 export const PHOTO_SAVE_MAX_BYTES = 700_000;
@@ -169,15 +168,6 @@ async function resizePhotoFile(
   return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
 }
 
-export async function preparePhotoFile(file: File): Promise<File> {
-  if (file.size <= 1.5 * 1024 * 1024) return file;
-  try {
-    return await resizePhotoFile(file, { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: 0.82 });
-  } catch {
-    return file;
-  }
-}
-
 /** Compress a phone photo so Save can POST it without hitting Vercel's 4.5MB cap. */
 export async function compressPhotoForSave(file: File): Promise<string> {
   let next = file;
@@ -304,7 +294,8 @@ export async function extractPhotoPreviewFromFiles(
   options.onUploadProgress?.(0);
 
   const data = new FormData();
-  for (const file of await Promise.all(files.map(preparePhotoFile))) {
+  // shortcut: skip preview resize (server accepts 8MB); compress only on save
+  for (const file of files) {
     if (options.signal?.aborted) throw abortError("cancelled");
     data.append("image", file);
   }
