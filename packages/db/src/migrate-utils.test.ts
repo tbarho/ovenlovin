@@ -33,7 +33,7 @@ describe("migrate helpers", () => {
   it("backfills meal_plan.cook_for when every night agrees", () => {
     const sql = readFileSync(join(drizzleDir, "0014_meal_plan_cook_for.sql"), "utf8");
     const statements = splitMigrationSql(sql);
-    expect(statements[0]).toContain('ADD COLUMN "cook_for"');
+    expect(statements[0]).toContain('ADD COLUMN IF NOT EXISTS "cook_for"');
     expect(statements[1]).toContain('COUNT(DISTINCT e."servings") = 1');
     expect(statements[1]).toContain('mp."cook_for" IS NULL');
 
