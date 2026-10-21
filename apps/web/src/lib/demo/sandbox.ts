@@ -188,6 +188,19 @@ export async function findDemoSandboxByHousehold(
   };
 }
 
+/** Move keys off a wiped kitchen so a reset does not 401 agents mid-session. */
+export async function rehomeSandboxApiKeys(
+  db: DbClient,
+  fromHouseholdId: string,
+  toHouseholdId: string
+): Promise<void> {
+  if (fromHouseholdId === toHouseholdId) return;
+  await db
+    .update(apiKey)
+    .set({ householdId: toHouseholdId, updatedAt: new Date() })
+    .where(eq(apiKey.householdId, fromHouseholdId));
+}
+
 export async function resetDemoSandbox(
   cookieId: string | undefined,
   db: DbClient = getDatabase()
@@ -200,6 +213,7 @@ export async function resetDemoSandbox(
     if (cookieId) {
       const existing = await findDemoSandboxById(cookieId, session);
       if (existing && existing.id !== next.id) {
+        await rehomeSandboxApiKeys(session, existing.householdId, next.householdId);
         await wipeSandboxHousehold(session, {
           id: existing.id,
           householdId: existing.householdId,

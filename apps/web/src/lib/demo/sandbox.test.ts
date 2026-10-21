@@ -9,6 +9,7 @@ import {
   demoCookieOptions,
   isDemoCookieName,
   isSandboxExpired,
+  rehomeSandboxApiKeys,
   resetDemoSandbox,
   wipeExpiredDemoSandboxes,
 } from "./sandbox";
@@ -232,6 +233,25 @@ describe("demo sandbox cookie", () => {
     await wipeExpiredDemoSandboxes(db, new Date("2026-10-19T00:00:00.000Z"));
     expect(deleted).not.toContain("user");
     expect(deleted.filter((name) => name === "household")).toHaveLength(1);
+  });
+
+  it("moves API keys to the new sandbox so reset does not 401 the old key", async () => {
+    const moved: Array<{ householdId?: string }> = [];
+    const db = {
+      update: (table: unknown) => ({
+        set: (values: { householdId?: string }) => ({
+          where: async () => {
+            expect(getTableName(table as never)).toBe("api_key");
+            moved.push(values);
+          },
+        }),
+      }),
+    } as unknown as DbClient;
+
+    await rehomeSandboxApiKeys(db, "household-old", "household-new");
+    expect(moved).toEqual([{ householdId: "household-new", updatedAt: expect.any(Date) }]);
+    await rehomeSandboxApiKeys(db, "household-same", "household-same");
+    expect(moved).toHaveLength(1);
   });
 
   it("reseeds inside a transaction so a failed seed leaves the old kitchen", async () => {
