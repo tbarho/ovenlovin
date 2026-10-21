@@ -240,6 +240,10 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
     return ValidationError.fromZodError(error).toResponse(instance);
   }
 
+  if (error instanceof SyntaxError) {
+    return new BadRequestError("Request body must be JSON").toResponse(instance);
+  }
+
   if (error instanceof InvalidImageUrlError) {
     return new BadRequestError(error.message, { code: error.code }).toResponse(instance);
   }

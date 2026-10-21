@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireAdminRole, requireHouseholdId } from "@/lib/api/middleware";
-import { PeopleService } from "@ovenlovin/core";
+import { PeopleService, updatePersonBodySchema } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { assertPersonHousehold } from "@/lib/api/people";
 
@@ -32,7 +33,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const householdId = requireHouseholdId(context);
 
     const { id } = await params;
-    const body = await request.json();
+    const body = await readJsonBody(request, updatePersonBodySchema);
 
     const db = getDatabase();
     const service = new PeopleService(db);

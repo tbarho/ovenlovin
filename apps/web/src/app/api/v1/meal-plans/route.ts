@@ -8,6 +8,7 @@ import {
   getIdempotencyKey,
 } from "@/lib/api/middleware";
 import { createMealPlanBodySchema, PlanService, resolveWriteActor } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const householdId = requireWritableHousehold(context);
     const idempotencyKey = getIdempotencyKey(request);
 
-    const body = createMealPlanBodySchema.parse(await request.json());
+    const body = await readJsonBody(request, createMealPlanBodySchema);
 
     const db = getDatabase();
     const service = new PlanService(db);
