@@ -137,6 +137,34 @@ describe("week-plan view", () => {
     });
   });
 
+  it("names a dislike in the pre-add warning along with other rules", () => {
+    const parentB = testPerson({ displayName: "Parent B" });
+    const childC = testPerson({
+      id: "00000000-0000-4000-8000-000000000015",
+      displayName: "Child C",
+    });
+    const safety = pickSafety(
+      [parentB, childC],
+      [
+        testPersonRule({ personId: parentB.id, target: "milk", severity: "warn" }),
+        testPersonRule({
+          personId: childC.id,
+          kind: "ingredient",
+          target: "olive",
+          severity: "prefer_avoid",
+        }),
+      ],
+      [
+        { id: "feta", name: "feta cheese" },
+        { id: "olives", name: "kalamata olives" },
+      ]
+    );
+    expect(safety.safety).toBe("warn");
+    expect(safety.warning).toMatch(/Parent B/);
+    expect(safety.warning).toMatch(/Child C/);
+    expect(safety.warning).toMatch(/olive/i);
+  });
+
   it("marks a dinner unfinished only when the household has no people", () => {
     const pasta = [{ id: "ing-pasta", name: "pasta" }];
     expect(checkMeal([], [], pasta)).toEqual({ findings: [], checkStatus: "incomplete" });

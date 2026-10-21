@@ -37,6 +37,12 @@ describe("parseRecipeServings", () => {
     expect(parseRecipeServings({})).toBeUndefined();
     expect(parseRecipeServings({ recipeYield: "a few" })).toBeUndefined();
   });
+
+  it("reads N dozen as 12N servings, not N", () => {
+    expect(parseRecipeServings({ recipeYield: "3 dozen" })).toBe(36);
+    expect(parseRecipeServings({ recipeYield: "5 dozen cookies" })).toBe(60);
+    expect(parseRecipeServings({ recipeYield: "Makes 3 dozen" })).toBe(36);
+  });
 });
 
 describe("parseRecipeNutrition", () => {

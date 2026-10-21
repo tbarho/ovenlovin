@@ -82,7 +82,7 @@ describe("ShoppingList", () => {
     );
 
     expect(screen.getByTestId("shop-scaled-for")).toHaveTextContent(
-      "For 5 people (some recipes at full yield)"
+      "For 5 people (some recipes scaled differently)"
     );
   });
 
@@ -183,6 +183,7 @@ describe("ShoppingList", () => {
     await user.click(screen.getByRole("button", { name: "Add item" }));
     expect(screen.getByRole("heading", { name: "Other" })).toBeInTheDocument();
     expect(screen.getByText("paper towels")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Added paper towels");
     expect(screen.getByRole("checkbox", { name: /yellow onion/i })).not.toBeChecked();
     expect(api).toHaveBeenCalledWith(
       "/api/v1/meal-plans/plan-1/shopping-list/state",
@@ -205,9 +206,20 @@ describe("ShoppingList", () => {
 
     await user.click(screen.getByRole("button", { name: "Remove Test item 1" }));
     expect(screen.queryByText("Test item 1")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Removed Test item 1");
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1/shopping-list/state", {
       method: "PATCH",
       body: JSON.stringify({ checkedKeys: [], extras: [] }),
+    });
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Test item 1")).toBeInTheDocument();
+    expect(api).toHaveBeenLastCalledWith("/api/v1/meal-plans/plan-1/shopping-list/state", {
+      method: "PATCH",
+      body: JSON.stringify({
+        checkedKeys: [],
+        extras: [{ key: "extra:test-item-1:1", name: "Test item 1" }],
+      }),
     });
 
     await user.type(screen.getByPlaceholderText("Milk, paper towels…"), "Milk");

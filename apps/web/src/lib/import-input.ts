@@ -26,16 +26,26 @@ export function importInputError(source: "url" | "paste", content: string): stri
     return "That doesn't look like a web address";
   }
   if (source === "url" && isExamplePlaceholderUrl(content)) {
-    return "No recipe found on this page.";
+    return NOT_A_RECIPE_COPY;
   }
   return null;
 }
 
 export const BLOCKED_IMPORT_COPY = "That site would not let us read its recipe.";
+export const NOT_A_RECIPE_COPY = "This is not a recipe page.";
+export const PAGE_GONE_COPY = "That page is gone.";
+export const UNSUPPORTED_SITE_COPY =
+  "We can't import from this site. Paste the text or add a photo.";
 
 export function isBlockedImportError(message: string | null | undefined): boolean {
   if (!message) return false;
   return /blocked the importer/i.test(message) || message === BLOCKED_IMPORT_COPY;
+}
+
+export function displayImportFailure(message: string): string {
+  if (isBlockedImportError(message)) return BLOCKED_IMPORT_COPY;
+  if (message === "No recipe found on this page.") return NOT_A_RECIPE_COPY;
+  return message;
 }
 
 export function importGuessedNotice(title: string, servings: number | null): string {

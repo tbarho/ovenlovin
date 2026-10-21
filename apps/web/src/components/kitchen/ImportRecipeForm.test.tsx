@@ -297,6 +297,45 @@ describe("ImportRecipeForm url and paste validation", () => {
     expect(screen.getByTestId("import-quota")).toHaveTextContent("3 of 5 left");
   });
 
+  it.each(["url", "paste"] as const)(
+    "reuses photo stages, estimate, and Cancel while a %s import is in flight",
+    async (tab) => {
+      const user = userEvent.setup();
+      let signal: AbortSignal | undefined;
+      vi.mocked(api).mockImplementation(
+        (_path, init) =>
+          new Promise((_, reject) => {
+            signal = init?.signal ?? undefined;
+            init?.signal?.addEventListener("abort", () => {
+              const error = new Error("Aborted");
+              error.name = "AbortError";
+              reject(error);
+            });
+          })
+      );
+      render(<ImportRecipeForm />);
+      if (tab === "paste") {
+        await user.click(screen.getByRole("tab", { name: "Paste" }));
+        await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Parent A pasta");
+      } else {
+        await user.type(
+          screen.getByPlaceholderText(/example.com/i),
+          "https://www.allrecipes.com/cookies"
+        );
+      }
+      await user.click(screen.getByRole("button", { name: "Import" }));
+      expect(await screen.findByTestId("import-progress")).toBeVisible();
+      expect(screen.getByText("Reading")).toBeVisible();
+      expect(screen.getByText(`${PHOTO_IMPORT_ESTIMATE}.`)).toBeVisible();
+      expect(screen.queryByText("Importing…")).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(signal?.aborted).toBe(true);
+      expect(await screen.findByRole("button", { name: "Import" })).toBeVisible();
+      expect(screen.queryByTestId("import-progress")).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    }
+  );
+
   it("keeps Paste import disabled until there is text", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
@@ -329,9 +368,39 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://example.com/chocolate-chip-cookies"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByText("No recipe found on this page.")).toBeVisible();
+    expect(screen.getByText("This is not a recipe page.")).toBeVisible();
     expect(document.querySelector(".import-error")?.textContent).not.toMatch(/blocked/i);
     expect(api).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
+  it("names a gone page and an unsupported site", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValueOnce(new Error("That page is gone."));
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/example.com/i),
+      "https://www.foodnetwork.com/recipes/old"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("That page is gone.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
+  it("shows Try again on a paste failure", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValue(new Error("An unexpected error occurred"));
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Soup\nServes 2");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("An unexpected error occurred")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Paste the recipe text" })).not.toBeInTheDocument();
   });
 
   it("offers paste and photo when a site blocks the URL importer", async () => {
@@ -346,7 +415,9 @@ describe("ImportRecipeForm url and paste validation", () => {
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText("That site would not let us read its recipe.")).toBeVisible();
-    expect(screen.queryByText(/bookmarklet/i)).not.toBeInTheDocument();
+    expect(screen.getByText("That site would not let us read its recipe.")).not.toHaveTextContent(
+      /bookmarklet/i
+    );
     const pasteHelp = screen.getByRole("button", { name: "Paste the recipe text" });
     const photoHelp = screen.getByRole("button", { name: "Add a photo" });
     expect(pasteHelp.compareDocumentPosition(photoHelp) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(

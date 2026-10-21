@@ -87,7 +87,9 @@ export function formatQuantity(value: number, roundUp = false): string {
   const sign = value < 0 ? "-" : "";
   const abs = Math.abs(value);
   const whole = Math.floor(abs + 1e-9);
-  const snapped = snapFraction(abs - whole, roundUp);
+  let snapped = snapFraction(abs - whole, roundUp);
+  // a leftover closer to 0 than 1/8 used to print as 0 tsp
+  if (whole === 0 && snapped.value < 1e-9) snapped = { value: 1 / 8, label: "1/8" };
 
   if (snapped.value < 1e-9) return `${sign}${whole}`;
   if (Math.abs(snapped.value - 1) < 1e-9) return `${sign}${whole + 1}`;
@@ -186,7 +188,7 @@ function mixedCupTbsp(tbsp: number): FriendlyMeasure | null {
   }
   if (cupDown < 0.25) return null;
   const rem = tbsp - cupDown * 16;
-  if (rem < 0.5) return null;
+  if (rem < 1 / 8 - 1e-9) return null;
   return {
     displayQuantity: `${formatQuantity(cupDown)} cup + ${formatQuantity(rem)} tbsp`,
   };
@@ -207,6 +209,9 @@ export function toFriendlyMeasure(
   const from = family?.find((item) => item.unit === normalized);
   if (!family || !from) {
     return { displayQuantity: formatQuantity(quantity, roundUp), displayUnit: normalized };
+  }
+  if (normalized === "tsp" && quantity > 0 && quantity < 1 / 16) {
+    return { displayQuantity: "a pinch" };
   }
 
   const base = quantity * from.toBase;
@@ -229,14 +234,16 @@ export function toFriendlyMeasure(
   if (normalized === "tbsp" && best.unit === "cup") {
     const cups = quantity / 16;
     const shown = quantityValue(formatQuantity(best.quantity, roundUp));
+    const mixed = mixedCupTbsp(quantity);
     if (shown <= 0 || Math.abs(shown - cups) / cups > 0.05) {
       return (
-        mixedCupTbsp(quantity) ?? {
+        mixed ?? {
           displayQuantity: formatQuantity(quantity, roundUp),
           displayUnit: "tbsp",
         }
       );
     }
+    if (mixed) return mixed;
   }
 
   return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };
