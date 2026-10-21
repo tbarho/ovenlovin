@@ -27,6 +27,7 @@ describe("scaleFactorForPlanEntry", () => {
     expect(scaleFactorForPlanEntry(8, null, 1)).toBe(1);
     expect(scaleFactorForPlanEntry(6, undefined, 1)).toBe(1);
     expect(scaleFactorForPlanEntry(5, null)).toBe(1);
+    expect(scaleFactorForPlanEntry(null, null, 1, 8)).toBe(1);
   });
 
   it("falls back to an explicit scaleFactor only when the entry has no servings", () => {
