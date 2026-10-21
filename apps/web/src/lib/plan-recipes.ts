@@ -142,9 +142,7 @@ export function applyDinnerToDays(
       mealSlot: "dinner",
       recipeId: next.recipeId ?? null,
       title: recipe?.title ?? next.freeformMeal ?? NO_COOK_LABEL,
-      href: recipe
-        ? planRecipeHref(recipe.id, next.servings ?? existing?.servings ?? 1)
-        : null,
+      href: recipe ? planRecipeHref(recipe.id, next.servings ?? existing?.servings ?? 1) : null,
       image: recipe?.image ?? null,
       servings: next.servings ?? existing?.servings ?? null,
       recipeServings: recipe?.servings ?? existing?.recipeServings ?? null,
