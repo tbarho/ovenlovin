@@ -2,11 +2,7 @@ import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/in
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
-import {
-  cookForPeopleLabel,
-  effectivePlanServings,
-  planListScale,
-} from "../scaling/default-servings";
+import { cookForPeopleLabel } from "../scaling/default-servings";
 import {
   formatMeasureText,
   formatQuantity,
@@ -274,14 +270,13 @@ export class ShoppingListService {
     const includeStaples = resolveIncludeStaples(input);
     const ingredientMap = new Map<string, ShoppingListIngredient>();
 
+    const cookFor = input.defaultCookFor && input.defaultCookFor > 0 ? input.defaultCookFor : null;
+
     for (const source of input.entries) {
-      const scale = scaleFactorForPlanEntry(
-        source.entry.servings,
-        source.recipeServings,
-        source.entry.scaleFactor,
-        input.defaultCookFor,
-        input.mode
-      );
+      // Per-night servings are labels only; list amounts follow the week cook-for.
+      const scale = cookFor
+        ? scaleFactorForPlanEntry(cookFor, source.recipeServings, null, cookFor, "fixed")
+        : 1;
       const recipeId = source.entry.recipeId ?? "";
       const recipeTitle = source.recipeTitle || "Unknown Recipe";
       const recipeKey = groupBy === "recipe" ? recipeId : "";
@@ -367,20 +362,6 @@ export class ShoppingListService {
       })
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const entryScales = input.entries
-      .filter((source) => source.entry.recipeId)
-      .map((source) =>
-        effectivePlanServings({
-          entryServings: source.entry.servings,
-          defaultCookFor: input.defaultCookFor ?? 0,
-          mode: input.mode,
-          recipeServings: source.recipeServings,
-          scaleFactor: source.entry.scaleFactor,
-        })
-      );
-    const listScale = planListScale(entryScales, input.defaultCookFor ?? 0);
-    const hasCookFor = Boolean(input.defaultCookFor && input.defaultCookFor > 0);
-
     return {
       mealPlanId: input.mealPlanId,
       weekStart: input.weekStart,
@@ -392,8 +373,8 @@ export class ShoppingListService {
       itemCount: ingredients.length,
       generatedAt: input.generatedAt ?? new Date().toISOString(),
       warnings: input.warnings ?? [],
-      scaledFor: entryScales.length > 0 || hasCookFor ? listScale.scaledFor : undefined,
-      scaledForMixed: listScale.mixed,
+      scaledFor: cookFor ?? undefined,
+      scaledForMixed: false,
     };
   }
 

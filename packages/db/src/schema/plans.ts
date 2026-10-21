@@ -71,6 +71,8 @@ export const mealPlan = pgTable("meal_plan", {
     .notNull()
     .references(() => household.id),
   weekStart: date("week_start").notNull(),
+  /** Chosen cook-for for the week. Night labels and the shopping list read this. */
+  cookFor: integer("cook_for"),
   status: mealPlanStatusEnum("status").notNull().default("draft"),
   generator: varchar("generator", { length: 255 }),
   generatorModel: varchar("generator_model", { length: 100 }),
