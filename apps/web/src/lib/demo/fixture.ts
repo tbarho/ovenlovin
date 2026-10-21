@@ -1,4 +1,4 @@
-import type { RecipeImportDraft } from "@ovenlovin/core";
+import { API_KEY_SCOPES, type RecipeImportDraft } from "@ovenlovin/core";
 
 export const DEMO_HOUSEHOLD_NAME = "Sample kitchen";
 
@@ -13,15 +13,7 @@ export const DEMO_WRITE_LIMIT_PER_HOUR = 60;
 export const DEMO_IMPORT_LIMIT = 5;
 export const DEMO_WEEK_START = "2026-10-12";
 
-export const DEMO_API_KEY_SCOPES = [
-  "recipes:read",
-  "recipes:write",
-  "plans:read",
-  "plans:write",
-  "people:read",
-  "people:write",
-  "lists:export",
-] as const;
+export const DEMO_API_KEY_SCOPES = API_KEY_SCOPES;
 
 export const DEMO_PEOPLE = [
   {

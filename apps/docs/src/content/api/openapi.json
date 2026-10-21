@@ -37,7 +37,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "Authorization",
-        "description": "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected."
+        "description": "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings (full access if you omit scopes). A request outside the key's scopes returns 403 with type `<origin>/problems/forbidden`. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected."
       },
       "bearerAuth": {
         "type": "http",
@@ -487,6 +487,12 @@
           "weekStart": {
             "type": "string"
           },
+          "cookFor": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 99
+          },
           "status": {
             "type": "string",
             "enum": ["draft", "approved", "archived"]
@@ -521,11 +527,13 @@
                   "type": "string"
                 }
               },
-              "required": ["key", "name"]
+              "required": ["key", "name"],
+              "additionalProperties": false
             }
           }
         },
-        "required": ["checkedKeys", "extras"]
+        "required": ["checkedKeys", "extras"],
+        "additionalProperties": false
       },
       "MealPlanDetail": {
         "allOf": [
@@ -594,6 +602,153 @@
           }
         },
         "required": ["id", "date", "mealSlot", "attendees"]
+      },
+      "ShoppingList": {
+        "type": "object",
+        "properties": {
+          "mealPlanId": {
+            "type": "string"
+          },
+          "weekStart": {
+            "type": "string"
+          },
+          "groupBy": {
+            "type": "string",
+            "enum": ["aisle", "recipe", "category"]
+          },
+          "includeStaples": {
+            "type": "boolean",
+            "description": "Canonical flag for kitchen staples such as salt, pepper, and oil."
+          },
+          "includePantryItems": {
+            "type": "boolean",
+            "description": "Deprecated alias of includeStaples."
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingListIngredient"
+            }
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShoppingListIngredient"
+                  }
+                }
+              },
+              "required": ["name", "items"]
+            }
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "generatedAt": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ingredient": {
+                  "type": "string"
+                },
+                "personName": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": ["ingredient", "personName", "note"]
+            }
+          }
+        },
+        "required": [
+          "mealPlanId",
+          "weekStart",
+          "groupBy",
+          "includeStaples",
+          "includePantryItems",
+          "ingredients",
+          "sections",
+          "itemCount",
+          "generatedAt",
+          "warnings"
+        ]
+      },
+      "ShoppingListIngredient": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "checked": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "displayQuantity": {
+            "type": "string"
+          },
+          "displayUnit": {
+            "type": "string",
+            "description": "Unit inflected for the display quantity (`cloves` when the amount is 2)."
+          },
+          "aisle": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "isStaple": {
+            "type": "boolean",
+            "description": "Canonical kitchen-staple flag (salt, oil, pepper). Distinct from the pantry food-taxonomy category."
+          },
+          "isPantryItem": {
+            "type": "boolean",
+            "description": "Deprecated alias of isStaple."
+          },
+          "recipes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "recipeId": {
+                  "type": "string"
+                },
+                "recipeTitle": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "unit": {
+                  "type": "string"
+                }
+              },
+              "required": ["recipeId", "recipeTitle"]
+            }
+          }
+        },
+        "required": ["key", "name", "aisle", "category", "isStaple", "isPantryItem", "recipes"]
       },
       "HouseholdServingsSettings": {
         "type": "object",
@@ -939,6 +1094,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -1023,6 +1206,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1060,6 +1271,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RecipeDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1170,6 +1409,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -1190,6 +1457,34 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1216,6 +1511,34 @@
           },
           "302": {
             "description": "Redirect to a Blob or remote URL"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Recipe or image not found"
@@ -1248,6 +1571,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1256,7 +1607,7 @@
       "post": {
         "tags": ["recipes"],
         "summary": "Import a recipe from a URL or pasted text",
-        "description": "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
+        "description": "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send the previewed `draft` with `save=true` to persist without extracting again. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1270,12 +1621,16 @@
                   "content": {
                     "type": "string"
                   },
+                  "draft": {
+                    "nullable": true,
+                    "description": "Previewed recipe from a prior save:false call. Skips extract."
+                  },
                   "save": {
                     "type": "boolean",
                     "description": "When true, persist the recipe. Default is preview only."
                   }
                 },
-                "required": ["source", "content"]
+                "required": ["source"]
               }
             }
           }
@@ -1297,6 +1652,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1343,6 +1726,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1400,6 +1811,10 @@
                   },
                   "save": {
                     "type": "boolean"
+                  },
+                  "draft": {
+                    "nullable": true,
+                    "description": "Previewed recipe from a prior save:false call. Skips extract."
                   },
                   "allowDuplicate": {
                     "type": "boolean",
@@ -1475,6 +1890,34 @@
               }
             }
           },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "503": {
             "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
           }
@@ -1501,6 +1944,34 @@
                     }
                   },
                   "required": ["items"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1538,6 +2009,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1564,6 +2063,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Cookbook"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1612,6 +2139,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -1632,6 +2187,34 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1670,6 +2253,34 @@
         "responses": {
           "200": {
             "description": "Membership saved"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1717,6 +2328,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1753,6 +2392,34 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Preference"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
                   }
                 }
               }
@@ -1805,6 +2472,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1836,6 +2531,34 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1857,6 +2580,34 @@
                     }
                   },
                   "required": ["url"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1884,6 +2635,34 @@
                     }
                   },
                   "required": ["items"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1921,6 +2700,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1947,6 +2754,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -1995,6 +2830,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -2015,6 +2878,34 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2043,6 +2934,34 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/PersonRule"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
                   }
                 }
               }
@@ -2107,6 +3026,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2138,6 +3085,34 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2191,6 +3166,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -2206,6 +3209,11 @@
                   "weekStart": {
                     "type": "string",
                     "format": "date"
+                  },
+                  "cookFor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99
                   },
                   "status": {
                     "type": "string",
@@ -2253,7 +3261,8 @@
                       },
                       "required": ["date", "meal"],
                       "additionalProperties": false
-                    }
+                    },
+                    "maxItems": 50
                   }
                 },
                 "required": ["weekStart"],
@@ -2269,6 +3278,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MealPlanDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -2301,6 +3338,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -2329,11 +3394,18 @@
                     "type": "string",
                     "enum": ["draft", "approved", "archived"]
                   },
+                  "cookFor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99
+                  },
                   "acknowledgedWarnings": {
                     "type": "array",
                     "items": {
-                      "type": "string"
-                    }
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "maxItems": 100
                   },
                   "entries": {
                     "type": "array",
@@ -2379,7 +3451,8 @@
                       },
                       "required": ["date", "meal"],
                       "additionalProperties": false
-                    }
+                    },
+                    "maxItems": 50
                   },
                   "entriesMode": {
                     "type": "string",
@@ -2437,6 +3510,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -2457,6 +3558,34 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2480,6 +3609,34 @@
         "responses": {
           "200": {
             "description": "Restored plan"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Plan or revision not found"
@@ -2505,6 +3662,34 @@
         "responses": {
           "200": {
             "description": "Revision list"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2528,6 +3713,34 @@
           "200": {
             "description": "Check report"
           },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "Meal plan not found (including a malformed id)"
           }
@@ -2550,6 +3763,34 @@
         "responses": {
           "200": {
             "description": "Check report"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Meal plan not found (including a malformed id)"
@@ -2610,11 +3851,59 @@
             "description": "Deprecated alias for includeStaples.",
             "name": "includePantryItems",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "IANA timezone for markdown/text Generated labels (for example America/Chicago). Always includes a zone abbreviation."
+            },
+            "required": false,
+            "description": "IANA timezone for markdown/text Generated labels (for example America/Chicago). Always includes a zone abbreviation.",
+            "name": "timeZone",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "Shopping list"
+            "description": "Shopping list. JSON is the ShoppingList object (includeStaples / isStaple canonical; includePantryItems / isPantryItem aliases). Markdown/text stamp check-offs and extras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid format, groupBy, or timeZone"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2641,6 +3930,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ShoppingTripState"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -2680,6 +3997,37 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Unknown keys or invalid check-off payload"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2691,6 +4039,34 @@
         "responses": {
           "200": {
             "description": "Household"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2707,6 +4083,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HouseholdServingsSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -2748,6 +4152,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2763,6 +4195,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HouseholdSchedule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -2822,6 +4282,34 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2833,12 +4321,40 @@
         "responses": {
           "200": {
             "description": "API keys"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
       "post": {
         "tags": ["api-keys"],
-        "summary": "Create an API key. The plaintext is returned once.",
+        "summary": "Create an API key. The plaintext is returned once. Omit scopes for full access.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2852,7 +4368,8 @@
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Defaults to full access: recipes:read, recipes:write, plans:read, plans:write, people:read, people:write, lists:export."
                   }
                 }
               }
@@ -2862,6 +4379,34 @@
         "responses": {
           "201": {
             "description": "Created key with plaintext"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2884,6 +4429,34 @@
         "responses": {
           "204": {
             "description": "Revoked"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2895,6 +4468,34 @@
         "responses": {
           "200": {
             "description": "Kitchens with an `active` flag. `activeHouseholdId` is the current kitchen. API keys cannot switch."
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2922,6 +4523,34 @@
         "responses": {
           "200": {
             "description": "Selected kitchen"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2946,6 +4575,34 @@
                     }
                   },
                   "required": ["items"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -2986,6 +4643,34 @@
         "responses": {
           "200": {
             "description": "Updated membership"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -3006,6 +4691,34 @@
         "responses": {
           "204": {
             "description": "Removed"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -3017,6 +4730,34 @@
         "responses": {
           "200": {
             "description": "Left kitchen"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -3041,6 +4782,34 @@
                     }
                   },
                   "required": ["items"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
                 }
               }
             }
@@ -3072,6 +4841,34 @@
         "responses": {
           "201": {
             "description": "Created invite with url"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -3094,6 +4891,34 @@
         "responses": {
           "200": {
             "description": "Revoked invite"
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -3147,6 +4972,34 @@
           },
           "401": {
             "description": "Signed-in user required. An API key cannot accept; the problem detail includes the invite link."
+          },
+          "403": {
+            "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Forbidden"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "detail": {
+                      "type": "string",
+                      "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

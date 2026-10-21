@@ -89,6 +89,16 @@ export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure
   if (error && typeof error === "object" && "error" in error && "jsonrpc" in error) {
     return error as JsonRpcFailure;
   }
+  if (error && typeof error === "object" && !(error instanceof Error) && "code" in error) {
+    const auth = error as { code?: unknown; message?: unknown };
+    const message = typeof auth.message === "string" ? auth.message : "Forbidden";
+    if (auth.code === "forbidden") {
+      return jsonRpcError(id, JsonRpcErrorCode.forbidden, message);
+    }
+    if (auth.code === "unauthorized" || auth.code === "invalid_token") {
+      return jsonRpcError(id, JsonRpcErrorCode.unauthorized, message);
+    }
+  }
   if (error instanceof McpInvalidParamsError) {
     return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, error.data);
   }

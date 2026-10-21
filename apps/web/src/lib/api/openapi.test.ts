@@ -114,6 +114,12 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/API key/);
     expect(JSON.stringify(spec.paths?.["/households/mine"]?.get)).toMatch(/active/);
     expect(JSON.stringify(spec.paths?.["/invites/{token}/accept"]?.post)).toMatch(/signed-in/);
+    expect(spec.paths?.["/recipes"]?.get?.responses).toHaveProperty("403");
+    expect(spec.paths?.["/recipes"]?.post?.responses).toHaveProperty("403");
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.post?.responses?.["403"])).toMatch(
+      /problems\/forbidden/
+    );
+    expect(spec.paths?.["/status"]?.get?.responses).not.toHaveProperty("403");
   });
 
   it("documents meal-plan POST and PATCH bodies with entries and no silent extras", () => {

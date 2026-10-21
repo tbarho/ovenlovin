@@ -249,7 +249,7 @@ Common status codes:
 - `201 Created` - Resource created
 - `400 Bad Request` - Invalid input
 - `401 Unauthorized` - Missing or invalid auth
-- `403 Forbidden` - Insufficient permissions
+- `403 Forbidden` - Insufficient permissions. An API key outside its scopes returns type `<origin>/problems/forbidden` and names the missing scope. Clerk sessions are not scope-checked.
 - `404 Not Found` - Resource not found
 - `409 Conflict` - Idempotency key conflict
 - `422 Unprocessable Entity` - Validation error

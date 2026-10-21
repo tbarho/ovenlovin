@@ -1288,14 +1288,19 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "post",
     path: "/api-keys",
     tags: ["api-keys"],
-    summary: "Create an API key. The plaintext is returned once.",
+    summary: "Create an API key. The plaintext is returned once. Omit scopes for full access.",
     request: {
       body: {
         content: {
           "application/json": {
             schema: z.object({
               name: z.string().optional(),
-              scopes: z.array(z.string()).optional(),
+              scopes: z
+                .array(z.string())
+                .optional()
+                .describe(
+                  "Defaults to full access: recipes:read, recipes:write, plans:read, plans:write, people:read, people:write, lists:export."
+                ),
             }),
           },
         },

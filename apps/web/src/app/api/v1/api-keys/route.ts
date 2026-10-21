@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import {
+  API_KEY_SCOPES,
   ApiKeyService,
   createApiKeyInputSchema,
   toPublicApiKey,
@@ -14,16 +15,6 @@ import {
   requireHouseholdId,
   requireUserId,
 } from "@/lib/api/middleware";
-
-const defaultScopes = [
-  "recipes:read",
-  "recipes:write",
-  "plans:read",
-  "plans:write",
-  "people:read",
-  "people:write",
-  "lists:export",
-] as const;
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +40,8 @@ export async function POST(request: NextRequest) {
     const input = createApiKeyInputSchema.parse({
       householdId,
       name: typeof body.name === "string" && body.name.trim() ? body.name.trim() : "Agent key",
-      scopes: Array.isArray(body.scopes) && body.scopes.length > 0 ? body.scopes : defaultScopes,
+      scopes:
+        Array.isArray(body.scopes) && body.scopes.length > 0 ? body.scopes : [...API_KEY_SCOPES],
     });
 
     const db = getDatabase();

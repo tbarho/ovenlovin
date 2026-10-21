@@ -1,4 +1,5 @@
 import {
+  API_KEY_SCOPES,
   ApiKeyService,
   CookbookService,
   DECIMAL_TWO_THIRDS_CARROT,
@@ -512,7 +513,7 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
       {
         householdId: household.id,
         name: "Grok kitchen key",
-        scopes: ["recipes:read", "recipes:write", "people:read", "plans:read"],
+        scopes: [...API_KEY_SCOPES],
       },
       user.id
     );

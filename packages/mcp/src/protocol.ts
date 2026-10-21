@@ -1,3 +1,4 @@
+import { MCP_RESOURCE_SCOPE, mcpApiKeyScopeDenial, missingScopeMessage } from "@ovenlovin/core";
 import type { AuthContext } from "./auth/index";
 import { listResources, readResource } from "./resources/index";
 import {
@@ -38,6 +39,13 @@ function requireAuth(authContext: AuthContext | undefined, id: JsonRpcId): AuthC
   return authContext;
 }
 
+function denyApiKeyResource(auth: AuthContext, id: JsonRpcId): void {
+  if (!auth.apiKeyId) return;
+  if (!auth.scopes.includes(MCP_RESOURCE_SCOPE)) {
+    throw jsonRpcError(id, JsonRpcErrorCode.forbidden, missingScopeMessage(MCP_RESOURCE_SCOPE));
+  }
+}
+
 function listedTools() {
   return MCP_TOOLS.map((tool) => ({
     name: tool.name,
@@ -66,6 +74,13 @@ async function callTool(params: Record<string, unknown>, authContext: AuthContex
         : (issue?.message ?? "Invalid tool arguments"),
       parsed.error.issues
     );
+  }
+
+  if (authContext.apiKeyId) {
+    const denial = mcpApiKeyScopeDenial(authContext.scopes, tool.name);
+    if (denial) {
+      throw jsonRpcError(id, JsonRpcErrorCode.forbidden, denial);
+    }
   }
 
   const result = await tool.handler(parsed.data as never, authContext);
@@ -116,10 +131,12 @@ export async function dispatchMcpRequest(
       }
       case "resources/list": {
         const auth = requireAuth(authContext, id);
+        denyApiKeyResource(auth, id);
         return jsonRpcResult(id, { resources: await listResources(auth) });
       }
       case "resources/read": {
         const auth = requireAuth(authContext, id);
+        denyApiKeyResource(auth, id);
         const uri = String(asRecord(message.params).uri ?? "");
         const content = await readResource(uri, auth);
         return jsonRpcResult(id, {

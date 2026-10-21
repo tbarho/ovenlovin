@@ -17,5 +17,6 @@ describe("buildLlmsTxt", () => {
       "POST /api/v1/recipes/import (preview unless save:true; body source/content)"
     );
     expect(text).toContain("Not medical advice");
+    expect(text).toContain("problems/forbidden");
   });
 });

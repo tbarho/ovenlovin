@@ -8,6 +8,7 @@ import {
   apiKeyKitchenHeaderMismatch,
   apiKeyMembershipRole,
   canWriteKitchen,
+  missingScopeMessage,
   selectActiveMembership,
 } from "@ovenlovin/core";
 import { parseAuthorizationHeader } from "./authorization";
@@ -223,7 +224,7 @@ export function requireScope(context: AuthContext, scope: string): void {
   if (!context.scopes.includes(scope)) {
     throw {
       code: "forbidden",
-      message: `Missing required scope: ${scope}`,
+      message: missingScopeMessage(scope),
     } as AuthError;
   }
 }

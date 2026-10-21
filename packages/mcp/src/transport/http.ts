@@ -135,6 +135,10 @@ export async function handleHttpRequest(
   }
 
   const httpStatus =
-    "error" in response && response.error.code === JsonRpcErrorCode.unauthorized ? 401 : 200;
+    "error" in response && response.error.code === JsonRpcErrorCode.unauthorized
+      ? 401
+      : "error" in response && response.error.code === JsonRpcErrorCode.forbidden
+        ? 403
+        : 200;
   return envelope(httpStatus, response);
 }
