@@ -17,9 +17,11 @@ import {
   pickImportRecipeImage,
   RecipeNotFoundError,
   RecipeImportFetchError,
+  RecipePageGoneError,
   RecipeUnsupportedSiteError,
   isUnsupportedImportUrl,
   looksLikeBotChallenge,
+  looksLikeGonePage,
   looksLikeSoftBlock,
 } from "../utils/url";
 import { extractHtmlRecipe, parseHtmlRecipeServings } from "../utils/html-recipe";
@@ -62,6 +64,12 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
       const { html, finalUrl, layersTried } = captured
         ? { html: input.html ?? "", finalUrl: input.url, layersTried: ["device"] }
         : await fetchHtml(input.url, { startedAt });
+      if (looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
+        throw new RecipeImportFetchError(finalUrl, 403, "Forbidden", layersTried);
+      }
+      if (looksLikeGonePage(html)) {
+        throw new RecipePageGoneError(finalUrl);
+      }
       const jsonLd =
         (input.jsonLd
           ? extractJsonLd(
@@ -80,9 +88,6 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
             })));
 
       if (!structured) {
-        if (looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
-          throw new RecipeImportFetchError(finalUrl, 403, "Forbidden", layersTried);
-        }
         throw new RecipeNotFoundError(finalUrl, layersTried);
       }
 
