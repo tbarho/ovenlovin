@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decideDemoWrite, nextCountersAfterSuccessfulImport } from "./limits";
+import {
+  decideDemoWrite,
+  demoSandboxImportsSpent,
+  nextCountersAfterSuccessfulImport,
+} from "./limits";
 
 const counters = {
   importCount: 0,
@@ -97,7 +101,24 @@ describe("decideDemoWrite", () => {
       counters: { ...counters, writesInWindow: 60 },
       now: new Date("2026-10-14T00:30:00.000Z"),
     });
-    expect(decision).toMatchObject({ ok: false, code: "write_rate" });
+    expect(decision).toMatchObject({
+      ok: false,
+      code: "write_rate",
+      resetAt: "2026-10-14T01:00:00.000Z",
+      retryAfter: 1800,
+    });
+  });
+
+  it("does not count an import preview as a write", () => {
+    const decision = decideDemoWrite({
+      pathname: "/api/v1/recipes/import",
+      method: "POST",
+      preview: true,
+      counters: { ...counters, writesInWindow: 60 },
+      now: new Date("2026-10-14T00:30:00.000Z"),
+    });
+    expect(decision.ok).toBe(true);
+    if (decision.ok) expect(decision.next.writesInWindow).toBe(60);
   });
 
   it("resets the write window after an hour", () => {
@@ -113,5 +134,11 @@ describe("decideDemoWrite", () => {
     });
     expect(decision.ok).toBe(true);
     if (decision.ok) expect(decision.next.writesInWindow).toBe(1);
+  });
+
+  it("treats a used-up import quota as spent so enter can mint a fresh sandbox", () => {
+    expect(demoSandboxImportsSpent(5)).toBe(true);
+    expect(demoSandboxImportsSpent(0)).toBe(false);
+    expect(demoSandboxImportsSpent(4)).toBe(false);
   });
 });

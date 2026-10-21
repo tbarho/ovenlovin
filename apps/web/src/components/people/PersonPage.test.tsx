@@ -40,6 +40,9 @@ describe("PersonPage", () => {
     render(<PersonPage person={testPerson({ displayName: "Child B" })} rules={[]} />);
 
     addIn("bucket-cant_eat");
+    fireEvent.change(within(screen.getByTestId("bucket-cant_eat")).getByPlaceholderText("Add…"), {
+      target: { value: "tree" },
+    });
     fireEvent.click(screen.getByTestId("tile-tree_nut"));
     expect(screen.getByText(/avoid foods made where nuts are processed/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/treat coconut as a tree nut/i)).not.toBeChecked();
@@ -99,6 +102,9 @@ describe("PersonPage", () => {
     render(<PersonPage person={testPerson({ displayName: "Ty" })} rules={[]} loves={[]} />);
 
     addIn("bucket-loves");
+    fireEvent.change(within(screen.getByTestId("bucket-loves")).getByPlaceholderText("Add…"), {
+      target: { value: "salm" },
+    });
     fireEvent.click(screen.getByTestId("tile-salmon"));
 
     expect(mockedApi).toHaveBeenCalledWith(
@@ -138,6 +144,10 @@ describe("PersonPage", () => {
     const { container } = render(<PersonPage person={testPerson()} rules={[]} />);
     addIn("bucket-cant_eat");
     expect(document.querySelector(".olp-sheet-root")).toBeNull();
+    expect(screen.queryByTestId("tile-tree_nut")).not.toBeInTheDocument();
+    fireEvent.change(within(screen.getByTestId("bucket-cant_eat")).getByPlaceholderText("Add…"), {
+      target: { value: "tree" },
+    });
     expect(
       within(screen.getByTestId("bucket-cant_eat")).getByTestId("tile-tree_nut")
     ).toBeInTheDocument();
@@ -158,26 +168,29 @@ describe("PersonPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("saves Peanut from a pean typo on Enter instead of the raw text", async () => {
+  it("adds the typed food on Enter instead of the first suggestion", async () => {
     const user = userEvent.setup();
     mockedApi.mockResolvedValue(
       testPersonRule({
         id: "00000000-0000-4000-8000-000000000096",
-        target: "peanut",
+        kind: "ingredient",
+        target: "pea",
+        severity: "block",
       })
     );
     render(<PersonPage person={testPerson({ displayName: "Child B" })} rules={[]} />);
     const input = within(screen.getByTestId("bucket-cant_eat")).getByLabelText(/add to can't eat/i);
-    await typeFullWordAndKeepFocus(user, input, "pean");
+    await typeFullWordAndKeepFocus(user, input, "Pea");
     await user.keyboard("{Enter}");
     expect(mockedApi).not.toHaveBeenCalled();
-    expect(screen.getByText(/avoid foods made where nuts are processed/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    expect(mockedApi).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("unknown-allergen-confirm")).toHaveTextContent(
+      /can't check 'Pea' against recipes/i
+    );
+    await user.click(screen.getByTestId("save-unknown-allergy"));
     expect(JSON.parse(String(mockedApi.mock.calls[0]?.[1]?.body))).toMatchObject({
-      kind: "allergen",
-      target: "peanut",
-      severity: "block",
+      kind: "ingredient",
+      target: "pea",
+      confirmUnknown: true,
     });
   });
 

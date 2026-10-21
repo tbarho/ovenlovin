@@ -15,6 +15,12 @@ export const recipeMethodTagSchema = z.enum([
   "make_ahead",
 ]);
 
+export const recipeImagesSchema = z.array(z.string());
+
+export function parseRecipeImages(value: unknown): string[] {
+  return recipeImagesSchema.parse(value ?? []);
+}
+
 export const recipeSchema = baseEntitySchema.merge(createdBySchema).extend({
   householdId: uuidSchema,
   title: z.string().min(1).max(500),
@@ -33,7 +39,7 @@ export const recipeSchema = baseEntitySchema.merge(createdBySchema).extend({
   course: z.string().max(100).nullable().optional(),
   difficulty: z.string().max(50).nullable().optional(),
   equipment: z.array(z.string()).default([]),
-  images: z.array(z.string()).default([]),
+  images: recipeImagesSchema.default([]),
   status: recipeStatusSchema.default("draft"),
   visibility: recipeVisibilitySchema.default("private"),
   version: z.number().int().positive().default(1),

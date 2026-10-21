@@ -25,22 +25,16 @@ export async function getDemoSessionContext(options?: {
 
   const db = getDatabase();
   const households = new HouseholdService(db);
+  const invites = new InviteService(db);
   const { preferredHouseholdId, inviteToken } = readKitchenCookies(store);
   let pendingInviteHouseholdId: string | null = null;
   if (inviteToken) {
-    const invite = await new InviteService(db).getInviteByToken(inviteToken);
+    const invite = await invites.getInviteByToken(inviteToken);
     if (invite && inviteStatus(invite) === "pending") {
       const invited = await households.getHousehold(invite.householdId);
       if (invited) {
         pendingInviteHouseholdId = invite.householdId;
-        const memberships = await households.getMembershipsForUser(sandbox.userId);
-        if (!memberships.some((item) => item.householdId === invite.householdId)) {
-          await households.createMembership({
-            userId: sandbox.userId,
-            householdId: invite.householdId,
-            role: invite.role,
-          });
-        }
+        await invites.acceptInvite(invite.token, sandbox.userId);
       }
     }
   }

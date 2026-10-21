@@ -91,9 +91,9 @@ export function InlineFoodAdd({
           onChange={(event) => {
             setQuery(event.target.value);
             setUnknown(null);
-            setOpen(true);
+            setOpen(event.target.value.trim().length > 0);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => setOpen(query.trim().length > 0)}
           onKeyDown={onKeyDown}
         />
       </label>

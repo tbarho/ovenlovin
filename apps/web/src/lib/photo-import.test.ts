@@ -8,6 +8,7 @@ import {
   persistMainPhoto,
   presentPhotoImportPreview,
   previewFromDraft,
+  recipeHeroFromPhotoDraft,
 } from "./photo-import";
 import type { RecipeDraft } from "@ovenlovin/importers";
 
@@ -168,6 +169,18 @@ describe("classifyPhotoImportPreview", () => {
         },
       })
     ).toBe("not_recipe");
+  });
+});
+
+describe("recipeHeroFromPhotoDraft", () => {
+  it("keeps extracted food photos and drops the photographed card", () => {
+    expect(
+      recipeHeroFromPhotoDraft(["https://blob.example/food.jpg"], ["data:image/jpeg;base64,aa"])
+    ).toEqual(["https://blob.example/food.jpg"]);
+    expect(
+      recipeHeroFromPhotoDraft(["data:image/jpeg;base64,aa"], ["data:image/jpeg;base64,aa"])
+    ).toEqual([]);
+    expect(recipeHeroFromPhotoDraft(undefined)).toEqual([]);
   });
 });
 

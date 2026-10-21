@@ -1632,6 +1632,15 @@ select {
   font-size: var(--text-xs);
 }
 
+.form-card label.check-row {
+  display: flex;
+  align-items: center;
+}
+
+.form-card label.check-row input {
+  width: auto;
+}
+
 .recipe-view {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
@@ -3620,8 +3629,13 @@ select {
     gap: 6px;
   }
 
-  .demo-banner-copy {
+  .demo-banner-copy,
+  .demo-banner-daily {
     display: none;
+  }
+
+  .demo-banner strong {
+    white-space: nowrap;
   }
 
   .demo-banner-cta.btn.primary {

@@ -241,7 +241,7 @@ function DayEditor({
                       {mealThumb(recipe.title, recipe.image)}
                       <span>
                         <strong>{recipe.title}</strong>
-                        <em>Works for everyone on the plan</em>
+                        <em>Looks clear for everyone</em>
                       </span>
                     </button>
                   </li>
