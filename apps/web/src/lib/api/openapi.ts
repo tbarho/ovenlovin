@@ -75,7 +75,8 @@ const SHARED_ERRORS: Record<string, oas30.ResponseObject> = {
   },
   "401": { description: "Unauthorized. Missing or invalid Authorization." },
   "404": {
-    description: "Not Found. Missing resource or unknown path.",
+    description:
+      "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data.",
   },
 };
 

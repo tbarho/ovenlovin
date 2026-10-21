@@ -136,6 +136,9 @@ describe("generateOpenApiDocument", () => {
       $ref: "#/components/responses/Forbidden",
     });
     expect(JSON.stringify(spec.components?.responses?.Forbidden)).toMatch(/problems\/forbidden/);
+    expect(JSON.stringify(spec.paths?.["/recipes/{id}"]?.get?.responses?.["404"])).toMatch(
+      /malformed or foreign id/
+    );
     expect(spec.paths?.["/api-keys"]?.get?.responses).not.toHaveProperty("403");
     expect(spec.paths?.["/api-keys"]?.post?.responses).not.toHaveProperty("403");
     expect(spec.paths?.["/api-keys/{id}"]?.delete?.responses).not.toHaveProperty("403");

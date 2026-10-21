@@ -7,6 +7,8 @@ REST `/api/v1` and the MCP tools an agent sees via `tools/list`.
 
 No `initialize` call needed. Run `tools/list` for each tool's input schema.
 
+A tool call outside the key's scopes returns JSON-RPC `-32003` with `data.code` `"forbidden"`. Clerk sessions are not scope-checked. Id fields and id arrays must be UUIDs.
+
 ```bash
 curl -X POST https://your-app.vercel.app/mcp \
   -H "Authorization: ApiKey $KEY" \

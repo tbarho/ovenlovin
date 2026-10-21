@@ -1021,7 +1021,7 @@
             "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1039,7 +1039,7 @@
             "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1065,7 +1065,7 @@
             "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1228,7 +1228,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1382,7 +1382,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1434,7 +1434,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1553,7 +1553,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1585,7 +1585,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1671,7 +1671,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1712,7 +1712,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1780,7 +1780,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           },
           "409": {
             "description": "Duplicate or in-flight import. Includes recipeId, title, and recipeUrl."
@@ -1838,7 +1838,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           },
           "503": {
             "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
@@ -1982,7 +1982,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           },
           "503": {
             "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
@@ -2024,7 +2024,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2070,7 +2070,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2111,7 +2111,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2168,7 +2168,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2200,7 +2200,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2250,7 +2250,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2291,7 +2291,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2350,7 +2350,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2402,7 +2402,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2462,7 +2462,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2512,7 +2512,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2553,7 +2553,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2589,7 +2589,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2628,7 +2628,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2674,7 +2674,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2715,7 +2715,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2772,7 +2772,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2804,7 +2804,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2848,7 +2848,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2920,7 +2920,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2970,7 +2970,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3054,7 +3054,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3095,7 +3095,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3160,7 +3160,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3259,7 +3259,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3300,7 +3300,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3456,7 +3456,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3488,7 +3488,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3557,7 +3557,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3714,7 +3714,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3755,7 +3755,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3803,7 +3803,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3826,7 +3826,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3864,7 +3864,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3895,7 +3895,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3945,7 +3945,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3975,7 +3975,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -4043,7 +4043,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4063,7 +4063,7 @@
             "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -4102,7 +4102,7 @@
             "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4133,7 +4133,7 @@
             "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4156,7 +4156,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4195,7 +4195,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4234,7 +4234,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4283,7 +4283,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -4315,7 +4315,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4338,7 +4338,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4377,7 +4377,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -4417,7 +4417,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4451,7 +4451,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4486,7 +4486,7 @@
             "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -4519,7 +4519,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not Found. Missing resource or unknown path."
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }

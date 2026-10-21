@@ -33,5 +33,11 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("There is no llms-full.txt");
     expect(text).toContain("Not medical advice");
     expect(text).toContain("problems/forbidden");
+    expect(text).toContain("HEAD is treated as GET");
+    expect(text).toContain("session-only");
+    expect(text).toContain("malformed or foreign id");
+    expect(text).toContain("-32003");
+    expect(text).toContain('data.code "forbidden"');
+    expect(text).toContain("id arrays must be UUIDs");
   });
 });
