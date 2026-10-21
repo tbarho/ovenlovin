@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { isClerkProtectExempt } from "./clerk-protect";
+import { isClerkProtectExempt, isClerkProtectedPath } from "./clerk-protect";
+
+describe("isClerkProtectedPath", () => {
+  it("protects kitchen pages and leaves unknown public URLs alone", () => {
+    expect(isClerkProtectedPath("/recipes")).toBe(true);
+    expect(isClerkProtectedPath("/recipes/abc")).toBe(true);
+    expect(isClerkProtectedPath("/plans")).toBe(true);
+    expect(isClerkProtectedPath("/list")).toBe(true);
+    expect(isClerkProtectedPath("/people/jake")).toBe(true);
+    expect(isClerkProtectedPath("/settings")).toBe(true);
+    expect(isClerkProtectedPath("/this-does-not-exist")).toBe(false);
+    expect(isClerkProtectedPath("/anything")).toBe(false);
+    expect(isClerkProtectedPath("/docs")).toBe(false);
+    expect(isClerkProtectedPath("/sign-in")).toBe(false);
+  });
+});
 
 describe("isClerkProtectExempt", () => {
   it("lets REST authenticate itself so API keys are not HTML-404'd", () => {

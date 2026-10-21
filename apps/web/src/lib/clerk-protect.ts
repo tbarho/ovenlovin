@@ -1,3 +1,12 @@
+import { kitchenNavLinks } from "./kitchen-nav";
+
+/** Kitchen pages only. Unknown public URLs must 404 in-app, not bounce to Clerk. */
+export function isClerkProtectedPath(pathname: string): boolean {
+  return kitchenNavLinks.some(
+    (link) => pathname === link.match || pathname.startsWith(`${link.match}/`)
+  );
+}
+
 /**
  * Paths Clerk middleware must not `auth.protect()`.
  *

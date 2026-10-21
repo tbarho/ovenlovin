@@ -53,7 +53,9 @@ export function CopyBox({
           </button>
         </div>
       </header>
-      <pre>{shown}</pre>
+      <div className="copy-scroll">
+        <pre>{shown}</pre>
+      </div>
       <p className="copy-status" role="status" aria-live="polite">
         {copied ? "Copied to clipboard" : copyError}
       </p>

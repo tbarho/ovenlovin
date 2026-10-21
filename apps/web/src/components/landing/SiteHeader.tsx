@@ -43,11 +43,11 @@ export function SiteHeader({
             </a>
           ) : null}
           {signedIn ? (
-            <Link className="btn primary" href="/recipes">
+            <Link className="btn" href="/recipes">
               Open kitchen
             </Link>
           ) : clerkEnabled ? (
-            <Link className="btn primary" href="/sign-in">
+            <Link className="btn" href="/sign-in">
               Sign in
             </Link>
           ) : (

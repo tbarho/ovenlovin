@@ -1,7 +1,7 @@
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { isApiOrMcpPath, isApiShapedRequest, missingApiResponse } from "@/lib/api/missing-route";
-import { isClerkProtectExempt } from "@/lib/clerk-protect";
+import { isClerkProtectedPath } from "@/lib/clerk-protect";
 import { DEMO_ENTER_PATH, shouldRedirectToDemoEnter } from "@/lib/demo/enter";
 import { DEMO_COOKIE_NAME } from "@/lib/demo/fixture";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
@@ -23,7 +23,7 @@ const clerkConfigured = Boolean(
 );
 
 const clerk = clerkMiddleware(async (auth, req) => {
-  if (isClerkProtectExempt(req.nextUrl.pathname)) return;
+  if (!isClerkProtectedPath(req.nextUrl.pathname)) return;
   await auth.protect();
 });
 

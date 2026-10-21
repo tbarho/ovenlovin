@@ -18,16 +18,16 @@ export default async function SignInPage({
 
   return (
     <div className="shell">
-      <div className="wrap page-narrow" style={{ display: "grid", justifyItems: "center" }}>
+      <div className="wrap auth-screen">
         <Link href="/" className="brand">
           <Image src={brandPublicPath.mark} alt="" width={40} height={40} unoptimized />
           OvenLovin
         </Link>
-        <h1>{clerkEnabled && !demo ? "Sign in" : unavailable.title}</h1>
         {clerkEnabled && !demo ? (
           <SignIn fallbackRedirectUrl={redirectUrl} />
         ) : (
           <>
+            <h1>{unavailable.title}</h1>
             <p className="empty-note">{unavailable.body}</p>
             <Link className="btn primary" href={unavailable.href}>
               {unavailable.linkLabel}
