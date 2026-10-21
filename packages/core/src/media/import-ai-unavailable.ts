@@ -155,6 +155,7 @@ export function classifyImportFailure(error: unknown): ImportFailure | null {
   if (
     name === "RecipeNotFoundError" ||
     isImportAiNotARecipe(error) ||
+    (name.startsWith("AI_") && !isImportAiUnavailable(error)) ||
     /not a recipe page|couldn't find a recipe|no recipe found/i.test(message)
   ) {
     return { code: IMPORT_NOT_A_RECIPE_CODE, message: IMPORT_NOT_A_RECIPE_MESSAGE };

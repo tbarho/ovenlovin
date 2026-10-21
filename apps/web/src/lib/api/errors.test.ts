@@ -222,6 +222,19 @@ describe("handleApiError", () => {
     expect(IMPORT_NOT_A_RECIPE_MESSAGE).toMatch(/Paste the recipe text or add a photo/);
   });
 
+  it("maps a gateway 4xx to not-a-recipe, not 500", async () => {
+    const response = handleApiError(
+      Object.assign(new Error("Bad request"), { name: "AI_APICallError", statusCode: 400 }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    expect(response.status).not.toBe(500);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      code: IMPORT_NOT_A_RECIPE_CODE,
+      detail: IMPORT_NOT_A_RECIPE_MESSAGE,
+    });
+  });
+
   it("maps a schema-miss to not-a-recipe, not busy", async () => {
     const schemaMiss = handleApiError(
       Object.assign(new Error("No object generated: response did not match schema."), {
