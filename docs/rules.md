@@ -355,40 +355,7 @@ Any recipes containing peanuts will now be flagged as unsafe for Parent A."
 
 ### Check a Single Recipe
 
-**API**:
-```bash
-GET /api/v1/recipes?forAttendees=<personId>
-```
-
-Blocked recipes are listed in `hidden`. Or call the MCP tool `get_recipe`. To check a week, `GET` or `POST /api/v1/meal-plans/{id}/check` (POST saves the report; GET only reads).
-
-**Response**:
-```json
-{
-  "status": "complete",
-  "findings": {
-    "block": [
-      {
-        "personId": "person-1",
-        "personName": "Parent A",
-        "severity": "block",
-        "ingredientName": "peanut butter",
-        "message": "Parent A: recipe contains peanut butter (block rule)"
-      }
-    ],
-    "warn": [
-      {
-        "personId": "person-2",
-        "personName": "Child B",
-        "severity": "warn",
-        "ingredientName": "sodium (650mg)",
-        "message": "Child B: recipe exceeds sodium limit (warn rule: 600mg max)"
-      }
-    ],
-    "prefer_avoid": []
-  }
-}
-```
+Use `GET /api/v1/recipes?forAttendees=PERSON_ID,PERSON_ID` (recipes that hit a block rule move to `hidden`), or put the recipe on a plan and call `GET /api/v1/meal-plans/{planId}/check`.
 
 ### Check a Meal Plan
 
@@ -397,34 +364,7 @@ Blocked recipes are listed in `hidden`. Or call the MCP tool `get_recipe`. To ch
 POST /api/v1/meal-plans/{planId}/check
 ```
 
-**Response**:
-```json
-{
-  "status": "complete",
-  "findings": {
-    "block": [],
-    "warn": [],
-    "prefer_avoid": [
-      {
-        "personId": "person-3",
-        "personName": "Parent C",
-        "severity": "prefer_avoid",
-        "ingredientName": "wheat flour",
-        "mealDate": "2026-10-15",
-        "mealSlot": "dinner",
-        "recipeName": "Spaghetti Carbonara",
-        "message": "Parent C: recipe contains wheat flour (prefer_avoid rule)"
-      }
-    ]
-  },
-  "summary": {
-    "affectedPeople": ["person-3"],
-    "entriesWithBlocks": 0,
-    "entriesWithWarnings": 0,
-    "entriesWithPreferAvoid": 1
-  }
-}
-```
+Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe. POST saves the report; GET only reads.
 
 ### Via Bots
 

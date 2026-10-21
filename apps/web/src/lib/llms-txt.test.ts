@@ -11,7 +11,8 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("sandbox key");
     expect(text).not.toMatch(/after signing in/i);
     expect(text).toContain("X-Kitchen-Id");
-    expect(text).toContain("mismatched");
+    expect(text).toContain("mismatched `X-Kitchen-Id` is `403`");
+    expect(text).toContain("https://tbarho.github.io/ovenlovin/docs/reference/api/");
     expect(text).toContain("whoami");
     expect(text).toContain("import_recipe_from_image");
     expect(text).toContain("edit_meal_plan");

@@ -38,11 +38,11 @@ Keys store `scopes`. A request outside the key's scopes returns `403` with `type
   "status": 400,
   "detail": "Request validation failed",
   "instance": "https://your-app.vercel.app/api/v1/recipes",
-  "errors": [{ "path": "title", "message": "Required", "code": "invalid_type" }]
+  "errors": [{ "path": "title", "message": "Invalid input: expected string, received undefined", "code": "invalid_type" }]
 }
 ```
 
-Validation errors return `400` with `type` `<origin>/problems/validation-error` and an `errors` array of `{path, message, code}`. `instance` is the full request URL.
+`instance` is the full request URL. Non-JSON bodies are `400` `problems/bad-request` "Request body must be JSON".
 
 Statuses the handlers return:
 
@@ -58,7 +58,7 @@ Statuses the handlers return:
 
 There is no rate limit today. Be gentle: retry `503` `import_ai_unavailable` after `Retry-After` seconds. The public demo can `403` writes after its sandbox cap.
 
-Image fields: use a public http(s) image URL, a stored blob URL, or an inline image. `file:` URLs are rejected.
+`not_a_public_url` is an http(s) URL whose host is private, loopback, link-local, or not on port 80 or 443. Content that is not an http(s) URL at all (for example `file:` or `ftp:`) is `400` with detail "That doesn't look like a web address" and no `code`. Image fields otherwise: a public http(s) image URL, a stored blob URL, or an inline image.
 
 ## Idempotency-Key
 
@@ -74,14 +74,14 @@ Other POSTs may read the header and ignore it.
 GET /recipes?limit=20&cursor=<cursor-token>
 ```
 
-`limit` defaults to `20` (`GET /cookbooks` defaults to `50`). Response: `{ items, nextCursor, hasMore }`. Rule and preference GETs return the array itself. `search` is case-sensitive (Postgres `LIKE`).
+`limit` defaults to `20` (`GET /cookbooks`: `50`). There is no maximum. `GET /cookbooks?view=cards` returns every cookbook in one page. Response: `{ items, nextCursor, hasMore }`. Rule and preference GETs return the array itself. `search` is a case-sensitive substring match on the title today.
 
 ## Endpoints
 
 ### Health
 
 - `GET /health` - `{ status: "ok", version, timestamp }`. No auth. `version` is `0.1.0`.
-- `GET /status` - Deploy SHA and integration readiness. No auth.
+- `GET /status` - No auth. `{ mode, commitSha, ready, checks }`
 - `GET /openapi.json` - OpenAPI 3.1. No auth.
 
 ### Recipes
@@ -91,20 +91,20 @@ GET /recipes?limit=20&cursor=<cursor-token>
 - `GET /recipes/{id}` - Details. Optional `?servings=`. `ingredients` are rows with `rawText` plus parsed `name`, `quantityMin`, `quantityMax`, `unit`. `steps` are rows with `text` and `order`.
 - `PATCH /recipes/{id}` - Title, times, images, ingredients, steps, `cookbookIds`
 - `DELETE /recipes/{id}` - `204`
-- `POST /recipes/{id}/restore` - Restore a soft-deleted recipe
-- `GET /recipes/{id}/image` - Main photo (302 when stored)
-- `POST /recipes/{id}/image` - Set the main photo
+- `POST /recipes/{id}/restore` - Undo a delete (`200` recipe)
+- `GET /recipes/{id}/image` - `302` to the photo, or bytes when stored inline. `404` if none
+- `POST /recipes/{id}/image` - `{ image: <data URL> }` (700KB max). `200` recipe
 - `POST /recipes/import` - URL or paste. Preview unless `save: true`
-- `POST /recipes/import/page` - HTML page import
+- `POST /recipes/import/page` - Captured page `{ url, html?, jsonLd? }`. Saves. `201` (form post without JSON Accept: `303`)
 - `POST /recipes/import/photo` - Photo. Preview unless `save: true`
 
-Import failures: `400` with `not_a_public_url`, `import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`. Photo: `PHOTO_BLURRY`, `PHOTO_NOT_RECIPE`. `409` with `import_duplicate`, `import_near_duplicate`, `import_in_progress`. Busy model: `503` `import_ai_unavailable`.
+Import failures: `400` with `not_a_public_url` (private/loopback http(s)), `import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`. Photo: `PHOTO_BLURRY`, `PHOTO_NOT_RECIPE`. `409` with `import_duplicate` (URL or exact photo already saved), `import_near_duplicate` (photo `save: true` without `allowDuplicate: true`), `import_in_progress` (same `Idempotency-Key` still running). Photo import on an instance without AI Gateway is `400` with no `code`. Busy model: `503` `import_ai_unavailable`.
 
 There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GET /recipes?forAttendees=<personId>` (blocked recipes are listed in `hidden`) or the MCP tool `get_recipe`.
 
 ### Cookbooks
 
-- `GET /cookbooks` - default `limit` 50. `?view=cards` adds `recipeCount` and `previewImages`
+- `GET /cookbooks` - default `limit` 50, no maximum. `?view=cards` returns every cookbook in one page (`recipeCount`, `previewImages`)
 - `POST /cookbooks` - `{ name, description? }`
 - `GET /cookbooks/{id}` / `PATCH /cookbooks/{id}` / `DELETE /cookbooks/{id}` (`204`)
 - `POST /cookbooks/{id}/recipes` - `{ recipeId }`
@@ -123,23 +123,23 @@ There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GE
 ### Meal plans
 
 - `GET /meal-plans` - `limit`, `cursor`, `status`, `weekStart`, `weekEnd`
-- `POST /meal-plans` - `{ weekStart, status?, entries? }`. Request entries use `meal`. Responses use `mealSlot`.
+- `POST /meal-plans` - `{ weekStart, status?, entries? }`. `201` with the plan and `entries`. Entries come back with `mealSlot` (the `meal` you sent), `freeformMeal`, `scaleFactor`, and `attendees`.
 - `GET /meal-plans/{id}` / `PATCH` / `DELETE` (`204`)
 - `GET /meal-plans/{id}/check` - Run check (read only)
 - `POST /meal-plans/{id}/check` - Run and persist (write). No body. Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe.
 - `POST /meal-plans/{id}/undo` / `GET /meal-plans/{id}/history`
-- `GET /meal-plans/{id}/shopping-list` - `format`, `groupBy`, `includeStaples`, `timeZone`. Warnings are listed once in top-level `warnings`.
+- `GET /meal-plans/{id}/shopping-list` - `format`, `groupBy`, `includeStaples`, `timeZone`. JSON is `ShoppingListData` (`mealPlanId`, `weekStart`, `groupBy`, `includeStaples`, `includePantryItems`, `ingredients`, `sections`, `itemCount`, `generatedAt`, `warnings`, `scaledFor`, `scaledForMixed`). Section items use `key`, `name`, `quantity`, `unit`, `displayQuantity`, `displayUnit`, `aisle`, `category`, `isStaple`, `isPantryItem`, `recipes[]`, `checked`. Warnings are listed once in top-level `warnings`. A bad `timeZone` is `400`.
 - `GET /meal-plans/{id}/shopping-list/state` / `PATCH` - `{ checkedKeys, extras }`
 
 ### Household
 
 - `GET /households` / `PATCH /households` (owner, `{ name }`)
-- `GET /households/mine` - works with an API key (that kitchen only, `active: true`). `POST /households/select` is signed-in only
+- `GET /households/mine` (API key: its one kitchen, `active: true`) / `POST /households/select` (signed-in only; API key `401`)
 - `GET /households/settings` / `PATCH` - `{ mode: family|fixed|recipe, servings? }`
 - `GET /households/schedule` / `PUT` - `{ week }`
 - `GET /households/members` / `PATCH|DELETE /households/members/{userId}` (owner)
 - `POST /households/leave` - signed-in only
-- `GET|POST /households/invites` / `DELETE /households/invites/{id}` (admin) - revoke returns `200` with the invite
+- `GET|POST /households/invites` / `DELETE /households/invites/{id}` (admin; `200` with the revoked invite)
 - `GET /invites/{token}` (no auth) / `POST /invites/{token}/accept` (signed-in)
 
 There is no `GET /households/{id}/context`. `GET /households` returns the key's kitchen. `GET /people` lists people. `GET /people/{id}/rules` lists a person's rules. MCP `get_household_context` returns all of it in one call.
