@@ -10,7 +10,7 @@ import type {
   ParsedStep,
   ImporterConfig,
 } from "../types/importer";
-import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
+import { tagImportAiTimeout, throwIfNotARecipe } from "@ovenlovin/core/import-ai-unavailable";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { optionalField } from "../utils/llm-schema";
 import {
@@ -22,6 +22,7 @@ import {
 const IMPORTER_VERSION = "0.1.0";
 
 const recipeSchema = z.object({
+  isRecipe: z.boolean().describe("True only if the text is a cookable recipe"),
   title: z.string().describe("Recipe title"),
   description: optionalField(z.string()).describe("Brief description of the recipe"),
   servings: optionalField(z.number().positive()).describe("Number of servings"),
@@ -75,7 +76,7 @@ export function createPasteImporter(config: ImporterConfig = {}): Importer<Paste
         result = await generateImportObject(generate, modelId, {
           schema: recipeSchema,
           abortSignal: AbortSignal.timeout(IMPORT_GENERATE_TIMEOUT_MS),
-          prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.
+          prompt: `Extract recipe data from this text. Preserve exact ingredient text. If this is not a recipe (a greeting, note, or random paragraph), set isRecipe to false and omit the rest. If information is unclear or missing, omit it rather than guessing.
 
 Text:
 ${input.text}`,
@@ -114,6 +115,7 @@ ${input.text}`,
 
       const ingredients = parseIngredients(recipe.ingredients);
       const steps = parseSteps(recipe.steps);
+      throwIfNotARecipe({ ingredients, steps }, recipe.isRecipe);
 
       const methodTags = detectMethodTags(
         ingredients.map((i) => i.rawText),

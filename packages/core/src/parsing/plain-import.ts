@@ -1,4 +1,5 @@
 import type { RecipeImportDraft } from "../schemas/recipes";
+import { throwIfNotARecipe } from "../media/import-ai-unavailable";
 
 const INGREDIENT_HEADER = /^(ingredients?|what you need)\s*:?\s*$/i;
 const STEP_HEADER = /^(steps?|instructions?|method|directions?|preparation)\s*:?\s*$/i;
@@ -187,7 +188,7 @@ export function draftFromPlainText(text: string): RecipeImportDraft {
       ? firstRest
       : undefined;
 
-  return {
+  const draft = {
     title,
     description,
     notes: meta.notes,
@@ -210,4 +211,6 @@ export function draftFromPlainText(text: string): RecipeImportDraft {
     },
     needsReview: true,
   };
+  throwIfNotARecipe(draft);
+  return draft;
 }

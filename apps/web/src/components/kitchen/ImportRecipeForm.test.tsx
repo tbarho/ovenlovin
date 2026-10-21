@@ -385,7 +385,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText(NOT_A_RECIPE_COPY)).toBeVisible();
     expect(screen.queryByText(/busy right now/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
   });
 

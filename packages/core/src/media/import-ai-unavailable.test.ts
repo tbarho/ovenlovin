@@ -11,6 +11,7 @@ import {
   isImportAiNotARecipe,
   isImportAiUnavailable,
   tagImportAiTimeout,
+  throwIfNotARecipe,
 } from "./import-ai-unavailable";
 
 describe("importAiUnavailableMeta", () => {
@@ -132,5 +133,25 @@ describe("importAiUnavailableMeta", () => {
     });
     expect(isImportAiUnavailable(wrapped)).toBe(false);
     expect(isImportAiUnavailable(tagImportAiTimeout(wrapped))).toBe(true);
+  });
+
+  it("throws RecipeNotFoundError for junk paste so REST and MCP share not_a_recipe", () => {
+    expect(() =>
+      throwIfNotARecipe({ ingredients: [], steps: [] })
+    ).toThrowError(/couldn't find a recipe/);
+    try {
+      throwIfNotARecipe({ ingredients: [{ rawText: "hello" }], steps: [] }, false);
+    } catch (error) {
+      expect(classifyImportFailure(error)).toEqual({
+        code: IMPORT_NOT_A_RECIPE_CODE,
+        message: IMPORT_NOT_A_RECIPE_MESSAGE,
+      });
+    }
+    expect(() =>
+      throwIfNotARecipe({
+        ingredients: [{ rawText: "1 cup flour" }],
+        steps: [{ text: "Mix." }],
+      })
+    ).not.toThrow();
   });
 });

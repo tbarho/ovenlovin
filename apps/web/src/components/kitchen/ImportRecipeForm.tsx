@@ -4,12 +4,10 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
-import { IMPORT_NOT_A_RECIPE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import {
   displayImportFailure,
   importGuessedNotice,
   importInputError,
-  NOT_A_RECIPE_COPY,
 } from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
@@ -258,10 +256,7 @@ export function ImportRecipeForm({
       const message = err instanceof Error ? err.message : "Could not import recipe";
       setError(message);
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(
-        displayImportFailure(message) !== NOT_A_RECIPE_COPY &&
-          message !== IMPORT_NOT_A_RECIPE_MESSAGE
-      );
+      setRetryable(true);
     } finally {
       if (previewAbortRef.current === controller) previewAbortRef.current = null;
       setPending(false);

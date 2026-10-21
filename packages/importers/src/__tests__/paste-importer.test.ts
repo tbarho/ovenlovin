@@ -218,6 +218,25 @@ describe("Paste Importer", () => {
       expect(draft.ingredients[0].confidenceReasons).toContain("Missing quantity");
     });
 
+    it("rejects junk paste that is not a recipe", async () => {
+      await expect(
+        importer.toDraft({
+          sourceType: "paste",
+          rawData: {
+            isRecipe: false,
+            title: "Hello",
+            ingredients: [],
+            steps: [],
+          },
+          extractedAt: new Date(),
+          extractorVersion: "0.1.0",
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeNotFoundError",
+        message: expect.stringMatching(/couldn't find a recipe/),
+      });
+    });
+
     it("should parse quantity ranges", async () => {
       const rawExtraction = {
         sourceType: "paste" as const,
