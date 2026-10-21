@@ -6,6 +6,7 @@ import {
   PHOTO_IMPORT_NOT_RECIPE_MESSAGE,
   PHOTO_IMPORT_TIMEOUT_MESSAGE,
   PHOTO_IMPORT_TIMEOUT_MS,
+  PHOTO_IMPORT_TOO_LARGE_MESSAGE,
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
   classifyPhotoImportProblem,
   dataUrlPayloadBytes,
@@ -115,6 +116,9 @@ describe("photo import copy helpers", () => {
     expect(photoImportErrorMessage(new Error(PHOTO_IMPORT_NOT_RECIPE_MESSAGE))).toBe(
       PHOTO_IMPORT_NOT_RECIPE_MESSAGE
     );
+    expect(photoImportErrorMessage(new Error("Request Entity Too Large"))).toBe(
+      PHOTO_IMPORT_TOO_LARGE_MESSAGE
+    );
   });
 
   it("tells the cook the recipe saved when only the photo upload failed", () => {
@@ -130,6 +134,7 @@ describe("photo import copy helpers", () => {
 describe("extractPhotoPreviewFromFiles", () => {
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -211,6 +216,43 @@ describe("extractPhotoPreviewFromFiles", () => {
     expect(uploaded.size).toBe(file.size);
     expect(uploaded.name).toBe("test-card.png");
     expect(uploaded.type).toBe("image/png");
+  });
+
+  it("resizes a file over 4MB before upload", async () => {
+    const createImageBitmap = vi.fn().mockResolvedValue({
+      width: 4000,
+      height: 3000,
+      close: vi.fn(),
+    });
+    vi.stubGlobal("createImageBitmap", createImageBitmap);
+    vi.stubGlobal("document", {
+      createElement: () => ({
+        width: 0,
+        height: 0,
+        getContext: () => ({ drawImage: vi.fn() }),
+        toBlob: (cb: (blob: Blob | null) => void) =>
+          cb(new Blob([new Uint8Array(80)], { type: "image/jpeg" })),
+      }),
+    });
+    const xhr = mockXhr();
+    const file = new File([new Uint8Array(4 * 1024 * 1024 + 1)], "phone.jpg", {
+      type: "image/jpeg",
+    });
+    await extractPhotoPreviewFromFiles([file]);
+    expect(createImageBitmap).toHaveBeenCalled();
+    const uploaded = (xhr.send.mock.calls[0]?.[0] as FormData).get("image") as File;
+    expect(uploaded.size).toBe(80);
+    expect(uploaded.type).toBe("image/jpeg");
+  });
+
+  it("maps a 413 to a crop message", async () => {
+    mockXhr((xhr) => {
+      xhr.status = 413;
+      xhr.responseText = "Request Entity Too Large";
+    });
+    await expect(
+      extractPhotoPreviewFromFiles([new File(["card"], "card.jpg", { type: "image/jpeg" })])
+    ).rejects.toMatchObject({ message: PHOTO_IMPORT_TOO_LARGE_MESSAGE });
   });
 
   it("maps a PHOTO_BLURRY problem to the blurry message", async () => {
