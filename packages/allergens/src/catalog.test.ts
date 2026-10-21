@@ -6,9 +6,11 @@ import {
   findCatalogEntry,
   humanizeTarget,
   canonicalizePersonRuleTarget,
+  matchPhrasesForTarget,
   resolveCatalogTarget,
   ruleKindForCatalogGroup,
   searchCatalog,
+  supportedRuleTargetCodes,
   unknownRuleTargetMessage,
   ambiguousRuleTargetMessage,
 } from "./catalog";
@@ -152,7 +154,19 @@ describe("resolveCatalogTarget", () => {
     expect(resolveCatalogTarget("xyzzy", { kind: "allergen" })).toBeNull();
     expect(canonicalizePersonRuleTarget("allergen", "xyzzy").resolved).toBe(false);
     expect(canonicalizePersonRuleTarget("custom", "blueberries").resolved).toBe(false);
-    expect(unknownRuleTargetMessage("xyzzy")).toContain("confirmUnknown: true");
+    expect(canonicalizePersonRuleTarget("tag", "xyzzy").resolved).toBe(false);
+    expect(unknownRuleTargetMessage("xyzzy", "tag")).toContain("confirmUnknown: true");
+    expect(unknownRuleTargetMessage("xyzzy", "tag")).toContain("spicy");
+    expect(supportedRuleTargetCodes("tag")).toContain("spicy");
+  });
+});
+
+describe("matchPhrasesForTarget", () => {
+  it("matches heat ingredients for a spicy dislike", () => {
+    const phrases = matchPhrasesForTarget("spicy", "tag");
+    expect(phrases).toEqual(
+      expect.arrayContaining(["spicy", "cayenne", "chile", "chili", "jalapeno", "hot sauce"])
+    );
   });
 });
 

@@ -67,8 +67,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (canonical.ambiguous?.length) {
       throw new BadRequestError(ambiguousRuleTargetMessage(target, canonical.ambiguous));
     }
-    if (kind === "allergen" && !canonical.resolved && !confirmUnknown) {
-      throw new BadRequestError(unknownRuleTargetMessage(target));
+    if (!canonical.resolved && !confirmUnknown) {
+      throw new BadRequestError(unknownRuleTargetMessage(target, kind));
     }
 
     const rest = { ...body };

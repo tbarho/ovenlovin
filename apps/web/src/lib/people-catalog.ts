@@ -1,6 +1,7 @@
 import {
   findCatalogEntry,
   searchCatalog,
+  supportedRuleTargetCodes,
   type CatalogEntry,
   type CatalogGroup,
   type RuleIntent,
@@ -80,7 +81,8 @@ export function unknownAllergenWarning(query: string, suggestion: CatalogEntry |
   if (suggestion) {
     return `We can't check '${typed}' against recipes; did you mean ${suggestion.name}?`;
   }
-  return `We can't check '${typed}' against recipes. Save it only if you meant this exact food.`;
+  const supported = supportedRuleTargetCodes().join(", ");
+  return `We can't check '${typed}' against recipes. Supported targets: ${supported}. Save it only if you meant this exact food.`;
 }
 
 export type FoodAddResolution =
