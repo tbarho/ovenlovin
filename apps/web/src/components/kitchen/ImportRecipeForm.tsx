@@ -4,7 +4,12 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
-import { displayImportFailure, importGuessedNotice, importInputError } from "@/lib/import-input";
+import {
+  displayImportFailure,
+  importGuessedNotice,
+  importInputError,
+  isRetryableImportError,
+} from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_IN_PROGRESS,
@@ -226,6 +231,7 @@ export function ImportRecipeForm({
     const inputError = importInputError(source, fieldValue);
     if (inputError) {
       setError(inputError);
+      setRetryable(false);
       return;
     }
     previewAbortRef.current?.abort();
@@ -252,7 +258,7 @@ export function ImportRecipeForm({
       const message = err instanceof Error ? err.message : "Could not import recipe";
       setError(message);
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(true);
+      setRetryable(isRetryableImportError(message));
     } finally {
       if (previewAbortRef.current === controller) previewAbortRef.current = null;
       setPending(false);
@@ -300,9 +306,10 @@ export function ImportRecipeForm({
       );
       router.push(`/recipes/${recipe.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save recipe");
+      const message = err instanceof Error ? err.message : "Could not save recipe";
+      setError(message);
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(true);
+      setRetryable(isRetryableImportError(message));
     } finally {
       setPending(false);
     }

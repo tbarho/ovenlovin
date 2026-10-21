@@ -134,7 +134,7 @@ export function throwIfNotARecipe(
 ): void {
   const hasIngredients = Boolean(draft.ingredients?.some((item) => item.rawText?.trim()));
   const hasSteps = Boolean(draft.steps?.some((item) => item.text?.trim()));
-  if (isRecipe !== false && hasIngredients && hasSteps) return;
+  if (isRecipe !== false && (hasIngredients || hasSteps)) return;
   throw Object.assign(new Error(IMPORT_NOT_A_RECIPE_MESSAGE), { name: "RecipeNotFoundError" });
 }
 

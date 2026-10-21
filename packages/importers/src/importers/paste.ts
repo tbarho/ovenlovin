@@ -23,7 +23,10 @@ import {
 const IMPORTER_VERSION = "0.1.0";
 
 const recipeSchema = z.object({
-  isRecipe: z.boolean().describe("True only if the text is a cookable recipe"),
+  isRecipe: z
+    .boolean()
+    .optional()
+    .describe("True if the text is a cookable recipe; omit when unsure"),
   title: z.string().describe("Recipe title"),
   description: optionalField(z.string()).describe("Brief description of the recipe"),
   servings: optionalField(z.number().positive()).describe("Number of servings"),

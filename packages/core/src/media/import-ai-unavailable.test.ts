@@ -144,22 +144,33 @@ describe("importAiUnavailableMeta", () => {
     expect(isImportAiUnavailable(tagImportAiTimeout(wrapped))).toBe(true);
   });
 
-  it("throws RecipeNotFoundError for junk paste so REST and MCP share not_a_recipe", () => {
-    expect(() => throwIfNotARecipe({ ingredients: [], steps: [] })).toThrowError(
-      /couldn't find a recipe/
+  it("throws RecipeNotFoundError for junk paste so REST and MCP share not_a_recipe", async () => {
+    await expect(async () =>
+      throwIfNotARecipe({ ingredients: [], steps: [] })
+    ).rejects.toMatchObject({
+      name: "RecipeNotFoundError",
+      message: IMPORT_NOT_A_RECIPE_MESSAGE,
+    });
+    await expect(async () =>
+      throwIfNotARecipe({ ingredients: [{ rawText: "hello" }], steps: [] }, false)
+    ).rejects.toSatisfy(
+      (error) =>
+        classifyImportFailure(error)?.code === IMPORT_NOT_A_RECIPE_CODE &&
+        classifyImportFailure(error)?.message === IMPORT_NOT_A_RECIPE_MESSAGE
     );
-    try {
-      throwIfNotARecipe({ ingredients: [{ rawText: "hello" }], steps: [] }, false);
-    } catch (error) {
-      expect(classifyImportFailure(error)).toEqual({
-        code: IMPORT_NOT_A_RECIPE_CODE,
-        message: IMPORT_NOT_A_RECIPE_MESSAGE,
-      });
-    }
+  });
+
+  it("accepts a sparse recipe with ingredients or steps when isRecipe is omitted", () => {
     expect(() =>
       throwIfNotARecipe({
-        ingredients: [{ rawText: "1 cup flour" }],
-        steps: [{ text: "Mix." }],
+        ingredients: [{ rawText: "2 avocados" }, { rawText: "1 lime" }, { rawText: "salt" }],
+        steps: [],
+      })
+    ).not.toThrow();
+    expect(() =>
+      throwIfNotARecipe({
+        ingredients: [],
+        steps: [{ text: "Mash the avocados." }],
       })
     ).not.toThrow();
   });
