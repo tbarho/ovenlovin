@@ -1,7 +1,14 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
-import { CookbookService, recipeImagesSchema, RecipeService } from "@ovenlovin/core";
+import {
+  assertAllowedRecipeImageUrls,
+  CookbookService,
+  isAllowedRecipeImageUrl,
+  INVALID_IMAGE_URL_MESSAGE,
+  recipeImagesSchema,
+  RecipeService,
+} from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const createRecipeSchema = z.object({
@@ -14,7 +21,11 @@ export const createRecipeSchema = z.object({
   totalTimeMinutes: z.number().int().nonnegative().optional(),
   cuisine: z.string().optional(),
   course: z.string().optional(),
-  images: recipeImagesSchema.optional(),
+  images: recipeImagesSchema
+    .refine((urls) => urls.every((url) => !url.trim() || isAllowedRecipeImageUrl(url)), {
+      message: INVALID_IMAGE_URL_MESSAGE,
+    })
+    .optional(),
   ingredients: z
     .array(z.object({ rawText: z.string().min(1) }))
     .optional()
@@ -30,6 +41,7 @@ export const createRecipeSchema = z.object({
 
 async function handler(input: z.infer<typeof createRecipeSchema>, context: AuthContext) {
   requireWriteRole(context);
+  assertAllowedRecipeImageUrls(input.images ?? []);
   const db = createDbClient(process.env.DATABASE_URL!);
   const recipes = new RecipeService(db);
   const createdBy = context.userId ?? context.apiKeyId ?? context.householdId;

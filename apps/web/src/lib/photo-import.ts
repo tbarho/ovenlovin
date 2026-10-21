@@ -1,4 +1,5 @@
 import {
+  assertAllowedRecipeImageUrls,
   copyRemoteImages,
   ensureReviewMetadata,
   fingerprintImageBlob,
@@ -249,6 +250,7 @@ export async function extractPhotoPreview(
     abortSignal?: AbortSignal;
   }
 ): Promise<PhotoImportPreview> {
+  assertAllowedRecipeImageUrls(images.map((image) => image.blob));
   const extracted = await runPhotoImport(
     { images, isHandwritten: options.isHandwritten },
     {
