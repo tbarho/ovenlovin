@@ -65,6 +65,8 @@ test("unsigned people preview shows the production people cards", async ({ page 
 
   await expect(page.getByTestId("bucket-cant_eat").getByPlaceholder("Add…")).toBeVisible();
   await page.getByTestId("bucket-cant_eat").getByPlaceholder("Add…").click();
+  await expect(page.getByTestId("tile-tree_nut")).toHaveCount(0);
+  await page.getByTestId("bucket-cant_eat").getByPlaceholder("Add…").fill("tree");
   await expect(page.getByTestId("tile-tree_nut")).toBeVisible();
   await page.getByRole("button", { name: /edit child b/i }).click();
   const dialog = page.getByRole("dialog", { name: /edit person/i });

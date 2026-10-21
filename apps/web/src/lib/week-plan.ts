@@ -124,9 +124,9 @@ export function pickSafety(
     return { safety: "unknown", warning: "We couldn't finish checking this recipe." };
   }
   const blocked = findings.find((finding) => finding.severity === "block");
-  if (blocked) return { safety: "block", warning: blocked.message };
-  const warned = findings.find((finding) => finding.severity === "warn");
-  if (warned) return { safety: "warn", warning: warned.message };
+  const messages = findings.map((finding) => finding.message).join(" ");
+  if (blocked) return { safety: "block", warning: messages };
+  if (findings.length > 0) return { safety: "warn", warning: messages };
   return { safety: "ok", warning: null };
 }
 

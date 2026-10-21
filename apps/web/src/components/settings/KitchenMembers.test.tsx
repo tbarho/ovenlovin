@@ -41,6 +41,20 @@ describe("KitchenMembers", () => {
     expect(await screen.findByText("Parent B")).toBeVisible();
   });
 
+  it("uses email when two members share the same display name", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValue({
+      items: [
+        { ...owner, displayName: "Demo visitor" },
+        { ...joiner, displayName: "Demo visitor" },
+      ],
+    });
+    render(<KitchenMembers currentUserId="user-a" currentRole="owner" />);
+    expect(await screen.findByText("parent-a@example.com")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    expect(screen.getByText("Remove parent-b@example.com from this kitchen?")).toBeVisible();
+  });
+
   it("uses an inline confirm instead of the browser dialog to remove a member", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockResolvedValue({ items: [owner, joiner] });

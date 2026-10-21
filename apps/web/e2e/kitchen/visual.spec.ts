@@ -228,6 +228,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByTestId("bucket-loves")).toBeVisible();
   await shot(page, width, "person-jake");
   await page.getByTestId("bucket-cant_eat").getByPlaceholder("Add…").click();
+  await page.getByTestId("bucket-cant_eat").getByPlaceholder("Add…").fill("milk");
   await expect(page.getByRole("listbox", { name: /can't eat suggestions/i })).toBeVisible();
   await expect(page.getByTestId("tile-milk")).toBeVisible();
   await shot(page, width, "inline-add-rule");
@@ -270,7 +271,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(list.getByText("ground beef")).toBeVisible();
   await expect(list.getByText(/2 lbs?/i)).toBeVisible();
   await expect(page.getByTestId("shop-scaled-for")).toHaveText(
-    "For 5 people (some recipes at full yield)"
+    "For 5 people (some recipes scaled differently)"
   );
   await shot(page, width, "shopping-list");
 

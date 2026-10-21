@@ -102,6 +102,17 @@ describe("formatQuantity", () => {
     expect(formatQuantity(1 / 3 + Number.EPSILON)).toBe("1/3");
     expect(formatQuantity(1.3333333333)).toBe("1 1/3");
   });
+
+  it("never prints 0 for a leftover, and uses a pinch for tiny tsp", () => {
+    expect(formatQuantity(0.05)).toBe("1/8");
+    expect(formatQuantity((1 / 2) * (5 / 48))).not.toBe("0");
+    expect(formatMeasureText((1 / 2) * (5 / 48), "tsp")).toBe("a pinch");
+    expect(formatMeasureText((1 / 2) * (5 / 48), "tsp", true)).toBe("a pinch");
+    expect(formatMeasureText(1 * (5 / 48), "tsp")).toBe("1/8 tsp");
+    expect(scaleIngredientDisplay({ rawText: "1/2 tsp salt" }, 48, 5)).toBe("a pinch salt");
+    expect(scaleIngredientDisplay({ rawText: "1 tsp salt" }, 48, 5)).toBe("1/8 tsp salt");
+    expect(scaleIngredientDisplay({ rawText: "1/2 tsp salt" }, 48, 5)).not.toMatch(/0 tsp/);
+  });
 });
 
 describe("toFriendlyMeasure", () => {
@@ -153,6 +164,10 @@ describe("toFriendlyMeasure", () => {
     });
     expect(formatMeasureText(13.75, "tbsp")).toBe("3/4 cup + 1 3/4 tbsp");
     expect(toFriendlyMeasure(8, "tbsp")).toEqual({ displayQuantity: "1/2", displayUnit: "cup" });
+    expect(toFriendlyMeasure(12.25, "tbsp")).toEqual({
+      displayQuantity: "3/4 cup + 1/4 tbsp",
+    });
+    expect(formatMeasureText(12.25, "tbsp")).toBe("3/4 cup + 1/4 tbsp");
   });
 });
 
