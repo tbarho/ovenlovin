@@ -155,6 +155,33 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("1 can crushed tomatoes")).toEqual([
       expect.objectContaining({ quantityMin: 1, unit: "can", name: "crushed tomatoes" }),
     ]);
+    expect(parseShopIngredientLines("1 lemon, juiced")).toEqual([
+      expect.objectContaining({ name: "lemon" }),
+    ]);
+    expect(parseShopIngredientLines("1 1/8 cups plain / all purpose flour")).toEqual([
+      expect.objectContaining({ name: "plain all purpose flour" }),
+    ]);
+    expect(parseShopIngredientLines("1 cup unsalted butter)")).toEqual([
+      expect.objectContaining({ name: "unsalted butter" }),
+    ]);
+    expect(parseShopIngredientLines("200g caster sugar)")).toEqual([
+      expect.objectContaining({ name: "caster sugar" }),
+    ]);
+    expect(parseShopIngredientLines("onions, cooked ahead").map((row) => row.name)).toEqual([
+      "onions",
+    ]);
+    expect(parseShopIngredientLines("cheese, crumbled").map((row) => row.name)).toEqual(["cheese"]);
+    expect(
+      parseShopIngredientLines("mushrooms, otherwise first sautéed").map((row) => row.name)
+    ).toEqual(["mushrooms"]);
+    expect(
+      parseShopIngredientLines("sausage, separated into small clumps").map((row) => row.name)
+    ).toEqual(["sausage"]);
+    expect(
+      parseShopIngredientLines("bell peppers, very thinly sliced if raw").map((row) => row.name)
+    ).toEqual(["bell peppers"]);
+    expect(isShopJunkName("juiced")).toBe(true);
+    expect(isShopJunkName("cooked ahead")).toBe(true);
     expect(isShopJunkName("")).toBe(true);
     expect(isShopJunkName("Note 1")).toBe(true);
     expect(isShopJunkName("parsley")).toBe(false);

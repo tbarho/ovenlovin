@@ -103,6 +103,8 @@ describe("whoCanEat", () => {
       ingredients: [
         { id: "mozz", name: "mozzarella" },
         { id: "parm", name: "parmesan" },
+        { id: "parm2", name: "Parmesan cheese" },
+        { id: "butter", name: "unsalted butter" },
       ],
     });
     const reasons = result.people[0]?.reasons ?? [];
@@ -110,6 +112,7 @@ describe("whoCanEat", () => {
     expect(dairy).toHaveLength(1);
     expect(dairy[0]).toMatch(/mozzarella/i);
     expect(dairy[0]).toMatch(/parmesan/i);
+    expect(dairy[0]).toMatch(/butter/i);
   });
 
   it("still sees peanut and sesame in parenthetical and comma lists", () => {

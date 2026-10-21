@@ -91,6 +91,26 @@ const SHOP_PREP_NOTES =
 const LEADING_PREP =
   /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+)/i;
 
+/** Shop-only: a comma/paren tail that is an instruction, not another grocery item. */
+function isShopPrepPhrase(text: string): boolean {
+  const t = text.trim();
+  if (!t) return true;
+  if (SHOP_PREP_NOTES.test(t) || /^(or|and)$/i.test(t)) return true;
+  if (/^(otherwise|if|into|for|with|in)\b/i.test(t)) return true;
+  if (/^[\p{L}'-]+ed$/iu.test(t)) return true;
+  return /^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t);
+}
+
+function stripShopParens(text: string): string {
+  let next = text;
+  let prev = "";
+  while (next !== prev) {
+    prev = next;
+    next = next.replace(/\s*\([^()]*\)/g, " ");
+  }
+  return next.replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export type BackfillableIngredient = {
   rawText: string;
   name?: string | null;
@@ -280,24 +300,28 @@ function cleanItemName(rest: string): string {
 }
 
 function cleanShopItemName(rest: string): string {
-  let name = rest
-    .replace(/^of\s+/i, "")
-    .replace(/^,\s*/, "")
-    .replace(/^optional:\s*/i, "")
-    .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
-    .replace(/\(\s*note\s*\d+\s*\)/gi, "")
-    .replace(/\s*\([^)]*\)/g, "")
-    .replace(/,?\s+or$/i, "")
-    .replace(/\s+to taste$/i, "")
-    .replace(/,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i, "")
-    .replace(/[.…]+$/g, "")
-    .trim();
+  let name = stripShopParens(
+    rest
+      .replace(/^of\s+/i, "")
+      .replace(/^,\s*/, "")
+      .replace(/^optional:\s*/i, "")
+      .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
+      .replace(/\(\s*note\s*\d+\s*\)/gi, "")
+      .replace(/\s*\/\s*/g, " ")
+      .replace(/,?\s+or$/i, "")
+      .replace(/\s+to taste$/i, "")
+      .replace(
+        /,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i,
+        ""
+      )
+      .replace(/[.…]+$/g, "")
+  );
 
   while (true) {
     const comma = name.lastIndexOf(",");
     if (comma <= 0) break;
     const tail = name.slice(comma + 1).trim();
-    if (SHOP_PREP_NOTES.test(tail) || /^(or|and)$/i.test(tail)) {
+    if (isShopPrepPhrase(tail)) {
       name = name.slice(0, comma).trim();
       continue;
     }
@@ -315,10 +339,10 @@ function splitShopNameList(name: string): string[] {
   const each = name.match(/^each(?:\s+of)?\s+(.+)/i);
   const source = each?.[1] ?? name;
   const parts = source
-    .split(/\s*(?:,|\/|&|\band\b)\s*/i)
+    .split(/\s*(?:,|&|\band\b)\s*/i)
     .map((part) => part.replace(/^and\s+/i, "").trim())
     .map((part) => part.replace(LEADING_PREP, "").trim())
-    .filter(Boolean);
+    .filter((part) => part && !isShopPrepPhrase(part));
   return parts.length > 0 ? parts : [name];
 }
 
@@ -363,7 +387,7 @@ function stripAlternateSlashMeasure(text: string): string {
 /** Note leftovers and empty names are not grocery items. */
 export function isShopJunkName(name: string): boolean {
   const normalized = normalizeIngredientName(name);
-  return !normalized || /^note\s*\d+$/.test(normalized);
+  return !normalized || /^note\s*\d+$/.test(normalized) || isShopPrepPhrase(name);
 }
 
 export function parseIngredientLine(rawText: string): ParsedIngredientLine {

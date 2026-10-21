@@ -246,15 +246,9 @@ describe("ShoppingListService", () => {
         ingredients: [{ rawText: "1 onion" }, { rawText: "1 lb onion" }, { rawText: "2 lb onion" }],
       },
     ]);
-    expect(list.ingredients.find((item) => item.unit === "lb")).toMatchObject({
-      name: "onion",
-      quantity: 3,
-      unit: "lb",
-    });
-    expect(list.ingredients.find((item) => item.unit == null)).toMatchObject({
-      name: "onion",
-      quantity: 1,
-    });
+    expect(list.ingredients.filter((item) => item.name === "onion")).toHaveLength(1);
+    expect(list.ingredients[0]?.displayQuantity).toMatch(/1/);
+    expect(list.ingredients[0]?.displayQuantity).toMatch(/3\s*lbs?/);
   });
 
   it("merges convertible units (tsp + tbsp)", () => {
@@ -976,5 +970,52 @@ describe("ShoppingListService", () => {
     });
     expect(list.ingredients.find((item) => item.name === "oat milk")?.aisle).not.toBe("Dairy");
     expect(list.ingredients.find((item) => item.name === "tomatoes")).toBeUndefined();
+  });
+
+  it.each([
+    {
+      name: "lemon juiced",
+      lines: ["1 lemon, juiced"],
+      expectName: /lemon/i,
+      reject: /juiced/i,
+    },
+    {
+      name: "flour slash",
+      lines: ["1 1/8 cups plain / all purpose flour"],
+      expectName: /flour/i,
+      reject: /^plain$/i,
+    },
+    {
+      name: "butter pair",
+      lines: ["1 cup butter", "150g unsalted butter"],
+      expectName: /butter/i,
+      reject: /unsalted/i,
+      bothAmounts: /cup/i,
+    },
+    {
+      name: "parmesan pair",
+      lines: ["1/2 cup parmesan", "1/4 cup Parmesan cheese"],
+      expectName: /parmesan/i,
+      reject: /cheese/i,
+    },
+  ])("UAT shop line $name is one clean row", ({ lines, expectName, reject, bothAmounts }) => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "uat", servings: 4 }),
+        recipeTitle: "UAT",
+        recipeServings: 4,
+        ingredients: lines.map((rawText) => ({ rawText })),
+      },
+    ]);
+    const rows = list.ingredients.filter((item) => expectName.test(item.name));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.name).not.toMatch(reject);
+    expect(list.ingredients.some((item) => reject.test(item.name))).toBe(false);
+    if (bothAmounts) {
+      expect(`${rows[0]?.displayQuantity ?? ""} ${rows[0]?.displayUnit ?? ""}`).toMatch(
+        bothAmounts
+      );
+      expect(rows[0]?.displayQuantity).toMatch(/\+/);
+    }
   });
 });

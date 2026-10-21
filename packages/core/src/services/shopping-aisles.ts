@@ -496,10 +496,28 @@ export function isPantryStaple(name: string): boolean {
   });
 }
 
+const MERGE_DESCRIPTORS =
+  /\b(unsalted|salted|plain|all purpose|grated|shredded|freshly|fresh|dried|large|small|whole|low sodium)\b/g;
+const MERGE_KIND = /\b(extract|cheese)\b/g;
+
+function descriptorlessName(name: string): string {
+  return normalizeIngredientName(name)
+    .replace(MERGE_DESCRIPTORS, " ")
+    .replace(MERGE_KIND, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function canonicalNameFor(name: string, match: CompiledAlias): string {
-  if (match.canonical) return match.canonical;
+  const stripped = descriptorlessName(name);
+  const strippedMatch = stripped ? findRule(stripped) : undefined;
+  const use = strippedMatch ?? match;
+  const alias = use.canonical ?? use.alias;
+  if (stripped === use.alias || stripped === `${use.alias}s` || stripped === alias) return alias;
   const normalized = normalizeIngredientName(name);
-  if (normalized === match.alias || normalized === `${match.alias}s`) return match.alias;
+  if (normalized === match.alias || normalized === `${match.alias}s`) {
+    return match.canonical ?? match.alias;
+  }
   return name;
 }
 

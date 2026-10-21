@@ -102,6 +102,14 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("all-purpose flour")).toBe("all purpose flour");
     expect(canonicalShopName("bread flour")).toBe("bread flour");
   });
+
+  it("merges descriptor variants of the same grocery", () => {
+    expect(canonicalShopName("unsalted butter")).toBe("butter");
+    expect(canonicalShopName("Parmesan cheese")).toBe("parmesan");
+    expect(canonicalShopName("vanilla extract")).toBe("vanilla");
+    expect(canonicalShopName("goat cheese")).toBe("goat cheese");
+    expect(canonicalShopName("vegan butter")).toBe("vegan butter");
+  });
 });
 
 describe("canned and plant-milk aisles", () => {
