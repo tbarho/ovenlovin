@@ -247,10 +247,7 @@ export function checkIngredientsAgainstRules(
   if (ingredients.length === 0) {
     incompleteReasons.push("No ingredients provided");
   }
-
-  if (contexts.length === 0) {
-    incompleteReasons.push("No rules provided");
-  }
+  // Empty rules is a finished check: nothing to warn about.
 
   // Check each ingredient against each rule
   for (const ingredient of ingredients) {
