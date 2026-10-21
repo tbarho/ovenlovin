@@ -326,11 +326,7 @@ Errors follow [RFC 9457 Problem Details](https://datatracker.ietf.org/doc/html/r
 Download the OpenAPI specification:
 
 ```bash
-# JSON
 curl https://your-app.vercel.app/api/v1/openapi.json > openapi.json
-
-# YAML
-curl https://your-app.vercel.app/api/v1/openapi.yaml > openapi.yaml
 ```
 
 ### Use with Tools

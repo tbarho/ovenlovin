@@ -225,7 +225,6 @@ Standard REST API with OpenAPI 3.1 specification:
 
 Download the OpenAPI spec:
 - JSON: `https://your-app.vercel.app/api/v1/openapi.json`
-- YAML: `https://your-app.vercel.app/api/v1/openapi.yaml`
 
 [View full API reference →](api-reference.md)
 
