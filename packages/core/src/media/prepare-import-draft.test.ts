@@ -108,6 +108,7 @@ describe("prepareImportDraft", () => {
     expect(rebuilt?.steps).toHaveLength(1);
     expect(rebuilt?.source.importerName).toBe("paste-importer");
     expect(draftFromSavedPreview({ title: "Nope" })).toBeNull();
+    expect(draftFromSavedPreview({ ...presentablePreview(), steps: [] })?.steps).toEqual([]);
   });
 
   it("keeps only typed ingredient fields from a client-sent preview", () => {

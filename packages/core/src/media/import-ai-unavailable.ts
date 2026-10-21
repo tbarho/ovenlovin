@@ -13,6 +13,10 @@ export const IMPORT_BLOCKED_MESSAGE = `This site blocked the importer. ${IMPORT_
 export const IMPORT_PAGE_GONE_CODE = "import_page_gone";
 export const IMPORT_PAGE_GONE_MESSAGE = `That page is gone. ${IMPORT_PASTE_OR_PHOTO}`;
 
+export const IMPORT_PAGE_PRIVATE_CODE = "import_page_private";
+export const IMPORT_PAGE_PRIVATE_MESSAGE =
+  "That page is private or needs a sign-in. Paste the recipe text or add a photo.";
+
 export const IMPORT_NOT_A_RECIPE_CODE = "import_not_a_recipe";
 
 export const IMPORT_NOT_A_RECIPE_MESSAGE = `We couldn't find a recipe. ${IMPORT_PASTE_OR_PHOTO}`;
@@ -159,6 +163,12 @@ export function classifyImportFailure(error: unknown): ImportFailure | null {
     !isImportAiUnavailable(error)
   ) {
     return { code: IMPORT_BLOCKED_CODE, message: IMPORT_BLOCKED_MESSAGE };
+  }
+  if (name === "RecipePagePrivateError" || message.startsWith("That page is private")) {
+    return { code: IMPORT_PAGE_PRIVATE_CODE, message: IMPORT_PAGE_PRIVATE_MESSAGE };
+  }
+  if (name === "RecipeImportFetchError" && errorStatus(error) === 401) {
+    return { code: IMPORT_PAGE_PRIVATE_CODE, message: IMPORT_PAGE_PRIVATE_MESSAGE };
   }
   if (name === "RecipeImportFetchError" || /blocked the importer/i.test(message)) {
     return { code: IMPORT_BLOCKED_CODE, message: IMPORT_BLOCKED_MESSAGE };
