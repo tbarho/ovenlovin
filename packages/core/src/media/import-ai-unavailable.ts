@@ -128,6 +128,16 @@ export function isImportAiNotARecipe(error: unknown): boolean {
   return Array.isArray(nested.errors) && nested.errors.some(isImportAiNotARecipe);
 }
 
+export function throwIfNotARecipe(
+  draft: { ingredients?: Array<{ rawText?: string }>; steps?: Array<{ text?: string }> },
+  isRecipe?: unknown
+): void {
+  const hasIngredients = Boolean(draft.ingredients?.some((item) => item.rawText?.trim()));
+  const hasSteps = Boolean(draft.steps?.some((item) => item.text?.trim()));
+  if (isRecipe !== false && (hasIngredients || hasSteps)) return;
+  throw Object.assign(new Error(IMPORT_NOT_A_RECIPE_MESSAGE), { name: "RecipeNotFoundError" });
+}
+
 export type ImportFailure = { code: string; message: string };
 
 /** Blocked / gone / not-a-recipe / unsupported. Same codes on REST and MCP. */
