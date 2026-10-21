@@ -441,11 +441,13 @@ export function CookbooksSheet({
   cookbooks,
   open,
   onClose,
+  onSaved,
 }: {
   recipe: RecipeDetails;
   cookbooks: Cookbook[];
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const [selectedBooks, setSelectedBooks] = useState(recipe.cookbooks.map((item) => item.id));
   const { pending, error, patch } = useRecipePatch(recipe.id, onClose);
@@ -457,7 +459,8 @@ export function CookbooksSheet({
 
   async function saveCookbooks(event: React.FormEvent) {
     event.preventDefault();
-    await patch({ cookbookIds: selectedBooks });
+    const saved = await patch({ cookbookIds: selectedBooks });
+    if (saved) onSaved?.();
   }
 
   const original = recipe.cookbooks.map((item) => item.id);

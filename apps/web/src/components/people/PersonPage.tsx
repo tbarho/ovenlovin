@@ -588,6 +588,7 @@ function EditPersonForm({ person, onClose }: { person: Person; onClose: () => vo
             key={item}
             type="button"
             className={emoji === item ? "is-on" : undefined}
+            aria-pressed={emoji === item}
             onClick={() => setEmoji(item)}
             aria-label={`Use ${item}`}
           >

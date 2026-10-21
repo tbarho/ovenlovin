@@ -143,6 +143,7 @@ describe("InviteService", () => {
       .mockReturnValueOnce(chain([householdRow]))
       .mockReturnValueOnce(chain([]));
     db.insert.mockReturnValueOnce(chain([membershipRow]));
+    db.update.mockReturnValueOnce(chain([{ ...pending, deletedAt: new Date("2026-10-17") }]));
 
     const accepted = await service.acceptInvite(
       pending.token,
@@ -152,6 +153,7 @@ describe("InviteService", () => {
     expect(accepted.alreadyMember).toBe(false);
     expect(accepted.membership.role).toBe("member");
     expect(accepted.householdId).toBe(householdRow.id);
+    expect(db.update).toHaveBeenCalled();
   });
 
   it("is idempotent when the user is already in the kitchen", async () => {
@@ -169,6 +171,7 @@ describe("InviteService", () => {
       .mockReturnValueOnce(chain([pending]))
       .mockReturnValueOnce(chain([householdRow]))
       .mockReturnValueOnce(chain([membershipRow]));
+    db.update.mockReturnValueOnce(chain([{ ...pending, deletedAt: new Date("2026-10-17") }]));
 
     const accepted = await service.acceptInvite(
       pending.token,
@@ -177,6 +180,7 @@ describe("InviteService", () => {
     );
     expect(accepted.alreadyMember).toBe(true);
     expect(db.insert).not.toHaveBeenCalled();
+    expect(db.update).toHaveBeenCalled();
   });
 
   it("rejects expired and revoked links", async () => {

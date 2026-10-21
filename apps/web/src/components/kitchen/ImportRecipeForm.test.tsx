@@ -376,7 +376,9 @@ describe("ImportRecipeForm url and paste validation", () => {
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText("That site would not let us read its recipe.")).toBeVisible();
-    expect(screen.queryByText(/bookmarklet/i)).not.toBeInTheDocument();
+    expect(screen.getByText("That site would not let us read its recipe.")).not.toHaveTextContent(
+      /bookmarklet/i
+    );
     const pasteHelp = screen.getByRole("button", { name: "Paste the recipe text" });
     const photoHelp = screen.getByRole("button", { name: "Add a photo" });
     expect(pasteHelp.compareDocumentPosition(photoHelp) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(

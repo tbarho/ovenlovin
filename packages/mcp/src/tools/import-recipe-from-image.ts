@@ -14,6 +14,7 @@ import {
   fingerprintImageBlob,
   keepMainRecipeImages,
   persistRecipeImageUrl,
+  presentPhotoImportImages,
   RecipeService,
   type ImagePutInput,
 } from "@ovenlovin/core";
@@ -40,6 +41,15 @@ export const importRecipeFromImageSchema = z
       .describe("Extra pages of the same recipe; the first photo is the main image"),
     isHandwritten: z.boolean().optional(),
     draft: z.unknown().optional().describe("Previewed recipe from a prior import. Skips extract."),
+    save: z
+      .boolean()
+      .optional()
+      .describe("false returns a preview without saving; omit to persist"),
+    idempotencyKey: z.string().optional().describe("Same key replays the same saved recipe"),
+    allowDuplicate: z
+      .boolean()
+      .optional()
+      .describe("Persist a near-duplicate photo instead of returning the existing recipe"),
     skipReview: z.boolean().default(false),
     cookbookId: z.string().uuid().optional(),
   })
@@ -128,11 +138,40 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   const perceptualHash = first ? perceptualHashFromImageBlob(first) : null;
   if (fingerprint) {
     const exact = await recipeService.findPhotoImportDuplicate(context.householdId, fingerprint);
-    if (exact) {
-      throw new McpInvalidParamsError(
-        `This photo was already imported as "${exact.title}" (${exact.id}). Skip or open that recipe.`
-      );
+    if (exact && !input.allowDuplicate) {
+      return {
+        recipeId: exact.id,
+        created: false,
+        duplicate: true,
+        status: exact.status,
+        title: exact.title,
+        notes: exact.notes ?? null,
+        servings: exact.servings ?? undefined,
+        images: mcpRecipeImages(exact.id, exact.images),
+        confidence: 1,
+        message: `This photo was already imported as "${exact.title}" (${exact.id}). Open that recipe instead of importing again.`,
+      };
     }
+  }
+
+  const near =
+    perceptualHash && input.save !== false && !input.allowDuplicate
+      ? await recipeService.findPhotoNearDuplicate(context.householdId, perceptualHash)
+      : null;
+  if (near) {
+    return {
+      recipeId: near.id,
+      created: false,
+      duplicate: true,
+      possibleDuplicate: { recipeId: near.id, title: near.title },
+      status: near.status,
+      title: near.title,
+      notes: near.notes ?? null,
+      servings: near.servings ?? undefined,
+      images: mcpRecipeImages(near.id, near.images),
+      confidence: 1,
+      message: `A similar photo was already imported as "${near.title}" (${near.id}). Send allowDuplicate:true to save this recipe anyway.`,
+    };
   }
 
   let draft = savedDraft;
@@ -162,9 +201,33 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
     draft.uncertainFields = extracted.uncertainFields;
   }
 
+  if (input.save === false) {
+    const nearPreview = perceptualHash
+      ? await recipeService.findPhotoNearDuplicate(context.householdId, perceptualHash)
+      : null;
+    return {
+      saved: false,
+      preview: true,
+      title: draft.title,
+      notes: draft.notes ?? null,
+      servings: draft.servings,
+      prepTimeMinutes: draft.prepTimeMinutes,
+      cookTimeMinutes: draft.cookTimeMinutes,
+      images: presentPhotoImportImages(draft.images),
+      confidence: extracted?.draft.overallConfidence ?? 1,
+      reviewReasons: draft.reviewReasons,
+      uncertainFields: extracted?.uncertainFields ?? draft.uncertainFields,
+      possibleDuplicate: nearPreview
+        ? { recipeId: nearPreview.id, title: nearPreview.title }
+        : undefined,
+      message: "Preview only. Send save:true with this draft to persist.",
+    };
+  }
+
   const persisted = await recipeService.persistImportedDraft(draft, {
     householdId: context.householdId,
     createdBy: context.userId ?? context.apiKeyId ?? context.householdId,
+    idempotencyKey: input.idempotencyKey,
   });
   if (persisted.outcome === "in_flight") {
     throw new Error("This import is already in progress. Retry the same request.");
