@@ -19,10 +19,13 @@ import {
   RecipeNotFoundError,
   RecipeImportFetchError,
   RecipePageGoneError,
+  RecipePagePrivateError,
   RecipeUnsupportedSiteError,
   isUnsupportedImportUrl,
   looksLikeBotChallenge,
   looksLikeGonePage,
+  looksLikeSignInPage,
+  looksLikeSignInUrl,
   looksLikeSoftBlock,
 } from "../utils/url";
 import { extractHtmlRecipe, parseHtmlRecipeServings } from "../utils/html-recipe";
@@ -82,6 +85,9 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
         }
         if (looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
           throw new RecipeImportFetchError(finalUrl, 403, "Forbidden", layersTried);
+        }
+        if (looksLikeSignInPage(html) || looksLikeSignInUrl(finalUrl)) {
+          throw new RecipePagePrivateError(finalUrl);
         }
         if (looksLikeGonePage(html)) {
           throw new RecipePageGoneError(finalUrl);

@@ -24,6 +24,17 @@ const clerkConfigured = Boolean(
 
 const clerk = clerkMiddleware(async (auth, req) => {
   if (isClerkProtectExempt(req.nextUrl.pathname)) return;
+  const path = req.nextUrl.pathname;
+  if (path === "/settings" || path.startsWith("/settings/")) {
+    const session = await auth();
+    if (!session.userId) {
+      const signIn = req.nextUrl.clone();
+      signIn.pathname = "/sign-in";
+      signIn.search = `?redirect_url=${encodeURIComponent(`${path}${req.nextUrl.search}`)}`;
+      return NextResponse.redirect(signIn);
+    }
+    return;
+  }
   await auth.protect();
 });
 

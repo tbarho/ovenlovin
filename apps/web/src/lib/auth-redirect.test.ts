@@ -11,5 +11,7 @@ describe("safeAuthRedirect", () => {
     expect(safeAuthRedirect("/api/v1/households")).toBe("/recipes");
     expect(safeAuthRedirect("/invite/not-a-token")).toBe("/recipes");
     expect(safeAuthRedirect(null)).toBe("/recipes");
+    expect(safeAuthRedirect("/settings")).toBe("/settings");
+    expect(safeAuthRedirect("/people")).toBe("/people");
   });
 });

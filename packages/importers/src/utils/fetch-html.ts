@@ -4,6 +4,7 @@ import {
   IMPORT_BLOCKED_MESSAGE,
   IMPORT_NOT_A_RECIPE_MESSAGE,
   IMPORT_PAGE_GONE_MESSAGE,
+  IMPORT_PAGE_PRIVATE_MESSAGE,
   IMPORT_UNSUPPORTED_SITE_MESSAGE,
   NotAPublicUrlError,
   assertPublicHttpUrl,
@@ -101,6 +102,17 @@ export class RecipePageGoneError extends Error {
   }
 }
 
+/** Page needs a sign-in, or the fetch landed on a login wall. */
+export class RecipePagePrivateError extends Error {
+  readonly url: string;
+
+  constructor(url: string) {
+    super(IMPORT_PAGE_PRIVATE_MESSAGE);
+    this.name = "RecipePagePrivateError";
+    this.url = url;
+  }
+}
+
 /** Social hosts we cannot fetch a recipe from. */
 export class RecipeUnsupportedSiteError extends Error {
   readonly url: string;
@@ -155,8 +167,46 @@ export function looksLikeBotChallenge(html: string): boolean {
   );
 }
 
-export function looksLikeGonePage(html: string): boolean {
+export function looksLikeSignInUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const path = `${parsed.pathname}${parsed.search}`.toLowerCase();
+    if (
+      host === "accounts.google.com" ||
+      host === "accounts.youtube.com" ||
+      host === "login.microsoftonline.com" ||
+      host === "login.live.com" ||
+      host === "appleid.apple.com"
+    ) {
+      return true;
+    }
+    return /(?:^|\/)(sign[-_]?in|log[-_]?in|signin|servicelogin)(?:\/|$|\?)/i.test(path);
+  } catch {
+    return false;
+  }
+}
+
+export function looksLikeSignInPage(html: string): boolean {
   if (!html || looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) return false;
+  const title = /<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1]?.toLowerCase() ?? "";
+  if (/(^|\b)(sign[- ]?in|log[- ]?in|you need (access|permission))\b/.test(title)) return true;
+  const head = html.slice(0, 12_000).toLowerCase();
+  return (
+    /you need (access|permission) (to|before)/.test(head) ||
+    /sign in to (continue|google|your account)/.test(head)
+  );
+}
+
+export function looksLikeGonePage(html: string): boolean {
+  if (
+    !html ||
+    looksLikeBotChallenge(html) ||
+    looksLikeSoftBlock(html) ||
+    looksLikeSignInPage(html)
+  ) {
+    return false;
+  }
   const title = /<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1]?.toLowerCase() ?? "";
   if (/(404|page not found|\bnot found\b)/.test(title)) return true;
   const head = html.slice(0, 20_000).toLowerCase();
@@ -488,6 +538,13 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
           sawDirectBlock = true;
         }
       }
+      if (
+        looksLikeSignInUrl(direct.finalUrl) ||
+        direct.status === 401 ||
+        (direct.status === 403 && looksLikeSignInPage(direct.html))
+      ) {
+        throw new RecipePagePrivateError(url);
+      }
       return remember({
         html: direct.html,
         finalUrl: direct.finalUrl,
@@ -495,7 +552,8 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
         status: direct.status,
       });
     } catch (error) {
-      if (error instanceof NotAPublicUrlError) throw error;
+      if (error instanceof NotAPublicUrlError || error instanceof RecipePagePrivateError)
+        throw error;
       lastStatus = 503;
       lastStatusText = "Fetch failed";
       if (layer === "direct") directStatus = 503;
@@ -511,7 +569,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     if (relatedHit) return relatedHit;
   }
 
-  if (directStatus === 404) throw new RecipePageGoneError(url);
+  if (directStatus === 404 || directStatus === 410) throw new RecipePageGoneError(url);
 
   const settledPage = state.fallback;
   const haveSettledNonRecipe =

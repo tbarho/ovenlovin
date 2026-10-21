@@ -438,6 +438,7 @@ describe("ImportRecipeForm url and paste validation", () => {
 
     await user.click(pasteHelp);
     expect(screen.getByRole("tab", { name: "Paste" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByPlaceholderText(/weeknight tomato pasta/i)).toHaveFocus();
     expect(screen.queryByText(BLOCKED_IMPORT_COPY)).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "URL" }));
     expect(screen.getByPlaceholderText(/example.com/i)).toHaveValue(

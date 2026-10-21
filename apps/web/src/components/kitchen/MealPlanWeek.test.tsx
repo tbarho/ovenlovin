@@ -682,7 +682,8 @@ describe("MealPlanWeek", () => {
     await user.click(screen.getByRole("button", { name: /wednesday/i }));
     await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Could not update the plan");
+    expect(alert).toHaveTextContent("Couldn't add Veggie tacos to Wednesday. Nothing was saved.");
+    expect(alert).toHaveClass("kitchen-toast");
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.getAllByText("Add dinner")).toHaveLength(7);
 

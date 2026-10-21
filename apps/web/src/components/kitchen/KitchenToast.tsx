@@ -6,27 +6,29 @@ const TOAST_MS = 9000;
 
 export function KitchenToast({
   message,
+  actionLabel,
   onUndo,
   onDismiss,
 }: {
   message: string | null;
+  actionLabel?: string;
   onUndo?: () => void;
   onDismiss: () => void;
 }) {
   useEffect(() => {
-    if (!message) return;
+    if (!message || actionLabel) return;
     const timer = window.setTimeout(onDismiss, TOAST_MS);
     return () => window.clearTimeout(timer);
-  }, [message, onDismiss]);
+  }, [message, onDismiss, actionLabel]);
 
   if (!message) return null;
 
   return (
-    <div className="kitchen-toast" role="status">
+    <div className="kitchen-toast" role={actionLabel ? "alert" : "status"}>
       <span>{message}</span>
       {onUndo ? (
         <button type="button" onClick={onUndo}>
-          Undo
+          {actionLabel ?? "Undo"}
         </button>
       ) : (
         <button type="button" onClick={onDismiss}>

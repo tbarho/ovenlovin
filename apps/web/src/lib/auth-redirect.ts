@@ -9,5 +9,5 @@ export function safeAuthRedirect(raw: string | null | undefined): string {
     const token = raw.slice("/invite/".length).split(/[/?#]/)[0] ?? "";
     return readInviteToken(token) ? `/invite/${token}` : "/recipes";
   }
-  return "/recipes";
+  return raw;
 }
