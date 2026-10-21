@@ -34,6 +34,12 @@ function fixture(name: string): string {
 const CHALLENGE = fixture("cloudflare-challenge.html");
 const VERCEL_CHECKPOINT = fixture("vercel-security-checkpoint.html");
 const CF_TURNSTILE = fixture("cloudflare-turnstile.html");
+const ABOUT_ALLRECIPES = fixture("about-allrecipes.html");
+const ABOUT_SERIOUSEATS = fixture("about-seriouseats.html");
+const ALLRECIPES_404 = fixture("allrecipes-404.html");
+const RECIPETIN_404 = fixture("recipetin-404.html");
+const SALLY_WIDGET = fixture("sally-recipe-with-turnstile.html");
+const HBH_WIDGET = fixture("hbh-recipe-with-turnstile.html");
 const NATASHA = fixture("natashaskitchen-beef-stroganoff.html");
 const BUDGET = fixture("budgetbytes-beef-stroganoff.html");
 const WELLPLATED = fixture("wellplated-beef-stroganoff.html");
@@ -577,7 +583,7 @@ describe("fetchHtml layers", () => {
     expect(isUsableRecipeHtml(result.html)).toBe(false);
   });
 
-  it("throws blocked when a challenge is followed by a non-recipe cache page", async () => {
+  it("keeps a fetched About page as not-a-recipe after a blocked layer", async () => {
     const fetchMock = vi.fn(async (requested: string) => {
       if (requested.includes("jina") || requested.includes("translate")) {
         return {
@@ -585,7 +591,7 @@ describe("fetchHtml layers", () => {
           status: 200,
           statusText: "OK",
           url: requested,
-          text: async () => EXAMPLE_COM,
+          text: async () => ABOUT_ALLRECIPES,
         };
       }
       return {
@@ -596,12 +602,13 @@ describe("fetchHtml layers", () => {
         text: async () => CHALLENGE,
       };
     });
-    await expect(
-      fetchHtml("https://www.halfbakedharvest.com/cookies/", {
-        fetchImpl: fetchMock as unknown as typeof fetch,
-        env: {},
-      })
-    ).rejects.toBeInstanceOf(RecipeImportFetchError);
+    const result = await fetchHtml("https://www.allrecipes.com/about-us-6648104", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.html).toMatch(/About Allrecipes/);
+    expect(isUsableRecipeHtml(result.html)).toBe(false);
+    expect(looksLikeBotChallenge(result.html)).toBe(false);
   });
 
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
@@ -635,6 +642,66 @@ describe("fetchHtml layers", () => {
       name: "RecipeImportFetchError",
       message: expect.stringMatching(/blocked the importer/),
     });
+  });
+});
+
+describe("import failure reasons", () => {
+  it("does not treat a Turnstile widget on an About page as a block", () => {
+    expect(looksLikeBotChallenge(ABOUT_ALLRECIPES)).toBe(false);
+    expect(looksLikeBotChallenge(ABOUT_SERIOUSEATS)).toBe(false);
+    expect(looksLikeGonePage(ABOUT_ALLRECIPES)).toBe(false);
+    expect(isUsableRecipeHtml(ABOUT_ALLRECIPES)).toBe(false);
+  });
+
+  it("treats 404 chrome with a Recipe ad slot as gone, not a recipe", () => {
+    expect(ALLRECIPES_404).toMatch(/"Recipe"/);
+    expect(RECIPETIN_404).toMatch(/"Recipe"/);
+    expect(looksLikeGonePage(ALLRECIPES_404)).toBe(true);
+    expect(looksLikeGonePage(RECIPETIN_404)).toBe(true);
+    expect(isUsableRecipeHtml(ALLRECIPES_404)).toBe(false);
+    expect(isUsableRecipeHtml(RECIPETIN_404)).toBe(false);
+  });
+
+  it("still treats a real interstitial as a challenge", () => {
+    expect(looksLikeBotChallenge(CHALLENGE)).toBe(true);
+    expect(looksLikeBotChallenge(VERCEL_CHECKPOINT)).toBe(true);
+    expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
+  });
+
+  it("imports Sally and HBH recipe pages that include a Turnstile widget", () => {
+    expect(looksLikeBotChallenge(SALLY_WIDGET)).toBe(false);
+    expect(looksLikeBotChallenge(HBH_WIDGET)).toBe(false);
+    expect(isUsableRecipeHtml(SALLY_WIDGET)).toBe(true);
+    expect(isUsableRecipeHtml(HBH_WIDGET)).toBe(true);
+    expect(extractJsonLd(SALLY_WIDGET)?.name).toMatch(/chewy chocolate chip/i);
+    expect(extractJsonLd(HBH_WIDGET)?.name).toMatch(/giant chocolate chip/i);
+  });
+
+  it("says an HTTP 404 is gone even if cache HTML quotes Recipe", async () => {
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => RECIPETIN_404,
+        };
+      }
+      return {
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+        url: requested,
+        text: async () => RECIPETIN_404,
+      };
+    });
+    await expect(
+      fetchHtml("https://www.recipetineats.com/missing/", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toBeInstanceOf(RecipePageGoneError);
   });
 });
 

@@ -485,6 +485,53 @@ describe("URL Importer", () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it("says not a recipe for About pages that only embed Turnstile", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://www.allrecipes.com/about-us-6648104",
+          html: `<html><head><title>About Us - Allrecipes</title>
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script></head>
+            <body><div class="cf-turnstile"></div><h1>About Allrecipes</h1>
+            <p>This about page is not a recipe.</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeNotFoundError",
+        message: expect.stringMatching(/couldn't find a recipe/),
+      });
+      expect(extractWithLlm).toHaveBeenCalledOnce();
+    });
+
+    it("extracts Sally and HBH recipes that include a Turnstile widget", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      const sally = await createUrlImporter({ extractWithLlm }).extract({
+        url: "https://sallysbakingaddiction.com/chewy-chocolate-chip-cookies/",
+        html: `<html><head><title>Chewy Chocolate Chip Cookies</title>
+          <script type="application/ld+json">${JSON.stringify({
+            "@type": "Recipe",
+            name: "Chewy Chocolate Chip Cookies",
+            recipeIngredient: ["2 cups flour", "1 cup butter"],
+            recipeInstructions: [{ "@type": "HowToStep", text: "Mix." }],
+          })}</script>
+          <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script></head>
+          <body><div class="cf-turnstile"></div><h1>Chewy Chocolate Chip Cookies</h1></body></html>`,
+      });
+      expect(sally.rawData).toMatchObject({ name: "Chewy Chocolate Chip Cookies" });
+      const hbh = await createUrlImporter({ extractWithLlm }).extract({
+        url: "https://www.halfbakedharvest.com/giant-chocolate-chip-cookies/",
+        html: `<html><head><title>Giant Chocolate Chip Cookies</title>
+          <script type="application/ld+json">${JSON.stringify({
+            "@type": "Recipe",
+            name: "Giant Chocolate Chip Cookies",
+            recipeIngredient: ["2 cups flour", "1 cup brown sugar"],
+            recipeInstructions: [{ "@type": "HowToStep", text: "Bake." }],
+          })}</script>
+          <div class="cf-turnstile"></div></html>`,
+      });
+      expect(hbh.rawData).toMatchObject({ name: "Giant Chocolate Chip Cookies" });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
     it("says no recipe found when every extract layer misses", async () => {
       vi.stubGlobal(
         "fetch",

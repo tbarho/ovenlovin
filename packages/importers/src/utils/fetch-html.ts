@@ -135,9 +135,6 @@ export function looksLikeBotChallenge(html: string): boolean {
     head.includes("cf-browser-verification") ||
     head.includes("cdn-cgi/challenge") ||
     head.includes("cf-challenge") ||
-    head.includes("cf-turnstile") ||
-    head.includes("challenge-platform") ||
-    head.includes("challenges.cloudflare.com") ||
     head.includes("enable javascript and cookies to continue") ||
     head.includes("verify you are human") ||
     head.includes("checking your browser") ||
@@ -151,11 +148,13 @@ export function looksLikeBotChallenge(html: string): boolean {
 
 export function looksLikeGonePage(html: string): boolean {
   if (!html || looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) return false;
-  const head = html.slice(0, 12_000).toLowerCase();
+  const title = /<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1]?.toLowerCase() ?? "";
+  if (/(404|page not found|\bnot found\b)/.test(title)) return true;
+  const head = html.slice(0, 20_000).toLowerCase();
   return (
-    /<title>[^<]*(404|page not found|not found)[^<]*<\/title>/.test(head) ||
     /this recipe has been (removed|moved|deleted)/.test(head) ||
-    /the recipe you.{0,60}has been (moved|removed)/.test(head)
+    /the recipe you.{0,60}has been (moved|removed)/.test(head) ||
+    /<(h1|h2)[^>]*>[^<]{0,80}(404|page not found)[^<]{0,40}<\/\1>/i.test(html)
   );
 }
 
@@ -193,6 +192,7 @@ export function looksLikeMarkdownRecipe(text: string): boolean {
 
 export function isUsableRecipeHtml(html: string): boolean {
   if (!html) return false;
+  if (looksLikeGonePage(html)) return false;
   if (/application\/ld\+json/i.test(html) && /"@type"\s*:\s*"Recipe"/i.test(html)) return true;
   if (looksLikeBotChallenge(html)) return false;
   const compact = html.replace(/\s+/g, " ").trim();
@@ -342,26 +342,19 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   let lastStatus = 403;
   let lastStatusText = "Forbidden";
   let directStatus: number | undefined;
-  let sawBlock = false;
   const state: { fallback: FetchResult | null } = { fallback: null };
 
-  const noteBlock = (html: string, status: number) => {
-    if (BLOCKED_STATUSES.has(status) || looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
-      sawBlock = true;
-    }
-  };
-
   const remember = (hit: PageHit): FetchResult | null => {
-    noteBlock(hit.html, hit.status);
     if (isUsableRecipeHtml(hit.html)) {
       return { html: hit.html, url, finalUrl: hit.finalUrl, via: hit.via, layersTried };
     }
     if (
       !state.fallback &&
-      !sawBlock &&
       hit.status >= 200 &&
       hit.status < 300 &&
-      (looksLikeCompleteDocument(hit.html) || looksLikePaywall(hit.html)) &&
+      (looksLikeCompleteDocument(hit.html) ||
+        looksLikePaywall(hit.html) ||
+        looksLikeGonePage(hit.html)) &&
       !looksLikeBotChallenge(hit.html) &&
       !looksLikeSoftBlock(hit.html)
     ) {
@@ -413,6 +406,8 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     if (relatedHit) return relatedHit;
   }
 
+  if (directStatus === 404) throw new RecipePageGoneError(url);
+
   const settledPage = state.fallback;
   const haveSettledNonRecipe =
     settledPage !== null &&
@@ -448,7 +443,6 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     }
   }
 
-  if (directStatus === 404) throw new RecipePageGoneError(url);
   if (state.fallback && looksLikeGonePage(state.fallback.html)) {
     throw new RecipePageGoneError(url);
   }
