@@ -10,7 +10,7 @@ import type {
   ParsedStep,
   ImporterConfig,
 } from "../types/importer";
-import { stripLeadingStepNumber } from "@ovenlovin/core";
+import { inlinePublicImageBlob, stripLeadingStepNumber } from "@ovenlovin/core";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { classifyDraftIngredients } from "../utils/classify-allergens";
 import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
@@ -106,7 +106,11 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
     },
 
     async extract(input: PhotoImportInput): Promise<RawExtraction> {
-      const imageMessages = input.images.map((img) => ({
+      const images = [];
+      for (const img of input.images) {
+        images.push({ ...img, blob: await inlinePublicImageBlob(img.blob) });
+      }
+      const imageMessages = images.map((img) => ({
         type: "image" as const,
         image: img.blob,
       }));

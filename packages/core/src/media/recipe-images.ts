@@ -1,5 +1,11 @@
 /* eslint-disable no-undef */
 import { createHash } from "crypto";
+import {
+  assertPublicHttpUrl,
+  fetchPublicHttp,
+  isPublicHttpUrl,
+  NotAPublicUrlError,
+} from "./public-http-url";
 
 const BLOB_HOST_HINTS = ["public.blob.vercel-storage.com", "blob.vercel-storage.com"];
 
@@ -34,79 +40,9 @@ export function isStoredBlobUrl(url: string): boolean {
   }
 }
 
-const PRIVATE_IMAGE_HOST = /^(localhost|0\.0\.0\.0)$|(\.localhost|\.local|\.internal)$/i;
-const IPV4_LITERAL = /^(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
-
-function isIpv4Literal(host: string): boolean {
-  return IPV4_LITERAL.test(host);
-}
-
-function isIpLiteral(host: string): boolean {
-  return host.includes(":") || isIpv4Literal(host);
-}
-
-function ipv4FromMapped(host: string): string | null {
-  if (!host.startsWith("::ffff:")) return null;
-  const rest = host.slice(7);
-  if (isIpv4Literal(rest)) return rest;
-  const parts = rest.split(":");
-  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
-  const hi = Number.parseInt(parts[0], 16);
-  const lo = Number.parseInt(parts[1], 16);
-  if (!Number.isInteger(hi) || !Number.isInteger(lo)) return null;
-  return `${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`;
-}
-
-function isPrivateRecipeImageIp(address: string): boolean {
-  const host = address.toLowerCase().replace(/^\[|\]$/g, "");
-  const mapped = ipv4FromMapped(host);
-  if (mapped) return isPrivateRecipeImageIp(mapped);
-  if (isIpv4Literal(host)) {
-    const [a, b] = host.split(".").map(Number);
-    if (a === 0 || a === 10 || a === 127) return true;
-    if (a === 169 && b === 254) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 172 && b != null && b >= 16 && b <= 31) return true;
-    if (a === 100 && b != null && b >= 64 && b <= 127) return true;
-    if (a === 198 && (b === 18 || b === 19)) return true;
-    if (a != null && a >= 224 && a <= 239) return true;
-    return false;
-  }
-  if (!host.includes(":")) return false;
-  if (host === "::1" || host === "::") return true;
-  if (host.startsWith("64:ff9b::") || /^64:ff9b:(?:0+:){4}/.test(host)) return true;
-  const first = host.split(":")[0] ?? "";
-  return (
-    /^f[cd][0-9a-f]{2}$/.test(first) ||
-    /^fe[89ab][0-9a-f]$/.test(first) ||
-    /^ff[0-9a-f]{2}$/.test(first)
-  );
-}
-
-function imageHostName(url: string): string | null {
-  try {
-    return new URL(url).hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  } catch {
-    return null;
-  }
-}
-
-/** Hostname or literal IP we must never fetch. DNS-to-private is checked at fetch time. */
-function isBlockedRecipeImageHost(host: string): boolean {
-  const name = host.toLowerCase().replace(/^\[|\]$/g, "");
-  return PRIVATE_IMAGE_HOST.test(name) || isPrivateRecipeImageIp(name);
-}
-
 /** Only fetch images we would also request on a first import, never localhost or link-local. */
 export function isFetchableRecipeImageUrl(url: string): boolean {
-  if (isStoredBlobUrl(url)) return true;
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-    return !isBlockedRecipeImageHost(parsed.hostname);
-  } catch {
-    return false;
-  }
+  return isStoredBlobUrl(url) || isPublicHttpUrl(url);
 }
 
 export const INVALID_IMAGE_URL_CODE = "invalid_image_url";
@@ -135,19 +71,8 @@ export function assertAllowedRecipeImageUrls(urls: readonly unknown[]): void {
 }
 
 async function assertPublicImageUrl(url: string): Promise<void> {
-  if (!isFetchableRecipeImageUrl(url)) throw new Error("blocked image url");
-  const host = imageHostName(url);
-  if (!host || isStoredBlobUrl(url) || isIpLiteral(host)) return;
-  try {
-    // Client bundles import this file for URL helpers; only the server fetch path loads dns.
-    const { lookup } = await import(/* webpackIgnore: true */ "dns/promises");
-    const answers = await lookup(host, { all: true });
-    if (answers.some((entry) => isPrivateRecipeImageIp(entry.address))) {
-      throw new Error("blocked image url");
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message === "blocked image url") throw error;
-  }
+  if (isStoredBlobUrl(url)) return;
+  await assertPublicHttpUrl(url);
 }
 
 export function imageExtensionFromUrl(url: string, contentType?: string | null): string {
@@ -333,35 +258,50 @@ export async function backfillInlineImageList(
   return { images: keepMainRecipeImages(next), changed };
 }
 
-function isRedirectResponse(response: Response): boolean {
-  return (
-    response.status >= 300 && response.status < 400 && Boolean(response.headers.get("location"))
-  );
-}
-
-async function fetchImageHop(url: string, headers: Record<string, string>): Promise<Response> {
-  return fetch(url, { redirect: "manual", headers });
-}
-
 async function fetchRemoteImage(url: string): Promise<Response> {
-  let current = url;
-  await assertPublicImageUrl(current);
-  let response = await fetchImageHop(current, headersForRemoteImage(current));
-  // shortcut: 5 hops, upgrade if a recipe CDN needs a longer chain
-  for (let hops = 0; hops < 5 && isRedirectResponse(response); hops += 1) {
-    const location = response.headers.get("location");
-    if (!location) break;
-    current = new URL(location, current).href;
-    await assertPublicImageUrl(current);
-    response = await fetchImageHop(current, headersForRemoteImage(current));
-  }
+  await assertPublicImageUrl(url);
+  const signal = AbortSignal.timeout(12_000);
+  let response = await fetchPublicHttp(url, { headers: headersForRemoteImage(url), signal });
   if (!response.ok && BLOCKED_IMAGE_STATUSES.has(response.status)) {
-    response = await fetchImageHop(current, {
-      ...headersForRemoteImage(current),
-      "Cache-Control": "no-cache",
+    const current = response.url || url;
+    await assertPublicImageUrl(current);
+    response = await fetchPublicHttp(current, {
+      headers: {
+        ...headersForRemoteImage(current),
+        "Cache-Control": "no-cache",
+      },
+      signal,
     });
   }
   return response;
+}
+
+/** Download a user image URL ourselves so the model never fetches it. */
+export async function inlinePublicImageBlob(blob: string): Promise<string> {
+  const trimmed = blob.trim();
+  if (isInlineImageDataUrl(trimmed)) return trimmed;
+  if (!isPublicHttpUrl(trimmed)) throw new NotAPublicUrlError();
+  try {
+    const response = await fetchRemoteImage(trimmed);
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!response.ok || !contentType.startsWith("image/")) throw new InvalidImageUrlError();
+    const contentLength = Number(response.headers.get("content-length"));
+    if (
+      Number.isFinite(contentLength) &&
+      (contentLength <= 0 || contentLength > 12 * 1024 * 1024)
+    ) {
+      throw new InvalidImageUrlError();
+    }
+    const body = Buffer.from(await response.arrayBuffer());
+    if (body.byteLength === 0 || body.byteLength > 12 * 1024 * 1024) {
+      throw new InvalidImageUrlError();
+    }
+    const mime = contentType.split(";")[0]?.trim() || "image/jpeg";
+    return `data:${mime};base64,${body.toString("base64")}`;
+  } catch (error) {
+    if (error instanceof NotAPublicUrlError || error instanceof InvalidImageUrlError) throw error;
+    throw new InvalidImageUrlError();
+  }
 }
 
 export async function copyRemoteImages(

@@ -9,6 +9,7 @@ export * from "./scaling/servings";
 export * from "./scaling/default-servings";
 export * from "./scaling/quantity-display.fixture";
 export * from "./media/recipe-images";
+export * from "./media/public-http-url";
 export * from "./media/import-title";
 export * from "./media/import-review";
 export * from "./media/source-url";

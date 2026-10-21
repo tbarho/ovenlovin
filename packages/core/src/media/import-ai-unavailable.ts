@@ -1,3 +1,5 @@
+import { NOT_A_PUBLIC_URL_CODE, NOT_A_PUBLIC_URL_MESSAGE } from "./public-http-url";
+
 export const IMPORT_AI_UNAVAILABLE_CODE = "import_ai_unavailable";
 
 export const IMPORT_AI_UNAVAILABLE_MESSAGE =
@@ -132,6 +134,14 @@ export type ImportFailure = { code: string; message: string };
 export function classifyImportFailure(error: unknown): ImportFailure | null {
   const name = errorName(error);
   const message = error instanceof Error ? error.message : "";
+  if (
+    name === "NotAPublicUrlError" ||
+    (error &&
+      typeof error === "object" &&
+      (error as { code?: unknown }).code === NOT_A_PUBLIC_URL_CODE)
+  ) {
+    return { code: NOT_A_PUBLIC_URL_CODE, message: NOT_A_PUBLIC_URL_MESSAGE };
+  }
   if (
     error &&
     typeof error === "object" &&

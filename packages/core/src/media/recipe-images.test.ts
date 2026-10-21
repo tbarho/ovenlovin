@@ -14,6 +14,7 @@ import {
   isInlineImageDataUrl,
   isAllowedRecipeImageUrl,
   isFetchableRecipeImageUrl,
+  inlinePublicImageBlob,
   InvalidImageUrlError,
   assertAllowedRecipeImageUrls,
   isStoredBlobUrl,
@@ -70,6 +71,7 @@ describe("recipe images", () => {
     expect(isFetchableRecipeImageUrl("http://[::]/secret.jpg")).toBe(false);
     expect(isFetchableRecipeImageUrl("http://[64:ff9b::0a00:1]/secret.jpg")).toBe(false);
     expect(isFetchableRecipeImageUrl("http://[ff02::1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://example.com:22/secret.jpg")).toBe(false);
   });
 
   it("rejects private and file URLs before store or fetch", () => {
@@ -127,6 +129,38 @@ describe("recipe images", () => {
     expect(firstHeaders.headers?.["User-Agent"]).toMatch(/Mozilla\/5.0/);
     expect(firstHeaders.headers?.Referer).toBe("https://cdn.example/");
     expect(firstHeaders.redirect).toBe("manual");
+    vi.unstubAllGlobals();
+  });
+
+  it("inlines a public image URL and refuses nip.io without connecting", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      headers: { get: () => "image/jpeg" },
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const inlined = await inlinePublicImageBlob("https://cdn.example/card.jpg");
+    expect(inlined).toMatch(/^data:image\/jpeg;base64,/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.mocked(lookup).mockResolvedValueOnce([{ address: "127.0.0.1", family: 4 }] as never);
+    fetchMock.mockClear();
+    await expect(inlinePublicImageBlob("http://127.0.0.1.nip.io/")).rejects.toThrow(
+      /isn't a public web address/
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("maps an unreachable image host to InvalidImageUrlError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      })
+    );
+    await expect(inlinePublicImageBlob("https://cdn.example/card.jpg")).rejects.toBeInstanceOf(
+      InvalidImageUrlError
+    );
     vi.unstubAllGlobals();
   });
 
