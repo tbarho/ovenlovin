@@ -73,7 +73,7 @@ export function decideDemoWrite(input: {
   now?: Date;
   preview?: boolean;
 }): DemoLimitDecision {
-  if (!isMutatingMethod(input.method) || input.preview) {
+  if (!isMutatingMethod(input.method)) {
     return {
       ok: true,
       next: input.counters,
@@ -91,7 +91,7 @@ export function decideDemoWrite(input: {
   const now = input.now ?? new Date();
   let next = rollWriteWindow(input.counters, now);
 
-  if (isDemoImportPath(input.pathname)) {
+  if (!input.preview && isDemoImportPath(input.pathname)) {
     if (next.importCount >= DEMO_IMPORT_LIMIT) {
       return {
         ok: false,

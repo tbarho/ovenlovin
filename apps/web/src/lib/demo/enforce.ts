@@ -77,7 +77,7 @@ export async function enforceDemoRequestGuards(
     });
   }
 
-  if (preview || !isMutatingMethod(request.method)) return;
+  if (!isMutatingMethod(request.method)) return;
 
   await db
     .update(demoSandbox)
