@@ -385,7 +385,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText(NOT_A_RECIPE_COPY)).toBeVisible();
     expect(screen.queryByText(/busy right now/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
   });
 
@@ -399,12 +399,12 @@ describe("ImportRecipeForm url and paste validation", () => {
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText(PAGE_GONE_COPY)).toBeVisible();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
   });
 
-  it("shows Try again on a paste failure", async () => {
+  it("does not show Try again on an unexpected paste failure", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockRejectedValue(new Error("An unexpected error occurred"));
     render(<ImportRecipeForm />);
@@ -412,7 +412,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Soup\nServes 2");
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText("An unexpected error occurred")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Paste the recipe text" })).not.toBeInTheDocument();
   });

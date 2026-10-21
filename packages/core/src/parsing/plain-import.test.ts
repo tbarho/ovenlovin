@@ -13,8 +13,11 @@ describe("draftFromPlainText", () => {
     expect(draft.needsReview).toBe(true);
   });
 
-  it("falls back to Untitled recipe for empty paste", () => {
-    expect(draftFromPlainText("").title).toBe("Untitled recipe");
+  it("rejects junk paste that is not a recipe", () => {
+    expect(() => draftFromPlainText("hello")).toThrow(/couldn't find a recipe/);
+    expect(() => draftFromPlainText("The weather is nice today.")).toThrow(
+      /couldn't find a recipe/
+    );
   });
 
   it("keeps servings, times, and notes from labeled paste text", () => {

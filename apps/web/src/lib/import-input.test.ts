@@ -8,6 +8,7 @@ import {
   importGuessedNotice,
   importInputError,
   isBlockedImportError,
+  isRetryableImportError,
   looksLikeHttpUrl,
 } from "./import-input";
 
@@ -50,6 +51,16 @@ describe("import input", () => {
     expect(PAGE_GONE_COPY).toMatch(/Paste the recipe text or add a photo/);
     expect(displayImportFailure(PAGE_GONE_COPY)).toBe(PAGE_GONE_COPY);
     expect(displayImportFailure(UNSUPPORTED_SITE_COPY)).toBe(UNSUPPORTED_SITE_COPY);
+  });
+
+  it("retries not-a-recipe, busy, and timeout, not validation", () => {
+    expect(isRetryableImportError(NOT_A_RECIPE_COPY)).toBe(true);
+    expect(isRetryableImportError("Recipe reading is busy right now. Try again in a minute.")).toBe(
+      true
+    );
+    expect(isRetryableImportError("That photo took too long to read.")).toBe(true);
+    expect(isRetryableImportError("That doesn't look like a web address")).toBe(false);
+    expect(isRetryableImportError(BLOCKED_IMPORT_COPY)).toBe(false);
   });
 
   it("names guessed servings after a paste import", () => {

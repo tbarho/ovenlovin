@@ -1,5 +1,6 @@
 import {
   IMPORT_BLOCKED_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
   IMPORT_NOT_A_RECIPE_MESSAGE,
   IMPORT_PAGE_GONE_MESSAGE,
   IMPORT_UNSUPPORTED_SITE_MESSAGE,
@@ -51,6 +52,11 @@ export function isBlockedImportError(message: string | null | undefined): boolea
 
 export function displayImportFailure(message: string): string {
   return classifyImportFailure(new Error(message))?.message ?? message;
+}
+
+export function isRetryableImportError(message: string): boolean {
+  if (classifyImportFailure(new Error(message))?.code === IMPORT_NOT_A_RECIPE_CODE) return true;
+  return /busy right now|took too long/i.test(message);
 }
 
 export function importGuessedNotice(title: string, servings: number | null): string {
