@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { HouseholdAccessError } from "@ovenlovin/core";
+import { HouseholdAccessError, InvalidImageUrlError } from "@ovenlovin/core";
 import {
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
@@ -76,6 +76,25 @@ describe("handleApiError", () => {
     expect(body.status).toBe(404);
     expect(body.title).toBe("Not Found");
     expect(body.detail).toMatch(/MealPlan with id x not found/);
+  });
+
+  it("maps a blocked image URL to problem+json 400, not 500", async () => {
+    const response = handleApiError(
+      new InvalidImageUrlError(),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes"
+    );
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { status?: number; code?: string; detail?: string };
+    expect(body.status).toBe(400);
+    expect(body.code).toBe("invalid_image_url");
+    expect(body.detail).toMatch(/public http/i);
+
+    const leaked = handleApiError(
+      new Error("blocked image url"),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import/photo"
+    );
+    expect(leaked.status).toBe(400);
+    expect(await leaked.json()).toMatchObject({ code: "invalid_image_url" });
   });
 
   it("maps household access errors to problem+json status codes", async () => {
