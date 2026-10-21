@@ -113,6 +113,35 @@ describe("URL Importer", () => {
       expect(draft.images).toEqual(["https://example.com/og.jpg"]);
     });
 
+    it("cleans Budget Bytes cost notes and glued units", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "url",
+        sourceUrl: "https://www.budgetbytes.com/beef-stroganoff/",
+        rawData: {
+          name: "Beef Stroganoff",
+          recipeYield: ["4", "4 about 1.5 cups each"],
+          recipeIngredient: [
+            "2 cloves garlic ($0.16)",
+            "1/2 lb.ground beef ($2.50*)",
+            "1 cupsour cream",
+            "10 oz.mushrooms ($1.49)",
+          ],
+          recipeInstructions: [{ "@type": "HowToStep", text: "Brown the beef." }],
+        },
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+      expect(draft.servings).toBe(4);
+      expect(draft.ingredients.map((item) => item.rawText)).toEqual([
+        "2 cloves garlic",
+        "1/2 lb. ground beef",
+        "1 cup sour cream",
+        "10 oz. mushrooms",
+      ]);
+      expect(draft.ingredients[1]?.unit).toBe("lb");
+      expect(draft.ingredients[2]?.unit).toBe("cup");
+    });
+
     it("parses array recipeYield and strips a trailing Recipe from the title", async () => {
       const draft = await importer.toDraft({
         sourceType: "url",
@@ -392,6 +421,18 @@ describe("URL Importer", () => {
       expect(startedAt).toBeGreaterThanOrEqual(started);
       expect(startedAt).toBeLessThanOrEqual(fetchedAt);
       extract.mockRestore();
+    });
+
+    it("says blocked when captured HTML is a bot check", async () => {
+      await expect(
+        createUrlImporter({ extractWithLlm: async () => null }).extract({
+          url: "https://www.halfbakedharvest.com/giant-chocolate-chip-cookies/",
+          html: `<html><body><h1>Just a moment...</h1><p>Enable JavaScript and cookies to continue</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeImportFetchError",
+        message: expect.stringMatching(/blocked the importer/),
+      });
     });
 
     it("rejects Instagram before fetching", async () => {

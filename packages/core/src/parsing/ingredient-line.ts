@@ -242,6 +242,15 @@ function consumeUnit(text: string): { unit: string | null; rest: string } {
       };
     }
   }
+
+  for (const alias of ["tbsp", "tsp", "cup", "oz", "lb"] as const) {
+    if (!lower.startsWith(alias)) continue;
+    const next = lower[alias.length];
+    if (!next || !/[a-z]/.test(next)) continue;
+    if (alias === "cup" && lower.startsWith("cups") && !/[a-z]/.test(lower[4] ?? "")) continue;
+    return { unit: alias, rest: text.slice(alias.length).trim() };
+  }
+
   return { unit: null, rest: text };
 }
 

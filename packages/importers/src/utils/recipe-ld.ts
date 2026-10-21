@@ -57,7 +57,7 @@ function servingsFromValue(value: unknown): number | undefined {
  * Parse schema.org recipeYield (and yield) into a servings integer.
  */
 export function parseRecipeServings(recipe: Record<string, unknown>): number | undefined {
-  const raw = recipe.recipeYield ?? recipe.yield;
+  const raw = recipe.recipeYield ?? recipe.yield ?? recipe.recipeServings ?? recipe.servings;
   if (raw == null) return undefined;
   const candidates = Array.isArray(raw) ? raw : [raw];
   for (const candidate of candidates) {
@@ -159,4 +159,20 @@ export function parseRecipeNotes(recipe: Record<string, unknown>): string | unde
     notesFromValue(recipe.recipeNotes) ??
     notesFromValue(recipe.comment)
   );
+}
+
+/** Budget Bytes and WPRM often glue units and leave "$0.16" cost notes. */
+export function cleanImportedIngredientLine(line: string): string {
+  return line
+    .replace(/\(\s*\$\d[\d.]*\*?\s*\)/g, "")
+    .replace(/,?\s*\$\d[\d.]*\*?\s*(?=\))/g, "")
+    .replace(/\s*\$\d[\d.]*\*?/g, "")
+    .replace(/\*+/g, "")
+    .replace(/\)(?=[A-Za-z])/g, ") ")
+    .replace(/\b(lb|oz|tbsp|tsp|g|kg|ml)\.(?=[A-Za-z])/gi, "$1. ")
+    .replace(/\b(cup)(?!s\b)(?=[A-Za-z])/gi, "$1 ")
+    .replace(/\b(tbsp|tsp|oz|lb)(?=[A-Za-z])/gi, "$1 ")
+    .replace(/\s+/g, " ")
+    .replace(/\(\s*\)/g, "")
+    .trim();
 }
