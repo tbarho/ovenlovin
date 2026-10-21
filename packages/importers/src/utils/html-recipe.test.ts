@@ -37,6 +37,18 @@ describe("extractHtmlRecipe", () => {
     expect(extractHtmlRecipe("<html><body><p>Hello</p></body></html>")).toBeNull();
   });
 
+  it("reads Wikibooks banana bread ingredients from a table, not the procedure", () => {
+    const html = readFileSync(join(fixtures, "wikibooks-banana-bread.html"), "utf8");
+    const recipe = extractHtmlRecipe(html);
+    expect(recipe?.name).toMatch(/banana bread/i);
+    const ingredients = recipe?.recipeIngredient as string[];
+    expect(ingredients.some((line) => /sugar/i.test(line))).toBe(true);
+    expect(ingredients.some((line) => /banana/i.test(line))).toBe(true);
+    expect(ingredients.every((line) => !/preheat|grease|toothpick/i.test(line))).toBe(true);
+    expect(ingredients.length).toBeGreaterThanOrEqual(8);
+    expect(recipe?.recipeInstructions).toHaveLength(5);
+  });
+
   it("reads Wikibooks headings wrapped in mw-heading divs", () => {
     const html = `<html><body>
       <h1>Cookbook:Pancake</h1>
