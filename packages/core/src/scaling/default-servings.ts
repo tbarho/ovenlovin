@@ -236,7 +236,7 @@ export function withDisplayedServings(
   displayServings: number,
   scaledNote: string | null
 ): RecipeDetails {
-  const from = recipeYieldServings(recipe.servings);
+  const from = recipe.servings && recipe.servings > 0 ? recipe.servings : displayServings;
   return {
     ...recipe,
     displayServings,

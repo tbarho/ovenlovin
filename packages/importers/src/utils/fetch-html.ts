@@ -1,4 +1,5 @@
 /* eslint-disable no-undef */
+import { remainingImportBudgetMs } from "./models";
 import { publicCopyRequests, relatedRecipeUrls, type PublicCopy } from "./public-copies";
 
 export type FetchLayer = "direct" | "related" | "cache";
@@ -14,6 +15,8 @@ export interface FetchResult {
 export type FetchHtmlOptions = {
   fetchImpl?: typeof fetch;
   env?: Record<string, string | undefined>;
+  sleep?: (ms: number) => Promise<void>;
+  startedAt?: number;
 };
 
 /** Current Firefox. Food Network 403s an old Chrome UA without Accept-Encoding. */
@@ -242,12 +245,38 @@ function cacheCopyHeaders(copy: PublicCopy): Record<string, string> {
   return { ...FULL_BROWSER_HEADERS, ...copy.headers };
 }
 
+function headerValue(headers: unknown, name: string): string | null {
+  if (!headers || typeof headers !== "object" || typeof (headers as Headers).get !== "function") {
+    return null;
+  }
+  return (headers as Headers).get(name);
+}
+
+function retryAfterWaitMs(header: string | null, remainingMs: number): number {
+  // shortcut: cap 2.5s so Retry-After: 60 cannot eat the 60s import route
+  const cap = Math.min(2_500, remainingMs);
+  const fallback = Math.min(1_500, cap);
+  if (!header) return fallback;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, cap);
+  const at = Date.parse(header);
+  if (!Number.isNaN(at)) return Math.min(Math.max(0, at - Date.now()), cap);
+  return fallback;
+}
+
 async function readResponse(
   fetchImpl: typeof fetch,
   url: string,
   extraHeaders?: Record<string, string>,
   timeoutMs = CACHE_FETCH_MS
-): Promise<{ ok: boolean; status: number; statusText: string; html: string; finalUrl: string }> {
+): Promise<{
+  ok: boolean;
+  status: number;
+  statusText: string;
+  html: string;
+  finalUrl: string;
+  headers?: Headers;
+}> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -263,6 +292,7 @@ async function readResponse(
       statusText: response.statusText,
       html,
       finalUrl: response.url || url,
+      headers: response.headers,
     };
   } finally {
     clearTimeout(timer);
@@ -287,6 +317,9 @@ type PageHit = {
 export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Promise<FetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const env = options.env ?? process.env;
+  const startedAt = options.startedAt ?? Date.now();
+  const sleep =
+    options.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
 
   const layersTried: string[] = [];
   let lastStatus = 403;
@@ -308,6 +341,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     }
     if (
       !state.fallback &&
+      !sawBlock &&
       hit.status >= 200 &&
       hit.status < 300 &&
       (looksLikeCompleteDocument(hit.html) || looksLikePaywall(hit.html)) &&
@@ -328,7 +362,15 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   const tryDirect = async (candidate: string, layer: FetchLayer): Promise<FetchResult | null> => {
     layersTried.push(layer);
     try {
-      const direct = await readResponse(fetchImpl, candidate);
+      let direct = await readResponse(fetchImpl, candidate);
+      if (layer === "direct" && (BLOCKED_STATUSES.has(direct.status) || direct.status >= 500)) {
+        const wait = retryAfterWaitMs(
+          headerValue(direct.headers, "retry-after"),
+          remainingImportBudgetMs(startedAt)
+        );
+        if (wait > 0) await sleep(wait);
+        direct = await readResponse(fetchImpl, candidate);
+      }
       lastStatus = direct.status;
       lastStatusText = direct.statusText;
       if (layer === "direct") directStatus = direct.status;
@@ -390,7 +432,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   }
 
   if (directStatus === 404) throw new RecipePageGoneError(url);
-  if (state.fallback && !sawBlock) return state.fallback;
+  if (state.fallback) return state.fallback;
 
   throw new RecipeImportFetchError(url, lastStatus, lastStatusText, layersTried);
 }

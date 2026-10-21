@@ -49,5 +49,8 @@ describe("import input", () => {
     expect(importGuessedNotice("Test Recipe 1", 4)).toBe(
       "Imported Test Recipe 1 · 4 servings (guessed)"
     );
+    expect(importGuessedNotice("Beef Stroganoff", null)).toBe(
+      "Imported Beef Stroganoff · servings unknown"
+    );
   });
 });

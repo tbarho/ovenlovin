@@ -61,8 +61,8 @@ describe("servingsScale", () => {
     expect(servingsScale(6, 6, 1)).toBe(1);
   });
 
-  it("uses a 4-serving default when the recipe card has no yield", () => {
-    expect(servingsScale(6, null, 1)).toBe(1.5);
+  it("does not guess a 4-serving card when the recipe has no yield", () => {
+    expect(servingsScale(6, null, 1)).toBe(1);
     expect(servingsScale(4, null, 1)).toBe(1);
   });
 
@@ -201,7 +201,7 @@ describe("ShoppingListService", () => {
     });
   });
 
-  it("scales REST servings when the recipe card has no servings", () => {
+  it("leaves amounts alone when the recipe card has no servings", () => {
     const list = build([
       {
         entry: entry({ recipeId: "imported", servings: 8, scaleFactor: 1 }),
@@ -211,7 +211,7 @@ describe("ShoppingListService", () => {
       },
     ]);
 
-    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 24, unit: "oz" });
+    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 12, unit: "oz" });
   });
 
   it("merges convertible units (tsp + tbsp)", () => {
