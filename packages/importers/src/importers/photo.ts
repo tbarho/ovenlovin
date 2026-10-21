@@ -12,6 +12,7 @@ import type {
 } from "../types/importer";
 import { stripLeadingStepNumber } from "@ovenlovin/core";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
+import { parseQuantityString } from "../utils/parse-quantity";
 import { classifyDraftIngredients } from "../utils/classify-allergens";
 import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
 import { optionalField } from "../utils/llm-schema";
@@ -329,8 +330,12 @@ function parseIngredientsWithOCR(
 
     const hasQuantity = typeof ing.quantity === "string" && ing.quantity.length > 0;
     const hasIngredient = typeof ing.ingredient === "string" && ing.ingredient.length > 0;
+    const quantity = parseQuantityString(hasQuantity ? (ing.quantity as string) : rawText);
 
-    if (!hasQuantity) {
+    if (hasQuantity && !quantity) {
+      confidence = Math.min(confidence, 0.5);
+      reasons.push("Unparseable quantity");
+    } else if (!hasQuantity && !quantity) {
       confidence = Math.max(0.1, confidence - 0.05);
       reasons.push("Missing or unclear quantity");
     }
@@ -342,7 +347,7 @@ function parseIngredientsWithOCR(
 
     return {
       rawText,
-      quantity: hasQuantity ? parseQuantityString(ing.quantity as string) : undefined,
+      quantity,
       unit: typeof ing.unit === "string" ? ing.unit : undefined,
       ingredient: typeof ing.ingredient === "string" ? ing.ingredient : undefined,
       preparation: typeof ing.preparation === "string" ? ing.preparation : undefined,
@@ -416,35 +421,4 @@ function parseStepsWithOCR(
       confidenceReasons: reasons.length > 0 ? reasons : undefined,
     };
   });
-}
-
-function parseQuantityString(qty: string): { min: number; max?: number } | undefined {
-  const rangeMatch = qty.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
-  if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
-    return {
-      min: parseFloat(rangeMatch[1]),
-      max: parseFloat(rangeMatch[2]),
-    };
-  }
-
-  const mixedMatch = qty.match(/(\d+)\s+(\d+)\/(\d+)/);
-  if (mixedMatch && mixedMatch[1] && mixedMatch[2] && mixedMatch[3]) {
-    const whole = parseInt(mixedMatch[1], 10);
-    const numerator = parseInt(mixedMatch[2], 10);
-    const denominator = parseInt(mixedMatch[3], 10);
-    return { min: whole + numerator / denominator };
-  }
-
-  const fractionMatch = qty.match(/(\d+)\/(\d+)/);
-  if (fractionMatch && fractionMatch[1] && fractionMatch[2]) {
-    const value = parseInt(fractionMatch[1], 10) / parseInt(fractionMatch[2], 10);
-    return { min: value };
-  }
-
-  const numberMatch = qty.match(/(\d+(?:\.\d+)?)/);
-  if (numberMatch && numberMatch[1]) {
-    return { min: parseFloat(numberMatch[1]) };
-  }
-
-  return undefined;
 }
