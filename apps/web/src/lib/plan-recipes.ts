@@ -1,11 +1,11 @@
-import type {
-  PlanEntryDraft,
-  PlanRecipePick,
-  WeekDay,
-  WeekFinding,
-  WeekMeal,
+import {
+  NO_COOK_LABEL,
+  type PlanEntryDraft,
+  type PlanRecipePick,
+  type WeekDay,
+  type WeekFinding,
+  type WeekMeal,
 } from "@/lib/week-plan-view";
-import { NO_COOK_LABEL } from "@/lib/week-plan-view";
 
 const SAFETY_RANK: Record<PlanRecipePick["safety"], number> = {
   ok: 0,

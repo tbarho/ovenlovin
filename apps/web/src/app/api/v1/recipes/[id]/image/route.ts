@@ -8,7 +8,7 @@ import {
   requireHouseholdId,
   requireWritableHousehold,
 } from "@/lib/api/middleware";
-import { assertRecipeHousehold } from "@/lib/api/recipes";
+import { loadOwned } from "@/lib/api/owned";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
 import {
@@ -27,8 +27,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const context = await getRequestContext(request);
     const householdId = requireHouseholdId(context);
     const { id } = await params;
-    const recipe = await new RecipeService(getDatabase()).getRecipe(id);
-    assertRecipeHousehold(recipe, householdId, id);
+    const recipe = await loadOwned("Recipe", id, householdId, (recipeId) =>
+      new RecipeService(getDatabase()).getRecipe(recipeId)
+    );
 
     const stored = recipeMainImage(recipe.images);
     if (!stored) {
@@ -66,8 +67,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     const service = new RecipeService(getDatabase());
-    const recipe = await service.getRecipe(id);
-    assertRecipeHousehold(recipe, householdId, id);
+    await loadOwned("Recipe", id, householdId, (recipeId) => service.getRecipe(recipeId));
 
     const body = await readJsonBody(request, z.object({ image: z.string().min(1) }));
     const image = body.image.trim();

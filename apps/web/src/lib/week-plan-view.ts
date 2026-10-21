@@ -31,6 +31,10 @@ export type WeekFinding = {
 
 export const NO_COOK_LABEL = "No-cook night";
 
+export function planRecipeHref(recipeId: string, servings: number): string {
+  return `/recipes/${recipeId}?servings=${servings}&from=plan`;
+}
+
 export type WeekMeal = {
   entryId: string;
   date: string;

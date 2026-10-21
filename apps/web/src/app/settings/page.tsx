@@ -14,7 +14,7 @@ import { requireKitchenContext } from "@/lib/kitchen-session";
 import { resolveOrigin } from "@/lib/origin";
 
 export default async function SettingsPage() {
-  const context = await requireKitchenContext();
+  const context = await requireKitchenContext("/settings");
 
   const demo = isDemoModeEnabled();
   const sandbox = demo ? await getDemoSandboxForSession() : null;

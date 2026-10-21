@@ -22,6 +22,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { KitchenToast } from "./KitchenToast";
 import {
   NO_COOK_LABEL,
+  planRecipeHref,
   slotLabel,
   type PlanEntryDraft,
   type PlanRecipePick,
@@ -72,6 +73,20 @@ function RecipePickButton({
       </span>
     </button>
   );
+}
+
+function dinnerWriteError(
+  recipes: PlanRecipePick[],
+  days: WeekDay[],
+  date: string,
+  next: { recipeId?: string | null }
+): string {
+  const day = days.find((item) => item.date === date);
+  const weekday = day?.weekday ?? "that night";
+  const recipe = next.recipeId ? recipes.find((item) => item.id === next.recipeId) : undefined;
+  if (!recipe) return "Could not update the plan";
+  const prior = day ? dinnerMeal(day) : undefined;
+  return `Couldn't ${prior?.recipeId ? "swap" : "add"} ${recipe.title} to ${weekday}. Nothing was saved.`;
 }
 
 function uniqueFindings(findings: WeekMeal["findings"]) {
@@ -138,13 +153,11 @@ function DayEditor({
   recipes,
   query,
   pending,
-  error,
   onQueryChange,
   onPick,
   onClear,
   onNoCook,
   onClose,
-  onRetry,
 }: {
   open: boolean;
   day: WeekDay;
@@ -152,13 +165,11 @@ function DayEditor({
   recipes: PlanRecipePick[];
   query: string;
   pending: boolean;
-  error: string | null;
   onQueryChange: (value: string) => void;
   onPick: (recipeId: string) => void;
   onClear: () => void;
   onNoCook: () => void;
   onClose: () => void;
-  onRetry?: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -308,24 +319,6 @@ function DayEditor({
             </>
           )}
           {pending ? <p className="muted">Saving this night…</p> : null}
-          {error ? (
-            <p className="week-finding" data-severity="block" role="alert">
-              {error}
-              {onRetry ? (
-                <>
-                  {" "}
-                  <button
-                    type="button"
-                    className="btn compact"
-                    onClick={onRetry}
-                    disabled={pending}
-                  >
-                    Try again
-                  </button>
-                </>
-              ) : null}
-            </p>
-          ) : null}
         </div>
       </div>
     </div>
@@ -386,6 +379,10 @@ export function MealPlanWeek({
   const servingsRef = useRef(servings);
   servingsRef.current = servings;
   const dismissToast = useCallback(() => setToast(null), []);
+  const dismissError = useCallback(() => {
+    setError(null);
+    setFailedDinner(null);
+  }, []);
   const closeEditor = useCallback(() => {
     setSelectedDate(null);
     setQuery("");
@@ -485,6 +482,7 @@ export function MealPlanWeek({
       setDaysView(previousDays);
       setEntriesView(previous);
       setFailedDinner({ date, next });
+      setError(dinnerWriteError(recipes, previousDays, date, next));
       return;
     }
     setFailedDinner(null);
@@ -589,7 +587,11 @@ export function MealPlanWeek({
                   .map((meal) => (
                     <Link
                       className="week-meal-open"
-                      href={meal.href ?? "/recipes"}
+                      href={
+                        meal.recipeId
+                          ? planRecipeHref(meal.recipeId, servings)
+                          : (meal.href ?? "/recipes")
+                      }
                       key={meal.entryId}
                     >
                       View {meal.title}
@@ -604,7 +606,6 @@ export function MealPlanWeek({
                   recipes={recipes}
                   query={query}
                   pending={pending}
-                  error={error}
                   onQueryChange={setQuery}
                   onPick={requestPick}
                   onClear={() =>
@@ -617,11 +618,6 @@ export function MealPlanWeek({
                     })
                   }
                   onClose={closeEditor}
-                  onRetry={
-                    failedDinner
-                      ? () => void withDinner(failedDinner.date, failedDinner.next)
-                      : undefined
-                  }
                 />
               ) : null}
             </Fragment>
@@ -647,20 +643,25 @@ export function MealPlanWeek({
         onConfirm={confirmPendingPick}
       />
       <KitchenToast
-        message={toast?.message ?? null}
+        message={error ?? toast?.message ?? null}
+        actionLabel={error && failedDinner ? "Try again" : undefined}
         onUndo={
-          toast && !pending
-            ? () => {
-                const restore = toast.undoEntries;
-                const restoreDays = toast.undoDays;
-                setToast(null);
-                setEntriesView(restore);
-                setDaysView(restoreDays);
-                void persist(restore);
-              }
-            : undefined
+          error
+            ? failedDinner
+              ? () => void withDinner(failedDinner.date, failedDinner.next)
+              : undefined
+            : toast && !pending
+              ? () => {
+                  const restore = toast.undoEntries;
+                  const restoreDays = toast.undoDays;
+                  setToast(null);
+                  setEntriesView(restore);
+                  setDaysView(restoreDays);
+                  void persist(restore);
+                }
+              : undefined
         }
-        onDismiss={dismissToast}
+        onDismiss={error ? dismissError : dismissToast}
       />
     </div>
   );

@@ -11,7 +11,7 @@ import {
   type PersonRuleKind,
 } from "@ovenlovin/allergens";
 import { getDatabase } from "@ovenlovin/db";
-import { assertPersonHousehold } from "@/lib/api/people";
+import { loadOwned, loadOwnedChild } from "@/lib/api/owned";
 
 export async function GET(
   request: NextRequest,
@@ -26,17 +26,13 @@ export async function GET(
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(personId);
-    assertPersonHousehold(person, householdId, personId);
-
-    const rule = await service.getRule(ruleId);
-    if (!rule) {
-      throw new NotFoundError("Rule", ruleId);
-    }
-
-    if (rule.personId !== personId) {
-      throw new NotFoundError("Rule", ruleId);
-    }
+    await loadOwned("Person", personId, householdId, (id) => service.getPerson(id));
+    const rule = await loadOwnedChild(
+      "Rule",
+      ruleId,
+      (id) => service.getRule(id),
+      (row) => row.personId === personId
+    );
 
     return jsonResponse(rule);
   } catch (error) {
@@ -59,17 +55,13 @@ export async function PATCH(
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(personId);
-    assertPersonHousehold(person, householdId, personId);
-
-    const existingRule = await service.getRule(ruleId);
-    if (!existingRule) {
-      throw new NotFoundError("Rule", ruleId);
-    }
-
-    if (existingRule.personId !== personId) {
-      throw new NotFoundError("Rule", ruleId);
-    }
+    await loadOwned("Person", personId, householdId, (id) => service.getPerson(id));
+    const existingRule = await loadOwnedChild(
+      "Rule",
+      ruleId,
+      (id) => service.getRule(id),
+      (row) => row.personId === personId
+    );
 
     const actor = resolveWriteActor({
       userId: context.userId,
@@ -121,17 +113,13 @@ export async function DELETE(
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(personId);
-    assertPersonHousehold(person, householdId, personId);
-
-    const existingRule = await service.getRule(ruleId);
-    if (!existingRule) {
-      throw new NotFoundError("Rule", ruleId);
-    }
-
-    if (existingRule.personId !== personId) {
-      throw new NotFoundError("Rule", ruleId);
-    }
+    await loadOwned("Person", personId, householdId, (id) => service.getPerson(id));
+    await loadOwnedChild(
+      "Rule",
+      ruleId,
+      (id) => service.getRule(id),
+      (row) => row.personId === personId
+    );
 
     await service.deleteRule(ruleId);
 

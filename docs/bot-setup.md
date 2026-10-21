@@ -361,7 +361,7 @@ OvenLovin supports three authentication methods:
 
 Generate in the OvenLovin dashboard under Settings → API Keys.
 
-**Scopes**: `recipes:read`, `recipes:write`, `plans:read`, `plans:write`, `people:read`, `people:write`, `lists:export`.
+**Scopes**: `recipes:read`, `recipes:write`, `plans:read`, `plans:write`, `people:read`, `people:write`, `lists:export`. A request outside the key's scopes returns 403 with type `<origin>/problems/forbidden`. Keys created in Settings have full access. Clerk sessions are not scope-checked.
 
 Include in the `Authorization` header:
 ```

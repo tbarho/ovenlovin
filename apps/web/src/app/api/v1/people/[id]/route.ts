@@ -5,7 +5,7 @@ import { getRequestContext, requireAdminRole, requireHouseholdId } from "@/lib/a
 import { PeopleService, updatePersonBodySchema } from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
-import { assertPersonHousehold } from "@/lib/api/people";
+import { loadOwned } from "@/lib/api/owned";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,8 +17,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(id);
-    assertPersonHousehold(person, householdId, id);
+    const person = await loadOwned("Person", id, householdId, (personId) =>
+      service.getPerson(personId)
+    );
 
     return jsonResponse(person);
   } catch (error) {
@@ -38,8 +39,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const existing = await service.getPerson(id);
-    assertPersonHousehold(existing, householdId, id);
+    await loadOwned("Person", id, householdId, (personId) => service.getPerson(personId));
 
     const person = await service.updatePerson(id, body);
 
@@ -67,8 +67,7 @@ export async function DELETE(
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const existing = await service.getPerson(id);
-    assertPersonHousehold(existing, householdId, id);
+    await loadOwned("Person", id, householdId, (personId) => service.getPerson(personId));
 
     const deleted = await service.deletePerson(id);
 

@@ -58,7 +58,7 @@ export const membershipSchema = baseEntitySchema.extend({
   role: membershipRoleSchema,
 });
 
-export const apiKeyScopeSchema = z.enum([
+export const API_KEY_SCOPES = [
   "recipes:read",
   "recipes:write",
   "plans:read",
@@ -66,7 +66,9 @@ export const apiKeyScopeSchema = z.enum([
   "people:read",
   "people:write",
   "lists:export",
-]);
+] as const;
+
+export const apiKeyScopeSchema = z.enum(API_KEY_SCOPES);
 
 export const apiKeySchema = baseEntitySchema.merge(createdBySchema).extend({
   householdId: uuidSchema,
