@@ -112,6 +112,33 @@ describe("whoCanEat", () => {
     expect(dairy[0]).toMatch(/parmesan/i);
   });
 
+  it("still sees peanut and sesame in parenthetical and comma lists", () => {
+    const peanut = testPersonRule({
+      personId: child.id,
+      target: "peanut",
+      severity: "block",
+    });
+    const sesame = testPersonRule({
+      personId: child.id,
+      target: "sesame",
+      severity: "block",
+    });
+    const result = whoCanEat({
+      people: [child],
+      rules: [peanut, sesame],
+      ingredients: [
+        { id: "oil", name: "oil (peanut or canola)" },
+        { id: "seasoning", name: "salt, pepper, and sesame seeds" },
+        { id: "topping", name: "Optional: chopped peanuts, cilantro, lime" },
+      ],
+    });
+    expect(result.status).toBe("complete");
+    const reasons = result.people[0]?.reasons.join(" ") ?? "";
+    expect(reasons).toMatch(/peanut/i);
+    expect(reasons).toMatch(/sesame/i);
+    expect(result.people[0]?.mark).toBe("block");
+  });
+
   it("does not report a clean bill when the check is incomplete", () => {
     const result = whoCanEat({
       people: [child],

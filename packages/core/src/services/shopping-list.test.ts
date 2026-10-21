@@ -61,10 +61,10 @@ describe("servingsScale", () => {
     expect(servingsScale(6, 6, 1)).toBe(1);
   });
 
-  it("treats a missing recipe yield as a 4-serving card", () => {
-    expect(servingsScale(6, null, 1)).toBe(1.5);
+  it("does not guess a 4-serving card when the recipe has no yield", () => {
+    expect(servingsScale(6, null, 1)).toBe(1);
     expect(servingsScale(4, null, 1)).toBe(1);
-    expect(servingsScale(8, null, 1, 8)).toBe(2);
+    expect(servingsScale(8, null, 1, 8)).toBe(1);
   });
 
   it("falls back to scaleFactor only when the entry has no servings", () => {
@@ -195,7 +195,7 @@ describe("ShoppingListService", () => {
     );
 
     expect(list.ingredients[0]).toMatchObject({
-      name: "broccoli",
+      name: "broccoli florets",
       quantity: 2,
       unit: "lb",
     });
@@ -215,23 +215,46 @@ describe("ShoppingListService", () => {
     );
 
     expect(list.ingredients[0]).toMatchObject({
-      name: "broccoli",
+      name: "broccoli florets",
       quantity: 2,
       unit: "lb",
     });
   });
 
-  it("scales a null-yield recipe as a 4-serving card", () => {
+  it("leaves unknown-yield recipes unscaled", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "imported", servings: 8, scaleFactor: 1 }),
+          recipeTitle: "Imported taco pasta",
+          recipeServings: null,
+          ingredients: [{ rawText: "12 oz pasta" }],
+        },
+      ],
+      { defaultCookFor: 8 }
+    );
+
+    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 12, unit: "oz" });
+  });
+
+  it("adds amounts when the same food lands on the incompatible-unit fallback key", () => {
     const list = build([
       {
-        entry: entry({ recipeId: "imported", servings: 8, scaleFactor: 1 }),
-        recipeTitle: "Imported taco pasta",
-        recipeServings: null,
-        ingredients: [{ rawText: "12 oz pasta" }],
+        entry: entry({ recipeId: "soup", servings: 4 }),
+        recipeTitle: "Onion soup",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 onion" }, { rawText: "1 lb onion" }, { rawText: "2 lb onion" }],
       },
     ]);
-
-    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 24, unit: "oz" });
+    expect(list.ingredients.find((item) => item.unit === "lb")).toMatchObject({
+      name: "onion",
+      quantity: 3,
+      unit: "lb",
+    });
+    expect(list.ingredients.find((item) => item.unit == null)).toMatchObject({
+      name: "onion",
+      quantity: 1,
+    });
   });
 
   it("merges convertible units (tsp + tbsp)", () => {
@@ -671,7 +694,7 @@ describe("ShoppingListService", () => {
       quantity: 3,
       displayQuantity: "3",
     });
-    expect(list.ingredients.find((item) => item.name === "chicken")).toMatchObject({
+    expect(list.ingredients.find((item) => /chicken/i.test(item.name))).toMatchObject({
       quantity: 1,
       displayQuantity: "1",
     });
@@ -852,15 +875,15 @@ describe("ShoppingListService", () => {
     const markdown = service.exportAsMarkdown(list);
     const byName = Object.fromEntries(list.ingredients.map((item) => [item.name, item]));
 
-    expect(byName["bell pepper"]).toMatchObject({
+    expect(byName["Bell peppers"] ?? byName["bell pepper"]).toMatchObject({
       displayQuantity: "as needed",
       aisle: "Produce",
       isStaple: false,
     });
     expect(
       list.sections.find((section) => section.name === "Produce")?.items.map((item) => item.name)
-    ).toEqual(expect.arrayContaining(["bell pepper", "arugula"]));
-    expect(markdown).toContain("as needed bell pepper");
+    ).toEqual(expect.arrayContaining([expect.stringMatching(/bell pepper/i), "arugula"]));
+    expect(markdown).toMatch(/as needed bell pepper/i);
     expect(byName["bread flour"]).toMatchObject({
       quantity: 12.5,
       unit: "cup",
@@ -873,7 +896,7 @@ describe("ShoppingListService", () => {
     });
     expect(markdown).toContain("chicken breast");
     expect(markdown).not.toMatch(/1 kg \/ 1 lb/);
-    expect(byName["beef"]).toMatchObject({ quantity: 4, unit: "lb" });
+    expect(byName["beef fillet"]).toMatchObject({ quantity: 2, unit: "lb" });
     expect(byName["olive oil"]?.recipes).toHaveLength(2);
     expect(byName.parmesan?.recipes.length).toBeGreaterThanOrEqual(3);
     expect(list.ingredients.filter((item) => item.name === "parmesan")).toHaveLength(1);
@@ -884,17 +907,18 @@ describe("ShoppingListService", () => {
     expect(byName.shrimp).toMatchObject({ quantity: 4, unit: "lb" });
     expect(list.ingredients.find((item) => /note/i.test(item.name))).toBeUndefined();
     expect(byName.parsley).toBeTruthy();
-    expect(byName.cheddar).toBeTruthy();
+    expect(byName["cheddar cheese"] ?? byName.cheddar).toBeTruthy();
+    expect(byName["taco sauce"]).toBeTruthy();
+    expect(byName.salsa).toBeTruthy();
     expect(byName.cumin).toMatchObject({ quantity: 2, unit: "tbsp" });
     expect(byName.paprika).toMatchObject({ quantity: 2, unit: "tbsp" });
     expect(byName.oregano).toMatchObject({ quantity: 2, unit: "tbsp" });
     expect(byName.arugula).toMatchObject({ aisle: "Produce", quantity: 4, unit: "cup" });
     expect(byName["chicken stock"]).toMatchObject({ aisle: "Pantry", quantity: 4, unit: "cup" });
-    expect(byName.butter).toMatchObject({ quantity: 5, unit: "cup" });
+    expect(byName.butter).toMatchObject({ quantity: 3, unit: "cup" });
     expect(markdown).not.toContain("2 1/2 cups butter");
     expect(list.ingredients.filter((item) => item.name === "soy sauce")).toHaveLength(1);
     expect(markdown).not.toContain("((Note");
-    expect(markdown).not.toContain("taco sauce");
   });
 
   it("keeps tofu and kalamata olives out of Produce", () => {

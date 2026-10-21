@@ -8,7 +8,6 @@ import {
   type RuleCheckResult,
 } from "@ovenlovin/allergens";
 import type { Person, PersonRule } from "@ovenlovin/core";
-import { parseIngredientLine } from "@ovenlovin/core/parsing";
 import type { EatMark } from "@/components/people/ui";
 
 export type WhoCanEatPerson = {
@@ -41,8 +40,7 @@ export function ingredientsForCheck(
       applied.has(ingredient.id) && ingredient.substitutionNotes?.trim()
         ? ingredient.substitutionNotes.trim()
         : ingredient.name;
-    const parsed = parseIngredientLine(raw).name;
-    return { name: parsed || raw };
+    return { name: raw };
   });
 }
 

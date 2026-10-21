@@ -1,8 +1,4 @@
-import {
-  backfillParsedIngredient,
-  isShopJunkName,
-  normalizeIngredientName,
-} from "../parsing/ingredient-line";
+import { parseShopIngredientLines, normalizeIngredientName } from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
@@ -283,30 +279,18 @@ export class ShoppingListService {
       const recipeKey = groupBy === "recipe" ? recipeId : "";
 
       for (const line of source.ingredients) {
-        const parsed = backfillParsedIngredient({
-          rawText: line.rawText,
-          name: line.name,
-          quantityMin: line.quantityMin ?? line.quantity ?? null,
-          unit: line.unit ?? null,
-        });
-        const each = parsed.name.match(/^each(?:\s+of)?\s+(.+)/i);
-        const parts = each?.[1]
-          ? each[1]
-              .split(/,|\band\b/i)
-              .map((part) => part.trim())
-              .filter(Boolean)
-          : [parsed.name];
+        const shopLines = parseShopIngredientLines(line.rawText);
 
-        for (const partName of parts) {
-          if (!partName || isShopJunkName(partName)) continue;
+        for (const parsed of shopLines) {
+          if (!parsed.name) continue;
 
-          const placement = assignAisle(partName);
+          const placement = assignAisle(parsed.name);
           const itemName = placement.canonicalName;
-          const scaledQuantity =
-            parsed.quantityMin != null ? parsed.quantityMin * scale : undefined;
-          const unit = parsed.unit ?? undefined;
+          const quantityMin = parsed.quantityMin ?? line.quantityMin ?? line.quantity ?? null;
+          const scaledQuantity = quantityMin != null ? quantityMin * scale : undefined;
+          const unit = parsed.unit ?? line.unit ?? undefined;
           const key = mergeKey(itemName, recipeKey);
-          const pantry = isPantryStaple(partName);
+          const pantry = isPantryStaple(parsed.name);
 
           const recipeRef: ShoppingListRecipeRef = {
             recipeId,
@@ -330,9 +314,12 @@ export class ShoppingListService {
           }
           if (existing) {
             existing.recipes.push(recipeRef);
-            if (scaledQuantity != null && existing.quantity == null) {
-              existing.quantity = scaledQuantity;
-              existing.unit = unit;
+            if (scaledQuantity != null) {
+              const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
+              if (merged) {
+                existing.quantity = merged.quantity;
+                existing.unit = merged.unit;
+              }
             }
             continue;
           }

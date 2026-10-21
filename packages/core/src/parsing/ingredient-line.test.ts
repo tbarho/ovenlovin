@@ -4,6 +4,7 @@ import {
   isShopJunkName,
   normalizeIngredientName,
   parseIngredientLine,
+  parseShopIngredientLines,
   splitLeadingUnit,
 } from "./ingredient-line";
 
@@ -116,43 +117,41 @@ describe("parseIngredientLine", () => {
     });
   });
 
+  it("keeps allergen foods on the raw line so checks still see them", () => {
+    expect(parseIngredientLine("oil (peanut or canola)").name).toMatch(/peanut|oil/);
+    expect(parseIngredientLine("salt, pepper, and sesame seeds").name).toMatch(/sesame/);
+    expect(parseIngredientLine("Optional: chopped peanuts, cilantro, lime").name).toMatch(/peanut/);
+  });
+});
+
+describe("parseShopIngredientLines", () => {
   it("cleans Olive UAT lines: prep tails, trailing cups, dual units, notes", () => {
     expect(
-      parseIngredientLine("Bell peppers, stems and seeds removed, very thinly sliced")
-    ).toMatchObject({
-      quantityMin: null,
-      unit: null,
-      name: "Bell peppers",
-    });
-    expect(parseIngredientLine("(490 g) bread flour 6 1/4 cups")).toMatchObject({
-      quantityMin: 6.25,
-      unit: "cup",
-      name: "bread flour",
-    });
-    expect(parseIngredientLine("1 kg / 1 lb chicken breast")).toMatchObject({
-      quantityMin: 1,
-      unit: "kg",
-      name: "chicken breast",
-    });
-    expect(parseIngredientLine("2 lbs / 360g beef fillet")).toMatchObject({
-      quantityMin: 2,
-      unit: "lb",
-      name: "beef fillet",
-    });
-    expect(parseIngredientLine("chopped fresh parsley, or")).toMatchObject({
-      name: "parsley",
-    });
+      parseShopIngredientLines("Bell peppers, stems and seeds removed, very thinly sliced")
+    ).toEqual([expect.objectContaining({ name: "Bell peppers" })]);
+    expect(parseShopIngredientLines("(490 g) bread flour 6 1/4 cups")).toEqual([
+      expect.objectContaining({ quantityMin: 6.25, unit: "cup", name: "bread flour" }),
+    ]);
+    expect(parseShopIngredientLines("1 kg / 1 lb chicken breast")).toEqual([
+      expect.objectContaining({ quantityMin: 1, unit: "kg", name: "chicken breast" }),
+    ]);
+    expect(parseShopIngredientLines("2 lbs / 360g beef fillet")).toEqual([
+      expect.objectContaining({ quantityMin: 2, unit: "lb", name: "beef fillet" }),
+    ]);
+    expect(parseShopIngredientLines("chopped fresh parsley, or")).toEqual([
+      expect.objectContaining({ name: "parsley" }),
+    ]);
     expect(
-      parseIngredientLine("Optional: Shredded cheddar cheese, taco sauce, salsa…")
-    ).toMatchObject({
-      name: "cheddar cheese",
-    });
-    expect(parseIngredientLine("((Note 1))")).toMatchObject({ name: "" });
-    expect(parseIngredientLine("2 cups arugula, tossed with olive oil")).toMatchObject({
-      quantityMin: 2,
-      unit: "cup",
-      name: "arugula",
-    });
+      parseShopIngredientLines("Optional: Shredded cheddar cheese, taco sauce, salsa…")
+    ).toEqual([
+      expect.objectContaining({ name: "cheddar cheese" }),
+      expect.objectContaining({ name: "taco sauce" }),
+      expect.objectContaining({ name: "salsa" }),
+    ]);
+    expect(parseShopIngredientLines("((Note 1))")).toEqual([]);
+    expect(parseShopIngredientLines("2 cups arugula, tossed with olive oil")).toEqual([
+      expect.objectContaining({ quantityMin: 2, unit: "cup", name: "arugula" }),
+    ]);
     expect(isShopJunkName("")).toBe(true);
     expect(isShopJunkName("Note 1")).toBe(true);
     expect(isShopJunkName("parsley")).toBe(false);

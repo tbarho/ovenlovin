@@ -83,6 +83,9 @@ export type ParsedIngredientLine = {
 
 /** Trailing notes that are prep, not the grocery item. */
 const PREP_NOTES =
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+
+const SHOP_PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
@@ -261,6 +264,25 @@ function cleanItemName(rest: string): string {
   let name = rest
     .replace(/^of\s+/i, "")
     .replace(/^,\s*/, "")
+    .replace(/\s*\([^)]*\)\s*$/g, "")
+    .replace(/\s+to taste$/i, "")
+    .trim();
+
+  const comma = name.lastIndexOf(",");
+  if (comma > 0) {
+    const tail = name.slice(comma + 1).trim();
+    if (PREP_NOTES.test(tail)) {
+      name = name.slice(0, comma).trim();
+    }
+  }
+
+  return name;
+}
+
+function cleanShopItemName(rest: string): string {
+  let name = rest
+    .replace(/^of\s+/i, "")
+    .replace(/^,\s*/, "")
     .replace(/^optional:\s*/i, "")
     .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
     .replace(/\(\s*note\s*\d+\s*\)/gi, "")
@@ -275,16 +297,11 @@ function cleanItemName(rest: string): string {
     const comma = name.lastIndexOf(",");
     if (comma <= 0) break;
     const tail = name.slice(comma + 1).trim();
-    if (PREP_NOTES.test(tail) || /^(or|and)$/i.test(tail)) {
+    if (SHOP_PREP_NOTES.test(tail) || /^(or|and)$/i.test(tail)) {
       name = name.slice(0, comma).trim();
       continue;
     }
     break;
-  }
-
-  // leftover topping lists: "cheddar cheese, taco sauce, salsa"
-  if (!/^each\b/i.test(name) && (name.match(/,/g) ?? []).length >= 2) {
-    name = name.slice(0, name.indexOf(",")).trim();
   }
 
   while (LEADING_PREP.test(name)) {
@@ -292,6 +309,17 @@ function cleanItemName(rest: string): string {
   }
 
   return name;
+}
+
+function splitShopNameList(name: string): string[] {
+  const each = name.match(/^each(?:\s+of)?\s+(.+)/i);
+  const source = each?.[1] ?? name;
+  const parts = source
+    .split(/\s*(?:,|\/|&|\band\b)\s*/i)
+    .map((part) => part.replace(/^and\s+/i, "").trim())
+    .map((part) => part.replace(LEADING_PREP, "").trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts : [name];
 }
 
 function consumeTrailingMeasure(text: string): {
@@ -339,6 +367,21 @@ export function isShopJunkName(name: string): boolean {
 }
 
 export function parseIngredientLine(rawText: string): ParsedIngredientLine {
+  const trimmed = rawText.trim();
+  const quantity = consumeLeadingQuantity(trimmed);
+  const afterQty = quantity.rest.replace(/^\([^)]*\)\s*/, "");
+  const unit = quantity.min == null ? { unit: null, rest: afterQty } : consumeUnit(afterQty);
+
+  return {
+    rawText: trimmed,
+    quantityMin: quantity.min,
+    quantityMax: quantity.max,
+    unit: unit.unit,
+    name: cleanItemName(unit.rest),
+  };
+}
+
+function parseShopIngredientLine(rawText: string): ParsedIngredientLine {
   const original = rawText.trim();
   const trimmed = original
     .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
@@ -364,8 +407,15 @@ export function parseIngredientLine(rawText: string): ParsedIngredientLine {
     quantityMin: quantity.min,
     quantityMax: quantity.max,
     unit: unit.unit,
-    name: cleanItemName(unit.rest),
+    name: cleanShopItemName(unit.rest),
   };
+}
+
+/** Shopping-list names only. Allergen checks keep {@link parseIngredientLine}. */
+export function parseShopIngredientLines(rawText: string): ParsedIngredientLine[] {
+  const parsed = parseShopIngredientLine(rawText);
+  if (isShopJunkName(parsed.name)) return [];
+  return splitShopNameList(parsed.name).map((name) => ({ ...parsed, name }));
 }
 
 /** Lowercase merge key so "Olive Oil" and "olive oil" collapse together. */
@@ -385,10 +435,9 @@ export function normalizeIngredientName(name: string): string {
 export function backfillParsedIngredient(input: BackfillableIngredient): BackfilledIngredient {
   const parsed = parseIngredientLine(input.rawText);
   const storedName = input.name?.trim();
-  const cleanedStored =
-    storedName && storedName !== input.rawText.trim() ? cleanItemName(storedName) : "";
+  const name = storedName && storedName !== input.rawText.trim() ? storedName : parsed.name;
   return {
-    name: cleanedStored || parsed.name,
+    name,
     quantityMin: input.quantityMin ?? parsed.quantityMin,
     quantityMax: input.quantityMax ?? parsed.quantityMax,
     unit: input.unit ?? parsed.unit,

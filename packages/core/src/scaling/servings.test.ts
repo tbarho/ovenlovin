@@ -23,11 +23,11 @@ describe("scaleFactorForPlanEntry", () => {
     expect(scaleFactorForPlanEntry(4, 4)).toBe(1);
   });
 
-  it("treats a missing recipe yield as a 4-serving card", () => {
-    expect(scaleFactorForPlanEntry(8, null, 1)).toBe(2);
-    expect(scaleFactorForPlanEntry(6, undefined, 1)).toBe(1.5);
-    expect(scaleFactorForPlanEntry(5, null)).toBe(1.25);
-    expect(scaleFactorForPlanEntry(null, null, 1, 8)).toBe(2);
+  it("does not guess a 4-serving card when the recipe has no yield", () => {
+    expect(scaleFactorForPlanEntry(8, null, 1)).toBe(1);
+    expect(scaleFactorForPlanEntry(6, undefined, 1)).toBe(1);
+    expect(scaleFactorForPlanEntry(5, null)).toBe(1);
+    expect(scaleFactorForPlanEntry(null, null, 1, 8)).toBe(1);
   });
 
   it("falls back to an explicit scaleFactor only when the entry has no servings", () => {

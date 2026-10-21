@@ -88,6 +88,14 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("yellow onion")).toBe("onion");
     expect(canonicalShopName("salmon fillets")).toBe("salmon");
   });
+
+  it("keeps the original name unless it is an exact alias or has an explicit canonical", () => {
+    expect(canonicalShopName("almond milk")).toBe("almond milk");
+    expect(canonicalShopName("oat milk")).toBe("oat milk");
+    expect(canonicalShopName("vegan butter")).toBe("vegan butter");
+    expect(canonicalShopName("goat cheese")).toBe("goat cheese");
+    expect(canonicalShopName("beef short ribs")).toBe("beef short ribs");
+  });
 });
 
 describe("isPantryStaple", () => {
