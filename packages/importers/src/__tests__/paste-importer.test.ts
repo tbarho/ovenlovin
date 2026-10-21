@@ -285,6 +285,35 @@ describe("Paste Importer", () => {
       expect(draft.ingredients[0].quantity?.min).toBe(0.25);
     });
 
+    it("parses unicode paste fractions and flags unparseable amounts", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "paste",
+        rawData: {
+          title: "Olive fractions",
+          ingredients: [
+            { text: "½ cup sugar", quantity: "½", unit: "cup", ingredient: "sugar" },
+            { text: "1 ½ cups flour", quantity: "1 ½", unit: "cups", ingredient: "flour" },
+            { text: "¾ tsp salt", quantity: "¾", unit: "tsp", ingredient: "salt" },
+            { text: "⅓ cup oil", quantity: "⅓", unit: "cup", ingredient: "oil" },
+            { text: "a handful of herbs", quantity: "a handful", ingredient: "herbs" },
+          ],
+          steps: [{ text: "Stir until combined well." }],
+        },
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+
+      expect(draft.ingredients[0]?.quantity).toEqual({ min: 0.5 });
+      expect(draft.ingredients[1]?.quantity).toEqual({ min: 1.5 });
+      expect(draft.ingredients[2]?.quantity).toEqual({ min: 0.75 });
+      expect(draft.ingredients[3]?.quantity).toEqual({ min: 0.33 });
+      expect(draft.ingredients[4]?.quantity).toBeUndefined();
+      expect(draft.needsReview).toBe(true);
+      expect(draft.reviewReasons.some((reason) => reason.includes("Unparseable quantity"))).toBe(
+        true
+      );
+    });
+
     it("should extract timers from steps", async () => {
       const rawExtraction = {
         sourceType: "paste" as const,

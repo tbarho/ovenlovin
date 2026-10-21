@@ -115,7 +115,7 @@ export function pickSafety(
   rules: PersonRule[],
   ingredients: CheckableIngredient[]
 ): Pick<PlanRecipePick, "safety" | "warning"> {
-  if (people.length === 0) return { safety: "ok", warning: null };
+  if (people.length === 0 || rules.length === 0) return { safety: "ok", warning: null };
   if (ingredients.length === 0) {
     return { safety: "unknown", warning: "We couldn't finish checking this recipe." };
   }

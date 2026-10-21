@@ -13,6 +13,11 @@ import {
   tagImportAiTimeout,
   throwIfNotARecipe,
 } from "./import-ai-unavailable";
+import {
+  NOT_A_PUBLIC_URL_CODE,
+  NOT_A_PUBLIC_URL_MESSAGE,
+  NotAPublicUrlError,
+} from "./public-http-url";
 
 describe("importAiUnavailableMeta", () => {
   it("reads provider, model, statusCode, and generationId from nested AI errors", () => {
@@ -122,6 +127,10 @@ describe("importAiUnavailableMeta", () => {
     });
     expect(classifyImportFailure(aiBusy)).toBeNull();
     expect(isImportAiUnavailable(aiBusy)).toBe(true);
+    expect(classifyImportFailure(new NotAPublicUrlError())).toEqual({
+      code: NOT_A_PUBLIC_URL_CODE,
+      message: NOT_A_PUBLIC_URL_MESSAGE,
+    });
   });
 
   it("tags a timeout nested under an AI call error", () => {

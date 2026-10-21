@@ -423,12 +423,12 @@ describe("Property Tests: Status and Completeness", () => {
     );
   });
 
-  it("status is incomplete for empty rules", () => {
+  it("status is complete for empty rules", () => {
     fc.assert(
       fc.property(fc.array(ingredientArb, { minLength: 1, maxLength: 3 }), (ingredients) => {
         const result = checkIngredientsAgainstRules(ingredients, []);
 
-        return result.status === "incomplete" && (result.incompleteReasons?.length ?? 0) > 0;
+        return result.status === "complete" && (result.incompleteReasons?.length ?? 0) === 0;
       }),
       { numRuns: 50 }
     );

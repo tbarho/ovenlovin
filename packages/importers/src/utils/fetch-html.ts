@@ -5,6 +5,9 @@ import {
   IMPORT_NOT_A_RECIPE_MESSAGE,
   IMPORT_PAGE_GONE_MESSAGE,
   IMPORT_UNSUPPORTED_SITE_MESSAGE,
+  NotAPublicUrlError,
+  assertPublicHttpUrl,
+  fetchPublicHttp,
   parseIngredientLine,
 } from "@ovenlovin/core";
 import { remainingImportBudgetMs } from "./models";
@@ -376,9 +379,9 @@ async function readResponse(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetchImpl(url, {
+    const response = await fetchPublicHttp(url, {
+      fetchImpl,
       headers: { ...FULL_BROWSER_HEADERS, ...extraHeaders },
-      redirect: "follow",
       signal: controller.signal,
     });
     const html = await response.text();
@@ -412,6 +415,7 @@ type PageHit = {
  * a later non-recipe copy is still blocked; only a later recipe wins.
  */
 export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Promise<FetchResult> {
+  await assertPublicHttpUrl(url);
   const fetchImpl = options.fetchImpl ?? fetch;
   const env = options.env ?? process.env;
   const startedAt = options.startedAt ?? Date.now();
@@ -490,7 +494,8 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
         via: layer,
         status: direct.status,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof NotAPublicUrlError) throw error;
       lastStatus = 503;
       lastStatusText = "Fetch failed";
       if (layer === "direct") directStatus = 503;

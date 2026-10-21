@@ -65,6 +65,7 @@ export default async function PlansPage({
         <RecheckBanner planId={kitchen.plan.id} nights={nights} blockNights={blockNights} />
       ) : null}
       <MealPlanWeek
+        key={kitchen.weekStart}
         days={kitchen.days}
         planId={kitchen.plan?.id ?? null}
         weekStart={kitchen.weekStart}

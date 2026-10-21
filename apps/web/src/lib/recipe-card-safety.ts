@@ -5,12 +5,14 @@ export type RecipeSafetySummary = {
   blockPersonIds: string[];
   warnPersonIds: string[];
   warnings: string[];
+  blockTitles: string[];
 };
 
 export const EMPTY_RECIPE_SAFETY: RecipeSafetySummary = {
   blockPersonIds: [],
   warnPersonIds: [],
   warnings: [],
+  blockTitles: [],
 };
 
 export function ingredientsForRecipeCheck(
@@ -36,14 +38,17 @@ export function recipeSafetyFromCheck(check: WhoCanEatResult): RecipeSafetySumma
   const blockPersonIds: string[] = [];
   const warnPersonIds: string[] = [];
   const warnings: string[] = [];
+  const blockTitles: string[] = [];
   for (const person of check.people) {
     if (person.mark === "ok") continue;
     const warning = person.reasons[0] ?? person.title;
     warnings.push(warning);
-    if (person.mark === "block") blockPersonIds.push(person.personId);
-    else warnPersonIds.push(person.personId);
+    if (person.mark === "block") {
+      blockPersonIds.push(person.personId);
+      blockTitles.push(person.title);
+    } else warnPersonIds.push(person.personId);
   }
-  return { blockPersonIds, warnPersonIds, warnings };
+  return { blockPersonIds, warnPersonIds, warnings, blockTitles };
 }
 
 export function loveTagText(

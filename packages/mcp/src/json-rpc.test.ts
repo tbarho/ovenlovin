@@ -7,6 +7,9 @@ import {
   IMPORT_PAGE_GONE_CODE,
   IMPORT_PAGE_GONE_MESSAGE,
   InvalidImageUrlError,
+  NotAPublicUrlError,
+  NOT_A_PUBLIC_URL_CODE,
+  NOT_A_PUBLIC_URL_MESSAGE,
 } from "@ovenlovin/core";
 import { JsonRpcErrorCode, McpInvalidParamsError, jsonRpcFromThrown } from "./json-rpc";
 
@@ -112,5 +115,11 @@ describe("jsonRpcFromThrown", () => {
     expect(notRecipe.error.code).toBe(JsonRpcErrorCode.invalidParams);
     expect(notRecipe.error.message).toBe(IMPORT_NOT_A_RECIPE_MESSAGE);
     expect(notRecipe.error.data).toEqual({ code: IMPORT_NOT_A_RECIPE_CODE });
+
+    const privateUrl = jsonRpcFromThrown(9, new NotAPublicUrlError());
+    expect(privateUrl.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(privateUrl.error.code).not.toBe(JsonRpcErrorCode.internal);
+    expect(privateUrl.error.message).toBe(NOT_A_PUBLIC_URL_MESSAGE);
+    expect(privateUrl.error.data).toEqual({ code: NOT_A_PUBLIC_URL_CODE });
   });
 });

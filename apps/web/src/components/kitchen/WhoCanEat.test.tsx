@@ -38,6 +38,7 @@ describe("WhoCanEat", () => {
     expect(screen.getByTestId(`mark-${parent.id}`)).toHaveAttribute("data-mark", "ok");
     expect(screen.getByText("Can't eat")).toBeVisible();
     expect(screen.getByText("OK")).toBeVisible();
+    expect(screen.getByTestId("who-can-eat")).toHaveClass("olp-who-row");
     expect(
       screen.getByRole("button", { name: /Child B: Can't eat. Opens details/i })
     ).toBeVisible();
