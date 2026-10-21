@@ -27,7 +27,7 @@ curl -H "Authorization: ApiKey <api-key>" \
   https://your-app.vercel.app/api/v1/recipes
 ```
 
-Keys store `scopes`. A request outside the key's scopes returns `403` with `type` `<origin>/problems/forbidden`. Routes also authorize by kitchen membership role (viewer / member / admin / owner). `POST /api-keys` requires a signed-in admin or owner. The response field `plaintext` holds the full `rkapi_...` key. It is returned once.
+Keys store `scopes`. Routes authorize by kitchen membership role (viewer / member / admin / owner). `POST /api-keys` requires a signed-in admin or owner. The response field `plaintext` holds the full `rkapi_...` key. It is returned once.
 
 ## Error Response (RFC 9457)
 
@@ -38,7 +38,13 @@ Keys store `scopes`. A request outside the key's scopes returns `403` with `type
   "status": 400,
   "detail": "Request validation failed",
   "instance": "https://your-app.vercel.app/api/v1/recipes",
-  "errors": [{ "path": "title", "message": "Invalid input: expected string, received undefined", "code": "invalid_type" }]
+  "errors": [
+    {
+      "path": "title",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    }
+  ]
 }
 ```
 
@@ -49,8 +55,8 @@ Statuses the handlers return:
 - `200` / `201` / `204` - Success, created (`Location` when set), no content
 - `400` - Invalid input, including Zod validation (`problems/validation-error`)
 - `401` - Missing or invalid auth
-- `403` - Role not allowed, kitchen header mismatch, demo write/upload cap, or request outside the key's scopes
-- `404` - Missing resource, unknown path, cross-kitchen id (including the shopping list), or malformed id
+- `403` - Role not allowed, kitchen header mismatch, or demo write/upload cap
+- `404` - Missing resource or unknown path
 - `409` - Conflict (duplicate import, near-duplicate, in-flight import, household conflict)
 - `410` - Expired invite
 - `500` - Unhandled server error
@@ -192,4 +198,4 @@ data = requests.get(
 
 ## Multi-Tenant Security
 
-Every query is filtered by the caller's household in application code. Cross-kitchen access returns `404` on every id route, including the shopping list. A malformed id returns `404`.
+Every query is filtered by the caller's household in application code.

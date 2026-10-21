@@ -73,11 +73,10 @@ const SHARED_ERRORS: Record<string, oas30.ResponseObject> = {
   },
   "401": { description: "Unauthorized. Missing or invalid Authorization." },
   "403": {
-    description:
-      "Forbidden. Role not allowed, kitchen header mismatch, demo write/upload cap, or request outside the key's scopes.",
+    description: "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap.",
   },
   "404": {
-    description: "Not Found. Missing resource, unknown path, cross-kitchen id, or malformed id.",
+    description: "Not Found. Missing resource or unknown path.",
   },
 };
 

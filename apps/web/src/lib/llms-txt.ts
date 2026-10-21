@@ -60,7 +60,6 @@ export function buildLlmsTxt(origin: string): string {
     `- \`Authorization: Bearer <Clerk JWT>\``,
     ``,
     `Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is \`403\`.`,
-    `A request outside the key's scopes returns 403.`,
     `Unauthenticated REST returns problem+json 401.`,
     `Unauthenticated MCP POST returns a JSON-RPC error envelope (HTTP 401).`,
     ``,
