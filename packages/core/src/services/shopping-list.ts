@@ -190,23 +190,6 @@ function mergeKey(name: string, recipeKey: string): string {
   return `${recipeKey}|${normalizeIngredientName(name)}`;
 }
 
-function unitsConvert(left?: string, right?: string): boolean {
-  return addQuantities({ quantity: 1, unit: left }, { quantity: 1, unit: right }) != null;
-}
-
-function leftoverMeasureTexts(item: ShoppingListIngredient): string[] {
-  const leftover = new Map<string, number>();
-  for (const recipe of item.recipes) {
-    if (recipe.quantity == null) continue;
-    if (item.quantity != null && unitsConvert(item.unit, recipe.unit)) continue;
-    const unit = recipe.unit ?? "";
-    leftover.set(unit, (leftover.get(unit) ?? 0) + recipe.quantity);
-  }
-  return [...leftover].map(([unit, quantity]) =>
-    formatMeasureText(quantity, unit || undefined, true)
-  );
-}
-
 function sectionForItem(
   item: ShoppingListIngredient,
   groupBy: ShoppingListGroupBy,
@@ -317,7 +300,19 @@ export class ShoppingListService {
             unit,
           };
 
-          const existing = ingredientMap.get(key);
+          let mapKey = key;
+          let existing = ingredientMap.get(mapKey);
+          if (existing && scaledQuantity != null) {
+            const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
+            if (merged) {
+              existing.recipes.push(recipeRef);
+              existing.quantity = merged.quantity;
+              existing.unit = merged.unit;
+              continue;
+            }
+            mapKey = `${key}|${unit ?? ""}`;
+            existing = ingredientMap.get(mapKey);
+          }
           if (existing) {
             existing.recipes.push(recipeRef);
             if (scaledQuantity != null) {
@@ -330,7 +325,7 @@ export class ShoppingListService {
             continue;
           }
 
-          ingredientMap.set(key, {
+          ingredientMap.set(mapKey, {
             key: shopItemKey(itemName, unit),
             name: itemName,
             quantity: scaledQuantity,
@@ -357,18 +352,11 @@ export class ShoppingListService {
           quantity != null
             ? toFriendlyMeasure(quantity, item.unit, true)
             : { displayQuantity: "as needed" };
-        const extras = leftoverMeasureTexts(item);
-        const primaryUnit =
-          display.displayQuantity && display.displayQuantity !== "as needed" && display.displayUnit
-            ? inflectedUnit(display.displayQuantity, display.displayUnit)
+        const displayQuantity = display.displayQuantity;
+        const displayUnit =
+          displayQuantity && displayQuantity !== "as needed" && display.displayUnit
+            ? inflectedUnit(displayQuantity, display.displayUnit)
             : display.displayUnit;
-        const primaryText =
-          extras.length > 0 && primaryUnit
-            ? `${display.displayQuantity} ${primaryUnit}`
-            : display.displayQuantity;
-        const displayQuantity =
-          extras.length > 0 ? [primaryText, ...extras].filter(Boolean).join(" + ") : primaryText;
-        const displayUnit = extras.length > 0 ? undefined : primaryUnit;
         return {
           ...item,
           key: shopItemKey(item.name, item.unit),

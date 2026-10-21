@@ -116,6 +116,16 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("pure vanilla extract")).toBe("vanilla");
     expect(canonicalShopName("goat cheese")).toBe("goat cheese");
     expect(canonicalShopName("vegan butter")).toBe("vegan butter");
+    expect(canonicalShopName("cream cheese")).toBe("cream cheese");
+    expect(canonicalShopName("cream")).toBe("cream");
+    expect(canonicalShopName("lemon extract")).toBe("lemon extract");
+    expect(canonicalShopName("lemon")).toBe("lemon");
+    expect(canonicalShopName("mint extract")).toBe("mint extract");
+    expect(canonicalShopName("fresh mint")).toBe("fresh mint");
+    expect(canonicalShopName("fresh thyme")).toBe("fresh thyme");
+    expect(canonicalShopName("dried thyme")).toBe("dried thyme");
+    expect(assignAisle("fresh thyme").aisle).toBe("Produce");
+    expect(assignAisle("dried thyme").aisle).toBe("Spices");
   });
 });
 

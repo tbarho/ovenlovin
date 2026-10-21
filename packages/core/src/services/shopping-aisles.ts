@@ -155,14 +155,17 @@ const AISLE_RULES: AisleRule[] = [
       "baking soda",
       "baking powder",
       "chocolate chips",
-      "pure vanilla extract",
-      "vanilla extract",
-      "vanilla",
       "sugar",
       "cocoa",
     ],
     aisle: "Baking",
     category: "pantry",
+  },
+  {
+    aliases: ["pure vanilla extract", "vanilla extract", "vanilla"],
+    aisle: "Baking",
+    category: "pantry",
+    canonical: "vanilla",
   },
   {
     aliases: [
@@ -504,7 +507,7 @@ export function isPantryStaple(name: string): boolean {
 }
 
 const MERGE_DESCRIPTORS =
-  /\b(unsalted|salted|plain|all purpose|pure|grated|shredded|freshly|fresh|dried|large|small|whole|low sodium)\b/g;
+  /\b(unsalted|salted|plain|all purpose|grated|shredded|freshly|large|small|whole|low sodium)\b/g;
 
 const GENERIC_FLOUR_NAMES = new Set([
   "flour",
@@ -512,14 +515,9 @@ const GENERIC_FLOUR_NAMES = new Set([
   "plain flour",
   "plain all purpose flour",
 ]);
-const MERGE_KIND = /\b(extract|cheese)\b/g;
 
 function descriptorlessName(name: string): string {
-  return normalizeIngredientName(name)
-    .replace(MERGE_DESCRIPTORS, " ")
-    .replace(MERGE_KIND, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return normalizeIngredientName(name).replace(MERGE_DESCRIPTORS, " ").replace(/\s+/g, " ").trim();
 }
 
 function canonicalNameFor(name: string, match: CompiledAlias): string {

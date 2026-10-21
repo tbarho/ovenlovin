@@ -173,6 +173,22 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("1 1/8 cups plain / all purpose flour")).toEqual([
       expect.objectContaining({ name: "plain all purpose flour" }),
     ]);
+    expect(parseShopIngredientLines("1/4 cup flaxseed")).toEqual([
+      expect.objectContaining({ name: "flaxseed" }),
+    ]);
+    expect(parseShopIngredientLines("1 tsp aniseed")).toEqual([
+      expect.objectContaining({ name: "aniseed" }),
+    ]);
+    expect(parseShopIngredientLines("1 tbsp seed")).toEqual([
+      expect.objectContaining({ name: "seed" }),
+    ]);
+    expect(parseShopIngredientLines("salt/pepper").map((row) => row.name)).toEqual([
+      "salt",
+      "pepper",
+    ]);
+    expect(parseShopIngredientLines("2 cloves garlic, minced or crushed")).toEqual([
+      expect.objectContaining({ name: "garlic" }),
+    ]);
     expect(parseShopIngredientLines("1 cup unsalted butter)")).toEqual([
       expect.objectContaining({ name: "unsalted butter" }),
     ]);
@@ -192,10 +208,10 @@ describe("parseShopIngredientLines", () => {
     expect(
       parseShopIngredientLines("bell peppers, very thinly sliced if raw").map((row) => row.name)
     ).toEqual(["bell peppers"]);
-    expect(isShopJunkName("juiced")).toBe(true);
-    expect(isShopJunkName("cooked ahead")).toBe(true);
     expect(isShopJunkName("")).toBe(true);
     expect(isShopJunkName("Note 1")).toBe(true);
+    expect(isShopJunkName("flaxseed")).toBe(false);
+    expect(isShopJunkName("juiced")).toBe(false);
     expect(isShopJunkName("parsley")).toBe(false);
   });
 });

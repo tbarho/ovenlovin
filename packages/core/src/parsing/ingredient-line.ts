@@ -100,7 +100,7 @@ function isShopPrepPhrase(text: string): boolean {
   if (/^[\p{L}'-]+ed$/iu.test(t)) return true;
   if (/^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t)) return true;
   const parts = t
-    .split(/\s*(?:,|&|\band\b)\s*/)
+    .split(/\s*(?:,|&|\band\b|\bor\b)\s*/)
     .filter((part) => part && !/^(or|and)$/i.test(part));
   return parts.length > 1 && parts.every((part) => isShopPrepPhrase(part));
 }
@@ -311,7 +311,7 @@ function cleanShopItemName(rest: string): string {
       .replace(/^optional:\s*/i, "")
       .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
       .replace(/\(\s*note\s*\d+\s*\)/gi, "")
-      .replace(/\s*\/\s*/g, " ")
+      .replace(/\bplain\s*\/\s*all[\s-]?purpose\b/gi, "plain all purpose")
       .replace(/,?\s+or$/i, "")
       .replace(/\s+to taste$/i, "")
       .replace(
@@ -343,10 +343,10 @@ function splitShopNameList(name: string): string[] {
   const each = name.match(/^each(?:\s+of)?\s+(.+)/i);
   const source = each?.[1] ?? name;
   const parts = source
-    .split(/\s*(?:,|&|\band\b)\s*/i)
+    .split(/\s*(?:,|\/|&|\band\b)\s*/i)
     .map((part) => part.replace(/^and\s+/i, "").trim())
     .map((part) => part.replace(LEADING_PREP, "").trim())
-    .filter((part) => part && !isShopPrepPhrase(part));
+    .filter(Boolean);
   return parts.length > 0 ? parts : [name];
 }
 
@@ -391,7 +391,7 @@ function stripAlternateSlashMeasure(text: string): string {
 /** Note leftovers and empty names are not grocery items. */
 export function isShopJunkName(name: string): boolean {
   const normalized = normalizeIngredientName(name);
-  return !normalized || /^note\s*\d+$/.test(normalized) || isShopPrepPhrase(name);
+  return !normalized || /^note\s*\d+$/.test(normalized);
 }
 
 export function parseIngredientLine(rawText: string): ParsedIngredientLine {

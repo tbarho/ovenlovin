@@ -246,9 +246,15 @@ describe("ShoppingListService", () => {
         ingredients: [{ rawText: "1 onion" }, { rawText: "1 lb onion" }, { rawText: "2 lb onion" }],
       },
     ]);
-    expect(list.ingredients.filter((item) => item.name === "onion")).toHaveLength(1);
-    expect(list.ingredients[0]?.displayQuantity).toMatch(/1/);
-    expect(list.ingredients[0]?.displayQuantity).toMatch(/3\s*lbs?/);
+    expect(list.ingredients.find((item) => item.unit === "lb")).toMatchObject({
+      name: "onion",
+      quantity: 3,
+      unit: "lb",
+    });
+    expect(list.ingredients.find((item) => item.unit == null)).toMatchObject({
+      name: "onion",
+      quantity: 1,
+    });
   });
 
   it("merges convertible units (tsp + tbsp)", () => {
@@ -1010,13 +1016,6 @@ describe("ShoppingListService", () => {
       reject: /unsalted|salted/i,
     },
     {
-      name: "butter mixed units",
-      lines: ["1 cup butter", "150g unsalted butter"],
-      expectName: /^butter$/i,
-      reject: /unsalted/i,
-      bothAmounts: /cup/i,
-    },
-    {
       name: "parmesan variants",
       lines: ["1/2 cup parmesan", "1/4 cup Parmesan cheese", "2 tbsp parmigiano reggiano"],
       expectName: /^parmesan$/i,
@@ -1033,6 +1032,7 @@ describe("ShoppingListService", () => {
       lines: ["3 cloves garlic, crushed", "1 tsp crushed garlic"],
       expectName: /^garlic$/i,
       reject: /^crushed$/i,
+      rows: 2,
     },
     {
       name: "almond flour stays",
@@ -1046,24 +1046,84 @@ describe("ShoppingListService", () => {
       expectName: /^crushed tomatoes$/i,
       reject: /^tomatoes$/i,
     },
-  ])("UAT shop line $name is one clean row", ({ lines, expectName, reject, bothAmounts }) => {
-    const list = build([
-      {
-        entry: entry({ recipeId: "uat", servings: 4 }),
-        recipeTitle: "UAT",
-        recipeServings: 4,
-        ingredients: lines.map((rawText) => ({ rawText })),
-      },
-    ]);
-    const rows = list.ingredients.filter((item) => expectName.test(item.name));
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.name).not.toMatch(reject);
-    expect(list.ingredients.some((item) => reject.test(item.name))).toBe(false);
-    if (bothAmounts) {
-      expect(`${rows[0]?.displayQuantity ?? ""} ${rows[0]?.displayUnit ?? ""}`).toMatch(
-        bothAmounts
-      );
-      expect(rows[0]?.displayQuantity).toMatch(/\+/);
+    {
+      name: "flaxseed",
+      lines: ["1/4 cup flaxseed"],
+      expectName: /^flaxseed$/i,
+    },
+    {
+      name: "aniseed",
+      lines: ["1 tsp aniseed"],
+      expectName: /^aniseed$/i,
+    },
+    {
+      name: "cream cheese + cream",
+      lines: ["8 oz cream cheese", "1 cup cream"],
+      expectName: [/^cream cheese$/i, /^cream$/i],
+    },
+    {
+      name: "lemon extract + lemon",
+      lines: ["1 tsp lemon extract", "1 lemon"],
+      expectName: [/lemon extract/i, /^lemon$/i],
+    },
+    {
+      name: "mint extract + fresh mint",
+      lines: ["1 tsp mint extract", "1 bunch fresh mint"],
+      expectName: [/mint extract/i, /^mint$/i],
+    },
+    {
+      name: "salt/pepper",
+      lines: ["salt/pepper"],
+      expectName: [/^salt$/i, /^pepper$/i],
+      includeStaples: true,
+    },
+    {
+      name: "butter/oil",
+      lines: ["butter/oil"],
+      expectName: [/^butter$/i, /^oil$/i],
+      includeStaples: true,
+    },
+    {
+      name: "minced or crushed garlic",
+      lines: ["2 cloves garlic, minced or crushed"],
+      expectName: /^garlic$/i,
+      reject: /minced|crushed|^or /i,
+    },
+    {
+      name: "fresh + dried thyme",
+      lines: ["1 tbsp fresh thyme", "1 tsp dried thyme"],
+      expectName: [/^thyme$/i, /^dried thyme$/i],
+    },
+    {
+      name: "onion lb + count",
+      lines: ["1 onion", "1 lb onion"],
+      expectName: /^onion$/i,
+      rows: 2,
+    },
+  ])("UAT shop lines $name", ({ lines, expectName, reject, rows, includeStaples }) => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "uat", servings: 4 }),
+          recipeTitle: "UAT",
+          recipeServings: 4,
+          ingredients: lines.map((rawText) => ({ rawText })),
+        },
+      ],
+      includeStaples ? { includeStaples: true } : {}
+    );
+    const patterns = Array.isArray(expectName) ? expectName : [expectName];
+    const matched = list.ingredients.filter((item) =>
+      patterns.some((pattern) => pattern.test(item.name))
+    );
+    expect(matched).toHaveLength(rows ?? patterns.length);
+    if (rows == null) {
+      for (const pattern of patterns) {
+        expect(list.ingredients.filter((item) => pattern.test(item.name))).toHaveLength(1);
+      }
+    }
+    if (reject) {
+      expect(list.ingredients.some((item) => reject.test(item.name))).toBe(false);
     }
   });
 });
