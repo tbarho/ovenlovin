@@ -383,6 +383,8 @@ export function MealPlanWeek({
 
   const selectedDay = daysView.find((day) => day.date === selectedDate);
   const persistQueue = useRef(Promise.resolve());
+  const servingsRef = useRef(servings);
+  servingsRef.current = servings;
   const dismissToast = useCallback(() => setToast(null), []);
   const closeEditor = useCallback(() => {
     setSelectedDate(null);
@@ -419,11 +421,11 @@ export function MealPlanWeek({
             body: JSON.stringify({
               weekStart: resolvedWeekStart,
               status: "draft",
-              cookFor: servings,
+              cookFor: patch?.cookFor ?? servingsRef.current,
               entries: writes,
             }),
           });
-          createdPlanIdRef.current = created.id;
+          if (created?.id) createdPlanIdRef.current = created.id;
           router.refresh();
         } else {
           await api(`/api/v1/meal-plans/${id}`, {
@@ -513,8 +515,8 @@ export function MealPlanWeek({
   }
 
   function applyServings(nextServings: number) {
+    servingsRef.current = nextServings;
     setServings(nextServings);
-    if (!planId) return;
     void persist(entriesView, { cookFor: nextServings });
   }
 

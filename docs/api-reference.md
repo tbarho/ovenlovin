@@ -719,6 +719,8 @@ POST /api/v1/meal-plans/{planId}/check
 GET /api/v1/meal-plans/{planId}/shopping-list
 ```
 
+Amounts follow the week `cookFor` (or the household default when that column is empty). Per-night `servings` are labels only and do not change list amounts.
+
 **Query parameters**:
 - `format` (string, optional) - `json` (default), `csv`, `markdown`, or `text`
 - `groupBy` (string, optional) - `aisle` (default), `recipe`, or `category`

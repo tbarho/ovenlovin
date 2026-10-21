@@ -42,4 +42,4 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 - `edit_meal_plan` - `set`, `swap`, or `clear` a single night (or `undo` the last entries edit). `set`/`swap` need `recipeId` or `freeformMeal`
 - `delete_meal_plan` - soft-delete a meal plan
 - `check_meal_plan` - `plan.weekStart` + `plan.entries` (`date`, `meal`, `attendees`; optional `recipeId` / `freeformMeal` / `servings`). Per-person findings plus informational `loveTags` (never a filter)
-- `export_shopping_list` - `planId` required. `format` default `markdown`; `groupBy` default `aisle`. Optional `includeStaples` (alias `includePantryItems`), `includeRuleWarnings` (default true), `timeZone`
+- `export_shopping_list` - `planId` required. `format` default `markdown`; `groupBy` default `aisle`. Optional `includeStaples` (alias `includePantryItems`), `includeRuleWarnings` (default true), `timeZone`. Amounts follow the week cook-for; per-night servings do not change list amounts.

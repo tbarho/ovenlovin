@@ -132,22 +132,6 @@ export function cookForServingsLabel(input: {
   return `${cookFor} ${cookFor === 1 ? "serving" : "servings"}`;
 }
 
-/** Shopping-list heading from the servings the list actually used. */
-export function planListScale(
-  entryServings: Array<number | null | undefined>,
-  fallback: number
-): { scaledFor: number; mixed: boolean } {
-  const values = entryServings
-    .filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0)
-    .map((n) => Math.round(n));
-  const cookFor = clampServings(fallback);
-  if (values.length === 0) return { scaledFor: cookFor, mixed: false };
-  const first = values[0] ?? cookFor;
-  const mixed = values.some((n) => n !== first);
-  if (!mixed) return { scaledFor: first, mixed: false };
-  return { scaledFor: cookFor, mixed: true };
-}
-
 /** Shopping-list line for the week cook-for. */
 export function cookForPeopleLabel(count: number, mixed = false): string {
   const n = clampServings(count);

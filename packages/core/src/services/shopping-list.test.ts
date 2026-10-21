@@ -154,8 +154,22 @@ describe("ShoppingListService", () => {
     expect(list.ingredients[0]).toMatchObject({ name: "salt", quantity: 2, unit: "tsp" });
   });
 
-  it("S4: scales quantities by plan entry servings over recipe servings", () => {
-    const list = build([
+  it("S4: scales quantities to the week cook-for, not a leftover per-night stamp", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "ziti", servings: 6 }),
+          recipeTitle: "Baked ziti",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 lb ziti" }],
+        },
+      ],
+      { defaultCookFor: 6 }
+    );
+
+    expect(list.ingredients[0]).toMatchObject({ name: "ziti", quantity: 1.5, unit: "lb" });
+
+    const leftoverNight = build([
       {
         entry: entry({ recipeId: "ziti", servings: 6 }),
         recipeTitle: "Baked ziti",
@@ -163,19 +177,21 @@ describe("ShoppingListService", () => {
         ingredients: [{ rawText: "1 lb ziti" }],
       },
     ]);
-
-    expect(list.ingredients[0]).toMatchObject({ name: "ziti", quantity: 1.5, unit: "lb" });
+    expect(leftoverNight.ingredients[0]).toMatchObject({ name: "ziti", quantity: 1, unit: "lb" });
   });
 
   it("agrees with a stored scaleFactor computed as entry servings / recipe servings", () => {
-    const list = build([
-      {
-        entry: entry({ recipeId: "salmon", servings: 8, scaleFactor: 2 }),
-        recipeTitle: "Sheet-pan salmon",
-        recipeServings: 4,
-        ingredients: [{ rawText: "1 lb broccoli florets" }],
-      },
-    ]);
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "salmon", servings: 8, scaleFactor: 2 }),
+          recipeTitle: "Sheet-pan salmon",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 lb broccoli florets" }],
+        },
+      ],
+      { defaultCookFor: 8 }
+    );
 
     expect(list.ingredients[0]).toMatchObject({
       name: "broccoli florets",
@@ -185,14 +201,17 @@ describe("ShoppingListService", () => {
   });
 
   it("scales REST plan entries that persist scaleFactor 1 and only set servings", () => {
-    const list = build([
-      {
-        entry: entry({ recipeId: "salmon", servings: 8, scaleFactor: 1 }),
-        recipeTitle: "Sheet-pan salmon",
-        recipeServings: 4,
-        ingredients: [{ rawText: "1 lb broccoli florets" }],
-      },
-    ]);
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "salmon", servings: 8, scaleFactor: 1 }),
+          recipeTitle: "Sheet-pan salmon",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 lb broccoli florets" }],
+        },
+      ],
+      { defaultCookFor: 8 }
+    );
 
     expect(list.ingredients[0]).toMatchObject({
       name: "broccoli florets",
@@ -372,14 +391,17 @@ describe("ShoppingListService", () => {
     expect(service.exportAsCSV(list)).toContain("2/3");
     expect(service.exportAsCSV(list)).not.toContain("0.666");
 
-    const doubled = build([
-      {
-        entry: entry({ recipeId: "soup", servings: 8 }),
-        recipeTitle: "Tomato soup",
-        recipeServings: 4,
-        ingredients: [DECIMAL_TWO_THIRDS_CELERY],
-      },
-    ]);
+    const doubled = build(
+      [
+        {
+          entry: entry({ recipeId: "soup", servings: 8 }),
+          recipeTitle: "Tomato soup",
+          recipeServings: 4,
+          ingredients: [DECIMAL_TWO_THIRDS_CELERY],
+        },
+      ],
+      { defaultCookFor: 8 }
+    );
     expect(doubled.ingredients[0]).toMatchObject({
       name: "celery",
       displayQuantity: "1 1/3",
@@ -593,7 +615,7 @@ describe("ShoppingListService", () => {
           ingredients: [{ rawText: "1/2 tsp salt" }],
         },
       ],
-      { includeStaples: true }
+      { includeStaples: true, defaultCookFor: 5 }
     );
     const text = service.exportAsMarkdown(list);
     expect(text).not.toMatch(/0 tsp/);
@@ -601,14 +623,17 @@ describe("ShoppingListService", () => {
   });
 
   it("does not show 3/4 lb when 1 lb is scaled from 24 to 23 servings", () => {
-    const list = build([
-      {
-        entry: entry({ recipeId: "roast", servings: 23 }),
-        recipeTitle: "Sunday roast",
-        recipeServings: 24,
-        ingredients: [{ rawText: "1 lb ground beef" }],
-      },
-    ]);
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "roast", servings: 23 }),
+          recipeTitle: "Sunday roast",
+          recipeServings: 24,
+          ingredients: [{ rawText: "1 lb ground beef" }],
+        },
+      ],
+      { defaultCookFor: 23 }
+    );
     expect(list.ingredients[0]).toMatchObject({
       name: "ground beef",
       displayQuantity: "1",
@@ -619,24 +644,27 @@ describe("ShoppingListService", () => {
   });
 
   it("rounds countable shop items up and keeps measured cooking fractions", () => {
-    const list = build([
-      {
-        entry: entry({ recipeId: "household-dinner", servings: 5 }),
-        recipeTitle: "Household dinner",
-        recipeServings: 6,
-        ingredients: [{ rawText: "3 eggs" }],
-      },
-      {
-        entry: entry({ id: "entry-2", recipeId: "roast", servings: 4 }),
-        recipeTitle: "Sunday roast",
-        recipeServings: 6,
-        ingredients: [
-          { rawText: "1 whole chicken" },
-          { rawText: "1 can kidney beans" },
-          { rawText: "1 lb ground beef" },
-        ],
-      },
-    ]);
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "household-dinner", servings: 5 }),
+          recipeTitle: "Household dinner",
+          recipeServings: 6,
+          ingredients: [{ rawText: "3 eggs" }],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "roast", servings: 4 }),
+          recipeTitle: "Sunday roast",
+          recipeServings: 6,
+          ingredients: [
+            { rawText: "1 whole chicken" },
+            { rawText: "1 can kidney beans" },
+            { rawText: "1 lb ground beef" },
+          ],
+        },
+      ],
+      { defaultCookFor: 4 }
+    );
 
     expect(list.ingredients.find((item) => item.name === "egg")).toMatchObject({
       quantity: 3,

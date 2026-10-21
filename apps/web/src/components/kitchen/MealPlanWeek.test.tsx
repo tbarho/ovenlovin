@@ -790,27 +790,62 @@ describe("MealPlanWeek", () => {
     expect(scale).toHaveValue("5");
     await user.selectOptions(scale, "8");
     expect(scale).toHaveValue("8");
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith("/api/v1/meal-plans", {
+        method: "POST",
+        body: JSON.stringify({
+          weekStart: "2026-10-12",
+          status: "draft",
+          cookFor: 8,
+          entries: [],
+        }),
+      })
+    );
 
     await user.click(screen.getByRole("button", { name: /monday/i }));
     await user.click(screen.getByRole("button", { name: /test recipe 7a/i }));
-    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans", {
-      method: "POST",
-      body: JSON.stringify({
-        weekStart: "2026-10-12",
-        status: "draft",
-        cookFor: 8,
-        entries: [
-          {
-            date: "2026-10-12",
-            meal: "dinner",
-            recipeId: "recipe-batch",
-            servings: 8,
-            attendees: [],
-          },
-        ],
-      }),
-    });
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          entries: [
+            {
+              date: "2026-10-12",
+              meal: "dinner",
+              recipeId: "recipe-batch",
+              servings: 8,
+              attendees: [],
+            },
+          ],
+        }),
+      })
+    );
     expect(screen.getByText("Recipe makes 48 · cooking for 8")).toBeVisible();
     expect(screen.queryByText("48 servings")).not.toBeInTheDocument();
+  });
+
+  it("does not drop a cook-for change made before planId comes back", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+        defaultServings={5}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /sunday/i }));
+    await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
+    await waitFor(() => expect(api).toHaveBeenCalledWith("/api/v1/meal-plans", expect.anything()));
+
+    const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
+    await user.selectOptions(scale, "8");
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
+        method: "PATCH",
+        body: JSON.stringify({ cookFor: 8 }),
+      })
+    );
   });
 });

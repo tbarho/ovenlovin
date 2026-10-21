@@ -7,7 +7,12 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
-import { agreedEntryCookFor, PlanService, resolveWriteActor } from "@ovenlovin/core";
+import {
+  agreedEntryCookFor,
+  PlanService,
+  resolveWriteActor,
+  SERVINGS_HARD_MAX,
+} from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const saveMealPlanSchema = z.object({
@@ -15,7 +20,8 @@ export const saveMealPlanSchema = z.object({
   cookFor: z
     .number()
     .int()
-    .positive()
+    .min(1)
+    .max(SERVINGS_HARD_MAX)
     .optional()
     .describe("Week cook-for. Night labels and the shopping list all use this one count."),
   entries: z.array(

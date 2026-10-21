@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   agreedEntryCookFor,
   cookForPeopleLabel,
-  planListScale,
   cookForServingsLabel,
   defaultDisplayedServings,
   effectivePlanServings,
@@ -88,6 +87,11 @@ describe("weekDefaultServings and planEntryServings", () => {
     expect(agreedEntryCookFor([8, 8, 8])).toBe(8);
     expect(agreedEntryCookFor([48, 8])).toBeNull();
     expect(agreedEntryCookFor([])).toBeNull();
+    // Migration 0014: agreeing nights keep 8; mixed nights stay on the household default.
+    expect(weekCookFor({ planCookFor: agreedEntryCookFor([8, 8, 8]), householdCookFor: 5 })).toBe(
+      8
+    );
+    expect(weekCookFor({ planCookFor: agreedEntryCookFor([48, 8]), householdCookFor: 5 })).toBe(5);
   });
 
   it("uses household Default servings when a plan entry has no servings", () => {
@@ -138,11 +142,6 @@ describe("notes and settings", () => {
     expect(cookForPeopleLabel(6)).toBe("For 6 people");
     expect(cookForPeopleLabel(1)).toBe("For 1 person");
     expect(cookForPeopleLabel(5, true)).toBe("For 5 people (some recipes scaled differently)");
-    expect(planListScale([7, 7, 7], 4)).toEqual({ scaledFor: 7, mixed: false });
-    expect(planListScale([6, 5], 5)).toEqual({ scaledFor: 5, mixed: true });
-    expect(planListScale([7, 12], 4)).toEqual({ scaledFor: 4, mixed: true });
-    expect(planListScale([6, 4, 5, 4], 5)).toEqual({ scaledFor: 5, mixed: true });
-    expect(planListScale([], 4)).toEqual({ scaledFor: 4, mixed: false });
   });
 
   it("names the family scale and can reset copy", () => {
