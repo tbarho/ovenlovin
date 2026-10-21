@@ -815,6 +815,49 @@ describe("fetchHtml layers", () => {
     expect(result.html).toMatch(/2 cups green lentils/);
   });
 
+  it("imports Jina markdown whose ingredients use stacked task-checkbox bullets", async () => {
+    const markdown = `# Best Lentil Soup
+
+## Ingredients
+* - [x] ¼ cup extra virgin olive oil
+* - [x] 1 medium yellow onion
+* - [x] 2 carrots, peeled and chopped
+* - [x] 4 cups vegetable broth
+
+## Instructions
+1. Warm the oil and cook the onion.
+2. Add lentils and broth and simmer until tender.
+`;
+    expect(looksLikeStructuredMarkdownRecipe(markdown)).toBe(true);
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => markdown,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(result.html).toMatch(/¼ cup extra virgin olive oil/);
+  });
+
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
     expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
 

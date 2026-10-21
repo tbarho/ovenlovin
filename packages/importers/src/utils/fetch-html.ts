@@ -245,7 +245,7 @@ export function looksLikeStructuredMarkdownRecipe(text: string): boolean {
   const steps = sectionAfterHeading(text, /^#{1,4}\s+(instructions?|directions?)\b/im);
   if (!ingredients || !steps) return false;
   const amountLines = ingredients.split(/\r?\n/).filter((line) => {
-    const item = line.replace(/^\s*(?:[-*]|\d+\.)\s+/, "").trim();
+    const item = line.replace(/^\s*(?:(?:[-*+]|\d+\.)\s+)*(?:\[[ xX]\]\s+)?/, "").trim();
     if (!item) return false;
     const parsed = parseIngredientLine(item);
     return parsed.quantityMin != null || parsed.unit != null;
