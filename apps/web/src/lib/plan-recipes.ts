@@ -1,11 +1,12 @@
-import type {
-  PlanEntryDraft,
-  PlanRecipePick,
-  WeekDay,
-  WeekFinding,
-  WeekMeal,
+import {
+  NO_COOK_LABEL,
+  planRecipeHref,
+  type PlanEntryDraft,
+  type PlanRecipePick,
+  type WeekDay,
+  type WeekFinding,
+  type WeekMeal,
 } from "@/lib/week-plan-view";
-import { NO_COOK_LABEL } from "@/lib/week-plan-view";
 
 const SAFETY_RANK: Record<PlanRecipePick["safety"], number> = {
   ok: 0,
@@ -141,7 +142,9 @@ export function applyDinnerToDays(
       mealSlot: "dinner",
       recipeId: next.recipeId ?? null,
       title: recipe?.title ?? next.freeformMeal ?? NO_COOK_LABEL,
-      href: recipe ? `/recipes/${recipe.id}` : null,
+      href: recipe
+        ? planRecipeHref(recipe.id, next.servings ?? existing?.servings ?? 1)
+        : null,
       image: recipe?.image ?? null,
       servings: next.servings ?? existing?.servings ?? null,
       recipeServings: recipe?.servings ?? existing?.recipeServings ?? null,

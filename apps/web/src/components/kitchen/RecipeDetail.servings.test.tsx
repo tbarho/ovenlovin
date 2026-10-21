@@ -112,6 +112,50 @@ describe("RecipeDetail default servings", () => {
     expect(screen.getByText("1 1/3 cups carrot")).toBeInTheDocument();
   });
 
+  it("opens from a plan at that week's cook-for, then resets to the card yield", async () => {
+    const user = userEvent.setup();
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({
+          title: "Chocolate chip cookies",
+          servings: 24,
+          ingredients: [
+            {
+              id: "00000000-0000-4000-8000-000000000041",
+              recipeId: "00000000-0000-4000-8000-000000000030",
+              order: 0,
+              rawText: "2 1/4 cups all-purpose flour",
+              quantityMin: 2.25,
+              unit: "cup",
+              isOptional: false,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-01T00:00:00.000Z",
+            },
+          ],
+        })}
+        cookbooks={[testCookbook()]}
+        servingsSettings={{
+          mode: "family",
+          servings: null,
+          familySize: 5,
+          defaultCookFor: 5,
+        }}
+        servingsOverride={8}
+        fromPlan
+      />
+    );
+
+    expect(screen.getByLabelText("Servings")).toHaveAttribute("aria-valuenow", "8");
+    expect(screen.getByTestId("scaled-servings-note")).toHaveTextContent(
+      "Scaled to 8 for this week's plan"
+    );
+    expect(screen.getByText("3/4 cup all-purpose flour")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reset to 24" }));
+    expect(screen.getByLabelText("Servings")).toHaveAttribute("aria-valuenow", "24");
+    expect(screen.getByText("2 1/4 cups all-purpose flour")).toBeInTheDocument();
+    expect(screen.getByTestId("scaled-servings-note")).toHaveTextContent("24 servings");
+  });
+
   it("lets the slider reach a 48-serving recipe yield", () => {
     render(
       <RecipeDetail

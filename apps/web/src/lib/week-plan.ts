@@ -25,6 +25,7 @@ import { whoCanEat, type CheckableIngredient, type WhoCanEatResult } from "@/lib
 import {
   formatWeekRange,
   groupMealsByDate,
+  planRecipeHref,
   startOfWeekMonday,
   type PlanEntryDraft,
   type PlanRecipePick,
@@ -264,6 +265,10 @@ export async function loadWeekKitchen(
     ingredientsByRecipe
   );
 
+  const cookFor = weekCookFor({
+    planCookFor: plan.cookFor,
+    householdCookFor: servingsSettings.defaultCookFor,
+  });
   const meals: WeekMeal[] = entries.map((entry) => {
     const recipe = entry.recipeId ? recipeById.get(entry.recipeId) : undefined;
     const attendees = peopleForEntry(people, entry);
@@ -282,12 +287,9 @@ export async function loadWeekKitchen(
       mealSlot: entry.mealSlot,
       recipeId: entry.recipeId ?? null,
       title: recipe?.title ?? entry.freeformMeal ?? "Untitled meal",
-      href: recipe ? `/recipes/${recipe.id}` : null,
+      href: recipe ? planRecipeHref(recipe.id, cookFor) : null,
       image: recipe ? recipeMainImage(recipe.images) : null,
-      servings: weekCookFor({
-        planCookFor: plan.cookFor,
-        householdCookFor: servingsSettings.defaultCookFor,
-      }),
+      servings: cookFor,
       recipeServings: recipe?.servings ?? null,
       isNoCook,
       findings,
@@ -311,10 +313,7 @@ export async function loadWeekKitchen(
         })),
       };
     }),
-    weekCookFor({
-      planCookFor: plan.cookFor,
-      householdCookFor: servingsSettings.defaultCookFor,
-    }),
+    cookFor,
     servingsSettings.mode
   );
 
@@ -357,10 +356,7 @@ export async function loadWeekKitchen(
       attendees: entry.attendees,
     })),
     recipes: recipePicks,
-    defaultServings: weekCookFor({
-      planCookFor: plan.cookFor,
-      householdCookFor: servingsSettings.defaultCookFor,
-    }),
+    defaultServings: cookFor,
     defaultServingsMode: servingsSettings.mode,
   };
 }

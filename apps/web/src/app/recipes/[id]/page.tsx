@@ -7,6 +7,7 @@ import {
   RecipeService,
 } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { parseServingsQuery } from "@ovenlovin/core/scaling";
 import { RecipeDetail } from "@/components/kitchen/RecipeDetail";
 import { householdLovePeople } from "@/lib/household-loves";
 import { requireKitchenContext } from "@/lib/kitchen-session";
@@ -16,12 +17,12 @@ export default async function RecipeDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ fromCookbook?: string }>;
+  searchParams: Promise<{ fromCookbook?: string; servings?: string; from?: string }>;
 }) {
   const context = await requireKitchenContext();
 
   const { id } = await params;
-  const { fromCookbook } = await searchParams;
+  const { fromCookbook, servings, from } = await searchParams;
   const db = getDatabase();
   const recipe = await new RecipeService(db).getRecipeDetails(id);
   if (!recipe || recipe.householdId !== context.householdId) notFound();
@@ -52,6 +53,8 @@ export default async function RecipeDetailPage({
       lovePeople={householdLovePeople(people.items, preferences)}
       plannedDates={plannedDates}
       servingsSettings={servingsSettings}
+      servingsOverride={parseServingsQuery(servings)}
+      fromPlan={from === "plan"}
       backHref={fromBook ? `/recipes?cookbook=${fromBook.id}` : "/recipes"}
       backLabel={fromBook ? fromBook.name : "Recipes"}
     />
