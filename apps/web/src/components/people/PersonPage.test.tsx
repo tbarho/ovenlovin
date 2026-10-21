@@ -243,6 +243,50 @@ describe("PersonPage", () => {
     });
   });
 
+  it("sends confirmUnknown when moving a custom dislike to another bucket", async () => {
+    const rule = testPersonRule({
+      kind: "ingredient",
+      target: "liver",
+      severity: "prefer_avoid",
+    });
+    mockedApi.mockResolvedValue({ ...rule, severity: "block" });
+    render(<PersonPage person={testPerson({ displayName: "Child B" })} rules={[rule]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Liver" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Can't eat" }));
+
+    const patch = mockedApi.mock.calls.find((call) => call[1]?.method === "PATCH");
+    expect(patch?.[0]).toBe(`/api/v1/people/${rule.personId}/rules/${rule.id}`);
+    expect(JSON.parse(String(patch?.[1]?.body))).toMatchObject({
+      target: "liver",
+      confirmUnknown: true,
+    });
+  });
+
+  it("sends confirmUnknown when undoing a custom rule remove", async () => {
+    const user = userEvent.setup();
+    const rule = testPersonRule({
+      kind: "ingredient",
+      target: "liver",
+      severity: "prefer_avoid",
+    });
+    mockedApi.mockResolvedValue(undefined);
+    render(<PersonPage person={testPerson({ displayName: "Child B" })} rules={[rule]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove Liver" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/removed liver/i);
+
+    mockedApi.mockResolvedValue(rule);
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    const undoCall = mockedApi.mock.calls.at(-1);
+    expect(undoCall?.[1]?.method).toBe("POST");
+    expect(JSON.parse(String(undoCall?.[1]?.body))).toMatchObject({
+      kind: "ingredient",
+      target: "liver",
+      confirmUnknown: true,
+    });
+  });
+
   it("switches people from the household row", () => {
     const current = testPerson({ displayName: "Ty" });
     const jake = testPerson({

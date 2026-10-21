@@ -546,6 +546,27 @@ describe("checkIngredientsAgainstRules", () => {
     expect(
       checkIngredientAgainstRule({ name: "1 tsp cayenne" }, createContext("Test Adult 7", rule))
     ).toHaveLength(1);
+    expect(
+      checkIngredientAgainstRule({ name: "1 tsp chipotle" }, createContext("Test Adult 7", rule))
+    ).toHaveLength(1);
+    expect(
+      checkIngredientAgainstRule({ name: "hot water" }, createContext("Test Adult 7", rule))
+    ).toHaveLength(0);
+    expect(
+      checkIngredientAgainstRule({ name: "hot dog buns" }, createContext("Test Adult 7", rule))
+    ).toHaveLength(0);
+    expect(
+      checkIngredientAgainstRule(
+        { name: "1 tsp pumpkin pie spice" },
+        createContext("Test Adult 7", rule)
+      )
+    ).toHaveLength(0);
+    expect(
+      checkIngredientAgainstRule(
+        { name: "2 tbsp sweet chili sauce" },
+        createContext("Test Adult 7", rule)
+      )
+    ).toHaveLength(0);
   });
 
   describe("deterministic behavior", () => {

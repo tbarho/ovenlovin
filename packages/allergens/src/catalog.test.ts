@@ -165,8 +165,20 @@ describe("matchPhrasesForTarget", () => {
   it("matches heat ingredients for a spicy dislike", () => {
     const phrases = matchPhrasesForTarget("spicy", "tag");
     expect(phrases).toEqual(
-      expect.arrayContaining(["spicy", "cayenne", "chile", "chili", "jalapeno", "hot sauce"])
+      expect.arrayContaining([
+        "spicy",
+        "cayenne",
+        "chile",
+        "chili",
+        "jalapeno",
+        "hot sauce",
+        "chipotle",
+        "harissa",
+        "sambal",
+      ])
     );
+    expect(phrases).not.toContain("hot");
+    expect(phrases).not.toContain("spice");
   });
 });
 

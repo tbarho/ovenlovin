@@ -83,7 +83,8 @@ export async function PATCH(
     if (canonical.ambiguous?.length) {
       throw new BadRequestError(ambiguousRuleTargetMessage(nextTarget, canonical.ambiguous));
     }
-    if (!canonical.resolved && !confirmUnknown) {
+    const identityChanged = nextKind !== existingRule.kind || nextTarget !== existingRule.target;
+    if (identityChanged && !canonical.resolved && !confirmUnknown) {
       throw new BadRequestError(unknownRuleTargetMessage(nextTarget, nextKind));
     }
     const rest = { ...body };

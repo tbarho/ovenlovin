@@ -341,7 +341,7 @@ export const dislikeCatalog: CatalogEntry[] = [
     name: "Spicy food",
     phraseName: "spicy food",
     group: "ingredient",
-    aliases: ["spice", "hot"],
+    aliases: [],
     matchPhrases: [
       "cayenne",
       "chile",
@@ -364,6 +364,9 @@ export const dislikeCatalog: CatalogEntry[] = [
       "chile flake",
       "red pepper flake",
       "crushed red pepper",
+      "chipotle",
+      "harissa",
+      "sambal",
     ],
   },
 ];
