@@ -1,3 +1,11 @@
+import {
+  IMPORT_BLOCKED_MESSAGE,
+  IMPORT_NOT_A_RECIPE_MESSAGE,
+  IMPORT_PAGE_GONE_MESSAGE,
+  IMPORT_UNSUPPORTED_SITE_MESSAGE,
+  classifyImportFailure,
+} from "@ovenlovin/core/import-ai-unavailable";
+
 const EXAMPLE_HOSTS = new Set(["example.com", "example.org", "example.net", "example.edu"]);
 
 export function looksLikeHttpUrl(value: string): boolean {
@@ -31,21 +39,18 @@ export function importInputError(source: "url" | "paste", content: string): stri
   return null;
 }
 
-export const BLOCKED_IMPORT_COPY = "That site would not let us read its recipe.";
-export const NOT_A_RECIPE_COPY = "This is not a recipe page.";
-export const PAGE_GONE_COPY = "That page is gone.";
-export const UNSUPPORTED_SITE_COPY =
-  "We can't import from this site. Paste the text or add a photo.";
+export const BLOCKED_IMPORT_COPY = IMPORT_BLOCKED_MESSAGE;
+export const NOT_A_RECIPE_COPY = IMPORT_NOT_A_RECIPE_MESSAGE;
+export const PAGE_GONE_COPY = IMPORT_PAGE_GONE_MESSAGE;
+export const UNSUPPORTED_SITE_COPY = IMPORT_UNSUPPORTED_SITE_MESSAGE;
 
 export function isBlockedImportError(message: string | null | undefined): boolean {
   if (!message) return false;
-  return /blocked the importer/i.test(message) || message === BLOCKED_IMPORT_COPY;
+  return /blocked the importer/i.test(message);
 }
 
 export function displayImportFailure(message: string): string {
-  if (isBlockedImportError(message)) return BLOCKED_IMPORT_COPY;
-  if (message === "No recipe found on this page.") return NOT_A_RECIPE_COPY;
-  return message;
+  return classifyImportFailure(new Error(message))?.message ?? message;
 }
 
 export function importGuessedNotice(title: string, servings: number | null): string {

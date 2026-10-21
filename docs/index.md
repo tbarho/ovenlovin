@@ -141,7 +141,7 @@ Each household member can have custom dietary rules with three severity levels:
 
 - **block** - Recipe is unsafe for this person (hard allergen)
 - **warn** - Recipe should be flagged for review (possible cross-contamination)
-- **prefer-avoid** - Recipe is not preferred but not dangerous (dietary preference)
+- **prefer_avoid** - Recipe is not preferred but not dangerous (dietary preference)
 
 ### Rule Types
 

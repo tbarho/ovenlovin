@@ -1,19 +1,14 @@
 import { NextRequest } from "next/server";
-import {
-  createPasteImporter,
-  createUrlImporter,
-  RecipeImportFetchError,
-  RecipeNotFoundError,
-  RecipePageGoneError,
-  RecipeUnsupportedSiteError,
-} from "@ovenlovin/importers";
+import { createPasteImporter, createUrlImporter } from "@ovenlovin/importers";
 import {
   copyRemoteImages,
   draftFromSavedPreview,
+  importRecipeBodySchema,
   keepMainRecipeImages,
   prepareImportDraft,
   RecipeService,
 } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
@@ -52,15 +47,7 @@ export async function POST(request: NextRequest) {
       requireUserId(context);
     }
 
-    const body = (await request.json()) as {
-      source?: string;
-      content?: string;
-      save?: boolean | string;
-      draft?: unknown;
-    };
-    if (body.source !== "url" && body.source !== "paste") {
-      throw new BadRequestError("Provide source (url or paste) and content");
-    }
+    const body = await readJsonBody(request, importRecipeBodySchema);
 
     const idempotencyKey = getIdempotencyKey(request);
     const savedDraft =
@@ -152,14 +139,6 @@ export async function POST(request: NextRequest) {
     }
     return createdResponse(presented, `/api/v1/recipes/${recipe.id}`);
   } catch (error) {
-    if (
-      error instanceof RecipeImportFetchError ||
-      error instanceof RecipeNotFoundError ||
-      error instanceof RecipePageGoneError ||
-      error instanceof RecipeUnsupportedSiteError
-    ) {
-      return handleApiError(new BadRequestError(error.message), request.url);
-    }
     return handleApiError(error, request.url);
   }
 }

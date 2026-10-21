@@ -42,8 +42,12 @@ describe("import input", () => {
     );
     expect(displayImportFailure("No recipe found on this page.")).toBe(NOT_A_RECIPE_COPY);
     expect(displayImportFailure("We couldn't find a recipe in that text/photo")).toBe(
-      "We couldn't find a recipe in that text/photo"
+      NOT_A_RECIPE_COPY
     );
+    expect(displayImportFailure("This is not a recipe page.")).toBe(NOT_A_RECIPE_COPY);
+    expect(NOT_A_RECIPE_COPY).toMatch(/Paste the recipe text or add a photo/);
+    expect(BLOCKED_IMPORT_COPY).toMatch(/Paste the recipe text or add a photo/);
+    expect(PAGE_GONE_COPY).toMatch(/Paste the recipe text or add a photo/);
     expect(displayImportFailure(PAGE_GONE_COPY)).toBe(PAGE_GONE_COPY);
     expect(displayImportFailure(UNSUPPORTED_SITE_COPY)).toBe(UNSUPPORTED_SITE_COPY);
   });

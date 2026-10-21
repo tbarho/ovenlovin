@@ -119,18 +119,19 @@ export function PersonPage({
       treatCoconutAsTreeNut: showsCoconutToggle(entry.code) ? extras.coconut : false,
       label: entry.name,
     });
+    const body = {
+      ...payload,
+      confirmUnknown: !findCatalogEntry(entry.code),
+    };
     if (extras.existing) {
       return api<PersonRule>(`/api/v1/people/${person.id}/rules/${extras.existing.id}`, {
         method: "PATCH",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
     }
     return api<PersonRule>(`/api/v1/people/${person.id}/rules`, {
       method: "POST",
-      body: JSON.stringify({
-        ...payload,
-        confirmUnknown: !findCatalogEntry(entry.code),
-      }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -245,6 +246,7 @@ export function PersonPage({
           treatCoconutAsTreeNut: rule.treatCoconutAsTreeNut,
           label: rule.label,
           note: rule.note,
+          confirmUnknown: !findCatalogEntry(rule.target),
         }),
       });
       setRules((current) => [restored, ...current.filter((item) => item.id !== restored.id)]);

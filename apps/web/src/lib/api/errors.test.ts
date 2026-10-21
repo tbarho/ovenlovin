@@ -3,8 +3,12 @@ import { HouseholdAccessError, InvalidImageUrlError } from "@ovenlovin/core";
 import {
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  IMPORT_BLOCKED_CODE,
+  IMPORT_BLOCKED_MESSAGE,
   IMPORT_NOT_A_RECIPE_CODE,
   IMPORT_NOT_A_RECIPE_MESSAGE,
+  IMPORT_PAGE_GONE_CODE,
+  IMPORT_PAGE_GONE_MESSAGE,
   tagImportAiTimeout,
 } from "@ovenlovin/core";
 import {
@@ -32,6 +36,18 @@ describe("handleApiError", () => {
       code: "write_rate",
       resetAt: "2026-10-14T01:00:00.000Z",
       retryAfter: 1800,
+    });
+  });
+
+  it("maps a JSON parse failure to 400, not 500", async () => {
+    const response = handleApiError(
+      new SyntaxError("Unexpected end of JSON input"),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes"
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      title: "Bad Request",
+      detail: "Request body must be JSON",
     });
   });
 
@@ -167,6 +183,43 @@ describe("handleApiError", () => {
     warn.mockRestore();
     expect(gateway.status).toBe(503);
     expect(gateway.headers.get("retry-after")).toBe("60");
+  });
+
+  it("maps a checkpoint, 404, and not-a-recipe to stable codes", async () => {
+    const blocked = handleApiError(
+      Object.assign(new Error("This site blocked the importer."), {
+        name: "RecipeImportFetchError",
+      }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    expect(blocked.status).toBe(400);
+    expect(await blocked.json()).toMatchObject({
+      code: IMPORT_BLOCKED_CODE,
+      detail: IMPORT_BLOCKED_MESSAGE,
+    });
+
+    const gone = handleApiError(
+      Object.assign(new Error("That page is gone."), { name: "RecipePageGoneError" }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    expect(gone.status).toBe(400);
+    expect(await gone.json()).toMatchObject({
+      code: IMPORT_PAGE_GONE_CODE,
+      detail: IMPORT_PAGE_GONE_MESSAGE,
+    });
+
+    const notRecipe = handleApiError(
+      Object.assign(new Error("This is not a recipe page."), { name: "RecipeNotFoundError" }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    expect(notRecipe.status).toBe(400);
+    expect(await notRecipe.json()).toMatchObject({
+      code: IMPORT_NOT_A_RECIPE_CODE,
+      detail: IMPORT_NOT_A_RECIPE_MESSAGE,
+    });
+    expect(IMPORT_BLOCKED_MESSAGE).toMatch(/Paste the recipe text or add a photo/);
+    expect(IMPORT_PAGE_GONE_MESSAGE).toMatch(/Paste the recipe text or add a photo/);
+    expect(IMPORT_NOT_A_RECIPE_MESSAGE).toMatch(/Paste the recipe text or add a photo/);
   });
 
   it("maps a schema-miss to not-a-recipe, not busy", async () => {

@@ -42,6 +42,10 @@ export const updateHouseholdNameSchema = z.object({
   name: z.string().trim().min(1).max(255),
 });
 
+export const replaceScheduleBodySchema = z.object({
+  week: z.array(z.unknown()).max(14),
+});
+
 export const userSchema = baseEntitySchema.extend({
   clerkUserId: z.string().max(255),
   email: z.string().email().max(255),

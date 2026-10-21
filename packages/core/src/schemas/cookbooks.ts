@@ -28,6 +28,23 @@ export const cookbookRecipeSchema = baseEntitySchema.extend({
   order: z.number().int().nonnegative().nullable().optional(),
 });
 
+export const createCookbookBodySchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  description: z.string().max(10_000).nullable().optional(),
+});
+
+export const updateCookbookBodySchema = z
+  .object({
+    name: z.string().trim().min(1).max(255).optional(),
+    description: z.string().max(10_000).nullable().optional(),
+    sortOrder: z.number().int().nonnegative().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, { message: "Request body cannot be empty" });
+
+export const addCookbookRecipeBodySchema = z.object({
+  recipeId: uuidSchema,
+});
+
 export type Cookbook = z.infer<typeof cookbookSchema>;
 export type CookbookSummary = z.infer<typeof cookbookSummarySchema>;
 export type CookbookCard = z.infer<typeof cookbookCardSchema>;

@@ -7,7 +7,8 @@ import {
   requireWritableHousehold,
   getIdempotencyKey,
 } from "@/lib/api/middleware";
-import { PeopleService } from "@ovenlovin/core";
+import { createPersonBodySchema, PeopleService } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 
 export async function GET(request: NextRequest) {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     const householdId = requireWritableHousehold(context);
     const idempotencyKey = getIdempotencyKey(request);
 
-    const body = await request.json();
+    const body = await readJsonBody(request, createPersonBodySchema);
 
     const db = getDatabase();
     const service = new PeopleService(db);
@@ -47,9 +48,14 @@ export async function POST(request: NextRequest) {
     const createdBy = context.userId || context.clientId || "system";
 
     const person = await service.createPerson({
-      ...body,
       householdId,
       createdBy,
+      displayName: body.displayName,
+      notes: body.notes ?? null,
+      birthYear: body.birthYear,
+      birthMonth: body.birthMonth,
+      sex: body.sex,
+      activityProfile: body.activityProfile,
     });
 
     return createdResponse(person, `/api/v1/people/${person.id}`);

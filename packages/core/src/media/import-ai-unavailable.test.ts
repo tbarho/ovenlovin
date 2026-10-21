@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  IMPORT_BLOCKED_CODE,
+  IMPORT_BLOCKED_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
+  IMPORT_NOT_A_RECIPE_MESSAGE,
+  IMPORT_PAGE_GONE_CODE,
+  IMPORT_PAGE_GONE_MESSAGE,
+  classifyImportFailure,
   importAiUnavailableMeta,
   isImportAiNotARecipe,
   isImportAiUnavailable,
@@ -68,6 +75,36 @@ describe("importAiUnavailableMeta", () => {
         Object.assign(new Error("Bad request"), { name: "AI_APICallError", statusCode: 400 })
       )
     ).toBe(false);
+  });
+
+  it("classifies checkpoint, 404, and not-a-recipe with paste or photo", () => {
+    const blocked = classifyImportFailure(
+      Object.assign(new Error("This site blocked the importer."), {
+        name: "RecipeImportFetchError",
+      })
+    );
+    expect(blocked).toEqual({ code: IMPORT_BLOCKED_CODE, message: IMPORT_BLOCKED_MESSAGE });
+    expect(blocked?.message).toMatch(/Paste the recipe text or add a photo/);
+
+    const gone = classifyImportFailure(
+      Object.assign(new Error("That page is gone."), { name: "RecipePageGoneError" })
+    );
+    expect(gone).toEqual({ code: IMPORT_PAGE_GONE_CODE, message: IMPORT_PAGE_GONE_MESSAGE });
+    expect(gone?.message).toMatch(/Paste the recipe text or add a photo/);
+
+    const notRecipe = classifyImportFailure(
+      Object.assign(new Error("This is not a recipe page."), { name: "RecipeNotFoundError" })
+    );
+    expect(notRecipe).toEqual({
+      code: IMPORT_NOT_A_RECIPE_CODE,
+      message: IMPORT_NOT_A_RECIPE_MESSAGE,
+    });
+    expect(notRecipe?.message).toMatch(/Paste the recipe text or add a photo/);
+    expect(
+      classifyImportFailure(
+        Object.assign(new Error("No object generated"), { name: "AI_NoObjectGeneratedError" })
+      )?.code
+    ).toBe(IMPORT_NOT_A_RECIPE_CODE);
   });
 
   it("tags a timeout nested under an AI call error", () => {

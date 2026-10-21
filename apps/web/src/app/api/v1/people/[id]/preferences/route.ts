@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
-import { handleApiError, BadRequestError } from "@/lib/api/errors";
+import { handleApiError } from "@/lib/api/errors";
 import { jsonResponse, createdResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
-import { PeopleService } from "@ovenlovin/core";
+import { createPreferenceBodySchema, PeopleService } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { assertPersonHousehold } from "@/lib/api/people";
 
@@ -34,13 +35,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const householdId = requireHouseholdId(context);
 
     const { id: personId } = await params;
-    const body = (await request.json()) as { type?: string; value?: string; weight?: number };
-
-    const type = body.type?.trim() || "love";
-    const value = body.value?.trim() ?? "";
-    if (!value) {
-      throw new BadRequestError("Provide a value such as salmon, Mexican, or spicy.");
-    }
+    const body = await readJsonBody(request, createPreferenceBodySchema);
+    const type = body.type ?? "love";
+    const value = body.value;
 
     const db = getDatabase();
     const service = new PeopleService(db);

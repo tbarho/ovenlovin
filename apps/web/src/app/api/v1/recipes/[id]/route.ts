@@ -10,8 +10,9 @@ import {
   assertAllowedRecipeImageUrls,
   parseRecipeImages,
   RecipeService,
-  type RecipeContentUpdate,
+  updateRecipeBodySchema,
 } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { assertRecipeHousehold } from "@/lib/api/recipes";
 import { loadKitchenServingsSettings, presentRecipeForKitchen } from "@/lib/kitchen-servings";
@@ -41,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const context = await getRequestContext(request);
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
-    const body = (await request.json()) as RecipeContentUpdate;
+    const body = await readJsonBody(request, updateRecipeBodySchema);
     if (body.images !== undefined) {
       body.images = parseRecipeImages(body.images);
       assertAllowedRecipeImageUrls(body.images);

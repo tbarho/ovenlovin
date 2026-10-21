@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { CookbookService, RecipeService, updateCookbookBodySchema } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
@@ -46,11 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     await loadOwnedCookbook(id, householdId);
-    const body = (await request.json()) as {
-      name?: string;
-      description?: string | null;
-      sortOrder?: number;
-    };
+    const body = await readJsonBody(request, updateCookbookBodySchema);
 
     const updated = await new CookbookService(getDatabase()).updateCookbook(id, body);
     if (!updated) throw new NotFoundError("Cookbook", id);

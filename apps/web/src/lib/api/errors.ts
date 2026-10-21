@@ -2,13 +2,11 @@ import {
   HouseholdAccessError,
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
-  IMPORT_NOT_A_RECIPE_CODE,
-  IMPORT_NOT_A_RECIPE_MESSAGE,
+  classifyImportFailure,
   INVALID_IMAGE_URL_CODE,
   INVALID_IMAGE_URL_MESSAGE,
   InvalidImageUrlError,
   importAiUnavailableMeta,
-  isImportAiNotARecipe,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
 import { NextResponse } from "next/server";
@@ -240,6 +238,10 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
     return ValidationError.fromZodError(error).toResponse(instance);
   }
 
+  if (error instanceof SyntaxError) {
+    return new BadRequestError("Request body must be JSON").toResponse(instance);
+  }
+
   if (error instanceof InvalidImageUrlError) {
     return new BadRequestError(error.message, { code: error.code }).toResponse(instance);
   }
@@ -255,9 +257,10 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
     return new UnauthorizedError("Authentication required").toResponse(instance);
   }
 
-  if (isImportAiNotARecipe(error)) {
-    return new BadRequestError(IMPORT_NOT_A_RECIPE_MESSAGE, {
-      code: IMPORT_NOT_A_RECIPE_CODE,
+  const importFailure = classifyImportFailure(error);
+  if (importFailure) {
+    return new BadRequestError(importFailure.message, {
+      code: importFailure.code,
     }).toResponse(instance);
   }
 

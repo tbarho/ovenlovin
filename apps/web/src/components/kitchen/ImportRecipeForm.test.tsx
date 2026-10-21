@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
+import { BLOCKED_IMPORT_COPY, NOT_A_RECIPE_COPY, PAGE_GONE_COPY } from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_TIMEOUT_MESSAGE,
@@ -368,7 +369,7 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://example.com/chocolate-chip-cookies"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByText("This is not a recipe page.")).toBeVisible();
+    expect(screen.getByText(NOT_A_RECIPE_COPY)).toBeVisible();
     expect(document.querySelector(".import-error")?.textContent).not.toMatch(/blocked/i);
     expect(api).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
@@ -382,7 +383,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     await user.click(screen.getByRole("tab", { name: "Paste" }));
     await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "lorem ipsum");
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(await screen.findByText("We couldn't find a recipe in that text/photo")).toBeVisible();
+    expect(await screen.findByText(NOT_A_RECIPE_COPY)).toBeVisible();
     expect(screen.queryByText(/busy right now/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
@@ -397,7 +398,7 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://www.foodnetwork.com/recipes/old"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(await screen.findByText("That page is gone.")).toBeVisible();
+    expect(await screen.findByText(PAGE_GONE_COPY)).toBeVisible();
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
@@ -427,10 +428,8 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://www.budgetbytes.com/beef-stroganoff/"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(await screen.findByText("That site would not let us read its recipe.")).toBeVisible();
-    expect(screen.getByText("That site would not let us read its recipe.")).not.toHaveTextContent(
-      /bookmarklet/i
-    );
+    expect(await screen.findByText(BLOCKED_IMPORT_COPY)).toBeVisible();
+    expect(screen.getByText(BLOCKED_IMPORT_COPY)).not.toHaveTextContent(/bookmarklet/i);
     const pasteHelp = screen.getByRole("button", { name: "Paste the recipe text" });
     const photoHelp = screen.getByRole("button", { name: "Add a photo" });
     expect(pasteHelp.compareDocumentPosition(photoHelp) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
@@ -439,9 +438,7 @@ describe("ImportRecipeForm url and paste validation", () => {
 
     await user.click(pasteHelp);
     expect(screen.getByRole("tab", { name: "Paste" })).toHaveAttribute("aria-selected", "true");
-    expect(
-      screen.queryByText("That site would not let us read its recipe.")
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(BLOCKED_IMPORT_COPY)).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "URL" }));
     expect(screen.getByPlaceholderText(/example.com/i)).toHaveValue(
       "https://www.budgetbytes.com/beef-stroganoff/"

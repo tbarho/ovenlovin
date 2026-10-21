@@ -20,7 +20,7 @@ Open-source recipe box and meal planner for families and their agents. Per-perso
 
 - **Recipes & cookbooks** - import a URL or paste, file dishes in cookbooks, cook from a photo-first shelf
 - **People & rules** - Can't eat / Doesn't like / Loves, set by the household. Loves never hide a recipe
-- **Who can eat this** - named per-person findings on every dish (`block` / `warn` / `prefer-avoid`)
+- **Who can eat this** - named per-person findings on every dish (`block` / `warn` / `prefer_avoid`)
 - **Meal plan & list** - week view and shopping list, with the same per-person warnings
 - **Agents** - REST `/api/v1` (API key or Clerk), MCP Streamable HTTP at `/mcp`, OpenAPI, `/llms.txt`
 - **Auth & data** - Clerk organizations as households, Neon Postgres + Drizzle, Vercel Blob, Vercel AI Gateway

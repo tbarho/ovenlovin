@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { handleApiError, NotFoundError, BadRequestError } from "@/lib/api/errors";
+import { readJsonBody } from "@/lib/api/read-json";
 import { jsonResponse } from "@/lib/api/response";
 import {
   getRequestContext,
@@ -67,8 +69,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const recipe = await service.getRecipe(id);
     assertRecipeHousehold(recipe, householdId, id);
 
-    const body = (await request.json()) as { image?: string };
-    const image = body.image?.trim() ?? "";
+    const body = await readJsonBody(request, z.object({ image: z.string().min(1) }));
+    const image = body.image.trim();
     if (!isInlineImageDataUrl(image)) {
       throw new BadRequestError("Provide a compressed image data URL");
     }
