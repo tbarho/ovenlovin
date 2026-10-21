@@ -11,6 +11,7 @@ import {
   parseShoppingTripState,
   planEntriesForWeek,
   resolveIncludeStaples,
+  weekCookFor,
   type ShoppingListGroupBy,
 } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
@@ -85,7 +86,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       entries: sources,
       groupBy,
       includeStaples,
-      defaultCookFor: servingsSettings.defaultCookFor,
+      defaultCookFor: weekCookFor({
+        planCookFor: plan.cookFor,
+        householdCookFor: servingsSettings.defaultCookFor,
+      }),
       mode: servingsSettings.mode,
     });
 

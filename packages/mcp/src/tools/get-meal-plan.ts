@@ -23,6 +23,7 @@ export type GetMealPlanInput = z.infer<typeof getMealPlanSchema>;
 export interface GetMealPlanOutput {
   id: string;
   weekStart: string;
+  cookFor: number | null;
   status: "draft" | "approved" | "archived";
   entries: Array<{
     date: string;
@@ -139,6 +140,7 @@ async function handler(input: GetMealPlanInput, context: AuthContext): Promise<G
   return {
     id: plan.id,
     weekStart: plan.weekStart,
+    cookFor: plan.cookFor ?? null,
     status: plan.status,
     entries: enrichedEntries,
     checkReport,

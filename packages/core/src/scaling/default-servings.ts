@@ -71,14 +71,32 @@ export function planEntryServings(input: {
   const yieldServings = recipeYieldServings(input.recipeServings);
   const cookFor = clampServings(input.cookFor);
   if (input.mode === "recipe") return clampServings(yieldServings);
-  if (input.mode === "fixed") return cookFor;
-  return clampServings(Math.max(yieldServings, cookFor));
+  return cookFor;
+}
+
+/** Week cook-for: the plan's stored value, else the household default. */
+export function weekCookFor(input: {
+  planCookFor?: number | null;
+  householdCookFor: number;
+}): number {
+  if (input.planCookFor && input.planCookFor > 0) return clampServings(input.planCookFor);
+  return clampServings(input.householdCookFor);
+}
+
+/** When every night agrees, that count can seed a new plan's cook-for. */
+export function agreedEntryCookFor(servings: Array<number | null | undefined>): number | null {
+  const values = servings
+    .filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0)
+    .map((n) => Math.round(n));
+  const first = values[0];
+  if (first == null) return null;
+  return values.every((n) => n === first) ? clampServings(first) : null;
 }
 
 /**
  * Servings used for a plan card, recipe read, and shopping line.
  * Entry servings win; otherwise a stored scaleFactor other than 1; otherwise
- * recipe yield in recipe mode; otherwise max(yield, cook-for) in family mode.
+ * recipe yield in recipe mode; otherwise the week cook-for.
  */
 export function effectivePlanServings(input: {
   entryServings?: number | null;
@@ -94,8 +112,7 @@ export function effectivePlanServings(input: {
     return clampServings(input.scaleFactor * yieldServings);
   }
   if (input.mode === "recipe") return clampServings(yieldServings);
-  if (input.mode === "fixed") return clampServings(input.defaultCookFor);
-  return clampServings(Math.max(yieldServings, input.defaultCookFor));
+  return clampServings(input.defaultCookFor);
 }
 
 /**

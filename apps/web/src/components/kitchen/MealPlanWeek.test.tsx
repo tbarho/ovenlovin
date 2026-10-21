@@ -468,6 +468,7 @@ describe("MealPlanWeek", () => {
       body: JSON.stringify({
         weekStart: "2026-10-12",
         status: "draft",
+        cookFor: 4,
         entries: [
           {
             date: "2026-10-18",
@@ -531,20 +532,21 @@ describe("MealPlanWeek", () => {
   it("explains recipe yield when it differs from the cook-for count", () => {
     const six: WeekMeal = { ...pesto, servings: 6, recipeServings: 6 };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [six])} defaultServings={4} />);
-    expect(screen.getByText("6 servings")).toBeVisible();
+    expect(screen.getByText("Recipe makes 6 · cooking for 4")).toBeVisible();
     expect(screen.getByText("Scale shopping and portions for")).toBeVisible();
   });
 
-  it("lets the plan scale select go to 99 and follows the meals' actual scale", () => {
+  it("lets the plan scale select go to 99 and uses the stored week cook-for", () => {
     const seven: WeekMeal = { ...pesto, servings: 7, recipeServings: 4 };
-    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [seven])} defaultServings={4} />);
+    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [seven])} defaultServings={8} />);
     const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
-    expect(scale).toHaveValue("7");
+    expect(scale).toHaveValue("8");
+    expect(screen.getByText("Recipe makes 4 · cooking for 8")).toBeVisible();
     expect(screen.getByRole("option", { name: "99" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "100" })).not.toBeInTheDocument();
   });
 
-  it("uses household Default servings on a chili card when the entry has no servings", () => {
+  it("labels a larger-yield card with the week cook-for, not the recipe yield", () => {
     const chili: WeekMeal = {
       ...pesto,
       title: "Beef chili",
@@ -552,11 +554,11 @@ describe("MealPlanWeek", () => {
       recipeServings: 6,
     };
     render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [chili])} defaultServings={5} />);
-    expect(screen.getByText("6 servings")).toBeVisible();
-    expect(screen.queryByText("cooking for 5")).not.toBeInTheDocument();
+    expect(screen.getByText("Recipe makes 6 · cooking for 5")).toBeVisible();
+    expect(screen.queryByText("6 servings")).not.toBeInTheDocument();
   });
 
-  it("uses recipe yield on a card in recipe mode when the entry has no servings", () => {
+  it("still names the week cook-for in recipe mode so a reload cannot drift", () => {
     const chili: WeekMeal = {
       ...pesto,
       title: "Beef chili",
@@ -570,8 +572,7 @@ describe("MealPlanWeek", () => {
         defaultServingsMode="recipe"
       />
     );
-    expect(screen.getByText("6 servings")).toBeVisible();
-    expect(screen.queryByText("cooking for 4")).not.toBeInTheDocument();
+    expect(screen.getByText("Recipe makes 6 · cooking for 4")).toBeVisible();
   });
 
   it("creates a plan when Sunday is still empty", async () => {
@@ -591,6 +592,7 @@ describe("MealPlanWeek", () => {
       body: JSON.stringify({
         weekStart: "2026-10-12",
         status: "draft",
+        cookFor: 4,
         entries: [
           {
             date: "2026-10-18",
@@ -623,6 +625,7 @@ describe("MealPlanWeek", () => {
       body: JSON.stringify({
         weekStart: "2026-10-12",
         status: "draft",
+        cookFor: 8,
         entries: [
           {
             date: "2026-10-18",
@@ -759,5 +762,55 @@ describe("MealPlanWeek", () => {
     expect(posts).toHaveLength(2);
     expect(JSON.parse(String(posts[0]?.[1]?.body)).weekStart).toBe("2026-10-12");
     expect(JSON.parse(String(posts[1]?.[1]?.body)).weekStart).toBe("2026-10-19");
+  });
+
+  it("keeps a 48-serving recipe on the week cook-for, including after picking 8 on an empty week", async () => {
+    const user = userEvent.setup();
+    const batch: PlanRecipePick = {
+      id: "recipe-batch",
+      title: "Test Recipe 7A",
+      image: null,
+      servings: 48,
+      cookTimeMinutes: 20,
+      prepTimeMinutes: 10,
+      safety: "ok",
+      warning: null,
+    };
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={[...recipes, batch]}
+        defaultServings={5}
+        defaultServingsMode="family"
+      />
+    );
+
+    const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
+    expect(scale).toHaveValue("5");
+    await user.selectOptions(scale, "8");
+    expect(scale).toHaveValue("8");
+
+    await user.click(screen.getByRole("button", { name: /monday/i }));
+    await user.click(screen.getByRole("button", { name: /test recipe 7a/i }));
+    expect(api).toHaveBeenCalledWith("/api/v1/meal-plans", {
+      method: "POST",
+      body: JSON.stringify({
+        weekStart: "2026-10-12",
+        status: "draft",
+        cookFor: 8,
+        entries: [
+          {
+            date: "2026-10-12",
+            meal: "dinner",
+            recipeId: "recipe-batch",
+            servings: 8,
+            attendees: [],
+          },
+        ],
+      }),
+    });
+    expect(screen.getByText("Recipe makes 48 · cooking for 8")).toBeVisible();
+    expect(screen.queryByText("48 servings")).not.toBeInTheDocument();
   });
 });

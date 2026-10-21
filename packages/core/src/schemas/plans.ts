@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SERVINGS_HARD_MAX } from "./households";
 import { baseEntitySchema, createdBySchema, uuidSchema } from "./common";
 import { shoppingTripStateSchema } from "./shopping-trip";
 
@@ -36,6 +37,7 @@ export const mealPlanStatusSchema = z.enum(["draft", "approved", "archived"]);
 export const mealPlanSchema = baseEntitySchema.merge(createdBySchema).extend({
   householdId: uuidSchema,
   weekStart: z.string().date(),
+  cookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX).nullable().optional(),
   status: mealPlanStatusSchema.default("draft"),
   generator: z.string().max(255).nullable().optional(),
   generatorModel: z.string().max(100).nullable().optional(),
@@ -95,6 +97,7 @@ export const mealPlanEntryPatchSchema = z
 export const createMealPlanBodySchema = z
   .object({
     weekStart: z.string().date(),
+    cookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional(),
     status: z.enum(["draft", "approved"]).optional(),
     entries: z.array(mealPlanEntryWriteSchema).max(50).optional(),
   })
@@ -103,6 +106,7 @@ export const createMealPlanBodySchema = z
 export const updateMealPlanBodySchema = z
   .object({
     status: mealPlanStatusSchema.optional(),
+    cookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional(),
     acknowledgedWarnings: z.array(z.string().max(500)).max(100).optional(),
     entries: z.array(mealPlanEntryPatchSchema).max(50).optional(),
     entriesMode: z

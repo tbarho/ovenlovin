@@ -71,8 +71,8 @@ describe("servingsScale", () => {
     expect(servingsScale(undefined, null, 1)).toBe(1);
   });
 
-  it("uses the larger of recipe yield and cook-for when the entry has no servings", () => {
-    expect(servingsScale(null, 6, 1, 5)).toBe(1);
+  it("scales to the week cook-for when the entry has no servings", () => {
+    expect(servingsScale(null, 6, 1, 5)).toBe(0.8333);
   });
 
   it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
@@ -528,39 +528,39 @@ describe("ShoppingListService", () => {
     expect(JSON.parse(service.exportAsJSON(list)).ingredients[0].displayUnit).toBe("cloves");
   });
 
-  it("totals a yield-sized chili night with an explicit smaller cook-for night", () => {
+  it("scales every night to the week cook-for, even a 48-serving recipe stored as 48", () => {
     const list = build(
       [
         {
-          entry: entry({ recipeId: "chili", servings: null, scaleFactor: 1 }),
-          recipeTitle: "Beef chili",
-          recipeServings: 6,
-          ingredients: [{ rawText: "1 lb ground beef" }],
+          entry: entry({ recipeId: "batch", servings: 48, scaleFactor: 1 }),
+          recipeTitle: "Test Recipe 7A",
+          recipeServings: 48,
+          ingredients: [{ rawText: "1 cup butter" }, { rawText: "6 eggs" }],
         },
         {
-          entry: entry({ id: "entry-2", recipeId: "chili", servings: 5, scaleFactor: 1 }),
-          recipeTitle: "Beef chili",
-          recipeServings: 6,
-          ingredients: [{ rawText: "1 lb ground beef" }],
+          entry: entry({ id: "entry-2", recipeId: "tacos", servings: 8, scaleFactor: 1 }),
+          recipeTitle: "Veggie tacos",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 tbsp olive oil" }],
         },
       ],
-      { defaultCookFor: 5 }
+      { defaultCookFor: 8, includeStaples: true }
     );
 
-    expect(list.ingredients[0]).toMatchObject({
-      name: "ground beef",
-      displayQuantity: "2",
-      displayUnit: "lbs",
+    expect(list.scaledFor).toBe(8);
+    expect(list.scaledForMixed).toBe(false);
+    expect(list.ingredients.find((item) => item.name === "butter")).toMatchObject({
+      displayQuantity: "2 3/4",
+      displayUnit: "tbsp",
     });
-    expect(list.scaledFor).toBe(5);
-    expect(list.scaledForMixed).toBe(true);
-    expect(service.exportAsMarkdown(list)).toContain(
-      "For 5 people (some recipes scaled differently)"
-    );
-    expect(service.exportAsMarkdown(list)).toContain("2 lbs ground beef");
+    expect(list.ingredients.find((item) => item.name === "egg")?.quantity).toBeGreaterThan(0);
+    expect(list.ingredients.find((item) => item.name === "egg")?.quantity).toBeLessThan(6);
+    expect(service.exportAsMarkdown(list)).toContain("For 8 people");
+    expect(service.exportAsMarkdown(list)).not.toContain("some recipes scaled differently");
+    expect(service.exportAsMarkdown(list)).not.toContain("For 5 people");
   });
 
-  it("names the heading from the plan's actual scale, not the household default", () => {
+  it("names the heading from the week cook-for, not a leftover per-night servings stamp", () => {
     const list = build(
       [
         {
@@ -570,12 +570,17 @@ describe("ShoppingListService", () => {
           ingredients: [{ rawText: "1 lb chicken" }],
         },
       ],
-      { defaultCookFor: 4 }
+      { defaultCookFor: 8 }
     );
-    expect(list.scaledFor).toBe(7);
+    expect(list.scaledFor).toBe(8);
     expect(list.scaledForMixed).toBe(false);
-    expect(service.exportAsMarkdown(list)).toContain("For 7 people");
-    expect(service.exportAsMarkdown(list)).not.toContain("For 4 people");
+    expect(list.ingredients[0]).toMatchObject({
+      name: "chicken",
+      displayQuantity: "2",
+      displayUnit: "lbs",
+    });
+    expect(service.exportAsMarkdown(list)).toContain("For 8 people");
+    expect(service.exportAsMarkdown(list)).not.toContain("For 7 people");
   });
 
   it("does not print 0 tsp when a 48-serving pinch of salt is cooked for 5", () => {

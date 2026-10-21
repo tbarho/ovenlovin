@@ -70,6 +70,7 @@ export class PlanService extends BaseService {
       .values({
         householdId: data.householdId,
         weekStart: data.weekStart,
+        cookFor: data.cookFor ?? null,
         status: data.status ?? "draft",
         generator: data.generator ?? null,
         generatorModel: data.generatorModel ?? null,
@@ -450,6 +451,7 @@ export class PlanService extends BaseService {
       createdBy: row.createdBy,
       householdId: row.householdId,
       weekStart: row.weekStart ?? "",
+      cookFor: row.cookFor ?? null,
       status: row.status,
       generator: row.generator ?? null,
       generatorModel: row.generatorModel ?? null,

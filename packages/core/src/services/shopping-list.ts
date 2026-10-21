@@ -274,14 +274,18 @@ export class ShoppingListService {
     const includeStaples = resolveIncludeStaples(input);
     const ingredientMap = new Map<string, ShoppingListIngredient>();
 
+    const cookFor = input.defaultCookFor && input.defaultCookFor > 0 ? input.defaultCookFor : null;
+
     for (const source of input.entries) {
-      const scale = scaleFactorForPlanEntry(
-        source.entry.servings,
-        source.recipeServings,
-        source.entry.scaleFactor,
-        input.defaultCookFor,
-        input.mode
-      );
+      const scale = cookFor
+        ? scaleFactorForPlanEntry(cookFor, source.recipeServings, null, cookFor, "fixed")
+        : scaleFactorForPlanEntry(
+            source.entry.servings,
+            source.recipeServings,
+            source.entry.scaleFactor,
+            input.defaultCookFor,
+            input.mode
+          );
       const recipeId = source.entry.recipeId ?? "";
       const recipeTitle = source.recipeTitle || "Unknown Recipe";
       const recipeKey = groupBy === "recipe" ? recipeId : "";
@@ -378,8 +382,10 @@ export class ShoppingListService {
           scaleFactor: source.entry.scaleFactor,
         })
       );
-    const listScale = planListScale(entryScales, input.defaultCookFor ?? 0);
-    const hasCookFor = Boolean(input.defaultCookFor && input.defaultCookFor > 0);
+    const listScale = cookFor
+      ? { scaledFor: cookFor, mixed: false }
+      : planListScale(entryScales, input.defaultCookFor ?? 0);
+    const hasCookFor = Boolean(cookFor);
 
     return {
       mealPlanId: input.mealPlanId,

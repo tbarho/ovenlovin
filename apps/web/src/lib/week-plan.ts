@@ -10,7 +10,7 @@ import {
   planEntriesForWeek,
   shopItemKey,
   weekDefaultServings,
-  effectivePlanServings,
+  weekCookFor,
   type DefaultServingsMode,
   type MealPlan,
   type MealPlanEntry,
@@ -284,12 +284,9 @@ export async function loadWeekKitchen(
       title: recipe?.title ?? entry.freeformMeal ?? "Untitled meal",
       href: recipe ? `/recipes/${recipe.id}` : null,
       image: recipe ? recipeMainImage(recipe.images) : null,
-      servings: effectivePlanServings({
-        entryServings: entry.servings,
-        defaultCookFor: servingsSettings.defaultCookFor,
-        mode: servingsSettings.mode,
-        recipeServings: recipe?.servings ?? null,
-        scaleFactor: entry.scaleFactor,
+      servings: weekCookFor({
+        planCookFor: plan.cookFor,
+        householdCookFor: servingsSettings.defaultCookFor,
       }),
       recipeServings: recipe?.servings ?? null,
       isNoCook,
@@ -314,7 +311,10 @@ export async function loadWeekKitchen(
         })),
       };
     }),
-    servingsSettings.defaultCookFor,
+    weekCookFor({
+      planCookFor: plan.cookFor,
+      householdCookFor: servingsSettings.defaultCookFor,
+    }),
     servingsSettings.mode
   );
 
@@ -357,7 +357,10 @@ export async function loadWeekKitchen(
       attendees: entry.attendees,
     })),
     recipes: recipePicks,
-    defaultServings: servingsSettings.defaultCookFor,
+    defaultServings: weekCookFor({
+      planCookFor: plan.cookFor,
+      householdCookFor: servingsSettings.defaultCookFor,
+    }),
     defaultServingsMode: servingsSettings.mode,
   };
 }

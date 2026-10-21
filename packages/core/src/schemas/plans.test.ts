@@ -30,10 +30,11 @@ describe("plans schemas", () => {
     const recipeId = "550e8400-e29b-41d4-a716-446655440010";
     const personId = "550e8400-e29b-41d4-a716-446655440011";
 
-    it("accepts weekStart, status, and entries", () => {
+    it("accepts weekStart, status, cookFor, and entries", () => {
       const body = createMealPlanBodySchema.parse({
         weekStart: "2026-11-02",
         status: "draft",
+        cookFor: 8,
         entries: [
           {
             date: "2026-11-02",
@@ -46,6 +47,7 @@ describe("plans schemas", () => {
       });
       expect(body.entries).toHaveLength(1);
       expect(body.entries?.[0]?.meal).toBe("dinner");
+      expect(body.cookFor).toBe(8);
     });
 
     it("rejects unknown fields instead of dropping them", () => {
@@ -58,12 +60,14 @@ describe("plans schemas", () => {
   });
 
   describe("updateMealPlanBodySchema", () => {
-    it("accepts entries and status", () => {
+    it("accepts entries, status, and cookFor", () => {
       const body = updateMealPlanBodySchema.parse({
         status: "approved",
+        cookFor: 8,
         entries: [{ date: "2026-11-03", meal: "lunch" }],
       });
       expect(body.status).toBe("approved");
+      expect(body.cookFor).toBe(8);
       expect(body.entries?.[0]?.attendees).toBeUndefined();
     });
 

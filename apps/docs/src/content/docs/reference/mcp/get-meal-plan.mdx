@@ -20,6 +20,7 @@ Get a saved meal plan with enriched recipe details, attendee information, and ch
 {
   id: string,
   weekStart: string,
+  cookFor: number | null,
   status: "draft" | "approved" | "archived",
   entries: Array<{
     date: string,

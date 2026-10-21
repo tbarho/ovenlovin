@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  agreedEntryCookFor,
   cookForPeopleLabel,
   planListScale,
   cookForServingsLabel,
@@ -12,6 +13,7 @@ import {
   recipeServingsPresentation,
   recipeYieldServings,
   scaledServingsNote,
+  weekCookFor,
   weekDefaultServings,
 } from "./default-servings";
 import type { RecipeDetails } from "../schemas/recipes";
@@ -73,9 +75,19 @@ describe("weekDefaultServings and planEntryServings", () => {
 
   it("stores the cook-for count for family and fixed plan entries", () => {
     expect(planEntryServings({ recipeServings: 4, cookFor: 8, mode: "family" })).toBe(8);
-    expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "family" })).toBe(10);
+    expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "family" })).toBe(8);
+    expect(planEntryServings({ recipeServings: 48, cookFor: 8, mode: "family" })).toBe(8);
     expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "fixed" })).toBe(8);
     expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "recipe" })).toBe(10);
+  });
+
+  it("keeps the chosen week cook-for after a reload, not household size or recipe yield", () => {
+    expect(weekCookFor({ planCookFor: 8, householdCookFor: 5 })).toBe(8);
+    expect(weekCookFor({ planCookFor: null, householdCookFor: 5 })).toBe(5);
+    expect(weekCookFor({ householdCookFor: 5 })).toBe(5);
+    expect(agreedEntryCookFor([8, 8, 8])).toBe(8);
+    expect(agreedEntryCookFor([48, 8])).toBeNull();
+    expect(agreedEntryCookFor([])).toBeNull();
   });
 
   it("uses household Default servings when a plan entry has no servings", () => {
@@ -89,7 +101,7 @@ describe("weekDefaultServings and planEntryServings", () => {
         mode: "family",
         recipeServings: 6,
       })
-    ).toBe(6);
+    ).toBe(5);
   });
 
   it("honors a stored scaleFactor before cook-for when the entry has no servings", () => {
