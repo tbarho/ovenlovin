@@ -35,6 +35,8 @@ function servingsFromValue(value: unknown): number | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return undefined;
+    const dozen = trimmed.match(/(\d+(?:\.\d+)?)\s*dozen/i);
+    if (dozen?.[1]) return positiveInt(Number(dozen[1]) * 12);
     const labeled = trimmed.match(/(?:serves?|yield|makes?|about)\s+(\d+(?:\.\d+)?)/i);
     if (labeled?.[1]) return positiveInt(Number(labeled[1]));
     return firstNumberInText(trimmed);

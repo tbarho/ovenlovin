@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import {
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
-  fetchHtml,
+  RecipePageGoneError,
+  fetchHtml as fetchHtmlImpl,
   googleTranslateUrl,
   importBlockedMessage,
   isUsableRecipeHtml,
@@ -14,7 +15,12 @@ import {
   jinaReaderUrl,
   relatedRecipeUrls,
   shouldKeepLooking,
+  type FetchHtmlOptions,
 } from "./fetch-html";
+
+function fetchHtml(url: string, options: FetchHtmlOptions = {}) {
+  return fetchHtmlImpl(url, { sleep: async () => {}, ...options });
+}
 import { createUrlImporter } from "../importers/url";
 import { extractJsonLd } from "./url";
 
@@ -151,6 +157,7 @@ describe("fetchHtml layers", () => {
   });
 
   it("retries a flaky 403 on the direct layer once", async () => {
+    const waits: number[] = [];
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -158,6 +165,7 @@ describe("fetchHtml layers", () => {
         status: 403,
         statusText: "Forbidden",
         url: "https://www.budgetbytes.com/beef-stroganoff/",
+        headers: { get: (name: string) => (name.toLowerCase() === "retry-after" ? "2" : null) },
         text: async () => CHALLENGE,
       })
       .mockResolvedValueOnce({
@@ -171,11 +179,46 @@ describe("fetchHtml layers", () => {
     const result = await fetchHtml("https://www.budgetbytes.com/beef-stroganoff/", {
       fetchImpl: fetchMock as unknown as typeof fetch,
       env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
     });
     expect(result.via).toBe("direct");
     expect(result.layersTried).toEqual(["direct"]);
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(waits).toEqual([2000]);
+  });
+
+  it("caps Retry-After to the remaining URL budget", async () => {
+    const waits: number[] = [];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        headers: { get: (name: string) => (name.toLowerCase() === "retry-after" ? "30" : null) },
+        text: async () => CHALLENGE,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        text: async () => BUDGET,
+      });
+
+    await fetchHtml("https://www.budgetbytes.com/beef-stroganoff/", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      startedAt: Date.now() - 49_000,
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(waits).toEqual([1_000]);
   });
 
   it("uses the Google Translate copy when the live response is a challenge", async () => {
@@ -429,6 +472,79 @@ describe("fetchHtml layers", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("says a 404 is gone instead of no recipe", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      url: "https://www.foodnetwork.com/recipes/old",
+      text: async () =>
+        "<!doctype html><html><head><title>Not Found</title></head><body><h1>Not Found</h1><p>This recipe has been removed.</p></body></html>",
+    });
+    await expect(
+      fetchHtml("https://www.foodnetwork.com/recipes/old", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      })
+    ).rejects.toBeInstanceOf(RecipePageGoneError);
+  });
+
+  it("keeps a full-page fallback when a later layer is blocked", async () => {
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested === "https://en.wikibooks.org/wiki/Cookbook:Pancakes") {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => EXAMPLE_COM,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+
+    const result = await fetchHtml("https://en.wikibooks.org/wiki/Cookbook:Pancakes", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("direct");
+    expect(result.html).toMatch(/Example Domain/);
+    expect(isUsableRecipeHtml(result.html)).toBe(false);
+  });
+
+  it("throws blocked when a challenge is followed by a non-recipe cache page", async () => {
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => EXAMPLE_COM,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    await expect(
+      fetchHtml("https://www.halfbakedharvest.com/cookies/", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toBeInstanceOf(RecipeImportFetchError);
+  });
+
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
     expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
 
@@ -479,7 +595,7 @@ describe("url importer extract messages", () => {
         createUrlImporter().extract({ url: "https://example.com/" })
       ).rejects.toMatchObject({
         name: "RecipeNotFoundError",
-        message: "No recipe found on this page.",
+        message: "This is not a recipe page.",
       });
     } finally {
       vi.unstubAllGlobals();

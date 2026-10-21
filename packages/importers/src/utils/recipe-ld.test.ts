@@ -43,6 +43,12 @@ describe("parseRecipeServings", () => {
     expect(parseRecipeServings({ recipeServings: 4 })).toBe(4);
     expect(parseRecipeServings({ servings: "4 servings" })).toBe(4);
   });
+
+  it("reads N dozen as 12N servings, not N", () => {
+    expect(parseRecipeServings({ recipeYield: "3 dozen" })).toBe(36);
+    expect(parseRecipeServings({ recipeYield: "5 dozen cookies" })).toBe(60);
+    expect(parseRecipeServings({ recipeYield: "Makes 3 dozen" })).toBe(36);
+  });
 });
 
 describe("cleanImportedIngredientLine", () => {

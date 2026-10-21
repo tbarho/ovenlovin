@@ -29,6 +29,7 @@ import { CookbookService } from "./cookbooks";
 import { ImportDedupeService } from "./import-dedupe";
 import {
   backfillInlineImageList,
+  normalizeStoredRecipeImages,
   omitInlineImagePayloads,
   type StoredImagePut,
 } from "../media/recipe-images";
@@ -737,7 +738,7 @@ export class RecipeService extends BaseService {
 
     let updated = 0;
     for (const row of rows) {
-      const current = (row.images as string[]) ?? [];
+      const current = normalizeStoredRecipeImages(row.images);
       const result = await backfillInlineImageList(
         current,
         put,
@@ -817,7 +818,7 @@ export class RecipeService extends BaseService {
       course: row.course ?? null,
       difficulty: row.difficulty ?? null,
       equipment: (row.equipment as string[]) ?? [],
-      images: (row.images as string[]) ?? [],
+      images: normalizeStoredRecipeImages(row.images),
       status: row.status,
       visibility: row.visibility,
       version: row.version,

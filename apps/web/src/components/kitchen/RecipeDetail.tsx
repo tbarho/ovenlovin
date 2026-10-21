@@ -372,6 +372,7 @@ export function RecipeDetail({
         cookbooks={cookbooks}
         open={sheet === "cookbook"}
         onClose={closeSheet}
+        onSaved={() => setToast("Saved")}
       />
       <ConfirmDialog
         open={confirmDelete}

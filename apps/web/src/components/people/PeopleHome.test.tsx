@@ -167,7 +167,15 @@ describe("PeopleHome", () => {
     await user.click(screen.getByRole("button", { name: "Add person" }));
     const dialog = screen.getByRole("dialog", { name: "Add person" });
     await typeFullWordAndKeepFocus(user, within(dialog).getByPlaceholderText("Name"), "Child B");
+    expect(within(dialog).getByRole("button", { name: "Use ⚽️" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
     await user.click(within(dialog).getByRole("button", { name: "Use ⚽️" }));
+    expect(within(dialog).getByRole("button", { name: "Use ⚽️" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     expect(mockedApi).toHaveBeenCalledWith("/api/v1/people", {

@@ -17,6 +17,8 @@ import {
   pickImportRecipeImage,
   RecipeNotFoundError,
   RecipeImportFetchError,
+  RecipeUnsupportedSiteError,
+  isUnsupportedImportUrl,
   looksLikeBotChallenge,
   looksLikeSoftBlock,
 } from "../utils/url";
@@ -52,11 +54,14 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
     },
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
+      if (isUnsupportedImportUrl(input.url)) {
+        throw new RecipeUnsupportedSiteError(input.url);
+      }
       const startedAt = Date.now();
       const captured = Boolean(input.html?.trim() || input.jsonLd);
       const { html, finalUrl, layersTried } = captured
         ? { html: input.html ?? "", finalUrl: input.url, layersTried: ["device"] }
-        : await fetchHtml(input.url);
+        : await fetchHtml(input.url, { startedAt });
       const jsonLd =
         (input.jsonLd
           ? extractJsonLd(

@@ -11,7 +11,7 @@ export function DemoAgentPanel({ origin, apiKey }: { origin: string; apiKey: str
       <h2>Connect Claude or Grok</h2>
       <p className="muted">
         This sandbox has its own MCP URL and API key. Paste both into an agent in about a minute.
-        The key dies when the sandbox resets.
+        Resetting the kitchen keeps this key; it points at the new seed data.
       </p>
       <CopyBox label="MCP URL" content={mcpUrl} />
       <CopyBox label="Sandbox API key" content={apiKey} secret />

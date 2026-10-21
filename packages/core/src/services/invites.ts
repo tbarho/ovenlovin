@@ -158,6 +158,10 @@ export class InviteService extends BaseService {
     const memberships = await households.getMembershipsForUser(userId);
     const existing = memberships.find((item) => item.householdId === invite.householdId);
     if (existing) {
+      await this._db
+        .update(householdInvite)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(eq(householdInvite.id, invite.id));
       return {
         membership: existing,
         alreadyMember: true,
@@ -171,6 +175,10 @@ export class InviteService extends BaseService {
       householdId: invite.householdId,
       role: invite.role,
     });
+    await this._db
+      .update(householdInvite)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(householdInvite.id, invite.id));
     return {
       membership,
       alreadyMember: false,

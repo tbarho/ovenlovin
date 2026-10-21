@@ -27,7 +27,7 @@ export function buildLlmsTxt(origin: string): string {
     `- \`Authorization: Bearer rkapi_...\``,
     `- \`Authorization: Bearer <Clerk JWT>\``,
     ``,
-    `Create a key in Settings after signing in. Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is rejected.`,
+    `Create a key in Settings, or copy the sandbox key on the public demo. Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is rejected.`,
     `Unauthenticated REST returns problem+json 401.`,
     `Unauthenticated MCP POST returns a JSON-RPC error envelope (HTTP 401).`,
     ``,

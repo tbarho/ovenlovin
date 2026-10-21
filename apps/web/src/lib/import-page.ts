@@ -2,6 +2,8 @@ import {
   createUrlImporter,
   RecipeImportFetchError,
   RecipeNotFoundError,
+  RecipePageGoneError,
+  RecipeUnsupportedSiteError,
 } from "@ovenlovin/importers";
 import {
   copyRemoteImages,
@@ -69,7 +71,12 @@ export async function importCapturedPage(
     });
     return recipeFromPersist(result);
   } catch (error) {
-    if (error instanceof RecipeImportFetchError || error instanceof RecipeNotFoundError) {
+    if (
+      error instanceof RecipeImportFetchError ||
+      error instanceof RecipeNotFoundError ||
+      error instanceof RecipePageGoneError ||
+      error instanceof RecipeUnsupportedSiteError
+    ) {
       throw new BadRequestError(error.message);
     }
     throw error;

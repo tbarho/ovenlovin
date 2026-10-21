@@ -72,6 +72,48 @@ describe("parseIngredientLine", () => {
       name: "flour",
     });
   });
+
+  it("reads sweep lines: c., hyphen mixed, and, grams, unit after parens", () => {
+    expect(parseIngredientLine("2 2/3 c. flour")).toMatchObject({
+      quantityMin: 8 / 3,
+      quantityMax: null,
+      unit: "cup",
+      name: "flour",
+    });
+    expect(parseIngredientLine("2-1/3 cups flour")).toMatchObject({
+      quantityMin: 7 / 3,
+      quantityMax: null,
+      unit: "cup",
+    });
+    expect(parseIngredientLine("2 and 1/4 cups chocolate chips")).toMatchObject({
+      quantityMin: 2.25,
+      quantityMax: null,
+      unit: "cup",
+    });
+    expect(parseIngredientLine("1 and 1/2 tsp vanilla")).toMatchObject({
+      quantityMin: 1.5,
+      unit: "tsp",
+    });
+    expect(parseIngredientLine("150g butter")).toMatchObject({
+      quantityMin: 150,
+      unit: "g",
+      name: "butter",
+    });
+    expect(parseIngredientLine("175g / 12 tbsp butter")).toMatchObject({
+      quantityMin: 175,
+      unit: "g",
+    });
+    expect(parseIngredientLine("2 1/2 (350 g) cups flour")).toMatchObject({
+      quantityMin: 2.5,
+      unit: "cup",
+      name: "flour",
+    });
+    expect(parseIngredientLine("1-2 tbsp olive oil")).toMatchObject({
+      quantityMin: 1,
+      quantityMax: 2,
+      unit: "tbsp",
+    });
+  });
 });
 
 describe("normalizeIngredientName", () => {

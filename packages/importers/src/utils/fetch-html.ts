@@ -1,4 +1,5 @@
 /* eslint-disable no-undef */
+import { remainingImportBudgetMs } from "./models";
 import { publicCopyRequests, relatedRecipeUrls, type PublicCopy } from "./public-copies";
 
 export type FetchLayer = "direct" | "related" | "cache";
@@ -14,6 +15,8 @@ export interface FetchResult {
 export type FetchHtmlOptions = {
   fetchImpl?: typeof fetch;
   env?: Record<string, string | undefined>;
+  sleep?: (ms: number) => Promise<void>;
+  startedAt?: number;
 };
 
 /** Current Firefox. Food Network 403s an old Chrome UA without Accept-Encoding. */
@@ -65,10 +68,41 @@ export class RecipeNotFoundError extends Error {
   readonly layersTried: string[];
 
   constructor(url: string, layersTried: string[] = []) {
-    super("No recipe found on this page.");
+    super("This is not a recipe page.");
     this.name = "RecipeNotFoundError";
     this.url = url;
     this.layersTried = layersTried;
+  }
+}
+
+/** Direct fetch was a 404 and no public copy had a recipe. */
+export class RecipePageGoneError extends Error {
+  readonly url: string;
+
+  constructor(url: string) {
+    super("That page is gone.");
+    this.name = "RecipePageGoneError";
+    this.url = url;
+  }
+}
+
+/** Social hosts we cannot fetch a recipe from. */
+export class RecipeUnsupportedSiteError extends Error {
+  readonly url: string;
+
+  constructor(url: string) {
+    super("We can't import from this site. Paste the text or add a photo.");
+    this.name = "RecipeUnsupportedSiteError";
+    this.url = url;
+  }
+}
+
+export function isUnsupportedImportUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "instagram.com" || host.endsWith(".instagram.com");
+  } catch {
+    return false;
   }
 }
 
@@ -211,12 +245,36 @@ function cacheCopyHeaders(copy: PublicCopy): Record<string, string> {
   return { ...FULL_BROWSER_HEADERS, ...copy.headers };
 }
 
+function headerValue(headers: unknown, name: string): string | null {
+  if (!headers || typeof headers !== "object" || typeof (headers as Headers).get !== "function") {
+    return null;
+  }
+  return (headers as Headers).get(name);
+}
+
+function retryAfterWaitMs(header: string | null, remainingMs: number): number {
+  const fallback = Math.min(1_500, remainingMs);
+  if (!header) return fallback;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, remainingMs);
+  const at = Date.parse(header);
+  if (!Number.isNaN(at)) return Math.min(Math.max(0, at - Date.now()), remainingMs);
+  return fallback;
+}
+
 async function readResponse(
   fetchImpl: typeof fetch,
   url: string,
   extraHeaders?: Record<string, string>,
   timeoutMs = CACHE_FETCH_MS
-): Promise<{ ok: boolean; status: number; statusText: string; html: string; finalUrl: string }> {
+): Promise<{
+  ok: boolean;
+  status: number;
+  statusText: string;
+  html: string;
+  finalUrl: string;
+  headers?: Headers;
+}> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -232,6 +290,7 @@ async function readResponse(
       statusText: response.statusText,
       html,
       finalUrl: response.url || url,
+      headers: response.headers,
     };
   } finally {
     clearTimeout(timer);
@@ -256,18 +315,33 @@ type PageHit = {
 export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Promise<FetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const env = options.env ?? process.env;
+  const startedAt = options.startedAt ?? Date.now();
+  const sleep =
+    options.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
 
   const layersTried: string[] = [];
   let lastStatus = 403;
   let lastStatusText = "Forbidden";
+  let directStatus: number | undefined;
+  let sawBlock = false;
   const state: { fallback: FetchResult | null } = { fallback: null };
 
+  const noteBlock = (html: string, status: number) => {
+    if (BLOCKED_STATUSES.has(status) || looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
+      sawBlock = true;
+    }
+  };
+
   const remember = (hit: PageHit): FetchResult | null => {
+    noteBlock(hit.html, hit.status);
     if (isUsableRecipeHtml(hit.html)) {
       return { html: hit.html, url, finalUrl: hit.finalUrl, via: hit.via, layersTried };
     }
     if (
       !state.fallback &&
+      !sawBlock &&
+      hit.status >= 200 &&
+      hit.status < 300 &&
       (looksLikeCompleteDocument(hit.html) || looksLikePaywall(hit.html)) &&
       !looksLikeBotChallenge(hit.html) &&
       !looksLikeSoftBlock(hit.html)
@@ -288,11 +362,16 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     try {
       let direct = await readResponse(fetchImpl, candidate);
       if (layer === "direct" && (BLOCKED_STATUSES.has(direct.status) || direct.status >= 500)) {
-        // shortcut: one retry on a flaky 403/429/5xx, upgrade if a host needs backoff
+        const wait = retryAfterWaitMs(
+          headerValue(direct.headers, "retry-after"),
+          remainingImportBudgetMs(startedAt)
+        );
+        if (wait > 0) await sleep(wait);
         direct = await readResponse(fetchImpl, candidate);
       }
       lastStatus = direct.status;
       lastStatusText = direct.statusText;
+      if (layer === "direct") directStatus = direct.status;
       return remember({
         html: direct.html,
         finalUrl: direct.finalUrl,
@@ -302,6 +381,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     } catch {
       lastStatus = 503;
       lastStatusText = "Fetch failed";
+      if (layer === "direct") directStatus = 503;
       return null;
     }
   };
@@ -349,6 +429,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     }
   }
 
+  if (directStatus === 404) throw new RecipePageGoneError(url);
   if (state.fallback) return state.fallback;
 
   throw new RecipeImportFetchError(url, lastStatus, lastStatusText, layersTried);

@@ -435,6 +435,20 @@ describe("URL Importer", () => {
       });
     });
 
+    it("rejects Instagram before fetching", async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      await expect(
+        createUrlImporter().extract({
+          url: "https://www.instagram.com/p/example/",
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeUnsupportedSiteError",
+        message: "We can't import from this site. Paste the text or add a photo.",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("says no recipe found when every extract layer misses", async () => {
       vi.stubGlobal(
         "fetch",
@@ -457,7 +471,7 @@ describe("URL Importer", () => {
         })
       ).rejects.toMatchObject({
         name: "RecipeNotFoundError",
-        message: "No recipe found on this page.",
+        message: "This is not a recipe page.",
       });
       expect(RecipeNotFoundError).toBeTruthy();
     });
