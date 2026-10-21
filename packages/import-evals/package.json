@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "eval:import": "node scripts/require-gateway.mjs && node scripts/run-eve-import.mjs import",
+    "test": "node --test scripts/self-check.test.mjs",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules .turbo .eve"
   },

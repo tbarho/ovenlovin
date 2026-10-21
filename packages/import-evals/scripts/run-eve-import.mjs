@@ -42,7 +42,7 @@ if (!pkg.dependencies?.eve && pkg.devDependencies?.eve) {
 }
 let result;
 try {
-  result = spawnSync(node, [eve, "eval", ...(args.length > 0 ? args : ["import"])], {
+  result = spawnSync(node, [eve, "eval", "--strict", ...(args.length > 0 ? args : ["import"])], {
     cwd,
     stdio: "inherit",
     env: process.env,

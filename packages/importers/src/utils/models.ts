@@ -56,14 +56,25 @@ export function resolveExtractModelId(
 /** Gateway fallbacks when the primary model returns a fast 503. */
 export const IMPORT_GATEWAY_FALLBACK_MODELS = ["openai/gpt-6-luna", "spacexai/grok-4.7"] as const;
 
+/**
+ * Third-party DeepSeek hosts ignore responseFormat/schema. Pin to DeepSeek's own
+ * host so generateObject actually gets structured output.
+ */
+export const DEEPSEEK_GATEWAY_PROVIDERS = ["deepseek"] as const;
+
 /** AI SDK waits 2+4+… seconds per retry. 5 retries is 62s and blows the 60s import limit. */
 export const IMPORT_GENERATE_MAX_RETRIES = 2;
 
-export function importGenerateOptions() {
+export function importGenerateOptions(modelId?: string) {
+  const id = modelId ?? DEFAULT_EXTRACT_MODEL;
+  const gateway: { models: string[]; only?: string[] } = {
+    models: [...IMPORT_GATEWAY_FALLBACK_MODELS],
+  };
+  if (id.startsWith("deepseek/")) {
+    gateway.only = [...DEEPSEEK_GATEWAY_PROVIDERS];
+  }
   return {
     maxRetries: IMPORT_GENERATE_MAX_RETRIES,
-    providerOptions: {
-      gateway: { models: [...IMPORT_GATEWAY_FALLBACK_MODELS] },
-    },
+    providerOptions: { gateway },
   };
 }

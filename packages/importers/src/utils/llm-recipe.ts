@@ -2,7 +2,6 @@
 import { generateObject } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
-import { isImportAiUnavailable } from "@ovenlovin/core/import-ai-unavailable";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { importGenerateOptions, resolveExtractModelId } from "./models";
 
@@ -73,21 +72,16 @@ export async function extractRecipeWithLlm(
   const modelId = resolveExtractModelId(options.modelId, env);
   const generate = options.generate ?? generateObject;
 
-  try {
-    const result = await generate({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      model: gateway(modelId) as any,
-      schema: llmRecipeSchema,
-      ...importGenerateOptions(),
-      prompt: `Extract a recipe from this page text if one is present. Preserve exact ingredient lines. If this is not a recipe (a homepage, paywall, or generic article), set isRecipe to false and omit the rest. Do not invent quantities.
+  const result = await generate({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    model: gateway(modelId) as any,
+    schema: llmRecipeSchema,
+    ...importGenerateOptions(modelId),
+    prompt: `Extract a recipe from this page text if one is present. Preserve exact ingredient lines. If this is not a recipe (a homepage, paywall, or generic article), set isRecipe to false and omit the rest. Do not invent quantities.
 
 Text:
 ${pageText}`,
-    });
+  });
 
-    return llmRecipeToJsonLd(result.object as z.infer<typeof llmRecipeSchema>);
-  } catch (error) {
-    if (isImportAiUnavailable(error)) throw error;
-    return null;
-  }
+  return llmRecipeToJsonLd(result.object as z.infer<typeof llmRecipeSchema>);
 }

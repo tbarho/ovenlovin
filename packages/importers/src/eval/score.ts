@@ -1,7 +1,10 @@
+/** Overall import score must meet this to pass an eve gate. */
+export const IMPORT_EVAL_SCORE_GATE = 0.95;
+
 export type ExpectedRecipe = {
   title: string;
   titleAliases?: string[];
-  /** `null` means servings are not scored. An array accepts any of the values. */
+  /** `null` means servings are omitted from the overall score. An array accepts any of the values. */
   servings?: number | number[] | null;
   ingredients: string[];
   stepCount: number;
@@ -69,8 +72,8 @@ function titleMatched(got: string | undefined, expected: ExpectedRecipe): boolea
   });
 }
 
-function servingsMatched(got: number | undefined, expected: ExpectedRecipe): boolean {
-  if (expected.servings == null) return true;
+function servingsMatched(got: number | undefined, expected: ExpectedRecipe): boolean | null {
+  if (expected.servings == null) return null;
   const allowed = Array.isArray(expected.servings) ? expected.servings : [expected.servings];
   return got != null && allowed.includes(got);
 }
@@ -89,7 +92,8 @@ function ingredientMatched(got: string, expected: string): boolean {
 
 export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe): CaseScores {
   const title = titleMatched(observed.title, expected) ? 1 : 0;
-  const servings = servingsMatched(observed.servings, expected) ? 1 : 0;
+  const servingsHit = servingsMatched(observed.servings, expected);
+  const servings = servingsHit == null ? 0 : servingsHit ? 1 : 0;
 
   const expectedHits = expected.ingredients.filter((want) =>
     observed.ingredients.some((got) => ingredientMatched(got, want))
@@ -120,14 +124,9 @@ export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe):
       ? 1
       : 0;
 
-  const score =
-    (title +
-      servings +
-      ingredientRecall +
-      ingredientPrecision +
-      stepCompleteness +
-      validStructured) /
-    6;
+  const parts = [title, ingredientRecall, ingredientPrecision, stepCompleteness, validStructured];
+  if (servingsHit != null) parts.push(servings);
+  const score = mean(parts);
 
   return {
     title,

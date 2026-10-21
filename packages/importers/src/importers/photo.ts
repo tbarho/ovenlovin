@@ -115,7 +115,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
         model: gateway(visionModelId) as any,
         abortSignal: combineAbortSignals(AbortSignal.timeout(55_000), config.abortSignal),
-        ...importGenerateOptions(),
+        ...importGenerateOptions(visionModelId),
         messages: [
           {
             role: "user",

@@ -89,6 +89,16 @@ describe("importGenerateOptions", () => {
     expect(importGenerateOptions()).toEqual({
       maxRetries: IMPORT_GENERATE_MAX_RETRIES,
       providerOptions: {
+        gateway: {
+          models: ["openai/gpt-6-luna", "spacexai/grok-4.7"],
+          only: ["deepseek"],
+        },
+      },
+    });
+    expect(importGenerateOptions("deepseek/deepseek-v4.1-flash")).toEqual(importGenerateOptions());
+    expect(importGenerateOptions("openai/gpt-6-luna")).toEqual({
+      maxRetries: IMPORT_GENERATE_MAX_RETRIES,
+      providerOptions: {
         gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
       },
     });

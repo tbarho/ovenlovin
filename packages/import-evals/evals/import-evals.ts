@@ -2,7 +2,13 @@
 import { defineEval } from "eve/evals";
 import { matches } from "eve/evals/expect";
 import { z } from "zod";
-import { resolveEvalModels, runImportCase, type EvalCase } from "@ovenlovin/importers/eval";
+import {
+  IMPORT_EVAL_SCORE_GATE,
+  resolveEvalModels,
+  runImportCase,
+  type CaseResult,
+  type EvalCase,
+} from "@ovenlovin/importers/eval";
 
 const observedSchema = z.object({
   title: z.string().min(1),
@@ -27,7 +33,14 @@ export function defineImportJobEvals(cases: EvalCase[]) {
           if (!hasGatewayKey()) {
             t.skip("needs AI_GATEWAY_API_KEY or VERCEL_OIDC_TOKEN");
           }
-          const result = await runImportCase(model, evalCase);
+          let result: CaseResult;
+          try {
+            result = await runImportCase(model, evalCase);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            t.log(`${evalCase.job}/${evalCase.id} ${model} error=${message}`);
+            throw error;
+          }
           t.log(`${evalCase.job}/${evalCase.id} ${model} score=${result.scores.score.toFixed(3)}`);
           t.score(result.scores.title).label("title");
           t.score(result.scores.servings).label("servings");
@@ -43,8 +56,11 @@ export function defineImportJobEvals(cases: EvalCase[]) {
               outputTokens: result.outputTokens,
               costUsd: result.costUsd,
               error: result.error,
+              gateway: result.gateway,
             },
-          }).label("import");
+          })
+            .label("import")
+            .gate(IMPORT_EVAL_SCORE_GATE);
           t.check(
             {
               title: result.observed?.title ?? "",
@@ -52,7 +68,7 @@ export function defineImportJobEvals(cases: EvalCase[]) {
               steps: result.observed?.steps ?? [],
             },
             matches(observedSchema)
-          ).soft();
+          );
         },
       })
     )

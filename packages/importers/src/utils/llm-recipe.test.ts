@@ -58,6 +58,7 @@ describe("extractRecipeWithLlm", () => {
         },
       })
     );
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway.only).toBeUndefined();
     expect(recipe?.name).toBe("Weeknight Tomato Pasta");
     expect(recipe?.recipeIngredient).toHaveLength(2);
   });
@@ -71,6 +72,38 @@ describe("extractRecipeWithLlm", () => {
         generate,
       })
     ).rejects.toBe(error);
+  });
+
+  it("pins DeepSeek to the DeepSeek gateway host", async () => {
+    const generate = vi.fn().mockResolvedValue({ object: { isRecipe: false } });
+    await extractRecipeWithLlm("Example Domain", {
+      env: { AI_GATEWAY_API_KEY: "test-key" },
+      generate,
+      modelId: "deepseek/deepseek-v4.1-flash",
+    });
+    expect(generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOptions: {
+          gateway: {
+            models: ["openai/gpt-6-luna", "spacexai/grok-4.7"],
+            only: ["deepseek"],
+          },
+        },
+      })
+    );
+  });
+
+  it("rethrows a schema miss from the model", async () => {
+    const error = Object.assign(new Error("No object generated: response did not match schema"), {
+      name: "AI_NoObjectGeneratedError",
+    });
+    const generate = vi.fn().mockRejectedValue(error);
+    await expect(
+      extractRecipeWithLlm("Ingredients\n- pasta", {
+        env: { AI_GATEWAY_API_KEY: "test-key" },
+        generate,
+      })
+    ).rejects.toThrow(/No object generated/);
   });
 
   it("returns null when the model marks the page as not a recipe", async () => {

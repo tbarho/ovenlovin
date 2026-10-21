@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { median, normalizeText, scoreRecipe } from "./score";
+import { IMPORT_EVAL_SCORE_GATE, median, normalizeText, scoreRecipe } from "./score";
 
 describe("normalizeText", () => {
   it("strips price notes and decodes fractions", () => {
@@ -72,19 +72,32 @@ describe("scoreRecipe", () => {
     ).toBe(0);
   });
 
-  it("does not score servings when the gold has none", () => {
-    expect(
-      scoreRecipe(
-        { title: "slow-roasted tomatoes", ingredients: ["tomatoes", "garlic"], steps: ["roast"] },
-        {
-          title: "slow-roasted tomatoes",
-          servings: null,
-          ingredients: ["tomatoes"],
-          stepCount: 1,
-          stepMustInclude: [],
-        }
-      ).servings
-    ).toBe(1);
+  it("does not give a free servings point when the gold has none", () => {
+    const scores = scoreRecipe(
+      { title: "slow-roasted tomatoes", ingredients: ["tomatoes", "garlic"], steps: ["roast"] },
+      {
+        title: "slow-roasted tomatoes",
+        servings: null,
+        ingredients: ["tomatoes"],
+        stepCount: 1,
+        stepMustInclude: [],
+      }
+    );
+    expect(scores.servings).toBe(0);
+    expect(scores.score).toBeCloseTo(
+      (scores.title +
+        scores.ingredientRecall +
+        scores.ingredientPrecision +
+        scores.stepCompleteness +
+        scores.validStructured) /
+        5
+    );
+  });
+
+  it("scores a blank extract below the eve gate", () => {
+    const scores = scoreRecipe({ ingredients: [], steps: [] }, expected);
+    expect(scores.score).toBeLessThan(IMPORT_EVAL_SCORE_GATE);
+    expect(scores.score).toBe(0);
   });
 });
 

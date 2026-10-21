@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { readFileSync } from "node:fs";
 import { generateObject } from "ai";
 import { createPasteImporter } from "../importers/paste";
@@ -19,6 +20,7 @@ export type CaseResult = {
   outputTokens?: number;
   costUsd: number | null;
   error?: string;
+  gateway?: Record<string, unknown>;
 };
 
 export type JobSummary = {
@@ -51,11 +53,7 @@ function trackingGenerate(): {
   let lastMs = 0;
   const generate = (async (options: Parameters<typeof generateObject>[0]) => {
     const started = Date.now();
-    const result = await generateObject({
-      ...options,
-      maxRetries: 2,
-      providerOptions: undefined,
-    });
+    const result = await generateObject(options);
     lastMs = Date.now() - started;
     lastUsage = result;
     return result;
@@ -100,64 +98,51 @@ function fromJsonLd(recipe: Record<string, unknown> | null): ObservedRecipe {
   };
 }
 
+function imageDataUrl(imagePath: string, bytes: Buffer): string {
+  const mime =
+    imagePath.endsWith(".jpg") || imagePath.endsWith(".jpeg") ? "image/jpeg" : "image/png";
+  return `data:${mime};base64,${bytes.toString("base64")}`;
+}
+
 export async function runImportCase(model: string, evalCase: EvalCase): Promise<CaseResult> {
   const tracker = trackingGenerate();
   const started = Date.now();
-  try {
-    let observed: ObservedRecipe;
-    if (evalCase.job === "paste") {
-      const importer = createPasteImporter({ modelId: model, generate: tracker.generate });
-      const raw = await importer.extract({ text: evalCase.text ?? "" });
-      observed = fromDraft(await importer.toDraft(raw));
-    } else if (evalCase.job === "photo") {
-      const bytes = readFileSync(evalCase.imagePath ?? "");
-      const importer = createPhotoImporter({
-        visionModelId: model,
-        generate: tracker.generate,
-      });
-      const raw = await importer.extract({
-        images: [{ blob: `data:image/png;base64,${bytes.toString("base64")}` }],
-        isHandwritten: evalCase.handwritten,
-      });
-      observed = fromDraft(await importer.toDraft(raw));
-    } else {
-      const recipe = await extractRecipeWithLlm(pageTextFromHtml(evalCase.html ?? ""), {
-        modelId: model,
-        generate: tracker.generate,
-      });
-      observed = fromJsonLd(recipe);
-    }
-    const tracked = tracker.last();
-    return {
-      job: evalCase.job,
-      id: evalCase.id,
-      model,
-      observed,
-      scores: scoreRecipe(observed, evalCase.expected),
-      latencyMs: tracked.latencyMs || Date.now() - started,
-      inputTokens: tracked.usage.usage?.inputTokens,
-      outputTokens: tracked.usage.usage?.outputTokens,
-      costUsd: costFromMeta(tracked.usage),
-    };
-  } catch (error) {
-    return {
-      job: evalCase.job,
-      id: evalCase.id,
-      model,
-      scores: {
-        title: 0,
-        servings: 0,
-        ingredientRecall: 0,
-        ingredientPrecision: 0,
-        stepCompleteness: 0,
-        validStructured: 0,
-        score: 0,
-      },
-      latencyMs: Date.now() - started,
-      costUsd: null,
-      error: error instanceof Error ? error.message : String(error),
-    };
+  let observed: ObservedRecipe;
+  if (evalCase.job === "paste") {
+    const importer = createPasteImporter({ modelId: model, generate: tracker.generate });
+    const raw = await importer.extract({ text: evalCase.text ?? "" });
+    observed = fromDraft(await importer.toDraft(raw));
+  } else if (evalCase.job === "photo") {
+    const bytes = readFileSync(evalCase.imagePath ?? "");
+    const importer = createPhotoImporter({
+      visionModelId: model,
+      generate: tracker.generate,
+    });
+    const raw = await importer.extract({
+      images: [{ blob: imageDataUrl(evalCase.imagePath ?? "", bytes) }],
+      isHandwritten: evalCase.handwritten,
+    });
+    observed = fromDraft(await importer.toDraft(raw));
+  } else {
+    const recipe = await extractRecipeWithLlm(pageTextFromHtml(evalCase.html ?? ""), {
+      modelId: model,
+      generate: tracker.generate,
+    });
+    observed = fromJsonLd(recipe);
   }
+  const tracked = tracker.last();
+  return {
+    job: evalCase.job,
+    id: evalCase.id,
+    model,
+    observed,
+    scores: scoreRecipe(observed, evalCase.expected),
+    latencyMs: tracked.latencyMs || Date.now() - started,
+    inputTokens: tracked.usage.usage?.inputTokens,
+    outputTokens: tracked.usage.usage?.outputTokens,
+    costUsd: costFromMeta(tracked.usage),
+    gateway: tracked.usage.providerMetadata?.gateway,
+  };
 }
 
 export async function runImportEval(
