@@ -29,6 +29,7 @@ export function buildLlmsTxt(origin: string): string {
     ``,
     `Create a key in Settings, or copy the sandbox key on the public demo. Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is rejected.`,
     `Unauthenticated REST returns problem+json 401.`,
+    `A request outside an API key's scopes returns 403 problem+json (\`<origin>/problems/forbidden\`). Clerk sessions are not scope-checked. Keys created in Settings have full access.`,
     `Unauthenticated MCP POST returns a JSON-RPC error envelope (HTTP 401).`,
     ``,
     `## MCP tools`,

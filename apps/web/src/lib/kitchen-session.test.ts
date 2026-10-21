@@ -62,4 +62,12 @@ describe("requireKitchenContext", () => {
     const { requireKitchenContext } = await import("./kitchen-session");
     await expect(requireKitchenContext()).rejects.toThrow(/redirect:\/sign-in/);
   });
+
+  it("sends a signed-out settings visit to sign-in and back", async () => {
+    getSessionContext.mockRejectedValue(new UnauthorizedError("Authentication required"));
+    const { requireKitchenContext } = await import("./kitchen-session");
+    await expect(requireKitchenContext("/settings")).rejects.toThrow(
+      /redirect:\/sign-in\?redirect_url=%2Fsettings/
+    );
+  });
 });

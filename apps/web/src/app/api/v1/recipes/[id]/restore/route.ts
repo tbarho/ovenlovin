@@ -4,7 +4,7 @@ import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 import { RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
-import { assertRecipeHousehold } from "@/lib/api/recipes";
+import { loadOwned } from "@/lib/api/owned";
 import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -13,8 +13,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     const service = new RecipeService(getDatabase());
-    const existing = await service.getRecipeIncludingDeleted(id);
-    assertRecipeHousehold(existing, householdId, id);
+    await loadOwned("Recipe", id, householdId, (recipeId) =>
+      service.getRecipeIncludingDeleted(recipeId)
+    );
 
     const restored = await service.restoreRecipe(id);
     if (!restored) throw new NotFoundError("Recipe", id);

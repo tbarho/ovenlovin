@@ -31,12 +31,9 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 1. Log in to your OvenLovin instance
 2. Go to Settings → API Keys
 3. Click "Create API Key"
-4. Select scopes:
-   - `recipes:read` / `recipes:write`
-   - `plans:read` / `plans:write`
-   - `people:read` / `people:write`
-   - `lists:export`
-5. Copy the API key (shown only once). Keys start with `rkapi_`.
+4. Copy the API key (shown only once). Keys start with `rkapi_`.
+
+A key created in Settings, or via `POST /api/v1/api-keys` with no scopes, has full access: `recipes:read`, `recipes:write`, `plans:read`, `plans:write`, `people:read`, `people:write`, `lists:export`. A request outside the key's scopes returns 403 with type `<origin>/problems/forbidden`. The problem `detail` names the missing scope. Clerk sessions are not scope-checked.
 
 ## OpenAPI Specification
 
@@ -103,7 +100,7 @@ Errors follow [RFC 9457 Problem Details](https://datatracker.ietf.org/doc/html/r
 **Common error types**:
 - `400 Bad Request` - Invalid request, including classified import failures (`not_a_public_url`, `import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`)
 - `401 Unauthorized` - Missing or invalid API key
-- `403 Forbidden` - Insufficient permissions (check API key scopes)
+- `403 Forbidden` - Insufficient permissions. An API key outside its scopes returns type `<origin>/problems/forbidden` and names the missing scope.
 - `404 Not Found` - Resource not found
 - `409 Conflict` - Resource conflict (duplicate name, version mismatch)
 - `422 Unprocessable Entity` - Validation failed (invalid data)

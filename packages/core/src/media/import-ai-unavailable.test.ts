@@ -6,6 +6,8 @@ import {
   IMPORT_NOT_A_RECIPE_MESSAGE,
   IMPORT_PAGE_GONE_CODE,
   IMPORT_PAGE_GONE_MESSAGE,
+  IMPORT_PAGE_PRIVATE_CODE,
+  IMPORT_PAGE_PRIVATE_MESSAGE,
   classifyImportFailure,
   importAiUnavailableMeta,
   isImportAiNotARecipe,
@@ -97,6 +99,28 @@ describe("importAiUnavailableMeta", () => {
     );
     expect(gone).toEqual({ code: IMPORT_PAGE_GONE_CODE, message: IMPORT_PAGE_GONE_MESSAGE });
     expect(gone?.message).toMatch(/Paste the recipe text or add a photo/);
+
+    const privatePage = classifyImportFailure(
+      Object.assign(new Error("That page is private or needs a sign-in."), {
+        name: "RecipePagePrivateError",
+      })
+    );
+    expect(privatePage).toEqual({
+      code: IMPORT_PAGE_PRIVATE_CODE,
+      message: IMPORT_PAGE_PRIVATE_MESSAGE,
+    });
+    expect(privatePage?.message).not.toMatch(/gone/);
+    expect(
+      classifyImportFailure(
+        Object.assign(new Error("Unauthorized"), { name: "RecipeImportFetchError", status: 401 })
+      )
+    ).toEqual({
+      code: IMPORT_PAGE_PRIVATE_CODE,
+      message: IMPORT_PAGE_PRIVATE_MESSAGE,
+    });
+    expect(
+      classifyImportFailure(Object.assign(new Error("Gone"), { name: "RecipePageGoneError" }))
+    ).toEqual({ code: IMPORT_PAGE_GONE_CODE, message: IMPORT_PAGE_GONE_MESSAGE });
 
     const notRecipe = classifyImportFailure(
       Object.assign(new Error("This is not a recipe page."), { name: "RecipeNotFoundError" })

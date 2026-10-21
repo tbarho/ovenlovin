@@ -8,6 +8,7 @@ import {
   apiKeyKitchenHeaderMismatch,
   apiKeyMembershipRole,
   canWriteKitchen,
+  restApiKeyScopeDenial,
 } from "@ovenlovin/core";
 import { enforceDemoRequestGuards } from "@/lib/demo/enforce";
 import { getSessionContext } from "@/lib/session";
@@ -58,6 +59,15 @@ async function parseApiKey(apiKey: string, request: NextRequest): Promise<Reques
   const membershipRole = apiKeyMembershipRole(memberships, result.key.householdId);
   if (!membershipRole) {
     throw new UnauthorizedError(API_KEY_CREATOR_NOT_A_MEMBER);
+  }
+
+  const scopeDenial = restApiKeyScopeDenial(
+    result.key.scopes,
+    request.method,
+    request.nextUrl.pathname
+  );
+  if (scopeDenial) {
+    throw new ForbiddenError(scopeDenial);
   }
 
   return {

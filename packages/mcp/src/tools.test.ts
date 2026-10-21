@@ -15,6 +15,8 @@ import {
   HouseholdService,
   IMPORT_BLOCKED_CODE,
   IMPORT_BLOCKED_MESSAGE,
+  PeopleService,
+  PlanService,
   RecipeService,
 } from "@ovenlovin/core";
 import * as db from "@ovenlovin/db";
@@ -84,6 +86,10 @@ describe("MCP Tool Schemas", () => {
       expect(searchRecipesTool.description).toMatch(/hiddenCount/);
       expect(searchRecipesTool.description).toMatch(/hidden/);
     });
+
+    it("rejects a malformed forAttendees id", () => {
+      expect(searchRecipesTool.inputSchema.safeParse({ forAttendees: ["x"] }).success).toBe(false);
+    });
   });
 
   describe("get_recipe", () => {
@@ -111,6 +117,29 @@ describe("MCP Tool Schemas", () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it("treats another kitchen's recipe as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "getRecipe").mockResolvedValue({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        householdId: "11111111-1111-4111-8111-111111111111",
+      } as never);
+
+      await expect(
+        getRecipeTool.handler(
+          {
+            id: "550e8400-e29b-41d4-a716-446655440000",
+            includeNutrition: true,
+            includeSource: true,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Recipe not found/);
+    });
   });
 
   describe("check_meal_plan", () => {
@@ -124,7 +153,7 @@ describe("MCP Tool Schemas", () => {
               meal: "dinner",
               recipeId: "550e8400-e29b-41d4-a716-446655440000",
               servings: 4,
-              attendees: ["person-1"],
+              attendees: ["550e8400-e29b-41d4-a716-446655440001"],
             },
           ],
         },
@@ -156,7 +185,7 @@ describe("MCP Tool Schemas", () => {
               date: "2026-10-13",
               meal: "dinner",
               freeformMeal: "Leftovers",
-              attendees: ["person-1"],
+              attendees: ["550e8400-e29b-41d4-a716-446655440001"],
             },
             {
               date: "2026-10-14",
@@ -173,7 +202,7 @@ describe("MCP Tool Schemas", () => {
   describe("get_person_rules", () => {
     it("validates correct input", () => {
       const result = getPersonRulesTool.inputSchema.safeParse({
-        personIds: ["person-1", "person-2"],
+        personIds: ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"],
       });
       expect(result.success).toBe(true);
     });
@@ -185,9 +214,13 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(false);
     });
 
+    it("rejects a malformed person id", () => {
+      expect(getPersonRulesTool.inputSchema.safeParse({ personIds: ["x"] }).success).toBe(false);
+    });
+
     it("applies default includeInactive", () => {
       const result = getPersonRulesTool.inputSchema.safeParse({
-        personIds: ["person-1"],
+        personIds: ["550e8400-e29b-41d4-a716-446655440001"],
       });
       expect(result.success).toBe(true);
       if (result.success) {
@@ -206,7 +239,7 @@ describe("MCP Tool Schemas", () => {
             meal: "dinner",
             recipeId: "550e8400-e29b-41d4-a716-446655440000",
             servings: 4,
-            attendees: ["person-1"],
+            attendees: ["550e8400-e29b-41d4-a716-446655440001"],
           },
         ],
         checkReportJson: { status: "complete" },
@@ -251,6 +284,70 @@ describe("MCP Tool Schemas", () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it("treats another kitchen's recipe as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockRejectedValue(
+        new HouseholdAccessError("Recipe not found", "not_found")
+      );
+      const create = vi.spyOn(PlanService.prototype, "createMealPlan");
+
+      await expect(
+        saveMealPlanTool.handler(
+          {
+            weekStart: "2026-10-13",
+            entries: [
+              {
+                date: "2026-10-13",
+                meal: "dinner",
+                recipeId: "550e8400-e29b-41d4-a716-446655440000",
+                attendees: [],
+              },
+            ],
+            checkReportJson: {},
+            status: "draft",
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Recipe not found/);
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it("treats another kitchen's attendee as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockResolvedValue();
+      vi.spyOn(PeopleService.prototype, "requireOwnedPersonIds").mockRejectedValue(
+        new HouseholdAccessError("Person not found", "not_found")
+      );
+      const create = vi.spyOn(PlanService.prototype, "createMealPlan");
+
+      await expect(
+        saveMealPlanTool.handler(
+          {
+            weekStart: "2026-10-13",
+            entries: [
+              {
+                date: "2026-10-13",
+                meal: "dinner",
+                attendees: ["550e8400-e29b-41d4-a716-446655440000"],
+              },
+            ],
+            checkReportJson: {},
+            status: "draft",
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Person not found/);
+      expect(create).not.toHaveBeenCalled();
+    });
   });
 
   describe("export_shopping_list", () => {
@@ -285,6 +382,30 @@ describe("MCP Tool Schemas", () => {
       expect(exportShoppingListTool.description).toMatch(/extras/);
       expect(exportShoppingListTool.description).toMatch(/isStaple/);
       expect(exportShoppingListTool.description).toMatch(/includeStaples/);
+    });
+
+    it("treats another kitchen's meal plan as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(PlanService.prototype, "getMealPlan").mockResolvedValue({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        householdId: "11111111-1111-4111-8111-111111111111",
+      } as never);
+
+      await expect(
+        exportShoppingListTool.handler(
+          {
+            planId: "550e8400-e29b-41d4-a716-446655440000",
+            format: "markdown",
+            groupBy: "aisle",
+            includeRuleWarnings: true,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Meal plan not found/);
     });
 
     it("accepts includeStaples and the includePantryItems alias", () => {
@@ -1022,6 +1143,30 @@ describe("MCP Tool Schemas", () => {
           action: "set",
         }).success
       ).toBe(false);
+    });
+
+    it("treats another kitchen's recipe as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(PlanService.prototype, "getMealPlan").mockResolvedValue({
+        id: planId,
+        householdId: "22222222-2222-4222-8222-222222222222",
+      } as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockRejectedValue(
+        new HouseholdAccessError("Recipe not found", "not_found")
+      );
+      const merge = vi.spyOn(PlanService.prototype, "mergeMealPlanEntries");
+
+      await expect(
+        editMealPlanTool.handler(
+          { planId, date: "2026-10-14", action: "swap", recipeId, meal: "dinner" },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Recipe not found/);
+      expect(merge).not.toHaveBeenCalled();
     });
   });
 

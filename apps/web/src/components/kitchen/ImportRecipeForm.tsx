@@ -180,11 +180,15 @@ export function ImportRecipeForm({
   const [reviewPreview, setReviewPreview] = useState<unknown>(null);
   const importKeyRef = useRef("");
   const previewAbortRef = useRef<AbortController | null>(null);
+  const pasteRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     importKeyRef.current = "";
     setReview(null);
     setReviewPreview(null);
   }, [source, url, paste]);
+  useEffect(() => {
+    if (source === "paste") pasteRef.current?.focus();
+  }, [source]);
   const fieldValue = source === "paste" ? paste : url;
   const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(fieldValue.trim());
   const jobBusy = photoJob?.phase === "uploading" || photoJob?.phase === "reading";
@@ -411,6 +415,7 @@ export function ImportRecipeForm({
                 />
               ) : (
                 <textarea
+                  ref={pasteRef}
                   value={paste}
                   onChange={(event) => {
                     setPaste(event.target.value);

@@ -56,6 +56,8 @@ export function RecipeDetail({
   lovePeople = EMPTY_LOVE_PEOPLE,
   plannedDates = [],
   servingsSettings = null,
+  servingsOverride = null,
+  fromPlan = false,
   backHref = "/recipes",
   backLabel = "Recipes",
 }: {
@@ -66,6 +68,8 @@ export function RecipeDetail({
   lovePeople?: PersonLove[];
   plannedDates?: string[];
   servingsSettings?: HouseholdServingsSettings | null;
+  servingsOverride?: number | null;
+  fromPlan?: boolean;
   backHref?: string;
   backLabel?: string;
 }) {
@@ -80,8 +84,10 @@ export function RecipeDetail({
     mode: servingsMode,
     fixedServings,
   });
-  const servingsMax = servingsRangeMax(storedServings, autoServings);
-  const [servings, setServings] = useState(autoServings);
+  const openedServings = servingsOverride ?? autoServings;
+  const planServings = fromPlan ? servingsOverride : null;
+  const servingsMax = servingsRangeMax(storedServings, openedServings);
+  const [servings, setServings] = useState(openedServings);
   const [sheet, setSheet] = useState<
     null | "details" | "image" | "ingredients" | "steps" | "cookbook"
   >(null);
@@ -148,10 +154,13 @@ export function RecipeDetail({
       })),
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );
-  const servingsLabel = cookForServingsLabel({
-    cookFor: servings,
-    recipeServings: storedServings,
-  });
+  const servingsLabel =
+    planServings != null && servings === planServings && planServings !== storedServings
+      ? `Scaled to ${planServings} for this week's plan`
+      : cookForServingsLabel({
+          cookFor: servings,
+          recipeServings: storedServings,
+        });
   function applyStoredServings(nextStored: number) {
     setServings(
       defaultDisplayedServings({

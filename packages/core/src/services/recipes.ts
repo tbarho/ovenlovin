@@ -25,6 +25,7 @@ import {
 } from "../media/prepare-import-draft";
 import { normalizeSourceUrl } from "../media/source-url";
 import { BaseService } from "./base";
+import { HouseholdAccessError } from "./kitchen-access";
 import { CookbookService } from "./cookbooks";
 import { ImportDedupeService } from "./import-dedupe";
 import {
@@ -48,6 +49,23 @@ export class RecipeService extends BaseService {
       .limit(1);
 
     return result ? this.mapRecipe(result) : null;
+  }
+
+  async requireOwnedRecipeIds(
+    householdId: string,
+    recipeIds: Iterable<string | null | undefined>
+  ): Promise<void> {
+    const ids = [...new Set([...recipeIds].filter((id): id is string => Boolean(id)))];
+    if (ids.length === 0) return;
+    const rows = await this._db
+      .select({ id: recipe.id })
+      .from(recipe)
+      .where(
+        and(eq(recipe.householdId, householdId), isNull(recipe.deletedAt), inArray(recipe.id, ids))
+      );
+    if (rows.length !== ids.length) {
+      throw new HouseholdAccessError("Recipe not found", "not_found");
+    }
   }
 
   async getRecipeBySlug(householdId: string, slug: string): Promise<Recipe | null> {

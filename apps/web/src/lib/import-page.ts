@@ -3,6 +3,7 @@ import {
   RecipeImportFetchError,
   RecipeNotFoundError,
   RecipePageGoneError,
+  RecipePagePrivateError,
   RecipeUnsupportedSiteError,
 } from "@ovenlovin/importers";
 import {
@@ -75,6 +76,7 @@ export async function importCapturedPage(
       error instanceof RecipeImportFetchError ||
       error instanceof RecipeNotFoundError ||
       error instanceof RecipePageGoneError ||
+      error instanceof RecipePagePrivateError ||
       error instanceof RecipeUnsupportedSiteError
     ) {
       throw new BadRequestError(error.message);

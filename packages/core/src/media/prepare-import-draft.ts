@@ -136,7 +136,7 @@ export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null 
     if (typeof text !== "string" || !text.trim()) continue;
     steps.push({ text });
   }
-  if (ingredients.length === 0 || steps.length === 0) return null;
+  if (ingredients.length === 0) return null;
 
   const source = raw.source as RecipeImportDraft["source"];
   if (typeof source.importerName !== "string" || !source.importerName.trim()) return null;

@@ -217,18 +217,6 @@ function deriveScopes(role: "owner" | "admin" | "member" | "viewer"): string[] {
 }
 
 /**
- * Check if auth context has required scope
- */
-export function requireScope(context: AuthContext, scope: string): void {
-  if (!context.scopes.includes(scope)) {
-    throw {
-      code: "forbidden",
-      message: `Missing required scope: ${scope}`,
-    } as AuthError;
-  }
-}
-
-/**
  * Require admin or owner role
  */
 export function requireAdminRole(context: AuthContext): void {

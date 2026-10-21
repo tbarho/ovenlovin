@@ -421,11 +421,7 @@ export function StepsSheet({
         <label>
           Steps
           <span className="muted">One step per line.</span>
-          <textarea
-            value={stepText}
-            onChange={(event) => setStepText(event.target.value)}
-            required
-          />
+          <textarea value={stepText} onChange={(event) => setStepText(event.target.value)} />
         </label>
         {error ? <p className="muted">{error}</p> : null}
         <button className="btn primary" type="submit" disabled={pending}>

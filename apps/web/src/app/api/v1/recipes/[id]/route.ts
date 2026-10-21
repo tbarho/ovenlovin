@@ -14,7 +14,7 @@ import {
 } from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
-import { assertRecipeHousehold } from "@/lib/api/recipes";
+import { loadOwned } from "@/lib/api/owned";
 import { loadKitchenServingsSettings, presentRecipeForKitchen } from "@/lib/kitchen-servings";
 import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media";
 
@@ -23,8 +23,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const context = await getRequestContext(request);
     const householdId = requireHouseholdId(context);
     const { id } = await params;
-    const recipe = await new RecipeService(getDatabase()).getRecipeDetails(id);
-    assertRecipeHousehold(recipe, householdId, id);
+    const recipe = await loadOwned("Recipe", id, householdId, (recipeId) =>
+      new RecipeService(getDatabase()).getRecipeDetails(recipeId)
+    );
     const settings = await loadKitchenServingsSettings(householdId);
     const presented = presentRecipeForKitchen(
       recipe,
@@ -48,8 +49,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       assertAllowedRecipeImageUrls(body.images);
     }
     const service = new RecipeService(getDatabase());
-    const existing = await service.getRecipe(id);
-    assertRecipeHousehold(existing, householdId, id);
+    await loadOwned("Recipe", id, householdId, (recipeId) => service.getRecipe(recipeId));
 
     const recipe = await service.updateRecipeDetails(id, body);
     if (!recipe) throw new NotFoundError("Recipe", id);
@@ -68,8 +68,7 @@ export async function DELETE(
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     const service = new RecipeService(getDatabase());
-    const existing = await service.getRecipe(id);
-    assertRecipeHousehold(existing, householdId, id);
+    await loadOwned("Recipe", id, householdId, (recipeId) => service.getRecipe(recipeId));
 
     const deleted = await service.deleteRecipe(id);
     if (!deleted) throw new NotFoundError("Recipe", id);
