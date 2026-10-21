@@ -170,22 +170,7 @@ describe("whoCanEat", () => {
       generatedAt: "2026-10-14T00:00:00.000Z",
       entries: [
         {
-          entry: {
-            id: "entry-1",
-            createdAt: "2026-10-12T00:00:00.000Z",
-            updatedAt: "2026-10-12T00:00:00.000Z",
-            deletedAt: null,
-            mealPlanId: "plan-1",
-            date: "2026-10-12",
-            mealSlot: "dinner",
-            recipeId: "cookies",
-            freeformMeal: null,
-            servings: 4,
-            attendees: [],
-            scaleFactor: 1,
-            prepAheadNotes: null,
-            leftoverSourceId: null,
-          },
+          entry: { recipeId: "cookies", servings: 4, scaleFactor: 1 },
           recipeTitle: "Cookies",
           recipeServings: 4,
           ingredients: [{ rawText: "1 cup almond flour" }, { rawText: "1/2 cup peanut butter" }],
