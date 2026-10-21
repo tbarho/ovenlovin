@@ -1,4 +1,4 @@
-ALTER TABLE "meal_plan" ADD COLUMN "cook_for" integer;
+ALTER TABLE "meal_plan" ADD COLUMN IF NOT EXISTS "cook_for" integer;
 --> statement-breakpoint
 -- Old UI stored the week count on every night. Recover it when they agree.
 UPDATE "meal_plan" AS mp
