@@ -2,15 +2,9 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
-import {
-  BLOCKED_IMPORT_COPY,
-  importGuessedNotice,
-  importInputError,
-  isBlockedImportError,
-} from "@/lib/import-input";
+import { displayImportFailure, importGuessedNotice, importInputError } from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_IN_PROGRESS,
@@ -251,7 +245,7 @@ export function ImportRecipeForm({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not import recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
+      setRetryable(true);
     } finally {
       setPending(false);
     }
@@ -294,7 +288,7 @@ export function ImportRecipeForm({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
+      setRetryable(true);
     } finally {
       setPending(false);
     }
@@ -316,7 +310,10 @@ export function ImportRecipeForm({
               role="tab"
               className="tab"
               aria-selected={source === "url"}
-              onClick={() => setSource("url")}
+              onClick={() => {
+                setSource("url");
+                setError(null);
+              }}
             >
               URL
             </button>
@@ -325,7 +322,10 @@ export function ImportRecipeForm({
               role="tab"
               className="tab"
               aria-selected={source === "paste"}
-              onClick={() => setSource("paste")}
+              onClick={() => {
+                setSource("paste");
+                setError(null);
+              }}
             >
               Paste
             </button>
@@ -334,7 +334,10 @@ export function ImportRecipeForm({
               role="tab"
               className="tab"
               aria-selected={source === "photo"}
-              onClick={() => setSource("photo")}
+              onClick={() => {
+                setSource("photo");
+                setError(null);
+              }}
             >
               Photo
             </button>
@@ -409,36 +412,10 @@ export function ImportRecipeForm({
             </button>
           </div>
         )}
-        {error && isBlockedImportError(error) ? (
+        {error ? (
           <div className="import-blocked" role="status">
-            <p className="muted import-error">{BLOCKED_IMPORT_COPY}</p>
-            <div className="import-blocked-actions">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setSource("paste");
-                  setError(null);
-                }}
-              >
-                Paste the recipe text
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setSource("photo");
-                  setError(null);
-                }}
-              >
-                Add a photo
-              </button>
-            </div>
-          </div>
-        ) : error ? (
-          <div role="status">
             <p className="muted import-error">
-              {error}
+              {displayImportFailure(error)}
               {existingRecipeUrl ? (
                 <>
                   {" "}
@@ -446,11 +423,37 @@ export function ImportRecipeForm({
                 </>
               ) : null}
             </p>
-            {retryable ? (
+            {!existingRecipeUrl ? (
               <div className="import-blocked-actions">
-                <button type="submit" className="btn" disabled={pending || !canSubmit}>
-                  Try again
-                </button>
+                {retryable ? (
+                  <button type="submit" className="btn" disabled={pending || !canSubmit}>
+                    Try again
+                  </button>
+                ) : null}
+                {source !== "paste" ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      setSource("paste");
+                      setError(null);
+                    }}
+                  >
+                    Paste the recipe text
+                  </button>
+                ) : null}
+                {source !== "photo" ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      setSource("photo");
+                      setError(null);
+                    }}
+                  >
+                    Add a photo
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>
