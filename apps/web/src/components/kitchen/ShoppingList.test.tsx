@@ -82,7 +82,7 @@ describe("ShoppingList", () => {
     );
 
     expect(screen.getByTestId("shop-scaled-for")).toHaveTextContent(
-      "For 5 people (some recipes at full yield)"
+      "For 5 people (some recipes scaled differently)"
     );
   });
 
