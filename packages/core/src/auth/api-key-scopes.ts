@@ -84,9 +84,10 @@ export const REST_SCOPE_TABLE = [
   { method: "DELETE", path: "/households/invites/{id}", scope: "people:write" },
   { method: "POST", path: "/invites/{token}/accept", scope: "people:write" },
 
-  { method: "GET", path: "/api-keys", scope: "people:read" },
-  { method: "POST", path: "/api-keys", scope: "people:write" },
-  { method: "DELETE", path: "/api-keys/{id}", scope: "people:write" },
+  // Session-only: requireUserId rejects keys after this null gate.
+  { method: "GET", path: "/api-keys", scope: null },
+  { method: "POST", path: "/api-keys", scope: null },
+  { method: "DELETE", path: "/api-keys/{id}", scope: null },
 ] as const satisfies ReadonlyArray<{
   method: string;
   path: string;
@@ -143,8 +144,9 @@ export function requiredRestScope(
   pathname: string
 ): ApiKeyScope | null | undefined {
   const path = restPath(pathname);
+  const verb = method.toUpperCase() === "HEAD" ? "GET" : method.toUpperCase();
   const row = REST_SCOPE_TABLE.find(
-    (entry) => entry.method === method.toUpperCase() && pathMatches(entry.path, path)
+    (entry) => entry.method === verb && pathMatches(entry.path, path)
   );
   return row ? row.scope : undefined;
 }
@@ -163,7 +165,7 @@ export function restApiKeyScopeDenial(
 }
 
 export function mcpApiKeyScopeDenial(scopes: readonly string[], toolName: string): string | null {
-  if (!(toolName in MCP_SCOPE_TABLE)) {
+  if (!Object.hasOwn(MCP_SCOPE_TABLE, toolName)) {
     return `This API key cannot call ${toolName}. No scope grants this tool.`;
   }
   const required = MCP_SCOPE_TABLE[toolName as keyof typeof MCP_SCOPE_TABLE];

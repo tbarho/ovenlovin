@@ -19,6 +19,7 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
+    requireUserId(context);
     const householdId = requireHouseholdId(context);
     const db = getDatabase();
     const keys = await new ApiKeyService(db).listForHousehold(householdId);

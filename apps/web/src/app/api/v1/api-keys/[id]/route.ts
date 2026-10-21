@@ -3,7 +3,12 @@ import { ApiKeyService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
 import { noContentResponse } from "@/lib/api/response";
-import { getRequestContext, requireAdminRole, requireHouseholdId } from "@/lib/api/middleware";
+import {
+  getRequestContext,
+  requireAdminRole,
+  requireHouseholdId,
+  requireUserId,
+} from "@/lib/api/middleware";
 
 export async function DELETE(
   request: NextRequest,
@@ -13,6 +18,7 @@ export async function DELETE(
     const context = await getRequestContext(request);
     requireAdminRole(context);
     const householdId = requireHouseholdId(context);
+    requireUserId(context);
     const { id } = await params;
 
     const db = getDatabase();

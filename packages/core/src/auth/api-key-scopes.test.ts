@@ -23,6 +23,12 @@ describe("API key scopes", () => {
       )
     ).toBe("lists:export");
     expect(requiredRestScope("GET", "/api/v1/health")).toBeNull();
+    expect(requiredRestScope("HEAD", "/api/v1/recipes")).toBe("recipes:read");
+    expect(requiredRestScope("GET", "/api/v1/api-keys")).toBeNull();
+    expect(requiredRestScope("POST", "/api/v1/api-keys")).toBeNull();
+    expect(
+      requiredRestScope("DELETE", "/api/v1/api-keys/550e8400-e29b-41d4-a716-446655440000")
+    ).toBeNull();
     expect(requiredRestScope("GET", "/api/v1/does-not-exist")).toBeUndefined();
 
     expect(restApiKeyScopeDenial(["recipes:read"], "GET", "/api/v1/recipes")).toBeNull();

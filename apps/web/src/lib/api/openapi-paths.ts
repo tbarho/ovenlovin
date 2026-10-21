@@ -1281,7 +1281,12 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/api-keys",
     tags: ["api-keys"],
     summary: "List API keys (hashes only)",
-    responses: { 200: { description: "API keys" } },
+    responses: {
+      200: { description: "API keys" },
+      401: {
+        description: "Signed-in user required. API keys cannot list, create, or revoke keys.",
+      },
+    },
   });
 
   registry.registerPath({
@@ -1306,7 +1311,12 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
         },
       },
     },
-    responses: { 201: { description: "Created key with plaintext" } },
+    responses: {
+      201: { description: "Created key with plaintext" },
+      401: {
+        description: "Signed-in user required. API keys cannot list, create, or revoke keys.",
+      },
+    },
   });
 
   registry.registerPath({
@@ -1315,7 +1325,12 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     tags: ["api-keys"],
     summary: "Revoke an API key",
     request: { params: z.object({ id: z.string().uuid() }) },
-    responses: { 204: { description: "Revoked" } },
+    responses: {
+      204: { description: "Revoked" },
+      401: {
+        description: "Signed-in user required. API keys cannot list, create, or revoke keys.",
+      },
+    },
   });
 
   const inviteRoleDoc = z.enum(["admin", "member", "viewer"]).openapi("InviteRole");

@@ -110,7 +110,7 @@ function attachForbiddenResponses(doc: oas30.OpenAPIObject): oas30.OpenAPIObject
       const operation = pathItem[method];
       if (!operation || typeof operation !== "object" || !operation.responses) continue;
       if (Array.isArray(operation.security) && operation.security.length === 0) continue;
-      if (path === "/api-keys" && method === "post") continue;
+      if (path.startsWith("/api-keys")) continue;
       operation.responses["403"] = ref;
     }
   }

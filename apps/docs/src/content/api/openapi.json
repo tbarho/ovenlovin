@@ -3202,8 +3202,8 @@
           "200": {
             "description": "API keys"
           },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
+          "401": {
+            "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           }
         }
       },
@@ -3234,6 +3234,9 @@
         "responses": {
           "201": {
             "description": "Created key with plaintext"
+          },
+          "401": {
+            "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           }
         }
       }
@@ -3257,8 +3260,8 @@
           "204": {
             "description": "Revoked"
           },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
+          "401": {
+            "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           }
         }
       }
