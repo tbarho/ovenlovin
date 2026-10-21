@@ -329,7 +329,8 @@ type PageHit = {
  * 2. Public copies: Google Translate and Jina (named in the blocked message)
  *
  * A live page that is not a recipe (example.com) is returned so extract can
- * say "no recipe found". "Blocked" is only thrown when every layer failed.
+ * say "no recipe found". If the live page itself was a challenge or block,
+ * a later non-recipe copy is still blocked; only a later recipe wins.
  */
 export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Promise<FetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -342,6 +343,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   let lastStatus = 403;
   let lastStatusText = "Forbidden";
   let directStatus: number | undefined;
+  let sawDirectBlock = false;
   const state: { fallback: FetchResult | null } = { fallback: null };
 
   const remember = (hit: PageHit): FetchResult | null => {
@@ -383,7 +385,16 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
       }
       lastStatus = direct.status;
       lastStatusText = direct.statusText;
-      if (layer === "direct") directStatus = direct.status;
+      if (layer === "direct") {
+        directStatus = direct.status;
+        if (
+          BLOCKED_STATUSES.has(direct.status) ||
+          looksLikeBotChallenge(direct.html) ||
+          looksLikeSoftBlock(direct.html)
+        ) {
+          sawDirectBlock = true;
+        }
+      }
       return remember({
         html: direct.html,
         finalUrl: direct.finalUrl,
@@ -446,7 +457,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   if (state.fallback && looksLikeGonePage(state.fallback.html)) {
     throw new RecipePageGoneError(url);
   }
-  if (state.fallback) return state.fallback;
+  if (state.fallback && !sawDirectBlock) return state.fallback;
 
   throw new RecipeImportFetchError(url, lastStatus, lastStatusText, layersTried);
 }
