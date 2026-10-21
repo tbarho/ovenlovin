@@ -1,0 +1,1278 @@
+{
+ "_meta": {
+  "commit": "bb0062c5665ce93e8d960849efaf9e844996950e",
+  "method": "Hand-written by reading each fixture's source text (paste text, photo card text verified against the rendered JPEGs, URL text as produced by pageTextFromHtml at bb0062c). Not derived from the repo parser.",
+  "fields": {
+   "line": "ingredient line as it appears in the source",
+   "food": "core ingredient name",
+   "acceptServings": "servings values a correct extraction may return ([] = should be absent/null)",
+   "acceptStepCounts": "step counts a careful human would accept"
+  }
+ },
+ "cases": {
+  "paste/chocolate-chip-cookies": {
+   "title": "Classic Chocolate Chip Cookies",
+   "titleAliases": [
+    "Chocolate Chip Cookies"
+   ],
+   "servings": 24,
+   "acceptServings": [
+    24
+   ],
+   "ingredients": [
+    {
+     "line": "2 1/4 cups all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1 tsp baking soda",
+     "food": "baking soda"
+    },
+    {
+     "line": "1 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1 cup butter, softened",
+     "food": "butter"
+    },
+    {
+     "line": "3/4 cup granulated sugar",
+     "food": "granulated sugar"
+    },
+    {
+     "line": "3/4 cup packed brown sugar",
+     "food": "brown sugar"
+    },
+    {
+     "line": "2 large eggs",
+     "food": "eggs"
+    },
+    {
+     "line": "2 tsp vanilla extract",
+     "food": "vanilla extract"
+    },
+    {
+     "line": "2 cups chocolate chips",
+     "food": "chocolate chips"
+    }
+   ],
+   "stepCount": 6,
+   "acceptStepCounts": [
+    6
+   ],
+   "note": "'Makes 24 cookies' treated as servings 24."
+  },
+  "paste/banana-bread": {
+   "title": "Banana Bread",
+   "titleAliases": [],
+   "servings": 10,
+   "acceptServings": [
+    10
+   ],
+   "ingredients": [
+    {
+     "line": "3 ripe bananas, mashed",
+     "food": "bananas"
+    },
+    {
+     "line": "1/3 cup melted butter",
+     "food": "butter"
+    },
+    {
+     "line": "3/4 cup sugar",
+     "food": "sugar"
+    },
+    {
+     "line": "1 egg",
+     "food": "egg"
+    },
+    {
+     "line": "1 tsp vanilla extract",
+     "food": "vanilla extract"
+    },
+    {
+     "line": "1 tsp baking soda",
+     "food": "baking soda"
+    },
+    {
+     "line": "1/4 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1 1/2 cups all-purpose flour",
+     "food": "all-purpose flour"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5
+   ],
+   "note": null
+  },
+  "paste/chicken-noodle-soup": {
+   "title": "Chicken Noodle Soup",
+   "titleAliases": [],
+   "servings": 6,
+   "acceptServings": [
+    6
+   ],
+   "ingredients": [
+    {
+     "line": "2 tbsp olive oil",
+     "food": "olive oil"
+    },
+    {
+     "line": "1 onion, diced",
+     "food": "onion"
+    },
+    {
+     "line": "2 carrots, sliced",
+     "food": "carrots"
+    },
+    {
+     "line": "2 celery stalks, sliced",
+     "food": "celery"
+    },
+    {
+     "line": "8 cups chicken broth",
+     "food": "chicken broth"
+    },
+    {
+     "line": "2 cups shredded cooked chicken",
+     "food": "chicken"
+    },
+    {
+     "line": "2 cups egg noodles",
+     "food": "egg noodles"
+    },
+    {
+     "line": "1 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1/2 tsp black pepper",
+     "food": "black pepper"
+    },
+    {
+     "line": "2 tbsp chopped parsley",
+     "food": "parsley"
+    }
+   ],
+   "stepCount": 4,
+   "acceptStepCounts": [
+    4
+   ],
+   "note": null
+  },
+  "paste/skillet-pancakes": {
+   "title": "Skillet Pancakes",
+   "titleAliases": [],
+   "servings": 4,
+   "acceptServings": [
+    4
+   ],
+   "ingredients": [
+    {
+     "line": "1 cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1 tablespoon sugar",
+     "food": "sugar"
+    },
+    {
+     "line": "1 teaspoon baking powder",
+     "food": "baking powder"
+    },
+    {
+     "line": "1 cup milk",
+     "food": "milk"
+    },
+    {
+     "line": "1 egg",
+     "food": "egg"
+    },
+    {
+     "line": "2 tablespoons melted butter",
+     "food": "butter"
+    }
+   ],
+   "stepCount": 3,
+   "acceptStepCounts": [
+    3
+   ],
+   "note": null
+  },
+  "paste/weeknight-chili": {
+   "title": "Weeknight Chili",
+   "titleAliases": [],
+   "servings": 6,
+   "acceptServings": [
+    6
+   ],
+   "ingredients": [
+    {
+     "line": "1 lb ground beef",
+     "food": "ground beef"
+    },
+    {
+     "line": "1 onion, chopped",
+     "food": "onion"
+    },
+    {
+     "line": "2 cloves garlic, minced",
+     "food": "garlic"
+    },
+    {
+     "line": "2 tbsp chili powder",
+     "food": "chili powder"
+    },
+    {
+     "line": "1 tsp cumin",
+     "food": "cumin"
+    },
+    {
+     "line": "1 can diced tomatoes",
+     "food": "diced tomatoes"
+    },
+    {
+     "line": "1 can kidney beans, drained",
+     "food": "kidney beans"
+    },
+    {
+     "line": "1 cup beef broth",
+     "food": "beef broth"
+    },
+    {
+     "line": "1 tsp salt",
+     "food": "salt"
+    }
+   ],
+   "stepCount": 4,
+   "acceptStepCounts": [
+    4
+   ],
+   "note": null
+  },
+  "paste/oatmeal-cookies": {
+   "title": "Chewy Oatmeal Cookies",
+   "titleAliases": [],
+   "servings": 24,
+   "acceptServings": [
+    24
+   ],
+   "ingredients": [
+    {
+     "line": "1 1/2 cups old-fashioned oats",
+     "food": "oats"
+    },
+    {
+     "line": "1 cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1/2 tsp baking soda",
+     "food": "baking soda"
+    },
+    {
+     "line": "1/2 tsp cinnamon",
+     "food": "cinnamon"
+    },
+    {
+     "line": "1/2 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1/2 cup butter, softened",
+     "food": "butter"
+    },
+    {
+     "line": "3/4 cup brown sugar",
+     "food": "brown sugar"
+    },
+    {
+     "line": "1 egg",
+     "food": "egg"
+    },
+    {
+     "line": "1 tsp vanilla",
+     "food": "vanilla"
+    },
+    {
+     "line": "3/4 cup raisins",
+     "food": "raisins"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5
+   ],
+   "note": "'Makes 24 cookies' treated as servings 24."
+  },
+  "paste/chicken-pot-pie": {
+   "title": "Chicken Pot Pie",
+   "titleAliases": [],
+   "servings": 16,
+   "acceptServings": [
+    8,
+    16
+   ],
+   "ingredients": [
+    {
+     "line": "2 refrigerated pie crusts",
+     "food": "pie crusts"
+    },
+    {
+     "line": "2 cups diced cooked chicken",
+     "food": "chicken"
+    },
+    {
+     "line": "1 cup frozen mixed vegetables",
+     "food": "mixed vegetables"
+    },
+    {
+     "line": "1/3 cup butter",
+     "food": "butter"
+    },
+    {
+     "line": "1/3 cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1/2 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1/4 tsp black pepper",
+     "food": "black pepper"
+    },
+    {
+     "line": "1 3/4 cups chicken broth",
+     "food": "chicken broth"
+    },
+    {
+     "line": "2/3 cup milk",
+     "food": "milk"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5
+   ],
+   "note": "Source says 'Makes 2 potpies (8 servings each)'; 16 total or 8 per pie both defensible, accept either."
+  },
+  "paste/lentil-soup": {
+   "title": "Red Lentil Soup",
+   "titleAliases": [],
+   "servings": 4,
+   "acceptServings": [
+    4
+   ],
+   "ingredients": [
+    {
+     "line": "2 tbsp olive oil",
+     "food": "olive oil"
+    },
+    {
+     "line": "1 onion, chopped",
+     "food": "onion"
+    },
+    {
+     "line": "2 garlic cloves, minced",
+     "food": "garlic"
+    },
+    {
+     "line": "1 tsp cumin",
+     "food": "cumin"
+    },
+    {
+     "line": "1 cup red lentils",
+     "food": "red lentils"
+    },
+    {
+     "line": "4 cups vegetable broth",
+     "food": "vegetable broth"
+    },
+    {
+     "line": "1 lemon, juiced",
+     "food": "lemon"
+    },
+    {
+     "line": "1 tsp salt",
+     "food": "salt"
+    }
+   ],
+   "stepCount": 4,
+   "acceptStepCounts": [
+    4
+   ],
+   "note": null
+  },
+  "photo/printed-tomato-pasta": {
+   "title": "Weeknight Tomato Pasta",
+   "titleAliases": [],
+   "servings": 4,
+   "acceptServings": [
+    4
+   ],
+   "ingredients": [
+    {
+     "line": "12 oz pasta",
+     "food": "pasta"
+    },
+    {
+     "line": "1 jar crushed tomatoes",
+     "food": "crushed tomatoes"
+    },
+    {
+     "line": "2 tbsp olive oil",
+     "food": "olive oil"
+    },
+    {
+     "line": "1/2 cup grated parmesan",
+     "food": "parmesan"
+    }
+   ],
+   "stepCount": 3,
+   "acceptStepCounts": [
+    3
+   ],
+   "note": "'Salt the pasta water well.' is a trailing tip, not a step or ingredient line; salt appears only as 'salted water' in step 1, so a salt ingredient line is tolerable but not expected. 'Weeknight Dinners, p. 42' is a source, not the title."
+  },
+  "photo/handwritten-ginger-snaps": {
+   "title": "Grandma's Ginger Snaps",
+   "titleAliases": [
+    "Ginger Snaps"
+   ],
+   "servings": 48,
+   "acceptServings": [
+    48
+   ],
+   "ingredients": [
+    {
+     "line": "3/4 c. shortening",
+     "food": "shortening"
+    },
+    {
+     "line": "1 c. sugar",
+     "food": "sugar"
+    },
+    {
+     "line": "1 egg",
+     "food": "egg"
+    },
+    {
+     "line": "1/4 c. molasses",
+     "food": "molasses"
+    },
+    {
+     "line": "2 c. flour",
+     "food": "flour"
+    },
+    {
+     "line": "2 tsp. baking soda",
+     "food": "baking soda"
+    },
+    {
+     "line": "1 tsp. cinnamon",
+     "food": "cinnamon"
+    },
+    {
+     "line": "1 tsp. cloves",
+     "food": "cloves"
+    },
+    {
+     "line": "1 tsp. ginger",
+     "food": "ginger"
+    }
+   ],
+   "stepCount": 7,
+   "acceptStepCounts": [
+    5,
+    6,
+    7
+   ],
+   "note": "Each instruction sentence sits on its own line, so 7 steps; merging short lines (e.g. 'Chill dough.') into neighbours is acceptable down to 5. 'Makes 48' -> 48. Abbreviation 'c.' may be expanded to 'cup'."
+  },
+  "photo/banana-bread": {
+   "title": "Banana Bread",
+   "titleAliases": [],
+   "servings": 10,
+   "acceptServings": [
+    10
+   ],
+   "ingredients": [
+    {
+     "line": "3 ripe bananas, mashed",
+     "food": "bananas"
+    },
+    {
+     "line": "1/3 cup melted butter",
+     "food": "butter"
+    },
+    {
+     "line": "3/4 cup sugar",
+     "food": "sugar"
+    },
+    {
+     "line": "1 egg",
+     "food": "egg"
+    },
+    {
+     "line": "1 tsp vanilla extract",
+     "food": "vanilla extract"
+    },
+    {
+     "line": "1 tsp baking soda",
+     "food": "baking soda"
+    },
+    {
+     "line": "1/4 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1 1/2 cups all-purpose flour",
+     "food": "all-purpose flour"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5
+   ],
+   "note": null
+  },
+  "photo/chicken-noodle-soup": {
+   "title": "Chicken Noodle Soup",
+   "titleAliases": [],
+   "servings": 6,
+   "acceptServings": [
+    6
+   ],
+   "ingredients": [
+    {
+     "line": "2 tbsp olive oil",
+     "food": "olive oil"
+    },
+    {
+     "line": "1 onion, diced",
+     "food": "onion"
+    },
+    {
+     "line": "2 carrots, sliced",
+     "food": "carrots"
+    },
+    {
+     "line": "2 celery stalks, sliced",
+     "food": "celery"
+    },
+    {
+     "line": "8 cups chicken broth",
+     "food": "chicken broth"
+    },
+    {
+     "line": "2 cups shredded cooked chicken",
+     "food": "chicken"
+    },
+    {
+     "line": "2 cups egg noodles",
+     "food": "egg noodles"
+    },
+    {
+     "line": "1 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1/2 tsp black pepper",
+     "food": "black pepper"
+    },
+    {
+     "line": "2 tbsp chopped parsley",
+     "food": "parsley"
+    }
+   ],
+   "stepCount": 4,
+   "acceptStepCounts": [
+    4
+   ],
+   "note": null
+  },
+  "photo/skillet-pancakes": {
+   "title": "Skillet Pancakes",
+   "titleAliases": [],
+   "servings": 4,
+   "acceptServings": [
+    4
+   ],
+   "ingredients": [
+    {
+     "line": "1 cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1 tablespoon sugar",
+     "food": "sugar"
+    },
+    {
+     "line": "1 teaspoon baking powder",
+     "food": "baking powder"
+    },
+    {
+     "line": "1 cup milk",
+     "food": "milk"
+    },
+    {
+     "line": "1 egg",
+     "food": "egg"
+    },
+    {
+     "line": "2 tablespoons melted butter",
+     "food": "butter"
+    }
+   ],
+   "stepCount": 3,
+   "acceptStepCounts": [
+    3
+   ],
+   "note": null
+  },
+  "photo/weeknight-chili": {
+   "title": "Weeknight Chili",
+   "titleAliases": [],
+   "servings": 6,
+   "acceptServings": [
+    6
+   ],
+   "ingredients": [
+    {
+     "line": "1 lb ground beef",
+     "food": "ground beef"
+    },
+    {
+     "line": "1 onion, chopped",
+     "food": "onion"
+    },
+    {
+     "line": "2 cloves garlic, minced",
+     "food": "garlic"
+    },
+    {
+     "line": "2 tbsp chili powder",
+     "food": "chili powder"
+    },
+    {
+     "line": "1 tsp cumin",
+     "food": "cumin"
+    },
+    {
+     "line": "1 can diced tomatoes",
+     "food": "diced tomatoes"
+    },
+    {
+     "line": "1 can kidney beans, drained",
+     "food": "kidney beans"
+    },
+    {
+     "line": "1 cup beef broth",
+     "food": "beef broth"
+    },
+    {
+     "line": "1 tsp salt",
+     "food": "salt"
+    }
+   ],
+   "stepCount": 4,
+   "acceptStepCounts": [
+    4
+   ],
+   "note": null
+  },
+  "photo/oatmeal-cookies": {
+   "title": "Chewy Oatmeal Cookies",
+   "titleAliases": [],
+   "servings": 24,
+   "acceptServings": [
+    24
+   ],
+   "ingredients": [
+    {
+     "line": "1 1/2 cups old-fashioned oats",
+     "food": "oats"
+    },
+    {
+     "line": "1 cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1/2 tsp baking soda",
+     "food": "baking soda"
+    },
+    {
+     "line": "1/2 tsp cinnamon",
+     "food": "cinnamon"
+    },
+    {
+     "line": "1/2 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1/2 cup butter, softened",
+     "food": "butter"
+    },
+    {
+     "line": "3/4 cup brown sugar",
+     "food": "brown sugar"
+    },
+    {
+     "line": "1 egg",
+     "food": "egg"
+    },
+    {
+     "line": "1 tsp vanilla",
+     "food": "vanilla"
+    },
+    {
+     "line": "3/4 cup raisins",
+     "food": "raisins"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5
+   ],
+   "note": "'Makes 24 cookies' treated as servings 24."
+  },
+  "photo/chicken-pot-pie": {
+   "title": "Chicken Pot Pie",
+   "titleAliases": [],
+   "servings": 16,
+   "acceptServings": [
+    8,
+    16
+   ],
+   "ingredients": [
+    {
+     "line": "2 refrigerated pie crusts",
+     "food": "pie crusts"
+    },
+    {
+     "line": "2 cups diced cooked chicken",
+     "food": "chicken"
+    },
+    {
+     "line": "1 cup frozen mixed vegetables",
+     "food": "mixed vegetables"
+    },
+    {
+     "line": "1/3 cup butter",
+     "food": "butter"
+    },
+    {
+     "line": "1/3 cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1/2 tsp salt",
+     "food": "salt"
+    },
+    {
+     "line": "1/4 tsp black pepper",
+     "food": "black pepper"
+    },
+    {
+     "line": "1 3/4 cups chicken broth",
+     "food": "chicken broth"
+    },
+    {
+     "line": "2/3 cup milk",
+     "food": "milk"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5
+   ],
+   "note": "Source says 'Makes 2 potpies (8 servings each)'; 16 total or 8 per pie both defensible, accept either."
+  },
+  "url/cookie-and-kate-lentil-soup": {
+   "title": "Best Lentil Soup",
+   "titleAliases": [
+    "Best Lentil Soup Recipe"
+   ],
+   "servings": 4,
+   "acceptServings": [
+    4,
+    6
+   ],
+   "ingredients": [
+    {
+     "line": "¼ cup extra virgin olive oil",
+     "food": "olive oil"
+    },
+    {
+     "line": "1 medium yellow or white onion, chopped",
+     "food": "onion"
+    },
+    {
+     "line": "2 carrots, peeled and chopped",
+     "food": "carrots"
+    },
+    {
+     "line": "4 garlic cloves, pressed or minced",
+     "food": "garlic"
+    },
+    {
+     "line": "2 teaspoons ground cumin",
+     "food": "cumin"
+    },
+    {
+     "line": "1 teaspoon curry powder",
+     "food": "curry powder"
+    },
+    {
+     "line": "½ teaspoon dried thyme",
+     "food": "thyme"
+    },
+    {
+     "line": "1 large can (28 ounces) diced tomatoes, lightly drained",
+     "food": "diced tomatoes"
+    },
+    {
+     "line": "1 cup brown or green lentils, picked over and rinsed",
+     "food": "lentils"
+    },
+    {
+     "line": "4 cups vegetable broth",
+     "food": "vegetable broth"
+    },
+    {
+     "line": "2 cups water",
+     "food": "water"
+    },
+    {
+     "line": "1 teaspoon salt, more to taste",
+     "food": "salt"
+    },
+    {
+     "line": "Pinch of red pepper flakes",
+     "food": "red pepper flakes"
+    },
+    {
+     "line": "Freshly ground black pepper, to taste",
+     "food": "black pepper"
+    },
+    {
+     "line": "1 cup chopped fresh collard greens or kale, tough ribs removed",
+     "food": "collard greens or kale"
+    },
+    {
+     "line": "1 to 2 tablespoons lemon juice (½ to 1 medium lemon), to taste",
+     "food": "lemon juice"
+    }
+   ],
+   "stepCount": 7,
+   "acceptStepCounts": [
+    6,
+    7
+   ],
+   "note": "Card says 'Yield: 4 servings' and 'four large bowls, or six more modest servings' -> 4 (6 acceptable). 7 instruction paragraphs; the last ('Serve while hot...') is a serving/storage note, so 6 also acceptable."
+  },
+  "url/taste-of-home-chicken-potpie": {
+   "title": "Best Chicken Potpie",
+   "titleAliases": [
+    "Chicken Potpie",
+    "Chicken Pot Pie"
+   ],
+   "servings": null,
+   "acceptServings": [],
+   "ingredients": [
+    {
+     "line": "2 cups diced peeled potatoes",
+     "food": "potatoes"
+    },
+    {
+     "line": "1-3/4 cups sliced carrots",
+     "food": "carrots"
+    },
+    {
+     "line": "1 cup butter, cubed",
+     "food": "butter"
+    },
+    {
+     "line": "2/3 cup chopped onion",
+     "food": "onion"
+    },
+    {
+     "line": "1 cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1-3/4 teaspoons salt",
+     "food": "salt"
+    },
+    {
+     "line": "1 teaspoon dried thyme",
+     "food": "thyme"
+    },
+    {
+     "line": "3/4 teaspoon pepper",
+     "food": "pepper"
+    },
+    {
+     "line": "3 cups chicken broth",
+     "food": "chicken broth"
+    },
+    {
+     "line": "1-1/2 cups whole milk",
+     "food": "milk"
+    },
+    {
+     "line": "4 cups cubed cooked chicken",
+     "food": "chicken"
+    },
+    {
+     "line": "1 cup frozen peas",
+     "food": "peas"
+    },
+    {
+     "line": "1 cup frozen corn",
+     "food": "corn"
+    },
+    {
+     "line": "4 sheets refrigerated pie crust",
+     "food": "pie crust"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5,
+    6
+   ],
+   "note": "Servings/yield ('2 potpies (8 servings each)') is not in the text the importer sees; only 'makes two pies' in prose -> null. Recipe card has 5 numbered steps; the article's 'Step 1..6' walkthrough (6 steps) is an acceptable alternative."
+  },
+  "url/wikibooks-ginger-snaps": {
+   "title": "Ginger Snaps",
+   "titleAliases": [],
+   "servings": null,
+   "acceptServings": [
+    500
+   ],
+   "ingredients": [
+    {
+     "line": "2 cups butter, melted",
+     "food": "butter"
+    },
+    {
+     "line": "2 cups dark molasses",
+     "food": "molasses"
+    },
+    {
+     "line": "1 lb dark brown sugar",
+     "food": "brown sugar"
+    },
+    {
+     "line": "2 tsp cinnamon",
+     "food": "cinnamon"
+    },
+    {
+     "line": "a little allspice",
+     "food": "allspice"
+    },
+    {
+     "line": "1 tsp ground cloves",
+     "food": "cloves"
+    },
+    {
+     "line": "1 tsp nutmeg",
+     "food": "nutmeg"
+    },
+    {
+     "line": "1 tbsp ground ginger",
+     "food": "ginger"
+    },
+    {
+     "line": "a little black pepper",
+     "food": "black pepper"
+    },
+    {
+     "line": "10-12 cups all-purpose flour",
+     "food": "all-purpose flour"
+    }
+   ],
+   "stepCount": 7,
+   "acceptStepCounts": [
+    7
+   ],
+   "note": "Page shows 'Yield500 cookies' (a yield, odd but stated) and the category 'Recipes without servings' -> null; 500 also acceptable. 7 procedure lines."
+  },
+  "url/wikibooks-red-lentil-soup": {
+   "title": "Red Lentil Soup",
+   "titleAliases": [],
+   "servings": 4,
+   "acceptServings": [
+    4
+   ],
+   "ingredients": [
+    {
+     "line": "1-2 tablespoons olive oil",
+     "food": "olive oil"
+    },
+    {
+     "line": "1 onion, diced",
+     "food": "onion"
+    },
+    {
+     "line": "2 carrots, diced",
+     "food": "carrots"
+    },
+    {
+     "line": "2 cloves garlic, minced",
+     "food": "garlic"
+    },
+    {
+     "line": "½ lb dry red lentils",
+     "food": "red lentils"
+    },
+    {
+     "line": "6 cups water or stock",
+     "food": "water or stock"
+    },
+    {
+     "line": "1 bay leaf",
+     "food": "bay leaf"
+    }
+   ],
+   "stepCount": 4,
+   "acceptStepCounts": [
+    3,
+    4
+   ],
+   "note": "'Servings4' shown. First procedure line has an image caption glued on ('Finished lentil soup ... addedPick over the lentils'); the step is 'Pick over the lentils... Rinse well.' 4 steps incl. 'Serve hot.'; 3 acceptable if 'Serve hot.' is folded/dropped."
+  },
+  "url/wikibooks-marinara": {
+   "title": "Marinara Sauce",
+   "titleAliases": [],
+   "servings": 6,
+   "acceptServings": [
+    6
+   ],
+   "ingredients": [
+    {
+     "line": "6 tablespoons virgin olive oil",
+     "food": "olive oil"
+    },
+    {
+     "line": "225 grams (8 ounces) Spanish onion, diced",
+     "food": "onion"
+    },
+    {
+     "line": "4 cloves garlic, thinly sliced",
+     "food": "garlic"
+    },
+    {
+     "line": "2 teaspoons fresh thyme leaves (or ½ teaspoon dried)",
+     "food": "thyme"
+    },
+    {
+     "line": "4 teaspoons fresh basil leaves (or 1 teaspoon dried)",
+     "food": "basil"
+    },
+    {
+     "line": "85 grams (3 ounces) red bell pepper, diced",
+     "food": "red bell pepper"
+    },
+    {
+     "line": "1.3 kilograms (1 pound and 14 ounces) skinless plum tomatoes, crushed by hand",
+     "food": "plum tomatoes"
+    },
+    {
+     "line": "1 tablespoon sugar",
+     "food": "sugar"
+    },
+    {
+     "line": "Salt to taste",
+     "food": "salt"
+    }
+   ],
+   "stepCount": 6,
+   "acceptStepCounts": [
+    6
+   ],
+   "note": "'Servings6' shown. 6 preparation lines."
+  },
+  "url/wikibooks-banana-bread": {
+   "title": "Banana Bread",
+   "titleAliases": [
+    "Banana Bread I"
+   ],
+   "servings": null,
+   "acceptServings": [],
+   "ingredients": [
+    {
+     "line": "White sugar 1 cup 200 g 80%",
+     "food": "sugar"
+    },
+    {
+     "line": "Butter, softened ½ cup 113 g 45.4%",
+     "food": "butter"
+    },
+    {
+     "line": "Bananas (the riper the better), mashed 3 ea. 243-456 g 97.2-182.4%",
+     "food": "bananas"
+    },
+    {
+     "line": "Eggs 2 ea. 100 g 40%",
+     "food": "eggs"
+    },
+    {
+     "line": "All-purpose flour 2 cups 250 g 100%",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "Baking soda ½ tsp 2.3 g 0.92%",
+     "food": "baking soda"
+    },
+    {
+     "line": "Sour milk or buttermilk ⅓ cup 81 g 32.67%",
+     "food": "sour milk or buttermilk"
+    },
+    {
+     "line": "Salt ¼ tsp 1.5 g 0.6%",
+     "food": "salt"
+    },
+    {
+     "line": "Vanilla extract 1 tsp 4.2 g 1.68%",
+     "food": "vanilla extract"
+    }
+   ],
+   "stepCount": 5,
+   "acceptStepCounts": [
+    5
+   ],
+   "note": "Ingredients are table rows (name, count/volume, weight, baker's %); a model may rewrite them as '1 cup white sugar' etc. -- judge by food+quantity, not verbatim text. The 'Total' row and substitution notes (baking powder, milk, nuts) are not ingredients. No servings stated."
+  },
+  "url/wikibooks-chocolate-chip-cookies": {
+   "title": "Chocolate Chip Cookies",
+   "titleAliases": [
+    "Chocolate Chip Cookies I"
+   ],
+   "servings": null,
+   "acceptServings": [],
+   "ingredients": [
+    {
+     "line": "2 sticks (½ lb / 225 g / 1 cup) butter, softened",
+     "food": "butter"
+    },
+    {
+     "line": "¾ cup (180 ml) granulated white sugar",
+     "food": "granulated sugar"
+    },
+    {
+     "line": "¾ cup (180 ml) packed brown sugar",
+     "food": "brown sugar"
+    },
+    {
+     "line": "¼ teaspoon vanilla extract",
+     "food": "vanilla extract"
+    },
+    {
+     "line": "2 standard (100 g) eggs",
+     "food": "eggs"
+    },
+    {
+     "line": "2 ¼ cups (600 ml / 290 g) all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "1 teaspoon baking soda",
+     "food": "baking soda"
+    },
+    {
+     "line": "1 teaspoon salt",
+     "food": "salt"
+    },
+    {
+     "line": "1 teaspoon dry ground lemon or orange peel (optional)",
+     "food": "lemon or orange peel",
+     "optional": true
+    },
+    {
+     "line": "2 cups (480 ml / 12 oz) semi-sweet chocolate morsels / chips",
+     "food": "chocolate chips"
+    },
+    {
+     "line": "5 oz (150 g) chopped nuts, such as groundnuts (optional)",
+     "food": "nuts",
+     "optional": true
+    }
+   ],
+   "stepCount": 8,
+   "acceptStepCounts": [
+    8
+   ],
+   "note": "No servings/yield in the importer's text at this commit (infobox not included). 8 procedure lines; 'Notes' and 'Method' tip sections are not steps. Two optional ingredients are part of the list."
+  },
+  "url/wikibooks-chicken-pot-pie": {
+   "title": "Chicken Pot Pie",
+   "titleAliases": [
+    "Chicken Pot Pie II"
+   ],
+   "servings": null,
+   "acceptServings": [],
+   "ingredients": [
+    {
+     "line": "1 package pie crusts",
+     "food": "pie crusts"
+    },
+    {
+     "line": "⅓ cup margarine or butter",
+     "food": "margarine or butter"
+    },
+    {
+     "line": "⅓ cup chopped onion",
+     "food": "onion"
+    },
+    {
+     "line": "⅓ cup all-purpose flour",
+     "food": "all-purpose flour"
+    },
+    {
+     "line": "½ teaspoon salt",
+     "food": "salt"
+    },
+    {
+     "line": "¼ teaspoon pepper",
+     "food": "pepper"
+    },
+    {
+     "line": "1 ½ cups chicken broth",
+     "food": "chicken broth"
+    },
+    {
+     "line": "⅔ cup milk",
+     "food": "milk"
+    },
+    {
+     "line": "3 cups chicken, cooked",
+     "food": "chicken"
+    },
+    {
+     "line": "1 cup frozen corn, thawed",
+     "food": "corn"
+    },
+    {
+     "line": "1 cup frozen peas, thawed",
+     "food": "peas"
+    }
+   ],
+   "stepCount": 11,
+   "acceptStepCounts": [
+    8,
+    9,
+    10,
+    11
+   ],
+   "note": "11 one-sentence procedure lines; grouping short lines into fewer steps (e.g. 8-10) is a judgment call, accepted."
+  }
+ }
+}

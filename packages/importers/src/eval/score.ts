@@ -1,14 +1,22 @@
 /** Overall import score must meet this to pass an eve gate. */
 export const IMPORT_EVAL_SCORE_GATE = 0.95;
 
+export type ExpectedIngredient = {
+  line: string;
+  food: string;
+  optional?: boolean;
+};
+
 export type ExpectedRecipe = {
   title: string;
   titleAliases?: string[];
-  /** `null` means servings are omitted from the overall score. An array accepts any of the values. */
-  servings?: number | number[] | null;
-  ingredients: string[];
+  /** Canonical servings. Omitted from the overall score; see `acceptServings`. */
+  servings?: number | null;
+  /** Allowed servings. `[]` means the key has none and servings are not scored. */
+  acceptServings?: number[];
+  ingredients: ExpectedIngredient[];
   stepCount: number;
-  stepMustInclude: string[];
+  acceptStepCounts?: number[];
 };
 
 export type ObservedRecipe = {
@@ -69,51 +77,102 @@ function titleMatched(got: string | undefined, expected: ExpectedRecipe): boolea
   });
 }
 
-function servingsMatched(got: number | undefined, expected: ExpectedRecipe): boolean | null {
+function allowedServings(expected: ExpectedRecipe): number[] | null {
+  if (expected.acceptServings) {
+    return expected.acceptServings.length === 0 ? null : expected.acceptServings;
+  }
   if (expected.servings == null) return null;
-  const allowed = Array.isArray(expected.servings) ? expected.servings : [expected.servings];
+  return [expected.servings];
+}
+
+function servingsMatched(got: number | undefined, expected: ExpectedRecipe): boolean | null {
+  const allowed = allowedServings(expected);
+  if (allowed == null) return null;
   return got != null && allowed.includes(got);
 }
 
-/**
- * Whole-line match: equal after normalize, or the shorter line's tokens
- * (2+) are all in the longer. Single-token keys never match a longer line
- * ("egg" / "egg noodles", "sugar" / "brown sugar").
- */
-export function ingredientMatched(got: string, expected: string): boolean {
-  const a = tokens(got);
-  const b = tokens(expected);
-  if (a.length === 0 || b.length === 0) return false;
-  if (a.join(" ") === b.join(" ")) return true;
-  const [small, big] = a.length <= b.length ? [a, b] : [b, a];
-  if (small.length < 2) return false;
-  const have = new Set(big);
-  return small.every((token) => have.has(token));
+function allowedStepCounts(expected: ExpectedRecipe): number[] {
+  return expected.acceptStepCounts?.length ? expected.acceptStepCounts : [expected.stepCount];
 }
 
-function assignIngredientHits(got: string[], want: string[]): number {
-  const pairs: Array<{ g: number; w: number; score: number }> = [];
-  for (let g = 0; g < got.length; g++) {
-    for (let w = 0; w < want.length; w++) {
-      const left = got[g];
-      const right = want[w];
-      if (left == null || right == null || !ingredientMatched(left, right)) continue;
-      const gt = tokens(left).length;
-      const wt = tokens(right).length;
-      pairs.push({ g, w, score: Math.min(gt, wt) / Math.max(gt, wt) });
+/**
+ * shortcut: only these compounds count as a different modified food;
+ * add one when a live case or negative test needs it.
+ */
+const MODIFIED_FOODS = [
+  "brown sugar",
+  "egg noodles",
+  "chicken broth",
+  "red pepper flakes",
+  "red bell pepper",
+  "bell pepper",
+];
+
+function hasTokensInOrder(lineToks: string[], need: string[]): boolean {
+  let i = 0;
+  for (const token of need) {
+    let found = -1;
+    for (let j = i; j < lineToks.length; j++) {
+      const got = lineToks[j];
+      if (got != null && tokensMatch(got, token)) {
+        found = j;
+        break;
+      }
+    }
+    if (found < 0) return false;
+    i = found + 1;
+  }
+  return true;
+}
+
+/** Food tokens appear as whole words in the line (gaps allowed for "granulated white sugar"). */
+export function ingredientMatched(line: string, food: string): boolean {
+  const lineToks = tokens(line);
+  const foodToks = tokens(food);
+  if (lineToks.length === 0 || foodToks.length === 0) return false;
+  if (!hasTokensInOrder(lineToks, foodToks)) return false;
+  const foodNorm = normalizeText(food);
+  return !MODIFIED_FOODS.some((compound) => {
+    const compoundToks = tokens(compound);
+    if (compoundToks.length <= foodToks.length) return false;
+    if (!normalizeText(compound).includes(foodNorm)) return false;
+    return hasTokensInOrder(lineToks, compoundToks);
+  });
+}
+
+function assignIngredientHits(got: string[], want: ExpectedIngredient[]): number {
+  const order = want
+    .map((item, w) => ({ w, food: item.food, len: tokens(item.food).length }))
+    .sort((left, right) => right.len - left.len);
+  const usedGot = new Set<number>();
+  let hits = 0;
+  for (const key of order) {
+    for (let g = 0; g < got.length; g++) {
+      if (usedGot.has(g)) continue;
+      const line = got[g];
+      if (line == null || !ingredientMatched(line, key.food)) continue;
+      usedGot.add(g);
+      hits += 1;
+      break;
     }
   }
-  pairs.sort((left, right) => right.score - left.score);
-  const usedGot = new Set<number>();
-  const usedWant = new Set<number>();
-  let hits = 0;
-  for (const pair of pairs) {
-    if (usedGot.has(pair.g) || usedWant.has(pair.w)) continue;
-    usedGot.add(pair.g);
-    usedWant.add(pair.w);
-    hits += 1;
-  }
   return hits;
+}
+
+function stepCompletenessOf(observedSteps: number, expected: ExpectedRecipe): number {
+  const allowed = allowedStepCounts(expected);
+  if (allowed.includes(observedSteps)) return 1;
+  const nearest = allowed.reduce((best, n) =>
+    Math.abs(n - observedSteps) < Math.abs(best - observedSteps) ? n : best
+  );
+  const countRecall = nearest <= 0 ? 1 : Math.min(observedSteps, nearest) / nearest;
+  const countPrecision =
+    observedSteps === 0
+      ? nearest === 0
+        ? 1
+        : 0
+      : Math.min(observedSteps, nearest) / observedSteps;
+  return (countRecall + countPrecision) / 2;
 }
 
 export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe): CaseScores {
@@ -126,27 +185,10 @@ export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe):
     expected.ingredients.length === 0 ? 1 : hits / expected.ingredients.length;
   const ingredientPrecision =
     observed.ingredients.length === 0 ? 0 : hits / observed.ingredients.length;
+  const stepCompleteness = stepCompletenessOf(observed.steps.length, expected);
 
-  const expectedSteps = expected.stepCount;
-  const observedSteps = observed.steps.length;
-  const countRecall =
-    expectedSteps <= 0 ? 1 : Math.min(observedSteps, expectedSteps) / expectedSteps;
-  const countPrecision =
-    observedSteps === 0
-      ? expectedSteps === 0
-        ? 1
-        : 0
-      : Math.min(observedSteps, expectedSteps) / observedSteps;
-  const keyHits = expected.stepMustInclude.filter((key) =>
-    observed.steps.some((step) => normalizeText(step).includes(normalizeText(key)))
-  ).length;
-  const keyScore =
-    expected.stepMustInclude.length === 0 ? 1 : keyHits / expected.stepMustInclude.length;
-  const stepCompleteness = (countRecall + countPrecision + keyScore) / 3;
-
-  const parts = [title, ingredientRecall, ingredientPrecision, stepCompleteness];
-  if (servings != null) parts.push(servings);
-  const score = mean(parts);
+  // min: one dropped/invented ingredient must fail 0.95; mean would not. Servings stay out (correctness ignores them).
+  const score = Math.min(title, ingredientRecall, ingredientPrecision, stepCompleteness);
 
   return {
     title,

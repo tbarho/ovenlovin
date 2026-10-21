@@ -5,7 +5,23 @@ import {
   median,
   normalizeText,
   scoreRecipe,
+  type ExpectedRecipe,
 } from "./score";
+
+const tomato: ExpectedRecipe = {
+  title: "Weeknight Tomato Pasta",
+  servings: 4,
+  acceptServings: [4],
+  ingredients: [
+    { line: "12 oz pasta", food: "pasta" },
+    { line: "2 tbsp olive oil", food: "olive oil" },
+    { line: "3 garlic cloves", food: "garlic" },
+    { line: "1 can crushed tomatoes", food: "crushed tomatoes" },
+    { line: "basil leaves", food: "basil" },
+  ],
+  stepCount: 3,
+  acceptStepCounts: [3],
+};
 
 describe("normalizeText", () => {
   it("strips price notes and decodes fractions", () => {
@@ -14,53 +30,48 @@ describe("normalizeText", () => {
 });
 
 describe("ingredientMatched", () => {
-  it("accepts a faithful full line and the live false-reject lines", () => {
-    expect(
-      ingredientMatched(
-        "1 large can (28 ounces) diced tomatoes, lightly drained",
-        "1 large can (28 ounces) diced tomatoes, lightly drained"
-      )
-    ).toBe(true);
-    expect(
-      ingredientMatched("1 teaspoon salt, more to taste", "1 teaspoon salt, more to taste")
-    ).toBe(true);
-    expect(
-      ingredientMatched("4 cloves garlic, thinly sliced", "4 cloves garlic, thinly sliced")
-    ).toBe(true);
-    expect(ingredientMatched("Eggs 2 ea.", "Eggs 2 ea. 100 g 40%")).toBe(true);
-    expect(ingredientMatched("Vanilla extract", "Vanilla extract 1 tsp 4.2 g 1.68%")).toBe(true);
-    expect(ingredientMatched("1 egg", "1 egg")).toBe(true);
+  it("finds a one-word food in a full line", () => {
+    expect(ingredientMatched("1 tsp salt", "salt")).toBe(true);
+    expect(ingredientMatched("- 1 tsp salt", "salt")).toBe(true);
+    expect(ingredientMatched("1 egg", "egg")).toBe(true);
   });
 
-  it("rejects sugar/brown sugar, pepper/bell pepper, and egg/egg noodles", () => {
-    expect(ingredientMatched("3/4 cup packed brown sugar", "3/4 cup granulated white sugar")).toBe(
-      false
+  it("finds a food through unit abbreviations and hyphenated quantities", () => {
+    expect(ingredientMatched("3/4 c. shortening", "shortening")).toBe(true);
+    expect(ingredientMatched("1-3/4 cups sliced carrots", "carrots")).toBe(true);
+    expect(ingredientMatched("Eggs 2 ea. 100 g 40%", "eggs")).toBe(true);
+  });
+
+  it("allows words between food tokens", () => {
+    expect(ingredientMatched("3/4 cup (180 ml) granulated white sugar", "granulated sugar")).toBe(
+      true
     );
-    expect(ingredientMatched("sugar", "3/4 cup packed brown sugar")).toBe(false);
     expect(
-      ingredientMatched("85 grams (3 ounces) red bell pepper, diced", "a little black pepper")
-    ).toBe(false);
-    expect(ingredientMatched("pepper", "85 grams (3 ounces) red bell pepper, diced")).toBe(false);
-    expect(ingredientMatched("egg noodles", "1 egg")).toBe(false);
-    expect(ingredientMatched("egg", "egg noodles")).toBe(false);
+      ingredientMatched(
+        "2 cups (480 ml / 12 oz) semi-sweet chocolate morsels / chips",
+        "chocolate chips"
+      )
+    ).toBe(true);
+  });
+
+  it("rejects a different modified food", () => {
+    expect(ingredientMatched("3/4 cup packed brown sugar", "sugar")).toBe(false);
+    expect(ingredientMatched("1 cup brown sugar", "sugar")).toBe(false);
+    expect(ingredientMatched("2 cups egg noodles", "egg")).toBe(false);
+    expect(ingredientMatched("8 cups chicken broth", "chicken")).toBe(false);
+    expect(ingredientMatched("85 grams (3 ounces) red bell pepper, diced", "pepper")).toBe(false);
+  });
+
+  it("still matches the compound food itself and an unmodified short food", () => {
+    expect(ingredientMatched("3/4 cup packed brown sugar", "brown sugar")).toBe(true);
+    expect(ingredientMatched("3/4 cup sugar", "sugar")).toBe(true);
+    expect(ingredientMatched("White sugar 1 cup 200 g 80%", "sugar")).toBe(true);
+    expect(ingredientMatched("1 cup brown or green lentils, rinsed", "lentils")).toBe(true);
+    expect(ingredientMatched("2 cups shredded cooked chicken", "chicken")).toBe(true);
   });
 });
 
 describe("scoreRecipe", () => {
-  const expected = {
-    title: "Weeknight Tomato Pasta",
-    servings: 4,
-    ingredients: [
-      "12 oz pasta",
-      "2 tbsp olive oil",
-      "3 garlic cloves",
-      "1 can crushed tomatoes",
-      "basil leaves",
-    ],
-    stepCount: 3,
-    stepMustInclude: ["boil", "garlic", "basil"],
-  };
-
   it("scores a complete extract at 1", () => {
     const scores = scoreRecipe(
       {
@@ -79,7 +90,7 @@ describe("scoreRecipe", () => {
           "Toss with basil.",
         ],
       },
-      expected
+      tomato
     );
     expect(scores.score).toBe(1);
   });
@@ -92,16 +103,15 @@ describe("scoreRecipe", () => {
         ingredients: ["12 oz pasta", "2 tbsp olive oil", "1 can tomatoes"],
         steps: ["Boil the pasta.", "Warm the sauce."],
       },
-      expected
+      tomato
     );
     expect(scores.title).toBe(0);
     expect(scores.ingredientRecall).toBeLessThan(1);
     expect(scores.stepCompleteness).toBeLessThan(1);
-    expect(scores.score).toBeGreaterThan(0.2);
-    expect(scores.score).toBeLessThan(0.9);
+    expect(scores.score).toBeLessThan(IMPORT_EVAL_SCORE_GATE);
   });
 
-  it("assigns each key to at most one observed line", () => {
+  it("assigns the longest food first so brown sugar does not cover sugar", () => {
     const scores = scoreRecipe(
       {
         title: "Cookies",
@@ -111,9 +121,13 @@ describe("scoreRecipe", () => {
       {
         title: "Cookies",
         servings: null,
-        ingredients: ["3/4 cup granulated white sugar", "3/4 cup packed brown sugar"],
+        acceptServings: [],
+        ingredients: [
+          { line: "3/4 cup granulated white sugar", food: "sugar" },
+          { line: "3/4 cup packed brown sugar", food: "brown sugar" },
+        ],
         stepCount: 1,
-        stepMustInclude: [],
+        acceptStepCounts: [1],
       }
     );
     expect(scores.ingredientRecall).toBe(0.5);
@@ -121,12 +135,16 @@ describe("scoreRecipe", () => {
   });
 
   it("does not treat egg as a match for egg noodles", () => {
-    const soup = {
+    const soup: ExpectedRecipe = {
       title: "Chicken Noodle Soup",
       servings: 6,
-      ingredients: ["2 cups shredded cooked chicken", "2 cups egg noodles", "2 carrots, sliced"],
+      ingredients: [
+        { line: "2 cups shredded cooked chicken", food: "chicken" },
+        { line: "2 cups egg noodles", food: "egg noodles" },
+        { line: "2 carrots, sliced", food: "carrots" },
+      ],
       stepCount: 2,
-      stepMustInclude: ["noodles"],
+      acceptStepCounts: [2],
     };
     const scores = scoreRecipe(
       {
@@ -145,10 +163,10 @@ describe("scoreRecipe", () => {
       {
         title: "Weeknight Tomato Pasta",
         servings: 4,
-        ingredients: expected.ingredients,
+        ingredients: tomato.ingredients.map((item) => item.line),
         steps: ["Boil.", "Garlic.", "Basil.", "Plate leftovers.", "Wash the pot."],
       },
-      expected
+      tomato
     );
     expect(scores.stepCompleteness).toBeLessThan(1);
   });
@@ -161,7 +179,7 @@ describe("scoreRecipe", () => {
         ingredients: ["1 egg", "2 tbsp olive oil", "egg noodles"],
         steps: ["Boil water.", "Add noodles.", "Drain.", "Eat.", "Clean up."],
       },
-      expected
+      tomato
     );
     expect(scores.score).toBeLessThan(IMPORT_EVAL_SCORE_GATE);
     expect(scores.title).toBe(0);
@@ -169,7 +187,7 @@ describe("scoreRecipe", () => {
   });
 
   it("accepts either pot-pie serving reading", () => {
-    const potPie = { ...expected, title: "Chicken Pot Pie", servings: [8, 16] };
+    const potPie = { ...tomato, title: "Chicken Pot Pie", acceptServings: [8, 16] };
     expect(
       scoreRecipe({ title: "Chicken Pot Pie", servings: 16, ingredients: [], steps: [] }, potPie)
         .servings
@@ -190,25 +208,33 @@ describe("scoreRecipe", () => {
       {
         title: "slow-roasted tomatoes",
         servings: null,
-        ingredients: ["1 lb tomatoes"],
+        acceptServings: [],
+        ingredients: [{ line: "1 lb tomatoes", food: "tomatoes" }],
         stepCount: 1,
-        stepMustInclude: [],
+        acceptStepCounts: [1],
       }
     );
     expect(scores.servings).toBeNull();
-    expect(scores.score).toBeCloseTo(
-      (scores.title +
-        scores.ingredientRecall +
-        scores.ingredientPrecision +
-        scores.stepCompleteness) /
-        4
-    );
+    expect(scores.score).toBe(1);
   });
 
   it("scores a blank extract below the eve gate", () => {
-    const scores = scoreRecipe({ ingredients: [], steps: [] }, expected);
+    const scores = scoreRecipe({ ingredients: [], steps: [] }, tomato);
     expect(scores.score).toBeLessThan(IMPORT_EVAL_SCORE_GATE);
     expect(scores.score).toBe(0);
+  });
+
+  it("accepts a title alias", () => {
+    const scores = scoreRecipe(
+      {
+        title: "Ginger Snaps",
+        servings: 48,
+        ingredients: tomato.ingredients.map((item) => item.line),
+        steps: ["a", "b", "c"],
+      },
+      { ...tomato, title: "Grandma's Ginger Snaps", titleAliases: ["Ginger Snaps"] }
+    );
+    expect(scores.title).toBe(1);
   });
 });
 

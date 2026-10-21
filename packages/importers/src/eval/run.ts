@@ -73,7 +73,7 @@ function fromDraft(draft: {
   return {
     title: draft.title,
     servings: draft.servings,
-    ingredients: draft.ingredients.map((item) => item.ingredient || item.rawText),
+    ingredients: draft.ingredients.map((item) => item.rawText),
     steps: draft.steps.map((item) => item.text),
   };
 }

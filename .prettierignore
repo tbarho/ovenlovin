@@ -6,3 +6,4 @@ coverage
 *.md
 pnpm-lock.yaml
 **/.source
+packages/importers/src/eval/fixtures/*.json

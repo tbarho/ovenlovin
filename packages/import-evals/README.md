@@ -16,7 +16,11 @@ Needs `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN`, and Node.js 24+ for the eve C
 
 ## Scoring
 
-The answer key for each case is the ingredient lines and step count as they appear in the fixture source (paste text, photo card text, or `pageTextFromHtml` of the saved page). A model line matches a key line when the two normalize equal (case, punctuation, unicode fractions), or when the shorter line has at least two tokens and those tokens all appear in the longer line. Matches are one-to-one, so one observed line cannot cover two keys. That is why "egg" does not match "egg noodles" and "sugar" does not match "brown sugar". Servings are scored only when the key has a number; omitted servings are not printed or averaged as 0%. A fixture that is scored against its own source must get 1.0.
+The answer key for each case is the hand-written record in `packages/importers/src/eval/fixtures/answer-keys.json` (title and aliases, servings and `acceptServings`, every ingredient `food`, step count and `acceptStepCounts`). Keys were written from the source text, not from the importer parser.
+
+A model line matches a key when the key `food` appears as whole words in the model's full line (`rawText` for paste/photo, the extracted line for URL). Matches are one-to-one, longest food first. A line whose food is a different modified food does not count: "1 cup brown sugar" does not satisfy food "sugar"; it does satisfy food "brown sugar". Leading bullets, unit abbreviations, hyphen vs space, title aliases, and the accept lists are tolerated.
+
+The import score is the min of title, ingredient recall, ingredient precision, and step completeness, so one missing or invented ingredient fails the 0.95 gate. Servings are scored separately when `acceptServings` is non-empty and are not part of that min (a servings miss is labeled separately). The self-check is the agreement test: every human-correct row in `golden-extractions.json` must score at or above the gate.
 
 ## Why these evals call extractors instead of `t.send`
 
