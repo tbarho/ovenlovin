@@ -8,6 +8,7 @@ with curl. The rest are printed cards with perspective, shadow, and uneven light
 
 from __future__ import annotations
 
+import hashlib
 import random
 import urllib.request
 from pathlib import Path
@@ -19,9 +20,12 @@ PASTE = ROOT / "fixtures" / "paste"
 PHOTO = ROOT / "fixtures" / "photo"
 FONT_DIR = PHOTO / ".fonts"
 
-HAND_URL = "https://raw.githubusercontent.com/google/fonts/main/ofl/patrickhand/PatrickHand-Regular.ttf"
-SERIF_URL = "https://github.com/adobe-fonts/source-serif/raw/release/TTF/SourceSerif4-Regular.ttf"
-SERIF_BOLD_URL = "https://github.com/adobe-fonts/source-serif/raw/release/TTF/SourceSerif4-Bold.ttf"
+HAND_URL = "https://raw.githubusercontent.com/google/fonts/90abd17b4f97671435798b6147b698aa9087612f/ofl/patrickhand/PatrickHand-Regular.ttf"
+HAND_SHA256 = "0f173b3e6cb6d1af25babf7f0057c5ac4ee11f9992b0469bb817e967ef4ad0fc"
+SERIF_URL = "https://github.com/adobe-fonts/source-serif/raw/4.005R/TTF/SourceSerif4-Regular.ttf"
+SERIF_SHA256 = "e5a4ee6a3d87bb9024796be390c6771e2a0eb1883dae25effaf57ca01668e24b"
+SERIF_BOLD_URL = "https://github.com/adobe-fonts/source-serif/raw/4.005R/TTF/SourceSerif4-Bold.ttf"
+SERIF_BOLD_SHA256 = "7cf4f4e1ad74f45058d5bc61716b82560442fbdcd9d3654d2dea96bf6c683d86"
 
 TOMATO = """Weeknight Tomato Pasta
 Weeknight Dinners, p. 42
@@ -65,14 +69,18 @@ Bake 10-12 min. at 375°.
 """
 
 
-def fetch_font(url: str, name: str) -> Path:
+def fetch_font(url: str, name: str, digest: str) -> Path:
     dest = FONT_DIR / name
-    if dest.exists() and dest.stat().st_size > 1000:
+    if dest.exists() and hashlib.sha256(dest.read_bytes()).hexdigest() == digest:
         return dest
     FONT_DIR.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(url, headers={"User-Agent": "ovenlovin-eval-fonts"})
     with urllib.request.urlopen(req, timeout=30) as response:
         dest.write_bytes(response.read())
+    got = hashlib.sha256(dest.read_bytes()).hexdigest()
+    if got != digest:
+        dest.unlink()
+        raise RuntimeError(f"{name} sha256 {got} != {digest}")
     return dest
 
 
@@ -203,10 +211,11 @@ def cookbook_columns(text: str, serif: Path, serif_bold: Path) -> Image.Image:
     return Image.alpha_composite(image.convert("RGBA"), curl).convert("RGB")
 
 
-def perspective(image: Image.Image, rng: random.Random, fill: str) -> Image.Image:
-    tilted = image.rotate(rng.uniform(-16, 16), resample=Image.Resampling.BICUBIC, expand=True, fillcolor=fill)
+def perspective(image: Image.Image, rng: random.Random, fill: str, *, gentle: bool = False) -> Image.Image:
+    tilt = rng.uniform(-6, 6) if gentle else rng.uniform(-16, 16)
+    tilted = image.rotate(tilt, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=fill)
     w, h = tilted.size
-    shear = rng.uniform(-0.24, 0.24)
+    shear = rng.uniform(-0.06, 0.06) if gentle else rng.uniform(-0.24, 0.24)
     out_w = max(1, int(w + abs(shear) * h))
     return tilted.transform(
         (out_w, h),
@@ -217,24 +226,23 @@ def perspective(image: Image.Image, rng: random.Random, fill: str) -> Image.Imag
     )
 
 
-def phone_shot(card: Image.Image, seed: int) -> Image.Image:
+def phone_shot(card: Image.Image, seed: int, *, gentle: bool = False) -> Image.Image:
     rng = random.Random(seed)
     desk = Image.new("RGB", (1800, 1400), "#4a3428")
     wood = Image.effect_noise(desk.size, 36).convert("RGB")
     desk = Image.blend(desk, wood, 0.22)
     desk = ImageEnhance.Color(desk).enhance(0.3)
-    fitted = ImageOps.contain(card, (1180, 1080))
-    warped = perspective(fitted, rng, "#4a3428")
+    fitted = ImageOps.contain(card, (1500, 1220))
+    warped = perspective(fitted, rng, "#4a3428", gentle=gentle)
+    warped = ImageOps.contain(warped, (desk.width - 160, desk.height - 160))
     shadow = Image.new("RGBA", desk.size, (0, 0, 0, 0))
-    sx = (desk.width - warped.width) // 2 + rng.randint(-80, 80) + 22
-    sy = (desk.height - warped.height) // 2 + rng.randint(-60, 60) + 28
+    x = (desk.width - warped.width) // 2
+    y = (desk.height - warped.height) // 2
     ImageDraw.Draw(shadow).rectangle(
-        (sx, sy, sx + warped.width, sy + warped.height), fill=(0, 0, 0, 120)
+        (x + 16, y + 20, x + warped.width + 16, y + warped.height + 20), fill=(0, 0, 0, 120)
     )
     shadow = shadow.filter(ImageFilter.GaussianBlur(18))
     desk = Image.alpha_composite(desk.convert("RGBA"), shadow).convert("RGB")
-    x = sx - 22
-    y = sy - 28
     desk.paste(warped, (x, y))
     lamp = Image.new("L", desk.size, 0)
     ImageDraw.Draw(lamp).ellipse(
@@ -256,9 +264,9 @@ def save_jpeg(image: Image.Image, dest: Path) -> None:
 
 
 def main() -> None:
-    hand = fetch_font(HAND_URL, "PatrickHand-Regular.ttf")
-    serif = fetch_font(SERIF_URL, "SourceSerif4-Regular.ttf")
-    serif_bold = fetch_font(SERIF_BOLD_URL, "SourceSerif4-Bold.ttf")
+    hand = fetch_font(HAND_URL, "PatrickHand-Regular.ttf", HAND_SHA256)
+    serif = fetch_font(SERIF_URL, "SourceSerif4-Regular.ttf", SERIF_SHA256)
+    serif_bold = fetch_font(SERIF_BOLD_URL, "SourceSerif4-Bold.ttf", SERIF_BOLD_SHA256)
     cards = {
         "printed-tomato-pasta": TOMATO,
         "banana-bread": (PASTE / "banana-bread.txt").read_text(),
@@ -279,7 +287,10 @@ def main() -> None:
             draw_text_block(card, text, serif, serif_bold)
             if name == "printed-tomato-pasta":
                 card = stain_and_crease(card, random.Random(3))
-        save_jpeg(phone_shot(card, seed=11 + i), PHOTO / f"{name}.jpg")
+        save_jpeg(
+            phone_shot(card, seed=11 + i, gentle=name == "weeknight-chili"),
+            PHOTO / f"{name}.jpg",
+        )
         png = PHOTO / f"{name}.png"
         if png.exists():
             png.unlink()

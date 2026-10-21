@@ -51,7 +51,7 @@ describe("runImportCase", () => {
   });
 
   it("rethrows a model schema error instead of scoring zero", async () => {
-    vi.mocked(generateObject).mockRejectedValueOnce(
+    vi.mocked(generateObject).mockRejectedValue(
       Object.assign(new Error("No object generated: response did not match schema"), {
         name: "AI_NoObjectGeneratedError",
       })

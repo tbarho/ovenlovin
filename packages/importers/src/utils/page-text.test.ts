@@ -20,6 +20,20 @@ describe("pageTextFromHtml", () => {
     expect(text).not.toMatch(/window\.ad/);
   });
 
+  it("keeps table cell text", () => {
+    const text = pageTextFromHtml(`<html><body>
+      <main>
+        <h2>Ingredients</h2>
+        <table>
+          <tr><td>White sugar</td><td>1 cup</td></tr>
+          <tr><td>Butter, softened</td><td>1/2 cup</td></tr>
+        </table>
+      </main>
+    </body></html>`);
+    expect(text).toMatch(/White sugar/);
+    expect(text).toMatch(/Butter/);
+  });
+
   it("caps long pages", () => {
     const long = `<html><body><p>${"pasta ".repeat(8000)}</p></body></html>`;
     expect(pageTextFromHtml(long).length).toBeLessThanOrEqual(12_000);

@@ -1,6 +1,8 @@
 import { existsSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { pageTextFromHtml } from "../utils/page-text";
 import { PHOTO_CASES, PASTE_CASES, URL_CASES, resolveEvalModels } from "./cases";
+import { normalizeText } from "./score";
 
 function pasteIngredientLines(text: string): string[] {
   const lines = text.split("\n");
@@ -46,6 +48,26 @@ describe("import eval fixtures", () => {
       const lines = pasteIngredientLines(item.text ?? "");
       expect(lines.length, item.id).toBeGreaterThan(0);
       expect(item.expected.ingredients, item.id).toHaveLength(lines.length);
+    }
+  });
+
+  it("keeps every URL key in the fixture page text", () => {
+    for (const item of URL_CASES) {
+      const text = pageTextFromHtml(item.html ?? "");
+      expect(text.length, item.id).toBeGreaterThan(200);
+      const norm = ` ${normalizeText(text)} `;
+      for (const ing of item.expected.ingredients) {
+        expect(norm.includes(` ${normalizeText(ing)} `), `${item.id}:${ing}`).toBe(true);
+      }
+      if (item.expected.servings != null) {
+        const allowed = Array.isArray(item.expected.servings)
+          ? item.expected.servings
+          : [item.expected.servings];
+        expect(
+          allowed.some((value) => text.includes(String(value))),
+          `${item.id} servings ${allowed.join(",")}`
+        ).toBe(true);
+      }
     }
   });
 

@@ -120,7 +120,9 @@ describe("generateImportObject", () => {
   it("retries Luna/grok without the DeepSeek only filter when DeepSeek is down", async () => {
     const generate = vi
       .fn()
-      .mockRejectedValueOnce(Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" }))
+      .mockRejectedValueOnce(
+        Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" })
+      )
       .mockResolvedValueOnce({ object: { isRecipe: false } });
     await generateImportObject(generate, "deepseek/deepseek-v4.1-flash", { prompt: "x" });
     expect(generate.mock.calls[0]?.[0].providerOptions.gateway).toEqual({ only: ["deepseek"] });
@@ -131,10 +133,33 @@ describe("generateImportObject", () => {
     expect(generate.mock.calls[1]?.[0].providerOptions.gateway.only).toBeUndefined();
   });
 
+  it("retries Luna/grok when DeepSeek returns a schema miss", async () => {
+    const generate = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("No object generated: response did not match schema"), {
+          name: "AI_NoObjectGeneratedError",
+        })
+      )
+      .mockResolvedValueOnce({ object: { title: "Red Lentil Soup" } });
+    const result = await generateImportObject(generate, "deepseek/deepseek-v4.1-flash", {
+      prompt: "x",
+    });
+    expect(result.object.title).toBe("Red Lentil Soup");
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway).toEqual({ only: ["deepseek"] });
+    expect(generate.mock.calls[1]?.[0].providerOptions.gateway.only).toBeUndefined();
+    expect(generate.mock.calls[1]?.[0].providerOptions.gateway.models).toEqual([
+      "spacexai/grok-4.7",
+    ]);
+  });
+
   it("does not pin fallbacks when Luna is the primary", async () => {
     const generate = vi
       .fn()
-      .mockRejectedValueOnce(Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" }));
+      .mockRejectedValueOnce(
+        Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" })
+      );
     await expect(
       generateImportObject(generate, "openai/gpt-6-luna", { prompt: "x" })
     ).rejects.toMatchObject({ name: "AI_RetryError" });

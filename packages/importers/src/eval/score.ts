@@ -44,12 +44,14 @@ export function normalizeText(value: string): string {
     .trim();
 }
 
+function tokens(value: string): string[] {
+  return normalizeText(value)
+    .split(" ")
+    .filter((token) => token.length > 1);
+}
+
 function tokenSet(value: string): Set<string> {
-  return new Set(
-    normalizeText(value)
-      .split(" ")
-      .filter((token) => token.length > 1)
-  );
+  return new Set(tokens(value));
 }
 
 function tokensMatch(a: string, b: string): boolean {
@@ -135,36 +137,45 @@ const FILLER = new Set([
   "old",
   "fashioned",
   "leaves",
-  "cloves",
   "stick",
   "sticks",
+  "cubed",
+  "mashed",
+  "thawed",
+  "rinsed",
+  "picked",
+  "pressed",
+  "drained",
+  "over",
+  "morsels",
+  "chips",
+  "pieces",
+  "flakes",
+  "ground",
 ]);
 
 function isFillerToken(token: string): boolean {
   return FILLER.has(token) || /^\d/.test(token) || token.includes("/");
 }
 
-function lastContentToken(value: string): string | undefined {
-  return normalizeText(value)
-    .split(" ")
-    .filter((token) => token.length > 1 && !isFillerToken(token))
-    .at(-1);
-}
+/** Unit/prep words that may follow a match without changing the food. */
+const TRAILING = new Set([...FILLER, "cloves"]);
 
-function ingredientMatched(got: string, expected: string): boolean {
+export function ingredientMatched(got: string, expected: string): boolean {
   const a = normalizeText(got);
   const b = normalizeText(expected);
   if (!a || !b) return false;
   if (a === b) return true;
-  const have = tokenSet(got);
-  const need = tokenSet(expected);
-  if (need.size === 0) return false;
-  if (![...need].every((token) => [...have].some((gotToken) => tokensMatch(gotToken, token)))) {
-    return false;
+  const have = tokens(got);
+  const need = tokens(expected);
+  if (need.length === 0) return false;
+  for (let i = 0; i <= have.length - need.length; i++) {
+    if (!need.every((token, j) => tokensMatch(have[i + j] ?? "", token))) continue;
+    const after = have[i + need.length];
+    if (!after || isFillerToken(after) || TRAILING.has(after)) return true;
+    if (need.length > 1) return true;
   }
-  const gotHead = lastContentToken(got);
-  const needHead = lastContentToken(expected);
-  return Boolean(gotHead && needHead && tokensMatch(gotHead, needHead));
+  return false;
 }
 
 export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe): CaseScores {
@@ -185,9 +196,14 @@ export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe):
 
   const expectedSteps = expected.stepCount;
   const observedSteps = observed.steps.length;
-  const countRecall = expectedSteps <= 0 ? 1 : Math.min(observedSteps, expectedSteps) / expectedSteps;
+  const countRecall =
+    expectedSteps <= 0 ? 1 : Math.min(observedSteps, expectedSteps) / expectedSteps;
   const countPrecision =
-    observedSteps === 0 ? (expectedSteps === 0 ? 1 : 0) : Math.min(observedSteps, expectedSteps) / observedSteps;
+    observedSteps === 0
+      ? expectedSteps === 0
+        ? 1
+        : 0
+      : Math.min(observedSteps, expectedSteps) / observedSteps;
   const keyHits = expected.stepMustInclude.filter((key) =>
     observed.steps.some((step) => normalizeText(step).includes(normalizeText(key)))
   ).length;

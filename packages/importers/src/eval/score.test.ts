@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { IMPORT_EVAL_SCORE_GATE, median, normalizeText, scoreRecipe } from "./score";
+import {
+  IMPORT_EVAL_SCORE_GATE,
+  ingredientMatched,
+  median,
+  normalizeText,
+  scoreRecipe,
+} from "./score";
 
 describe("normalizeText", () => {
   it("strips price notes and decodes fractions", () => {
@@ -54,6 +60,21 @@ describe("scoreRecipe", () => {
     expect(scores.stepCompleteness).toBeLessThan(1);
     expect(scores.score).toBeGreaterThan(0.2);
     expect(scores.score).toBeLessThan(0.9);
+  });
+
+  it("matches a key as a whole word anywhere in a full ingredient line", () => {
+    expect(ingredientMatched("4 garlic cloves, pressed or minced", "garlic")).toBe(true);
+    expect(
+      ingredientMatched("1 cup brown or green lentils, picked over and rinsed", "lentils")
+    ).toBe(true);
+    expect(
+      ingredientMatched("2 cups (480 ml / 12 oz) semi-sweet chocolate morsels / chips", "chocolate")
+    ).toBe(true);
+    expect(ingredientMatched("1 cup frozen corn, thawed", "corn")).toBe(true);
+    expect(ingredientMatched("1 cup butter, cubed", "butter")).toBe(true);
+    expect(ingredientMatched("1 tsp ground cloves", "cloves")).toBe(true);
+    expect(ingredientMatched("1 egg", "egg")).toBe(true);
+    expect(ingredientMatched("egg noodles", "egg")).toBe(false);
   });
 
   it("does not treat egg as a match for egg noodles", () => {

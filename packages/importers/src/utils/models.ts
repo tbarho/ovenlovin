@@ -1,7 +1,11 @@
 /* eslint-disable no-undef, @typescript-eslint/no-explicit-any */
 import { generateObject } from "ai";
 import { gateway } from "@ai-sdk/gateway";
-import { isImportAiUnavailable, tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
+import {
+  isImportAiNotARecipe,
+  isImportAiUnavailable,
+  tagImportAiTimeout,
+} from "@ovenlovin/core/import-ai-unavailable";
 
 /** Default vision-capable model on Vercel AI Gateway (DeepSeek 4.1 Flash). */
 export const DEFAULT_VISION_MODEL = "deepseek/deepseek-v4.1-flash";
@@ -117,8 +121,8 @@ export async function generateImportObject(
     if (
       !isDeepSeekPrimary(modelId) ||
       !next ||
-      !isImportAiUnavailable(tagged) ||
-      (tagged instanceof Error && (tagged as { importAiTimeout?: boolean }).importAiTimeout)
+      (tagged instanceof Error && (tagged as { importAiTimeout?: boolean }).importAiTimeout) ||
+      !(isImportAiUnavailable(tagged) || isImportAiNotARecipe(tagged))
     ) {
       throw tagged;
     }
