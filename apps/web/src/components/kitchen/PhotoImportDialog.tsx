@@ -34,7 +34,7 @@ function stepLabel(stepId: (typeof PHOTO_IMPORT_STEPS)[number]["id"], percent: n
   return PHOTO_IMPORT_STEPS.find((step) => step.id === stepId)?.label ?? stepId;
 }
 
-function PhotoImportProgress({
+export function PhotoImportProgress({
   phase,
   percent,
   previewUrl,
