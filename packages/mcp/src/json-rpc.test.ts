@@ -54,4 +54,16 @@ describe("jsonRpcFromThrown", () => {
     const response = jsonRpcFromThrown(4, new Error("connection refused"));
     expect(response.error.code).toBe(JsonRpcErrorCode.internal);
   });
+
+  it("maps a schema-miss to not-a-recipe, not busy", () => {
+    const response = jsonRpcFromThrown(
+      5,
+      Object.assign(new Error("No object generated: response did not match schema."), {
+        name: "AI_NoObjectGeneratedError",
+      })
+    );
+    expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(response.error.message).toBe("We couldn't find a recipe in that text/photo");
+    expect(response.error.data).toEqual({ code: "import_not_a_recipe" });
+  });
 });

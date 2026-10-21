@@ -41,6 +41,9 @@ describe("import input", () => {
       BLOCKED_IMPORT_COPY
     );
     expect(displayImportFailure("No recipe found on this page.")).toBe(NOT_A_RECIPE_COPY);
+    expect(displayImportFailure("We couldn't find a recipe in that text/photo")).toBe(
+      "We couldn't find a recipe in that text/photo"
+    );
     expect(displayImportFailure(PAGE_GONE_COPY)).toBe(PAGE_GONE_COPY);
     expect(displayImportFailure(UNSUPPORTED_SITE_COPY)).toBe(UNSUPPORTED_SITE_COPY);
   });

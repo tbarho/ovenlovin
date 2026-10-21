@@ -3,7 +3,11 @@ export const IMPORT_AI_UNAVAILABLE_CODE = "import_ai_unavailable";
 export const IMPORT_AI_UNAVAILABLE_MESSAGE =
   "Recipe reading is busy right now. Try again in a minute.";
 
-const UNAVAILABLE_STATUSES = new Set([429, 503, 529]);
+export const IMPORT_NOT_A_RECIPE_CODE = "import_not_a_recipe";
+
+export const IMPORT_NOT_A_RECIPE_MESSAGE = "We couldn't find a recipe in that text/photo";
+
+const UNAVAILABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
 
 function errorName(error: unknown): string {
   return error instanceof Error ? error.name : "";
@@ -69,9 +73,21 @@ export function importAiUnavailableMeta(error: unknown): ImportAiUnavailableMeta
 
 /** Mark a generateObject timeout so only importer AI aborts become import_ai_unavailable. */
 export function tagImportAiTimeout(error: unknown): unknown {
-  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-    Object.assign(error, { importAiTimeout: true });
-  }
+  const seen = new Set<unknown>();
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== "object" || seen.has(value)) return;
+    seen.add(value);
+    if (value instanceof Error && (value.name === "TimeoutError" || value.name === "AbortError")) {
+      Object.assign(value, { importAiTimeout: true });
+    }
+    const nested = value as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
+    visit(nested.lastError);
+    visit(nested.cause);
+    if (Array.isArray(nested.errors)) {
+      for (const inner of nested.errors) visit(inner);
+    }
+  };
+  visit(error);
   return error;
 }
 
@@ -86,4 +102,14 @@ export function isImportAiUnavailable(error: unknown): boolean {
   if (nested.lastError && isImportAiUnavailable(nested.lastError)) return true;
   if (nested.cause && nested.cause !== error && isImportAiUnavailable(nested.cause)) return true;
   return Array.isArray(nested.errors) && nested.errors.some(isImportAiUnavailable);
+}
+
+/** Schema-miss / empty model output: this text will not parse as a recipe. */
+export function isImportAiNotARecipe(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if (errorName(error) === "AI_NoObjectGeneratedError") return true;
+  const nested = error as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
+  if (nested.lastError && isImportAiNotARecipe(nested.lastError)) return true;
+  if (nested.cause && nested.cause !== error && isImportAiNotARecipe(nested.cause)) return true;
+  return Array.isArray(nested.errors) && nested.errors.some(isImportAiNotARecipe);
 }

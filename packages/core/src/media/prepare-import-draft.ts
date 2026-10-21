@@ -33,6 +33,11 @@ export function prepareImportDraft(draft: RecipeImportDraft): RecipeImportDraft 
   return {
     ...draft,
     title,
+    servings: wholeImportedCount(draft.servings, 1),
+    prepTimeMinutes: wholeImportedCount(draft.prepTimeMinutes, 0),
+    cookTimeMinutes: wholeImportedCount(draft.cookTimeMinutes, 0),
+    totalTimeMinutes: wholeImportedCount(draft.totalTimeMinutes, 0),
+    activeTimeMinutes: wholeImportedCount(draft.activeTimeMinutes, 0),
     reviewReasons: review.reviewReasons,
     uncertainFields: review.uncertainFields,
     source: {
@@ -75,6 +80,12 @@ export function photoPerceptualHashFromDraft(draft: RecipeImportDraft): string |
 
 function finiteNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+/** AI yields 2.5 servings / 7.5 min; recipe columns are integers. */
+function wholeImportedCount(value: number | null | undefined, min: number): number | undefined {
+  if (value == null || !Number.isFinite(value)) return undefined;
+  return Math.max(min, Math.round(value));
 }
 
 function savedPreviewIngredient(value: unknown): RecipeImportDraft["ingredients"][number] | null {

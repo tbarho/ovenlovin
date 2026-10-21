@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   importAiUnavailableMeta,
+  isImportAiNotARecipe,
   isImportAiUnavailable,
   tagImportAiTimeout,
 } from "./import-ai-unavailable";
@@ -35,5 +36,48 @@ describe("importAiUnavailableMeta", () => {
     expect(isImportAiUnavailable(abort)).toBe(false);
     expect(isImportAiUnavailable(tagImportAiTimeout(timeout))).toBe(true);
     expect(isImportAiUnavailable(tagImportAiTimeout(abort))).toBe(true);
+  });
+
+  it("maps gateway 5xx as unavailable and schema-miss as not-a-recipe", () => {
+    expect(
+      isImportAiUnavailable(
+        Object.assign(new Error("Bad gateway"), { name: "AI_APICallError", statusCode: 502 })
+      )
+    ).toBe(true);
+    expect(
+      isImportAiUnavailable(
+        Object.assign(new Error("Internal"), { name: "AI_APICallError", statusCode: 500 })
+      )
+    ).toBe(true);
+    expect(
+      isImportAiUnavailable(
+        Object.assign(new Error("No object generated: response did not match schema."), {
+          name: "AI_NoObjectGeneratedError",
+        })
+      )
+    ).toBe(false);
+    expect(
+      isImportAiNotARecipe(
+        Object.assign(new Error("No object generated: response did not match schema."), {
+          name: "AI_NoObjectGeneratedError",
+        })
+      )
+    ).toBe(true);
+    expect(
+      isImportAiUnavailable(
+        Object.assign(new Error("Bad request"), { name: "AI_APICallError", statusCode: 400 })
+      )
+    ).toBe(false);
+  });
+
+  it("tags a timeout nested under an AI call error", () => {
+    const timeout = Object.assign(new Error("aborted"), { name: "TimeoutError" });
+    const wrapped = Object.assign(new Error("Failed after 3 attempts"), {
+      name: "AI_APICallError",
+      statusCode: 400,
+      cause: timeout,
+    });
+    expect(isImportAiUnavailable(wrapped)).toBe(false);
+    expect(isImportAiUnavailable(tagImportAiTimeout(wrapped))).toBe(true);
   });
 });

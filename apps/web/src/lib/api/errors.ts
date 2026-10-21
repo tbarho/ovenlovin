@@ -2,10 +2,13 @@ import {
   HouseholdAccessError,
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
+  IMPORT_NOT_A_RECIPE_MESSAGE,
   INVALID_IMAGE_URL_CODE,
   INVALID_IMAGE_URL_MESSAGE,
   InvalidImageUrlError,
   importAiUnavailableMeta,
+  isImportAiNotARecipe,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
 import { NextResponse } from "next/server";
@@ -250,6 +253,12 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
   // REST handler, return problem+json 401 instead of a 500.
   if (isNextRedirectError(error)) {
     return new UnauthorizedError("Authentication required").toResponse(instance);
+  }
+
+  if (isImportAiNotARecipe(error)) {
+    return new BadRequestError(IMPORT_NOT_A_RECIPE_MESSAGE, {
+      code: IMPORT_NOT_A_RECIPE_CODE,
+    }).toResponse(instance);
   }
 
   if (isImportAiUnavailable(error)) {

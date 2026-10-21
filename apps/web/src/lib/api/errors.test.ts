@@ -3,6 +3,8 @@ import { HouseholdAccessError, InvalidImageUrlError } from "@ovenlovin/core";
 import {
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
+  IMPORT_NOT_A_RECIPE_MESSAGE,
   tagImportAiTimeout,
 } from "@ovenlovin/core";
 import {
@@ -154,6 +156,31 @@ describe("handleApiError", () => {
     );
     errorLog.mockRestore();
     expect(response.status).toBe(500);
+  });
+
+  it("maps a gateway 502 to 503 import_ai_unavailable", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const gateway = handleApiError(
+      Object.assign(new Error("Bad gateway"), { name: "AI_APICallError", statusCode: 502 }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    warn.mockRestore();
+    expect(gateway.status).toBe(503);
+    expect(gateway.headers.get("retry-after")).toBe("60");
+  });
+
+  it("maps a schema-miss to not-a-recipe, not busy", async () => {
+    const schemaMiss = handleApiError(
+      Object.assign(new Error("No object generated: response did not match schema."), {
+        name: "AI_NoObjectGeneratedError",
+      }),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    expect(schemaMiss.status).toBe(400);
+    const body = (await schemaMiss.json()) as { detail?: string; code?: string };
+    expect(body.detail).toBe(IMPORT_NOT_A_RECIPE_MESSAGE);
+    expect(body.code).toBe(IMPORT_NOT_A_RECIPE_CODE);
+    expect(body.code).not.toBe(IMPORT_AI_UNAVAILABLE_CODE);
   });
 
   it("maps a tagged importer AI timeout to 503 import_ai_unavailable", async () => {

@@ -99,6 +99,18 @@ describe("Paste Importer", () => {
       expect(result.author).toBe("Chef Baker");
     });
 
+    it("rethrows a gateway 502 as import AI unavailable", async () => {
+      const { generateObject } = await import("ai");
+      const { isImportAiUnavailable } = await import("@ovenlovin/core/import-ai-unavailable");
+      const error = Object.assign(new Error("Bad gateway"), {
+        name: "AI_APICallError",
+        statusCode: 502,
+      });
+      (generateObject as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
+      await expect(importer.extract({ text: "Recipe text" })).rejects.toBe(error);
+      expect(isImportAiUnavailable(error)).toBe(true);
+    });
+
     it("tags a generateObject timeout as import AI unavailable", async () => {
       const { generateObject } = await import("ai");
       const { isImportAiUnavailable } = await import("@ovenlovin/core/import-ai-unavailable");

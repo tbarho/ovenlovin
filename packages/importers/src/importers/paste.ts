@@ -20,10 +20,10 @@ const IMPORTER_VERSION = "0.1.0";
 const recipeSchema = z.object({
   title: z.string().describe("Recipe title"),
   description: z.string().optional().describe("Brief description of the recipe"),
-  servings: z.number().int().positive().optional().describe("Number of servings"),
-  prepTimeMinutes: z.number().int().nonnegative().optional().describe("Prep time in minutes"),
-  cookTimeMinutes: z.number().int().nonnegative().optional().describe("Cook time in minutes"),
-  totalTimeMinutes: z.number().int().nonnegative().optional().describe("Total time in minutes"),
+  servings: z.number().positive().optional().describe("Number of servings"),
+  prepTimeMinutes: z.number().nonnegative().optional().describe("Prep time in minutes"),
+  cookTimeMinutes: z.number().nonnegative().optional().describe("Cook time in minutes"),
+  totalTimeMinutes: z.number().nonnegative().optional().describe("Total time in minutes"),
   notes: z.string().optional().describe("Cook notes, tips, or make-ahead instructions"),
   cuisine: z.string().optional().describe("Cuisine type (e.g., Italian, Mexican)"),
   course: z.string().optional().describe("Course type (e.g., Dessert, Main Course)"),
@@ -41,6 +41,7 @@ const recipeSchema = z.object({
         optional: z.boolean().optional().describe("Is this ingredient optional?"),
       })
     )
+    .optional()
     .describe("List of ingredients"),
   steps: z
     .array(
@@ -48,6 +49,7 @@ const recipeSchema = z.object({
         text: z.string().describe("Step instruction text"),
       })
     )
+    .optional()
     .describe("Cooking steps in order"),
 });
 
