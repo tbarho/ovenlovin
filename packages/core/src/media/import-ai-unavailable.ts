@@ -3,6 +3,8 @@ export const IMPORT_AI_UNAVAILABLE_CODE = "import_ai_unavailable";
 export const IMPORT_AI_UNAVAILABLE_MESSAGE =
   "Recipe reading is busy right now. Try again in a minute.";
 
+export const IMPORT_NOT_A_RECIPE_MESSAGE = "No recipe found on this page.";
+
 const UNAVAILABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
 
 function errorName(error: unknown): string {
@@ -92,10 +94,20 @@ export function isImportAiUnavailable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   if ((error as { importAiTimeout?: unknown }).importAiTimeout === true) return true;
   const name = errorName(error);
-  if (name === "AI_RetryError" || name === "AI_NoObjectGeneratedError") return true;
+  if (name === "AI_RetryError") return true;
   if (name.startsWith("AI_") && UNAVAILABLE_STATUSES.has(errorStatus(error) ?? -1)) return true;
   const nested = error as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
   if (nested.lastError && isImportAiUnavailable(nested.lastError)) return true;
   if (nested.cause && nested.cause !== error && isImportAiUnavailable(nested.cause)) return true;
   return Array.isArray(nested.errors) && nested.errors.some(isImportAiUnavailable);
+}
+
+/** Schema-miss / empty model output: this text will not parse as a recipe. */
+export function isImportAiNotARecipe(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if (errorName(error) === "AI_NoObjectGeneratedError") return true;
+  const nested = error as { lastError?: unknown; cause?: unknown; errors?: unknown[] };
+  if (nested.lastError && isImportAiNotARecipe(nested.lastError)) return true;
+  if (nested.cause && nested.cause !== error && isImportAiNotARecipe(nested.cause)) return true;
+  return Array.isArray(nested.errors) && nested.errors.some(isImportAiNotARecipe);
 }

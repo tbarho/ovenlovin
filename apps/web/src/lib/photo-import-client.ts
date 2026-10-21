@@ -62,7 +62,14 @@ export function classifyPhotoImportProblem(problem: PhotoImportProblem): PhotoIm
   const code = (problem.code ?? "").toLowerCase();
   const text = `${problem.detail ?? ""} ${problem.title ?? ""}`.toLowerCase();
   if (code === "photo_blurry" || text.includes("blurry")) return "blurry";
-  if (code === "photo_not_recipe" || text.includes("not look like a recipe")) return "not_recipe";
+  if (
+    code === "photo_not_recipe" ||
+    text.includes("not look like a recipe") ||
+    text.includes("no recipe found") ||
+    text.includes("not a recipe page")
+  ) {
+    return "not_recipe";
+  }
   if (code === "photo_timeout" || text.includes("took too long")) return "timeout";
   return "generic";
 }

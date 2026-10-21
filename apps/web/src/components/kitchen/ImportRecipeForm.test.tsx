@@ -375,6 +375,19 @@ describe("ImportRecipeForm url and paste validation", () => {
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
   });
 
+  it("treats a paste schema-miss as not a recipe, not busy", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValueOnce(new Error("No recipe found on this page."));
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "lorem ipsum");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("This is not a recipe page.")).toBeVisible();
+    expect(screen.queryByText(/busy right now/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
   it("names a gone page and an unsupported site", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockRejectedValueOnce(new Error("That page is gone."));

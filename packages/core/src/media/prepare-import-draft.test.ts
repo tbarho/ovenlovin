@@ -5,7 +5,7 @@ import {
   preferCompletedImport,
   prepareImportDraft,
 } from "./prepare-import-draft";
-import type { RecipeImportDraft } from "../schemas/recipes";
+import { recipeSchema, type RecipeImportDraft } from "../schemas/recipes";
 
 function draft(overrides: Partial<RecipeImportDraft> = {}): RecipeImportDraft {
   return {
@@ -70,6 +70,34 @@ describe("prepareImportDraft", () => {
       })
     );
     expect(importDedupeKeys(prepared)).toEqual([]);
+  });
+
+  it("rounds a 2.5-serving paste so the integer columns save cleanly", () => {
+    const prepared = prepareImportDraft(
+      draft({
+        servings: 2.5,
+        prepTimeMinutes: 7.5,
+        cookTimeMinutes: 0.4,
+        source: {
+          type: "paste",
+          importerName: "paste-importer",
+          importerVersion: "0.1.0",
+          rawExtractionJson: {},
+        },
+      })
+    );
+    expect(prepared.servings).toBe(3);
+    expect(prepared.prepTimeMinutes).toBe(8);
+    expect(prepared.cookTimeMinutes).toBe(0);
+    expect(
+      recipeSchema
+        .pick({ servings: true, prepTimeMinutes: true, cookTimeMinutes: true })
+        .safeParse({
+          servings: prepared.servings,
+          prepTimeMinutes: prepared.prepTimeMinutes,
+          cookTimeMinutes: prepared.cookTimeMinutes,
+        }).success
+    ).toBe(true);
   });
 
   it("rebuilds a recipe draft from a preview payload", () => {

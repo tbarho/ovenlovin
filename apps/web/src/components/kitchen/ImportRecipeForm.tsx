@@ -4,7 +4,12 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
-import { displayImportFailure, importGuessedNotice, importInputError } from "@/lib/import-input";
+import {
+  displayImportFailure,
+  importGuessedNotice,
+  importInputError,
+  NOT_A_RECIPE_COPY,
+} from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_IN_PROGRESS,
@@ -249,9 +254,10 @@ export function ImportRecipeForm({
       setReview(reviewDraftFromImportPreview(preview));
     } catch (err) {
       if (controller.signal.aborted) return;
-      setError(err instanceof Error ? err.message : "Could not import recipe");
+      const message = err instanceof Error ? err.message : "Could not import recipe";
+      setError(message);
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(true);
+      setRetryable(displayImportFailure(message) !== NOT_A_RECIPE_COPY);
     } finally {
       if (previewAbortRef.current === controller) previewAbortRef.current = null;
       setPending(false);

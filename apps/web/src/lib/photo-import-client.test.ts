@@ -97,6 +97,9 @@ describe("photo import copy helpers", () => {
   it("maps blurry, not a recipe, and network problems to their own messages", () => {
     expect(classifyPhotoImportProblem({ code: "PHOTO_BLURRY" })).toBe("blurry");
     expect(classifyPhotoImportProblem({ code: "PHOTO_NOT_RECIPE" })).toBe("not_recipe");
+    expect(classifyPhotoImportProblem({ detail: "No recipe found on this page." })).toBe(
+      "not_recipe"
+    );
     expect(
       photoImportErrorMessage(Object.assign(new Error("Failed to fetch"), { name: "TypeError" }))
     ).toBe(PHOTO_IMPORT_NETWORK_MESSAGE);
