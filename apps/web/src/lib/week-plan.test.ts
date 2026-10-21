@@ -152,6 +152,10 @@ describe("week-plan view", () => {
       safety: "ok",
       warning: null,
     });
+    expect(pickSafety([parentA, parentB, childC], [], [])).toEqual({
+      safety: "ok",
+      warning: null,
+    });
     const check = whoCanEat({ people: [parentA, parentB, childC], rules: [], ingredients: pasta });
     expect(check.status).toBe("complete");
     expect(findingsFromCheck(check)).toEqual([]);

@@ -438,8 +438,8 @@ export function MealPlanWeek({
           if (!patch) router.refresh();
         }
         return true;
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not update the plan");
+      } catch {
+        setError("Could not update the plan");
         return false;
       } finally {
         setPending(false);

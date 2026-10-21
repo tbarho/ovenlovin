@@ -667,7 +667,7 @@ describe("MealPlanWeek", () => {
 
   it("shows a visible error and retry when adding dinner fails", async () => {
     const user = userEvent.setup();
-    vi.mocked(api).mockRejectedValueOnce(new Error("Could not update the plan"));
+    vi.mocked(api).mockRejectedValueOnce(new Error("Internal Server Error"));
     render(
       <MealPlanWeek
         days={groupMealsByDate("2026-10-12", [])}
@@ -716,5 +716,48 @@ describe("MealPlanWeek", () => {
       "/api/v1/meal-plans/plan-new",
       expect.objectContaining({ method: "PATCH" })
     );
+  });
+
+  it("creates a separate plan after changing weeks", async () => {
+    const user = userEvent.setup();
+    let created = 0;
+    vi.mocked(api).mockImplementation(async (_url, init) => {
+      if (init && typeof init === "object" && "method" in init && init.method === "POST") {
+        created += 1;
+        return { id: `plan-${created}` };
+      }
+      return { id: "patched" };
+    });
+
+    const { rerender } = render(
+      <MealPlanWeek
+        key="2026-10-12"
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /sunday/i }));
+    await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <MealPlanWeek
+        key="2026-10-19"
+        days={groupMealsByDate("2026-10-19", [])}
+        weekStart="2026-10-19"
+        recipes={recipes}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /sunday/i }));
+    await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+
+    const posts = vi
+      .mocked(api)
+      .mock.calls.filter(([, init]) => init && typeof init === "object" && init.method === "POST");
+    expect(posts).toHaveLength(2);
+    expect(JSON.parse(String(posts[0]?.[1]?.body)).weekStart).toBe("2026-10-12");
+    expect(JSON.parse(String(posts[1]?.[1]?.body)).weekStart).toBe("2026-10-19");
   });
 });
