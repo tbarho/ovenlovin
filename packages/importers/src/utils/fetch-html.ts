@@ -347,7 +347,12 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   const state: { fallback: FetchResult | null } = { fallback: null };
 
   const remember = (hit: PageHit): FetchResult | null => {
-    if (isUsableRecipeHtml(hit.html)) {
+    // Food52 nav says Ingredients; after a live block only JSON-LD Recipe counts
+    if (
+      isUsableRecipeHtml(hit.html) &&
+      (!sawDirectBlock ||
+        (/application\/ld\+json/i.test(hit.html) && /"@type"\s*:\s*"Recipe"/i.test(hit.html)))
+    ) {
       return { html: hit.html, url, finalUrl: hit.finalUrl, via: hit.via, layersTried };
     }
     if (

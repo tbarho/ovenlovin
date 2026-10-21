@@ -40,6 +40,27 @@ const ALLRECIPES_404 = fixture("allrecipes-404.html");
 const RECIPETIN_404 = fixture("recipetin-404.html");
 const SALLY_WIDGET = fixture("sally-recipe-with-turnstile.html");
 const HBH_WIDGET = fixture("hbh-recipe-with-turnstile.html");
+const FOOD52_NAV = fixture("food52-nav-chrome.html");
+const FOOD52_NAV_MD = `Title: Chili Recipes
+
+URL Source: https://food52.com/recipes/chili
+
+Markdown Content:
+Search
+
+### [Ingredients](https://food52.com/pages/recipes)
+*   [Chicken](https://food52.com/recipes/chicken)
+*   [Steak](https://food52.com/recipes/steak)
+*   [Salmon](https://food52.com/recipes/salmon)
+*   [Pasta](https://food52.com/recipes/pasta)
+
+### [How To & Hacks](https://food52.com/food/how-to-and-hacks)
+### Method
+# Beef Chili With Bacon & Black Beans
+
+This Jina copy is Food52 site nav and a title, not a recipe card with amounts and steps.
+Browse more chili recipes on Food52. The live importer saw this after a Vercel 429.
+`;
 const NATASHA = fixture("natashaskitchen-beef-stroganoff.html");
 const BUDGET = fixture("budgetbytes-beef-stroganoff.html");
 const WELLPLATED = fixture("wellplated-beef-stroganoff.html");
@@ -633,6 +654,54 @@ describe("fetchHtml layers", () => {
         text: async () => CHALLENGE,
       };
     });
+    await expect(
+      fetchHtml(live, {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
+    });
+  });
+
+  it("throws blocked when a Vercel 429 is followed by Food52 nav chrome", async () => {
+    expect(isUsableRecipeHtml(FOOD52_NAV)).toBe(true);
+    expect(isUsableRecipeHtml(FOOD52_NAV_MD)).toBe(true);
+    expect(FOOD52_NAV).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+
+    const live = "https://food52.com/recipes/chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => FOOD52_NAV_MD,
+        };
+      }
+      if (requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => FOOD52_NAV,
+        };
+      }
+      return {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: requested,
+        headers: {
+          get: (name: string) => (name.toLowerCase() === "x-vercel-mitigated" ? "challenge" : null),
+        },
+        text: async () => VERCEL_CHECKPOINT,
+      };
+    });
+
     await expect(
       fetchHtml(live, {
         fetchImpl: fetchMock as unknown as typeof fetch,
