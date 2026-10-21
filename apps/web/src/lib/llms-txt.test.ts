@@ -17,6 +17,7 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("edit_meal_plan");
     expect(text).toContain("manage_kitchen_invites");
     expect(text).toContain("manage_kitchen_members");
+    expect(text.match(/^- [a-z_]+$/gm)?.length).toBe(26);
     expect(text).toContain("GET/POST /api/v1/recipes");
     expect(text).toContain("GET/POST /api/v1/meal-plans/{id}/check");
     expect(text).toContain("ovenlovin-demo.vercel.app/api/demo/enter?format=json");
