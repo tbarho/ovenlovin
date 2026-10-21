@@ -13,6 +13,7 @@ import {
   looksLikeBotChallenge,
   looksLikeCompleteDocument,
   looksLikeGonePage,
+  looksLikeStructuredMarkdownRecipe,
   jinaReaderUrl,
   relatedRecipeUrls,
   shouldKeepLooking,
@@ -711,6 +712,107 @@ describe("fetchHtml layers", () => {
       name: "RecipeImportFetchError",
       message: expect.stringMatching(/blocked the importer/),
     });
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+    expect(extractJsonLd(FOOD52_NAV)).toBeNull();
+  });
+
+  it("imports a list-type JSON-LD recipe from cache after a 403", async () => {
+    const html = `<!doctype html><html><head><title>List chili</title>
+      <script type="application/ld+json">{"@type":["Recipe","NewsArticle"],"name":"List chili","recipeIngredient":["1 cup beans"]}</script>
+      </head><body><h1>List chili</h1></body></html>`;
+    expect(html).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+    expect(extractJsonLd(html)?.name).toMatch(/list chili/i);
+
+    const live = "https://www.allrecipes.com/recipe/list-chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("translate")) {
+        return { ok: true, status: 200, statusText: "OK", url: requested, text: async () => html };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/list chili/i);
+  });
+
+  it("imports a @graph Recipe from cache after a 403", async () => {
+    const html = `<!doctype html><html><head><title>Graph chili</title>
+      <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"Serious Eats"},{"@type":["Recipe"],"name":"Graph chili","recipeIngredient":["1 onion"]}]}</script>
+      </head><body><h1>Graph chili</h1></body></html>`;
+    expect(html).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+    expect(extractJsonLd(html)?.name).toMatch(/graph chili/i);
+
+    const live = "https://www.seriouseats.com/graph-chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("translate")) {
+        return { ok: true, status: 200, statusText: "OK", url: requested, text: async () => html };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/graph chili/i);
+  });
+
+  it("imports a structured Jina markdown recipe after a 403", async () => {
+    const markdown = `# Best Lentil Soup
+
+## Ingredients
+- 2 cups green lentils
+- 1 onion, diced
+- 2 tbsp olive oil
+- 4 cups vegetable broth
+
+## Instructions
+1. Warm the oil and cook the onion.
+2. Add lentils and broth and simmer until tender.
+`;
+    expect(looksLikeStructuredMarkdownRecipe(markdown)).toBe(true);
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => markdown,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(result.html).toMatch(/2 cups green lentils/);
   });
 
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {

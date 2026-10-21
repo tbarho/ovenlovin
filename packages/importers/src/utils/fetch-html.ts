@@ -1,9 +1,11 @@
 /* eslint-disable no-undef */
+import * as cheerio from "cheerio";
 import {
   IMPORT_BLOCKED_MESSAGE,
   IMPORT_NOT_A_RECIPE_MESSAGE,
   IMPORT_PAGE_GONE_MESSAGE,
   IMPORT_UNSUPPORTED_SITE_MESSAGE,
+  parseIngredientLine,
 } from "@ovenlovin/core";
 import { remainingImportBudgetMs } from "./models";
 import { publicCopyRequests, relatedRecipeUrls, type PublicCopy } from "./public-copies";
@@ -190,6 +192,79 @@ export function looksLikeMarkdownRecipe(text: string): boolean {
   return hasIngredients && hasSteps;
 }
 
+function isRecipeType(value: unknown): boolean {
+  if (value === "Recipe") return true;
+  return Array.isArray(value) && value.includes("Recipe");
+}
+
+function findRecipeNode(data: unknown): Record<string, unknown> | null {
+  if (!data || typeof data !== "object") return null;
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const found = findRecipeNode(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  const obj = data as Record<string, unknown>;
+  if (isRecipeType(obj["@type"])) return obj;
+  if (obj["@graph"]) return findRecipeNode(obj["@graph"]);
+  return null;
+}
+
+/** Schema.org Recipe from JSON-LD, including "@type": ["Recipe", ...] and @graph. */
+export function extractJsonLd(html: string): Record<string, unknown> | null {
+  const $ = cheerio.load(html);
+  const jsonLdScripts = $('script[type="application/ld+json"]');
+
+  for (let i = 0; i < jsonLdScripts.length; i++) {
+    const content = jsonLdScripts.eq(i).html();
+    if (!content) continue;
+    try {
+      const recipe = findRecipeNode(JSON.parse(content));
+      if (recipe) return recipe;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function sectionAfterHeading(text: string, heading: RegExp): string {
+  const match = heading.exec(text);
+  if (!match) return "";
+  const rest = text.slice(match.index + match[0].length);
+  const next = /^#{1,4}\s+/m.exec(rest);
+  return next ? rest.slice(0, next.index) : rest;
+}
+
+/** Jina/nav chrome has an Ingredients heading; a real card has amounts and numbered steps. */
+export function looksLikeStructuredMarkdownRecipe(text: string): boolean {
+  if (!text || looksLikeBotChallenge(text)) return false;
+  const ingredients = sectionAfterHeading(text, /^#{1,4}\s+ingredients?\b/im);
+  const steps = sectionAfterHeading(text, /^#{1,4}\s+(instructions?|directions?)\b/im);
+  if (!ingredients || !steps) return false;
+  const amountLines = ingredients.split(/\r?\n/).filter((line) => {
+    const item = line.replace(/^\s*(?:[-*]|\d+\.)\s+/, "").trim();
+    if (!item) return false;
+    const parsed = parseIngredientLine(item);
+    return parsed.quantityMin != null || parsed.unit != null;
+  });
+  const numbered = steps.split(/\r?\n/).filter((line) => /^\s*\d+\.\s+\S/.test(line));
+  return amountLines.length >= 3 && numbered.length >= 1;
+}
+
+function isFallbackRecipe(html: string): boolean {
+  if (extractJsonLd(html)) return true;
+  if (
+    /itemprop=["']recipeIngredient["']/i.test(html) ||
+    /itemprop=["']recipeInstructions["']/i.test(html)
+  ) {
+    return true;
+  }
+  return looksLikeStructuredMarkdownRecipe(html);
+}
+
 export function isUsableRecipeHtml(html: string): boolean {
   if (!html) return false;
   if (looksLikeGonePage(html)) return false;
@@ -347,12 +422,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   const state: { fallback: FetchResult | null } = { fallback: null };
 
   const remember = (hit: PageHit): FetchResult | null => {
-    // Food52 nav says Ingredients; after a live block only JSON-LD Recipe counts
-    if (
-      isUsableRecipeHtml(hit.html) &&
-      (!sawDirectBlock ||
-        (/application\/ld\+json/i.test(hit.html) && /"@type"\s*:\s*"Recipe"/i.test(hit.html)))
-    ) {
+    if (sawDirectBlock ? isFallbackRecipe(hit.html) : isUsableRecipeHtml(hit.html)) {
       return { html: hit.html, url, finalUrl: hit.finalUrl, via: hit.via, layersTried };
     }
     if (
