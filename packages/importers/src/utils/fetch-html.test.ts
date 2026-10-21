@@ -583,7 +583,7 @@ describe("fetchHtml layers", () => {
     expect(isUsableRecipeHtml(result.html)).toBe(false);
   });
 
-  it("keeps a fetched About page as not-a-recipe after a blocked layer", async () => {
+  it("throws blocked when a later layer is a non-recipe after a challenge", async () => {
     const fetchMock = vi.fn(async (requested: string) => {
       if (requested.includes("jina") || requested.includes("translate")) {
         return {
@@ -602,13 +602,46 @@ describe("fetchHtml layers", () => {
         text: async () => CHALLENGE,
       };
     });
-    const result = await fetchHtml("https://www.allrecipes.com/about-us-6648104", {
-      fetchImpl: fetchMock as unknown as typeof fetch,
-      env: {},
+    await expect(
+      fetchHtml("https://www.allrecipes.com/about-us-6648104", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
     });
-    expect(result.html).toMatch(/About Allrecipes/);
-    expect(isUsableRecipeHtml(result.html)).toBe(false);
-    expect(looksLikeBotChallenge(result.html)).toBe(false);
+  });
+
+  it("throws blocked when a Cloudflare challenge is followed by a non-recipe cache page", async () => {
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => EXAMPLE_COM,
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    await expect(
+      fetchHtml(live, {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
+    });
   });
 
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
