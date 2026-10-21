@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { handleApiError, NotFoundError } from "@/lib/api/errors";
+import { handleApiError } from "@/lib/api/errors";
+import { loadOwned, loadOwnedChild } from "@/lib/api/owned";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
 import { PeopleService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
-import { assertPersonHousehold } from "@/lib/api/people";
 
 export async function GET(
   request: NextRequest,
@@ -18,13 +18,13 @@ export async function GET(
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(personId);
-    assertPersonHousehold(person, householdId, personId);
-
-    const preference = await service.getPreference(prefId);
-    if (!preference || preference.personId !== personId) {
-      throw new NotFoundError("Preference", prefId);
-    }
+    await loadOwned("Person", personId, householdId, (id) => service.getPerson(id));
+    const preference = await loadOwnedChild(
+      "Preference",
+      prefId,
+      (id) => service.getPreference(id),
+      (row) => row.personId === personId
+    );
 
     return jsonResponse(preference);
   } catch (error) {
@@ -45,13 +45,13 @@ export async function DELETE(
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(personId);
-    assertPersonHousehold(person, householdId, personId);
-
-    const preference = await service.getPreference(prefId);
-    if (!preference || preference.personId !== personId) {
-      throw new NotFoundError("Preference", prefId);
-    }
+    await loadOwned("Person", personId, householdId, (id) => service.getPerson(id));
+    await loadOwnedChild(
+      "Preference",
+      prefId,
+      (id) => service.getPreference(id),
+      (row) => row.personId === personId
+    );
 
     await service.deletePreference(prefId);
     return noContentResponse();

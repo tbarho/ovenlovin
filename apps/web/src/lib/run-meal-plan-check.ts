@@ -17,7 +17,7 @@ import {
   type MealPlanEntryInput,
   type PersonWithRules,
 } from "@ovenlovin/allergens";
-import { NotFoundError } from "@/lib/api/errors";
+import { NotFoundError, requireResourceId } from "@/lib/api/errors";
 
 export async function persistMealPlanCheck(planId: string, householdId: string) {
   const report = await runMealPlanCheck(planId, householdId);
@@ -39,6 +39,7 @@ export async function runMealPlanCheck(planId: string, householdId: string) {
   const schedule = await new ScheduleService(db).getSchedule(householdId);
   const recipeMinutesByEntryId = new Map<string, number | null>();
 
+  requireResourceId("MealPlan", planId);
   const plan = await planService.getMealPlan(planId);
   if (!plan || plan.householdId !== householdId) {
     throw new NotFoundError("MealPlan", planId);
@@ -81,20 +82,17 @@ export async function runMealPlanCheck(planId: string, householdId: string) {
     householdPeople.items.map((person) => person.id)
   );
 
-  const peopleWithRules: PersonWithRules[] = await Promise.all(
-    attendeeIds.map(async (personId) => {
-      const person =
-        householdPeople.items.find((item) => item.id === personId) ??
-        (await peopleService.getPerson(personId));
-      const rules = await peopleService.getRulesForPerson(personId);
-
-      return {
-        id: personId,
-        name: person?.displayName ?? "Unknown",
-        rules,
-      };
-    })
-  );
+  const peopleWithRules: PersonWithRules[] = [];
+  for (const personId of attendeeIds) {
+    const fromHousehold = householdPeople.items.find((item) => item.id === personId);
+    const person = fromHousehold ?? (await peopleService.getPerson(personId));
+    if (!person || person.householdId !== householdId) continue;
+    peopleWithRules.push({
+      id: personId,
+      name: person.displayName,
+      rules: await peopleService.getRulesForPerson(personId),
+    });
+  }
 
   const checkInput: MealPlanCheckInput = {
     entries: entryInputs,

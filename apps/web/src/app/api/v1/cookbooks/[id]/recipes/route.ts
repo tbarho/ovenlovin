@@ -2,23 +2,11 @@ import { NextRequest } from "next/server";
 import { addCookbookRecipeBodySchema, CookbookService, RecipeService } from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
-import { BadRequestError, ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
+import { BadRequestError, handleApiError, requireResourceId } from "@/lib/api/errors";
+import { loadOwnedCookbook } from "@/lib/api/cookbooks";
+import { loadOwned } from "@/lib/api/owned";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
-import {
-  getRequestContext,
-  requireHouseholdId,
-  requireWritableHousehold,
-} from "@/lib/api/middleware";
-import { assertRecipeHousehold } from "@/lib/api/recipes";
-
-async function loadOwnedCookbook(id: string, householdId: string) {
-  const cookbook = await new CookbookService(getDatabase()).getCookbook(id);
-  if (!cookbook) throw new NotFoundError("Cookbook", id);
-  if (cookbook.householdId !== householdId) {
-    throw new ForbiddenError("Cookbook is not in this household");
-  }
-  return cookbook;
-}
+import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,8 +17,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await readJsonBody(request, addCookbookRecipeBodySchema);
 
     const db = getDatabase();
-    const recipe = await new RecipeService(db).getRecipe(body.recipeId);
-    assertRecipeHousehold(recipe, householdId, body.recipeId);
+    await loadOwned("Recipe", body.recipeId, householdId, (recipeId) =>
+      new RecipeService(db).getRecipe(recipeId)
+    );
 
     await new CookbookService(db).addRecipe(id, body.recipeId);
     return jsonResponse({ cookbookId: id, recipeId: body.recipeId });
@@ -51,6 +40,7 @@ export async function DELETE(
     const url = new URL(request.url);
     const recipeId = url.searchParams.get("recipeId");
     if (!recipeId) throw new BadRequestError("recipeId query parameter is required");
+    requireResourceId("Recipe", recipeId);
 
     await new CookbookService(getDatabase()).removeRecipe(id, recipeId);
     return noContentResponse();

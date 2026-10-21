@@ -106,13 +106,8 @@ async function handler(input: GetRecipeInput, context: AuthContext): Promise<Get
 
   const recipe = await recipeService.getRecipe(input.id);
 
-  if (!recipe) {
+  if (!recipe || recipe.householdId !== context.householdId) {
     throw new Error(`Recipe not found: ${input.id}`);
-  }
-
-  // Verify access - recipe must belong to user's household
-  if (recipe.householdId !== context.householdId) {
-    throw new Error("Unauthorized access to recipe");
   }
 
   // Fetch ingredients

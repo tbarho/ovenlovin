@@ -10,7 +10,9 @@ import {
 import {
   agreedEntryCookFor,
   createMealPlanBodySchema,
+  PeopleService,
   PlanService,
+  RecipeService,
   resolveWriteActor,
 } from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
@@ -61,6 +63,17 @@ export async function POST(request: NextRequest) {
       apiKeyId: context.clientId,
       apiKeyCreatedBy: context.apiKeyCreatedBy,
     });
+
+    if (body.entries) {
+      await new RecipeService(db).requireOwnedRecipeIds(
+        householdId,
+        body.entries.map((entry) => entry.recipeId)
+      );
+      await new PeopleService(db).requireOwnedPersonIds(
+        householdId,
+        body.entries.flatMap((entry) => entry.attendees)
+      );
+    }
 
     const plan = await service.createMealPlan({
       householdId,

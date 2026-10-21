@@ -9,7 +9,9 @@ import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
 import {
   agreedEntryCookFor,
+  PeopleService,
   PlanService,
+  RecipeService,
   resolveWriteActor,
   SERVINGS_HARD_MAX,
 } from "@ovenlovin/core";
@@ -36,7 +38,7 @@ export const saveMealPlanSchema = z.object({
         .optional()
         .describe("Leftovers, eat-out, or an empty night with no recipe"),
       servings: z.number().int().positive().optional(),
-      attendees: z.array(z.string()),
+      attendees: z.array(z.string().uuid()),
       prepAheadNotes: z.string().optional(),
     })
   ),
@@ -62,6 +64,14 @@ async function handler(
   requireWriteRole(context);
   const db = createDbClient(process.env.DATABASE_URL!);
   const planService = new PlanService(db);
+  await new RecipeService(db).requireOwnedRecipeIds(
+    context.householdId,
+    input.entries.map((entry) => entry.recipeId)
+  );
+  await new PeopleService(db).requireOwnedPersonIds(
+    context.householdId,
+    input.entries.flatMap((entry) => entry.attendees)
+  );
   const actor = resolveWriteActor({
     userId: context.userId,
     apiKeyId: context.apiKeyId,

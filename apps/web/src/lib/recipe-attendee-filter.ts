@@ -9,6 +9,7 @@ import {
 import { PeopleService, type Recipe } from "@ovenlovin/core";
 import { getDatabase, recipeIngredient } from "@ovenlovin/db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
+import { NotFoundError, requireResourceId } from "@/lib/api/errors";
 
 export function parseForAttendeesParam(values: string[]): string[] {
   return values
@@ -31,9 +32,10 @@ export async function excludeRecipesBlockedForAttendees(
   const contexts: RuleCheckContext[] = [];
 
   for (const personId of attendeeIds) {
+    requireResourceId("Person", personId);
     const person = await peopleService.getPerson(personId);
     if (!person || person.householdId !== householdId) {
-      throw new Error(`Unauthorized access to person: ${personId}`);
+      throw new NotFoundError("Person", personId);
     }
     const rules = await peopleService.getRulesForPerson(personId);
     for (const rule of rules) {

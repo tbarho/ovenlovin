@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { handleApiError, NotFoundError } from "@/lib/api/errors";
+import { loadOwned } from "@/lib/api/owned";
 import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 import { PlanService } from "@ovenlovin/core";
@@ -11,10 +12,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     const service = new PlanService(getDatabase());
-    const existing = await service.getMealPlan(id);
-    if (!existing || existing.householdId !== householdId) {
-      throw new NotFoundError("MealPlan", id);
-    }
+    const existing = await loadOwned("MealPlan", id, householdId, (planId) =>
+      service.getMealPlan(planId)
+    );
 
     const undone = await service.undoLastPlanEdit(id);
     if (!undone) {

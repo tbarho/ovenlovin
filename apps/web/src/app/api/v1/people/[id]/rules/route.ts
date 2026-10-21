@@ -16,7 +16,7 @@ import {
   type PersonRuleKind,
 } from "@ovenlovin/allergens";
 import { getDatabase } from "@ovenlovin/db";
-import { assertPersonHousehold } from "@/lib/api/people";
+import { loadOwned } from "@/lib/api/owned";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,8 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(personId);
-    assertPersonHousehold(person, householdId, personId);
+    await loadOwned("Person", personId, householdId, (id) => service.getPerson(id));
 
     const rules = await service.getRulesForPerson(personId);
 
@@ -52,8 +51,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const db = getDatabase();
     const service = new PeopleService(db);
 
-    const person = await service.getPerson(personId);
-    assertPersonHousehold(person, householdId, personId);
+    await loadOwned("Person", personId, householdId, (id) => service.getPerson(id));
 
     const actor = resolveWriteActor({
       userId: context.userId,

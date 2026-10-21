@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { handleApiError, NotFoundError, BadRequestError } from "@/lib/api/errors";
+import { handleApiError, BadRequestError } from "@/lib/api/errors";
+import { loadOwned } from "@/lib/api/owned";
 import { getRequestContext, requireHouseholdId } from "@/lib/api/middleware";
 import {
   PlanService,
@@ -60,10 +61,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const shoppingListService = new ShoppingListService();
     const servingsSettings = await loadKitchenServingsSettings(householdId);
 
-    const plan = await planService.getMealPlan(id);
-    if (!plan) {
-      throw new NotFoundError("MealPlan", id);
-    }
+    const plan = await loadOwned("MealPlan", id, householdId, (planId) =>
+      planService.getMealPlan(planId)
+    );
 
     const entries = planEntriesForWeek(await planService.getMealPlanEntries(id), plan.weekStart);
     const sources = await collectShoppingListEntries(entries, {
