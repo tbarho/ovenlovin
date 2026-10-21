@@ -4,11 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
-import {
-  displayImportFailure,
-  importGuessedNotice,
-  importInputError,
-} from "@/lib/import-input";
+import { displayImportFailure, importGuessedNotice, importInputError } from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_IN_PROGRESS,

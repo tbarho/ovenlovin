@@ -136,9 +136,9 @@ describe("importAiUnavailableMeta", () => {
   });
 
   it("throws RecipeNotFoundError for junk paste so REST and MCP share not_a_recipe", () => {
-    expect(() =>
-      throwIfNotARecipe({ ingredients: [], steps: [] })
-    ).toThrowError(/couldn't find a recipe/);
+    expect(() => throwIfNotARecipe({ ingredients: [], steps: [] })).toThrowError(
+      /couldn't find a recipe/
+    );
     try {
       throwIfNotARecipe({ ingredients: [{ rawText: "hello" }], steps: [] }, false);
     } catch (error) {
