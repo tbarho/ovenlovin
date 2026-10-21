@@ -17,7 +17,7 @@ import {
   type MealPlanEntryInput,
   type PersonWithRules,
 } from "@ovenlovin/allergens";
-import { NotFoundError } from "@/lib/api/errors";
+import { NotFoundError, requireResourceId } from "@/lib/api/errors";
 
 export async function persistMealPlanCheck(planId: string, householdId: string) {
   const report = await runMealPlanCheck(planId, householdId);
@@ -39,6 +39,7 @@ export async function runMealPlanCheck(planId: string, householdId: string) {
   const schedule = await new ScheduleService(db).getSchedule(householdId);
   const recipeMinutesByEntryId = new Map<string, number | null>();
 
+  requireResourceId("MealPlan", planId);
   const plan = await planService.getMealPlan(planId);
   if (!plan || plan.householdId !== householdId) {
     throw new NotFoundError("MealPlan", planId);

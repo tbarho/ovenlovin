@@ -68,13 +68,8 @@ async function handler(input: GetMealPlanInput, context: AuthContext): Promise<G
     plan = plans.items[0] ?? null;
   }
 
-  if (!plan) {
+  if (!plan || plan.householdId !== context.householdId) {
     throw new Error("Meal plan not found");
-  }
-
-  // Verify plan belongs to the household
-  if (plan.householdId !== context.householdId) {
-    throw new Error("Unauthorized access to meal plan");
   }
 
   // Load entries

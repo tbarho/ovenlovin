@@ -168,7 +168,7 @@ async function handler(
 
       // Verify recipe belongs to the household
       if (recipe.householdId !== context.householdId) {
-        throw new Error(`Unauthorized access to recipe: ${entry.recipeId}`);
+        throw new Error(`Recipe not found: ${entry.recipeId}`);
       }
 
       // Load recipe ingredients
@@ -201,7 +201,7 @@ async function handler(
         }
 
         if (person.householdId !== context.householdId) {
-          throw new Error(`Unauthorized access to person: ${personId}`);
+          throw new Error(`Person not found: ${personId}`);
         }
 
         const rules = await peopleService.getRulesForPerson(personId);

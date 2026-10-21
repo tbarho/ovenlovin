@@ -101,11 +101,8 @@ async function handler(
     // Load rules for each attendee
     for (const personId of input.forAttendees) {
       const person = await peopleService.getPerson(personId);
-      if (!person) continue;
-
-      // Verify person belongs to the household
-      if (person.householdId !== context.householdId) {
-        throw new Error(`Unauthorized access to person: ${personId}`);
+      if (!person || person.householdId !== context.householdId) {
+        throw new Error(`Person not found: ${personId}`);
       }
 
       personNames.set(personId, person.displayName);

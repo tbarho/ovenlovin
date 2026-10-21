@@ -60,13 +60,8 @@ async function handler(
   const people = await Promise.all(
     input.personIds.map(async (personId) => {
       const person = await peopleService.getPerson(personId);
-      if (!person) {
+      if (!person || person.householdId !== context.householdId) {
         throw new Error(`Person not found: ${personId}`);
-      }
-
-      // Verify person belongs to the household
-      if (person.householdId !== context.householdId) {
-        throw new Error(`Unauthorized access to person: ${personId}`);
       }
 
       const allRules = await peopleService.getRulesForPerson(personId);

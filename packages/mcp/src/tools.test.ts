@@ -15,6 +15,7 @@ import {
   HouseholdService,
   IMPORT_BLOCKED_CODE,
   IMPORT_BLOCKED_MESSAGE,
+  PlanService,
   RecipeService,
 } from "@ovenlovin/core";
 import * as db from "@ovenlovin/db";
@@ -110,6 +111,29 @@ describe("MCP Tool Schemas", () => {
         id: "not-a-uuid",
       });
       expect(result.success).toBe(false);
+    });
+
+    it("treats another kitchen's recipe as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "getRecipe").mockResolvedValue({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        householdId: "11111111-1111-4111-8111-111111111111",
+      } as never);
+
+      await expect(
+        getRecipeTool.handler(
+          {
+            id: "550e8400-e29b-41d4-a716-446655440000",
+            includeNutrition: true,
+            includeSource: true,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Recipe not found/);
     });
   });
 
@@ -285,6 +309,30 @@ describe("MCP Tool Schemas", () => {
       expect(exportShoppingListTool.description).toMatch(/extras/);
       expect(exportShoppingListTool.description).toMatch(/isStaple/);
       expect(exportShoppingListTool.description).toMatch(/includeStaples/);
+    });
+
+    it("treats another kitchen's meal plan as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(PlanService.prototype, "getMealPlan").mockResolvedValue({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        householdId: "11111111-1111-4111-8111-111111111111",
+      } as never);
+
+      await expect(
+        exportShoppingListTool.handler(
+          {
+            planId: "550e8400-e29b-41d4-a716-446655440000",
+            format: "markdown",
+            groupBy: "aisle",
+            includeRuleWarnings: true,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Meal plan not found/);
     });
 
     it("accepts includeStaples and the includePantryItems alias", () => {
