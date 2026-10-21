@@ -1281,27 +1281,42 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/api-keys",
     tags: ["api-keys"],
     summary: "List API keys (hashes only)",
-    responses: { 200: { description: "API keys" } },
+    responses: {
+      200: { description: "API keys" },
+      401: {
+        description: "Signed-in user required. API keys cannot list, create, or revoke keys.",
+      },
+    },
   });
 
   registry.registerPath({
     method: "post",
     path: "/api-keys",
     tags: ["api-keys"],
-    summary: "Create an API key. The plaintext is returned once.",
+    summary: "Create an API key. The plaintext is returned once. Omit scopes for full access.",
     request: {
       body: {
         content: {
           "application/json": {
             schema: z.object({
               name: z.string().optional(),
-              scopes: z.array(z.string()).optional(),
+              scopes: z
+                .array(z.string())
+                .optional()
+                .describe(
+                  "Defaults to full access: recipes:read, recipes:write, plans:read, plans:write, people:read, people:write, lists:export."
+                ),
             }),
           },
         },
       },
     },
-    responses: { 201: { description: "Created key with plaintext" } },
+    responses: {
+      201: { description: "Created key with plaintext" },
+      401: {
+        description: "Signed-in user required. API keys cannot list, create, or revoke keys.",
+      },
+    },
   });
 
   registry.registerPath({
@@ -1310,7 +1325,12 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     tags: ["api-keys"],
     summary: "Revoke an API key",
     request: { params: z.object({ id: z.string().uuid() }) },
-    responses: { 204: { description: "Revoked" } },
+    responses: {
+      204: { description: "Revoked" },
+      401: {
+        description: "Signed-in user required. API keys cannot list, create, or revoke keys.",
+      },
+    },
   });
 
   const inviteRoleDoc = z.enum(["admin", "member", "viewer"]).openapi("InviteRole");
