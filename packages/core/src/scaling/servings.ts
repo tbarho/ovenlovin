@@ -177,7 +177,7 @@ export type FriendlyMeasure = {
  * Pick a shoppable unit and cooking-fraction label. Raw `quantity`/`unit`
  * stay unchanged; this is display-only.
  */
-function mixedCupTbsp(tbsp: number): FriendlyMeasure | null {
+function mixedCupTbsp(tbsp: number, roundUp = false): FriendlyMeasure | null {
   const cups = tbsp / 16;
   if (cups < 0.25) return null;
   const whole = Math.floor(cups + 1e-9);
@@ -188,9 +188,13 @@ function mixedCupTbsp(tbsp: number): FriendlyMeasure | null {
   }
   if (cupDown < 0.25) return null;
   const rem = tbsp - cupDown * 16;
-  if (rem < 1 / 8 - 1e-9) return null;
+  if (rem < 1 / 24 - 1e-9) return null;
+  const leftover =
+    rem >= 1 - 1e-9
+      ? `${formatQuantity(rem, roundUp)} tbsp`
+      : `${formatQuantity(rem * 3, roundUp)} tsp`;
   return {
-    displayQuantity: `${formatQuantity(cupDown)} cup + ${formatQuantity(rem)} tbsp`,
+    displayQuantity: `${formatQuantity(cupDown, roundUp)} cup + ${leftover}`,
   };
 }
 
@@ -231,11 +235,16 @@ export function toFriendlyMeasure(
     }
   }
 
-  if (normalized === "tbsp" && best.unit === "cup") {
+  if (normalized === "tbsp") {
     const cups = quantity / 16;
-    const shown = quantityValue(formatQuantity(best.quantity, roundUp));
-    const mixed = mixedCupTbsp(quantity);
-    if (shown <= 0 || Math.abs(shown - cups) / cups > 0.05) {
+    const shown = quantityValue(
+      formatQuantity(best.unit === "cup" ? best.quantity : cups, roundUp)
+    );
+    if (best.unit === "cup" && shown > 0 && Math.abs(shown - cups) / cups <= 0.05) {
+      return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };
+    }
+    const mixed = mixedCupTbsp(quantity, roundUp);
+    if (best.unit === "cup") {
       return (
         mixed ?? {
           displayQuantity: formatQuantity(quantity, roundUp),
@@ -243,7 +252,8 @@ export function toFriendlyMeasure(
         }
       );
     }
-    if (mixed) return mixed;
+    // leftover under 1 tbsp (tsp), even when scoring kept tbsp
+    if (mixed?.displayQuantity.includes("tsp")) return mixed;
   }
 
   return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };
