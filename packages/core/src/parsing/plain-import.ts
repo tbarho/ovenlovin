@@ -188,7 +188,7 @@ export function draftFromPlainText(text: string): RecipeImportDraft {
       ? firstRest
       : undefined;
 
-  const draft = {
+  const draft: RecipeImportDraft = {
     title,
     description,
     notes: meta.notes,
