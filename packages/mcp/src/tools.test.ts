@@ -283,6 +283,38 @@ describe("MCP Tool Schemas", () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it("treats another kitchen's recipe as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockRejectedValue(
+        new HouseholdAccessError("Recipe not found", "not_found")
+      );
+      const create = vi.spyOn(PlanService.prototype, "createMealPlan");
+
+      await expect(
+        saveMealPlanTool.handler(
+          {
+            weekStart: "2026-10-13",
+            entries: [
+              {
+                date: "2026-10-13",
+                meal: "dinner",
+                recipeId: "550e8400-e29b-41d4-a716-446655440000",
+                attendees: [],
+              },
+            ],
+            checkReportJson: {},
+            status: "draft",
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Recipe not found/);
+      expect(create).not.toHaveBeenCalled();
+    });
   });
 
   describe("export_shopping_list", () => {

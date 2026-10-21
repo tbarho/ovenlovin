@@ -9,6 +9,7 @@ import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
 import {
   agreedEntryCookFor,
+  PeopleService,
   PlanService,
   RecipeService,
   resolveWriteActor,
@@ -66,6 +67,10 @@ async function handler(
   await new RecipeService(db).requireOwnedRecipeIds(
     context.householdId,
     input.entries.map((entry) => entry.recipeId)
+  );
+  await new PeopleService(db).requireOwnedPersonIds(
+    context.householdId,
+    input.entries.flatMap((entry) => entry.attendees)
   );
   const actor = resolveWriteActor({
     userId: context.userId,

@@ -8,6 +8,7 @@ import {
   requireWritableHousehold,
 } from "@/lib/api/middleware";
 import {
+  PeopleService,
   PlanService,
   RecipeService,
   planPatchesToWrites,
@@ -49,6 +50,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const service = new PlanService(db);
     await loadOwned("MealPlan", id, householdId, (planId) => service.getMealPlan(planId));
 
+    if (body.entries) {
+      await new RecipeService(db).requireOwnedRecipeIds(
+        householdId,
+        body.entries.map((entry) => entry.recipeId)
+      );
+      await new PeopleService(db).requireOwnedPersonIds(
+        householdId,
+        body.entries.flatMap((entry) => entry.attendees ?? [])
+      );
+    }
+
     const plan = await service.updateMealPlan(id, {
       ...(body.status !== undefined ? { status: body.status } : {}),
       ...(body.cookFor !== undefined ? { cookFor: body.cookFor } : {}),
@@ -64,10 +76,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     let previousEntries: Awaited<ReturnType<PlanService["getMealPlanEntries"]>> = [];
     if (body.entries) {
-      await new RecipeService(db).requireOwnedRecipeIds(
-        householdId,
-        body.entries.map((entry) => entry.recipeId)
-      );
       if ((body.entriesMode ?? "merge") === "replace") {
         previousEntries = await service.getMealPlanEntries(id);
         await service.replaceMealPlanEntries(id, planPatchesToWrites(body.entries));

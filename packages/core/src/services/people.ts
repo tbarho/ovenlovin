@@ -3,6 +3,7 @@ import { person, personRule, preference } from "@ovenlovin/db";
 import type { Person, PersonRule, Preference } from "../schemas/people";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
+import { HouseholdAccessError } from "./kitchen-access";
 import { PeopleOrderError, orderedPersonIds } from "./people-order";
 
 export { PeopleOrderError, movePersonId, orderedPersonIds } from "./people-order";
@@ -45,6 +46,23 @@ export class PeopleService extends BaseService {
       .limit(1);
 
     return result ? this.mapPerson(result) : null;
+  }
+
+  async requireOwnedPersonIds(
+    householdId: string,
+    personIds: Iterable<string | null | undefined>
+  ): Promise<void> {
+    const ids = [...new Set([...personIds].filter((id): id is string => Boolean(id)))];
+    if (ids.length === 0) return;
+    const rows = await this._db
+      .select({ id: person.id })
+      .from(person)
+      .where(
+        and(eq(person.householdId, householdId), isNull(person.deletedAt), inArray(person.id, ids))
+      );
+    if (rows.length !== ids.length) {
+      throw new HouseholdAccessError("Person not found", "not_found");
+    }
   }
 
   async listPeopleByHousehold(

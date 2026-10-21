@@ -10,6 +10,7 @@ import {
 import {
   agreedEntryCookFor,
   createMealPlanBodySchema,
+  PeopleService,
   PlanService,
   RecipeService,
   resolveWriteActor,
@@ -67,6 +68,10 @@ export async function POST(request: NextRequest) {
       await new RecipeService(db).requireOwnedRecipeIds(
         householdId,
         body.entries.map((entry) => entry.recipeId)
+      );
+      await new PeopleService(db).requireOwnedPersonIds(
+        householdId,
+        body.entries.flatMap((entry) => entry.attendees)
       );
     }
 

@@ -38,6 +38,16 @@ const otherKitchen = {
   steps: [],
 };
 
+const writes: string[] = [];
+let mealPlanHousehold = OTHER;
+
+function rejectForeignIds(message: string) {
+  return async (_householdId: string, ids: Iterable<string | null | undefined>) => {
+    if (![...ids].some(Boolean)) return;
+    throw new HouseholdAccessError(message, "not_found");
+  };
+}
+
 function serviceStub() {
   return class {
     constructor() {
@@ -46,9 +56,28 @@ function serviceStub() {
         {
           get: (_target, key) => {
             if (key === "then") return undefined;
-            if (String(key) === "requireOwnedRecipeIds") {
+            const name = String(key);
+            if (name === "requireOwnedRecipeIds") {
+              return rejectForeignIds("Recipe not found");
+            }
+            if (name === "requireOwnedPersonIds") {
+              return rejectForeignIds("Person not found");
+            }
+            if (name === "getMealPlan") {
+              return async () => ({
+                ...otherKitchen,
+                householdId: mealPlanHousehold,
+                status: "draft",
+              });
+            }
+            if (
+              name === "updateMealPlan" ||
+              name === "replaceMealPlanEntries" ||
+              name === "mergeMealPlanEntries"
+            ) {
               return async () => {
-                throw new HouseholdAccessError("Recipe not found", "not_found");
+                writes.push(name);
+                return otherKitchen;
               };
             }
             return async () => otherKitchen;
@@ -190,6 +219,41 @@ describe("REST resource ids", () => {
       { params: Promise.resolve({}) }
     );
     await expect404(response, /Recipe not found/);
+  });
+
+  async function patchPlan(body: unknown) {
+    writes.length = 0;
+    mealPlanHousehold = CALLER;
+    const handler = asHandler((await import("./meal-plans/[id]/route")).PATCH);
+    try {
+      return await handler(
+        new NextRequest(`http://localhost/api/v1/meal-plans/${ID}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+        { params: Promise.resolve({ id: ID }) }
+      );
+    } finally {
+      mealPlanHousehold = OTHER;
+    }
+  }
+
+  it("404s a second kitchen's recipe on PATCH before saving status", async () => {
+    const response = await patchPlan({
+      status: "approved",
+      entries: [{ date: "2026-10-13", meal: "dinner", recipeId: ID }],
+    });
+    await expect404(response, /Recipe not found/);
+    expect(writes).toEqual([]);
+  });
+
+  it("404s a second kitchen's attendee on a meal plan write", async () => {
+    const response = await patchPlan({
+      entries: [{ date: "2026-10-13", meal: "dinner", attendees: [ID] }],
+    });
+    await expect404(response, /Person not found/);
+    expect(writes).toEqual([]);
   });
 
   it("404s a malformed id instead of 500", async () => {
