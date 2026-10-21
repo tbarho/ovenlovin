@@ -27,7 +27,7 @@ export function importSummaryReporter(): EvalReporter {
         model,
         scores: {
           title: result.assertions.find((item) => item.key === "title")?.score ?? 0,
-          servings: result.assertions.find((item) => item.key === "servings")?.score ?? 0,
+          servings: result.assertions.find((item) => item.key === "servings")?.score ?? null,
           ingredientRecall:
             result.assertions.find((item) => item.key === "ingredient-recall")?.score ?? 0,
           ingredientPrecision:

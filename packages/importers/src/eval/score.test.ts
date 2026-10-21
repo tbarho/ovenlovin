@@ -13,11 +13,50 @@ describe("normalizeText", () => {
   });
 });
 
+describe("ingredientMatched", () => {
+  it("accepts a faithful full line and the live false-reject lines", () => {
+    expect(
+      ingredientMatched(
+        "1 large can (28 ounces) diced tomatoes, lightly drained",
+        "1 large can (28 ounces) diced tomatoes, lightly drained"
+      )
+    ).toBe(true);
+    expect(
+      ingredientMatched("1 teaspoon salt, more to taste", "1 teaspoon salt, more to taste")
+    ).toBe(true);
+    expect(
+      ingredientMatched("4 cloves garlic, thinly sliced", "4 cloves garlic, thinly sliced")
+    ).toBe(true);
+    expect(ingredientMatched("Eggs 2 ea.", "Eggs 2 ea. 100 g 40%")).toBe(true);
+    expect(ingredientMatched("Vanilla extract", "Vanilla extract 1 tsp 4.2 g 1.68%")).toBe(true);
+    expect(ingredientMatched("1 egg", "1 egg")).toBe(true);
+  });
+
+  it("rejects sugar/brown sugar, pepper/bell pepper, and egg/egg noodles", () => {
+    expect(ingredientMatched("3/4 cup packed brown sugar", "3/4 cup granulated white sugar")).toBe(
+      false
+    );
+    expect(ingredientMatched("sugar", "3/4 cup packed brown sugar")).toBe(false);
+    expect(
+      ingredientMatched("85 grams (3 ounces) red bell pepper, diced", "a little black pepper")
+    ).toBe(false);
+    expect(ingredientMatched("pepper", "85 grams (3 ounces) red bell pepper, diced")).toBe(false);
+    expect(ingredientMatched("egg noodles", "1 egg")).toBe(false);
+    expect(ingredientMatched("egg", "egg noodles")).toBe(false);
+  });
+});
+
 describe("scoreRecipe", () => {
   const expected = {
     title: "Weeknight Tomato Pasta",
     servings: 4,
-    ingredients: ["pasta", "olive oil", "garlic", "crushed tomatoes", "basil"],
+    ingredients: [
+      "12 oz pasta",
+      "2 tbsp olive oil",
+      "3 garlic cloves",
+      "1 can crushed tomatoes",
+      "basil leaves",
+    ],
     stepCount: 3,
     stepMustInclude: ["boil", "garlic", "basil"],
   };
@@ -28,7 +67,7 @@ describe("scoreRecipe", () => {
         title: "Weeknight Tomato Pasta",
         servings: 4,
         ingredients: [
-          "12 oz dried pasta",
+          "12 oz pasta",
           "2 tbsp olive oil",
           "3 garlic cloves",
           "1 can crushed tomatoes",
@@ -50,7 +89,7 @@ describe("scoreRecipe", () => {
       {
         title: "Tomato Pasta",
         servings: 4,
-        ingredients: ["pasta", "olive oil", "tomatoes"],
+        ingredients: ["12 oz pasta", "2 tbsp olive oil", "1 can tomatoes"],
         steps: ["Boil the pasta.", "Warm the sauce."],
       },
       expected
@@ -62,26 +101,30 @@ describe("scoreRecipe", () => {
     expect(scores.score).toBeLessThan(0.9);
   });
 
-  it("matches a key as a whole word anywhere in a full ingredient line", () => {
-    expect(ingredientMatched("4 garlic cloves, pressed or minced", "garlic")).toBe(true);
-    expect(
-      ingredientMatched("1 cup brown or green lentils, picked over and rinsed", "lentils")
-    ).toBe(true);
-    expect(
-      ingredientMatched("2 cups (480 ml / 12 oz) semi-sweet chocolate morsels / chips", "chocolate")
-    ).toBe(true);
-    expect(ingredientMatched("1 cup frozen corn, thawed", "corn")).toBe(true);
-    expect(ingredientMatched("1 cup butter, cubed", "butter")).toBe(true);
-    expect(ingredientMatched("1 tsp ground cloves", "cloves")).toBe(true);
-    expect(ingredientMatched("1 egg", "egg")).toBe(true);
-    expect(ingredientMatched("egg noodles", "egg")).toBe(false);
+  it("assigns each key to at most one observed line", () => {
+    const scores = scoreRecipe(
+      {
+        title: "Cookies",
+        ingredients: ["3/4 cup packed brown sugar"],
+        steps: ["Bake."],
+      },
+      {
+        title: "Cookies",
+        servings: null,
+        ingredients: ["3/4 cup granulated white sugar", "3/4 cup packed brown sugar"],
+        stepCount: 1,
+        stepMustInclude: [],
+      }
+    );
+    expect(scores.ingredientRecall).toBe(0.5);
+    expect(scores.ingredientPrecision).toBe(1);
   });
 
   it("does not treat egg as a match for egg noodles", () => {
     const soup = {
       title: "Chicken Noodle Soup",
       servings: 6,
-      ingredients: ["chicken", "egg noodles", "carrot"],
+      ingredients: ["2 cups shredded cooked chicken", "2 cups egg noodles", "2 carrots, sliced"],
       stepCount: 2,
       stepMustInclude: ["noodles"],
     };
@@ -89,7 +132,7 @@ describe("scoreRecipe", () => {
       {
         title: "Chicken Noodle Soup",
         servings: 6,
-        ingredients: ["chicken", "egg", "carrot"],
+        ingredients: ["2 cups shredded cooked chicken", "1 egg", "2 carrots, sliced"],
         steps: ["Simmer the chicken.", "Add the egg."],
       },
       soup
@@ -102,7 +145,7 @@ describe("scoreRecipe", () => {
       {
         title: "Weeknight Tomato Pasta",
         servings: 4,
-        ingredients: ["pasta", "olive oil", "garlic", "crushed tomatoes", "basil"],
+        ingredients: expected.ingredients,
         steps: ["Boil.", "Garlic.", "Basil.", "Plate leftovers.", "Wash the pot."],
       },
       expected
@@ -115,7 +158,7 @@ describe("scoreRecipe", () => {
       {
         title: "Pasta",
         servings: 2,
-        ingredients: ["egg", "olive oil", "noodles"],
+        ingredients: ["1 egg", "2 tbsp olive oil", "egg noodles"],
         steps: ["Boil water.", "Add noodles.", "Drain.", "Eat.", "Clean up."],
       },
       expected
@@ -143,16 +186,16 @@ describe("scoreRecipe", () => {
 
   it("does not give a free servings point when the gold has none", () => {
     const scores = scoreRecipe(
-      { title: "slow-roasted tomatoes", ingredients: ["tomatoes", "garlic"], steps: ["roast"] },
+      { title: "slow-roasted tomatoes", ingredients: ["1 lb tomatoes"], steps: ["roast"] },
       {
         title: "slow-roasted tomatoes",
         servings: null,
-        ingredients: ["tomatoes"],
+        ingredients: ["1 lb tomatoes"],
         stepCount: 1,
         stepMustInclude: [],
       }
     );
-    expect(scores.servings).toBe(0);
+    expect(scores.servings).toBeNull();
     expect(scores.score).toBeCloseTo(
       (scores.title +
         scores.ingredientRecall +

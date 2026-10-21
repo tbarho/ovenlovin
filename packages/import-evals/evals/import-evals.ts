@@ -43,7 +43,9 @@ export function defineImportJobEvals(cases: EvalCase[]) {
           }
           t.log(`${evalCase.job}/${evalCase.id} ${model} score=${result.scores.score.toFixed(3)}`);
           t.score(result.scores.title).label("title");
-          t.score(result.scores.servings).label("servings");
+          if (result.scores.servings != null) {
+            t.score(result.scores.servings).label("servings");
+          }
           t.score(result.scores.ingredientRecall).label("ingredient-recall");
           t.score(result.scores.ingredientPrecision).label("ingredient-precision");
           t.score(result.scores.stepCompleteness).label("step-completeness");

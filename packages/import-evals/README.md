@@ -14,6 +14,10 @@ EVAL_IMPORT_MODEL=spacexai/grok-4.7 pnpm eval:import
 
 Needs `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN`, and Node.js 24+ for the eve CLI. The runner passes `eve eval --strict`, so a gated miss or a thrown model error exits non-zero.
 
+## Scoring
+
+The answer key for each case is the ingredient lines and step count as they appear in the fixture source (paste text, photo card text, or `pageTextFromHtml` of the saved page). A model line matches a key line when the two normalize equal (case, punctuation, unicode fractions), or when the shorter line has at least two tokens and those tokens all appear in the longer line. Matches are one-to-one, so one observed line cannot cover two keys. That is why "egg" does not match "egg noodles" and "sugar" does not match "brown sugar". Servings are scored only when the key has a number; omitted servings are not printed or averaged as 0%. A fixture that is scored against its own source must get 1.0.
+
 ## Why these evals call extractors instead of `t.send`
 
 Eve's documented grading API is `defineEval` plus `t.score` / `t.check` on any locally computed value (`docs/evals/assertions.mdx`). These cases score the AI SDK importers, not an eve agent conversation, so they do not use `t.send` / `t.sendFile`. A `mockModel` fixture agent exists only because `eve eval` boots an agent server. Photo bytes go into `createPhotoImporter`; eve has no vision path into that importer.
