@@ -96,15 +96,15 @@ export const createMealPlanBodySchema = z
   .object({
     weekStart: z.string().date(),
     status: z.enum(["draft", "approved"]).optional(),
-    entries: z.array(mealPlanEntryWriteSchema).optional(),
+    entries: z.array(mealPlanEntryWriteSchema).max(50).optional(),
   })
   .strict();
 
 export const updateMealPlanBodySchema = z
   .object({
     status: mealPlanStatusSchema.optional(),
-    acknowledgedWarnings: z.array(z.string()).optional(),
-    entries: z.array(mealPlanEntryPatchSchema).optional(),
+    acknowledgedWarnings: z.array(z.string().max(500)).max(100).optional(),
+    entries: z.array(mealPlanEntryPatchSchema).max(50).optional(),
     entriesMode: z
       .enum(["merge", "replace"])
       .optional()

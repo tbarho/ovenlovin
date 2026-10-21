@@ -741,6 +741,13 @@ describe("MCP Tool Schemas", () => {
         preview: true,
         title: "Weeknight Tomato Pasta",
       });
+      expect(result.ingredients).toEqual([{ rawText: "12 oz pasta" }]);
+      expect(result.steps).toEqual([{ text: "Boil the pasta." }]);
+      expect(result.draft).toMatchObject({
+        title: "Weeknight Tomato Pasta",
+        ingredients: [{ rawText: "12 oz pasta" }],
+        steps: [{ text: "Boil the pasta." }],
+      });
       expect(result.recipeId).toBeUndefined();
       expect(persist).not.toHaveBeenCalled();
     });

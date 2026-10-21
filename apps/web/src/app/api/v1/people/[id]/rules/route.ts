@@ -7,7 +7,8 @@ import {
   requireAdminRole,
   getIdempotencyKey,
 } from "@/lib/api/middleware";
-import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
+import { createPersonRuleBodySchema, PeopleService, resolveWriteActor } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import {
   ambiguousRuleTargetMessage,
   canonicalizePersonRuleTarget,
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const idempotencyKey = getIdempotencyKey(request);
 
     const { id: personId } = await params;
-    const body = await request.json();
+    const body = await readJsonBody(request, createPersonRuleBodySchema);
 
     const db = getDatabase();
     const service = new PeopleService(db);
@@ -71,13 +72,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw new BadRequestError(unknownRuleTargetMessage(target, kind));
     }
 
-    const rest = { ...body };
-    delete rest.confirmUnknown;
     const { rule, created } = await service.createRule({
-      ...rest,
       personId,
       kind: canonical.kind,
       target: canonical.target,
+      severity: body.severity,
+      includeMayContain: body.includeMayContain ?? body.severity === "block",
+      includeCrossContact: body.includeCrossContact ?? body.severity === "block",
+      sharedFacility: body.sharedFacility ?? (body.severity === "block" ? "block" : "ignore"),
+      includeUnmappedIngredients: body.includeUnmappedIngredients ?? false,
+      includeDescendants: body.includeDescendants ?? true,
+      treatCoconutAsTreeNut: body.treatCoconutAsTreeNut ?? false,
+      label: body.label,
+      note: body.note,
       setBy: actor.setBy,
       createdBy: actor.createdBy,
       createdByApiKeyId: actor.createdByApiKeyId,

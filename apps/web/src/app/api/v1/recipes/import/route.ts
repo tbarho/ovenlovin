@@ -10,10 +10,12 @@ import {
 import {
   copyRemoteImages,
   draftFromSavedPreview,
+  importRecipeBodySchema,
   keepMainRecipeImages,
   prepareImportDraft,
   RecipeService,
 } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
@@ -52,15 +54,7 @@ export async function POST(request: NextRequest) {
       requireUserId(context);
     }
 
-    const body = (await request.json()) as {
-      source?: string;
-      content?: string;
-      save?: boolean | string;
-      draft?: unknown;
-    };
-    if (body.source !== "url" && body.source !== "paste") {
-      throw new BadRequestError("Provide source (url or paste) and content");
-    }
+    const body = await readJsonBody(request, importRecipeBodySchema);
 
     const idempotencyKey = getIdempotencyKey(request);
     const savedDraft =

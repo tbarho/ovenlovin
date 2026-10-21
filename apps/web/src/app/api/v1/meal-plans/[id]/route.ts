@@ -7,6 +7,7 @@ import {
   requireWritableHousehold,
 } from "@/lib/api/middleware";
 import { PlanService, planPatchesToWrites, updateMealPlanBodySchema } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
 
@@ -38,7 +39,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const householdId = requireWritableHousehold(context);
 
     const { id } = await params;
-    const body = updateMealPlanBodySchema.parse(await request.json());
+    const body = await readJsonBody(request, updateMealPlanBodySchema);
 
     const db = getDatabase();
     const service = new PlanService(db);

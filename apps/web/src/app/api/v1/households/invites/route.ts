@@ -11,6 +11,7 @@ import {
 } from "@/lib/api/middleware";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
 import { resolveOrigin } from "@/lib/origin";
+import { readJsonBody } from "@/lib/api/read-json";
 
 function inviteUrl(origin: string, token: string): string {
   return `${origin}${invitePath(token)}`;
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     requireAdminRole(context);
     const householdId = requireHouseholdId(context);
     const createdBy = requireUserOrKeyOwner(context);
-    const input = createInviteInputSchema.parse(await request.json().catch(() => ({})));
+    const input = await readJsonBody(request, createInviteInputSchema);
     const invite = await new InviteService(getDatabase()).createInvite(householdId, input, {
       userId: createdBy,
       role: context.membershipRole ?? "admin",

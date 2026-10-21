@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseRecipeImages, recipeSchema, slugifyTitle } from "./recipes";
+import {
+  createRecipeBodySchema,
+  parseRecipeImages,
+  recipeSchema,
+  slugifyTitle,
+  updateRecipeBodySchema,
+} from "./recipes";
 
 describe("slugifyTitle", () => {
   it("turns a title into a url-safe slug", () => {
@@ -8,6 +14,15 @@ describe("slugifyTitle", () => {
 
   it("falls back when the title has no letters", () => {
     expect(slugifyTitle("!!!")).toBe("recipe");
+  });
+});
+
+describe("recipe write bodies", () => {
+  it("rejects blank and empty recipe writes", () => {
+    expect(createRecipeBodySchema.safeParse({}).success).toBe(false);
+    expect(createRecipeBodySchema.safeParse({ title: "   " }).success).toBe(false);
+    expect(updateRecipeBodySchema.safeParse({}).success).toBe(false);
+    expect(createRecipeBodySchema.parse({ title: " Toast " }).title).toBe("Toast");
   });
 });
 
