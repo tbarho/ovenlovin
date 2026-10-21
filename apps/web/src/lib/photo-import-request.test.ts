@@ -70,7 +70,18 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.draft).toMatchObject({ title: "Weeknight Tomato Pasta" });
   });
 
-  it("rejects a private or non-image photo URL before fetch", async () => {
+  it("accepts a public image URL without a file extension", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ imageUrl: "https://images.unsplash.com/photo-abc" }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.images).toEqual([{ blob: "https://images.unsplash.com/photo-abc" }]);
+  });
+
+  it("rejects a private photo URL before fetch", async () => {
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",
       headers: { "content-type": "application/json" },

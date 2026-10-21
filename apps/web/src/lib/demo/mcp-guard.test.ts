@@ -80,4 +80,16 @@ describe("isSuccessfulImportRecipeCall", () => {
       )
     ).toBe(true);
   });
+
+  it("does not count a save:false preview toward the demo import cap", () => {
+    expect(
+      isSuccessfulImportRecipeCall(
+        {
+          method: "tools/call",
+          params: { name: "import_recipe", arguments: { save: false, source: "paste" } },
+        },
+        JSON.stringify({ result: { title: "Toast", preview: true, saved: false } })
+      )
+    ).toBe(false);
+  });
 });

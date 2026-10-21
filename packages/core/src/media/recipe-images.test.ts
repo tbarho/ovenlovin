@@ -72,15 +72,16 @@ describe("recipe images", () => {
     expect(isFetchableRecipeImageUrl("http://[ff02::1]/secret.jpg")).toBe(false);
   });
 
-  it("rejects private, file, and non-image URLs before store or fetch", () => {
+  it("rejects private and file URLs before store or fetch", () => {
     expect(isAllowedRecipeImageUrl("https://cdn.example/tomato.jpg")).toBe(true);
+    expect(isAllowedRecipeImageUrl("https://images.unsplash.com/photo-abc")).toBe(true);
+    expect(isAllowedRecipeImageUrl("https://example.com/")).toBe(true);
     expect(isAllowedRecipeImageUrl("https://abc.public.blob.vercel-storage.com/card")).toBe(true);
     expect(isAllowedRecipeImageUrl(dataUrl)).toBe(true);
     expect(isAllowedRecipeImageUrl("http://169.254.169.254/latest/meta-data/x.png")).toBe(false);
     expect(isAllowedRecipeImageUrl("http://127.0.0.1/x.png")).toBe(false);
     expect(isAllowedRecipeImageUrl("http://localhost:3000/api/v1/status")).toBe(false);
     expect(isAllowedRecipeImageUrl("file:///etc/passwd")).toBe(false);
-    expect(isAllowedRecipeImageUrl("https://example.com/")).toBe(false);
     expect(() => assertAllowedRecipeImageUrls(["http://127.0.0.1/card.png"])).toThrow(
       InvalidImageUrlError
     );

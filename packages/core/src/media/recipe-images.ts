@@ -115,14 +115,7 @@ export const INVALID_IMAGE_URL_MESSAGE =
 
 /** User-supplied image refs we may store, fetch, or send to a model. */
 export function isAllowedRecipeImageUrl(url: string): boolean {
-  if (isInlineImageDataUrl(url)) return true;
-  if (!isFetchableRecipeImageUrl(url)) return false;
-  if (isStoredBlobUrl(url)) return true;
-  try {
-    return /\.(png|webp|gif|avif|jpe?g)$/i.test(new URL(url).pathname);
-  } catch {
-    return false;
-  }
+  return isInlineImageDataUrl(url) || isFetchableRecipeImageUrl(url);
 }
 
 export class InvalidImageUrlError extends Error {

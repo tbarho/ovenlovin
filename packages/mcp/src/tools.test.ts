@@ -409,6 +409,12 @@ describe("MCP Tool Schemas", () => {
       expect(
         createRecipeTool.inputSchema.safeParse({
           title: "Toast",
+          images: ["https://images.unsplash.com/photo-abc"],
+        }).success
+      ).toBe(true);
+      expect(
+        createRecipeTool.inputSchema.safeParse({
+          title: "Toast",
           images: ["http://169.254.169.254/latest/meta-data/x.png"],
         }).success
       ).toBe(false);
@@ -779,6 +785,11 @@ describe("MCP Tool Schemas", () => {
 
   describe("import_recipe_from_image", () => {
     it("accepts an image URL", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          imageUrl: "https://images.unsplash.com/photo-abc",
+        }).success
+      ).toBe(true);
       const result = importRecipeFromImageTool.inputSchema.safeParse({
         imageUrl: "https://blob.vercel-storage.com/card.jpg",
       });

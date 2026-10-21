@@ -109,16 +109,27 @@ describe("decideDemoWrite", () => {
     });
   });
 
-  it("does not count an import preview as a write", () => {
-    const decision = decideDemoWrite({
+  it("rate-limits an import preview without spending the import cap", () => {
+    const spent = decideDemoWrite({
+      pathname: "/api/v1/recipes/import",
+      method: "POST",
+      preview: true,
+      counters: { ...counters, importCount: 5 },
+    });
+    expect(spent.ok).toBe(true);
+    if (spent.ok) {
+      expect(spent.next.importCount).toBe(5);
+      expect(spent.next.writesInWindow).toBe(1);
+    }
+
+    const limited = decideDemoWrite({
       pathname: "/api/v1/recipes/import",
       method: "POST",
       preview: true,
       counters: { ...counters, writesInWindow: 60 },
       now: new Date("2026-10-14T00:30:00.000Z"),
     });
-    expect(decision.ok).toBe(true);
-    if (decision.ok) expect(decision.next.writesInWindow).toBe(60);
+    expect(limited).toMatchObject({ ok: false, code: "write_rate" });
   });
 
   it("resets the write window after an hour", () => {
