@@ -3,7 +3,7 @@ title: REST API Overview
 description: Live /api/v1 routes, statuses, and OpenAPI 3.1
 ---
 
-OvenLovin REST at `/api/v1`. JSON bodies. OpenAPI 3.1 from the same Zod schemas the handlers use.
+OvenLovin REST at `/api/v1`. JSON bodies. OpenAPI 3.1 from the same Zod schemas the handlers use. All ids are UUIDs. `version` on `/health` is the API version (`0.1.0`), the same value as OpenAPI `info.version` and MCP `serverInfo.version`.
 
 ## Base URL
 
@@ -15,7 +15,7 @@ OvenLovin REST at `/api/v1`. JSON bodies. OpenAPI 3.1 from the same Zod schemas 
 
 Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have a kitchen (open the app once). On a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is `403`.
 
-No auth: `GET /health`, `GET /openapi.json`, `GET /invites/{token}`.
+No auth: `GET /health`, `GET /status`, `GET /openapi.json`, `GET /invites/{token}`.
 
 ```bash
 curl -H "Authorization: Bearer <jwt-or-rkapi-key>" \
@@ -27,7 +27,7 @@ curl -H "Authorization: ApiKey <api-key>" \
   https://your-app.vercel.app/api/v1/recipes
 ```
 
-Keys store `scopes`. Routes authorize by kitchen membership role (viewer / member / admin / owner), not by those scope strings. `POST /api-keys` requires a signed-in admin or owner.
+Keys store `scopes`. A request outside the key's scopes returns `403` with `type` `<origin>/problems/forbidden`. Routes also authorize by kitchen membership role (viewer / member / admin / owner). `POST /api-keys` requires a signed-in admin or owner. The response field `plaintext` holds the full `rkapi_...` key. It is returned once.
 
 ## Error Response (RFC 9457)
 
@@ -37,30 +37,34 @@ Keys store `scopes`. Routes authorize by kitchen membership role (viewer / membe
   "title": "Validation Error",
   "status": 400,
   "detail": "Request validation failed",
-  "instance": "/api/v1/recipes",
+  "instance": "https://your-app.vercel.app/api/v1/recipes",
   "errors": [{ "path": "title", "message": "Required", "code": "invalid_type" }]
 }
 ```
+
+Validation errors return `400` with `type` `<origin>/problems/validation-error` and an `errors` array of `{path, message, code}`. `instance` is the full request URL.
 
 Statuses the handlers return:
 
 - `200` / `201` / `204` - Success, created (`Location` when set), no content
 - `400` - Invalid input, including Zod validation (`problems/validation-error`)
 - `401` - Missing or invalid auth
-- `403` - Role not allowed, kitchen header mismatch, demo write/upload cap
-- `404` - Missing resource or unknown path
-- `409` - Conflict (duplicate import, in-flight import, household conflict)
+- `403` - Role not allowed, kitchen header mismatch, demo write/upload cap, or request outside the key's scopes
+- `404` - Missing resource, unknown path, cross-kitchen id (including the shopping list), or malformed id
+- `409` - Conflict (duplicate import, near-duplicate, in-flight import, household conflict)
 - `410` - Expired invite
 - `500` - Unhandled server error
 - `503` - AI recipe reading is busy (`import_ai_unavailable`). `Retry-After: 60`
 
-Validation is **400**, not 422. There is no 422 or 429 handler, and no `X-RateLimit-*` headers. Product REST does not apply a request-per-minute cap. The public demo can `403` writes after its sandbox cap.
+There is no rate limit today. Be gentle: retry `503` `import_ai_unavailable` after `Retry-After` seconds. The public demo can `403` writes after its sandbox cap.
+
+Image fields: use a public http(s) image URL, a stored blob URL, or an inline image. `file:` URLs are rejected.
 
 ## Idempotency-Key
 
 Optional header. Any string (trimmed, first 512 characters). Not required to be a UUID.
 
-Used when saving a recipe: `POST /recipes`, `POST /recipes/import` with `save: true`, `POST /recipes/import/photo` with `save: true`. A completed key returns the first saved recipe (`200`). There is no "key conflict" status. `409` means a duplicate URL or photo, or an in-flight lock.
+Honored when saving a recipe: `POST /recipes`, `POST /recipes/import` with `save: true`, `POST /recipes/import/photo` with `save: true`. A completed key returns the first saved recipe (`200`). There is no "key conflict" status. `409` means a duplicate URL or photo, or an in-flight lock.
 
 Other POSTs may read the header and ignore it.
 
@@ -70,31 +74,37 @@ Other POSTs may read the header and ignore it.
 GET /recipes?limit=20&cursor=<cursor-token>
 ```
 
-`limit` defaults to `20`. Response: `{ items, nextCursor, hasMore }`. Rule and preference GETs return the array itself.
+`limit` defaults to `20` (`GET /cookbooks` defaults to `50`). Response: `{ items, nextCursor, hasMore }`. Rule and preference GETs return the array itself. `search` is case-sensitive (Postgres `LIKE`).
 
 ## Endpoints
 
 ### Health
 
-- `GET /health` - `{ status: "ok", version, timestamp }`. No auth.
+- `GET /health` - `{ status: "ok", version, timestamp }`. No auth. `version` is `0.1.0`.
+- `GET /status` - Deploy SHA and integration readiness. No auth.
+- `GET /openapi.json` - OpenAPI 3.1. No auth.
 
 ### Recipes
 
-- `GET /recipes` - `limit`, `cursor`, `status`, `search`, `cookbookId`, `uncategorized`, `forAttendees`
+- `GET /recipes` - `limit`, `cursor`, `status` (`draft`, `needs_review`, `published`), `search` (title only; case-sensitive), `cookbookId`, `uncategorized=true`, `forAttendees` (person UUIDs, repeat or comma-separated). Blocked recipes land in `hidden`.
 - `POST /recipes` - `{ title, ingredients: [{ rawText }], steps: [{ text }], ... }`. `201`, or `200` on idempotent replay
-- `GET /recipes/{id}` - Details. Optional `?servings=`
+- `GET /recipes/{id}` - Details. Optional `?servings=`. `ingredients` are rows with `rawText` plus parsed `name`, `quantityMin`, `quantityMax`, `unit`. `steps` are rows with `text` and `order`.
 - `PATCH /recipes/{id}` - Title, times, images, ingredients, steps, `cookbookIds`
 - `DELETE /recipes/{id}` - `204`
+- `POST /recipes/{id}/restore` - Restore a soft-deleted recipe
+- `GET /recipes/{id}/image` - Main photo (302 when stored)
+- `POST /recipes/{id}/image` - Set the main photo
 - `POST /recipes/import` - URL or paste. Preview unless `save: true`
+- `POST /recipes/import/page` - HTML page import
 - `POST /recipes/import/photo` - Photo. Preview unless `save: true`
 
-Import failures: `400` with `not_a_public_url`, `import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`. Busy model: `503` `import_ai_unavailable`.
+Import failures: `400` with `not_a_public_url`, `import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`. Photo: `PHOTO_BLURRY`, `PHOTO_NOT_RECIPE`. `409` with `import_duplicate`, `import_near_duplicate`, `import_in_progress`. Busy model: `503` `import_ai_unavailable`.
 
-There is no `POST /recipes/{id}/check`. Check a meal plan.
+There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GET /recipes?forAttendees=<personId>` (blocked recipes are listed in `hidden`) or the MCP tool `get_recipe`.
 
 ### Cookbooks
 
-- `GET /cookbooks` - `?view=cards` adds `recipeCount` and `previewImages`
+- `GET /cookbooks` - default `limit` 50. `?view=cards` adds `recipeCount` and `previewImages`
 - `POST /cookbooks` - `{ name, description? }`
 - `GET /cookbooks/{id}` / `PATCH /cookbooks/{id}` / `DELETE /cookbooks/{id}` (`204`)
 - `POST /cookbooks/{id}/recipes` - `{ recipeId }`
@@ -113,26 +123,26 @@ There is no `POST /recipes/{id}/check`. Check a meal plan.
 ### Meal plans
 
 - `GET /meal-plans` - `limit`, `cursor`, `status`, `weekStart`, `weekEnd`
-- `POST /meal-plans` - `{ weekStart, status?, entries? }`
+- `POST /meal-plans` - `{ weekStart, status?, entries? }`. Request entries use `meal`. Responses use `mealSlot`.
 - `GET /meal-plans/{id}` / `PATCH` / `DELETE` (`204`)
-- `GET /meal-plans/{id}/check` - Run check
-- `POST /meal-plans/{id}/check` - Run and persist (write). No body
+- `GET /meal-plans/{id}/check` - Run check (read only)
+- `POST /meal-plans/{id}/check` - Run and persist (write). No body. Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe.
 - `POST /meal-plans/{id}/undo` / `GET /meal-plans/{id}/history`
-- `GET /meal-plans/{id}/shopping-list` - `format`, `groupBy`, `includeStaples`, `timeZone`
+- `GET /meal-plans/{id}/shopping-list` - `format`, `groupBy`, `includeStaples`, `timeZone`. Warnings are listed once in top-level `warnings`.
 - `GET /meal-plans/{id}/shopping-list/state` / `PATCH` - `{ checkedKeys, extras }`
 
 ### Household
 
 - `GET /households` / `PATCH /households` (owner, `{ name }`)
-- `GET /households/mine` / `POST /households/select` (signed-in only)
+- `GET /households/mine` - works with an API key (that kitchen only, `active: true`). `POST /households/select` is signed-in only
 - `GET /households/settings` / `PATCH` - `{ mode: family|fixed|recipe, servings? }`
 - `GET /households/schedule` / `PUT` - `{ week }`
 - `GET /households/members` / `PATCH|DELETE /households/members/{userId}` (owner)
-- `POST /households/leave`
-- `GET|POST /households/invites` / `DELETE /households/invites/{id}` (admin)
+- `POST /households/leave` - signed-in only
+- `GET|POST /households/invites` / `DELETE /households/invites/{id}` (admin) - revoke returns `200` with the invite
 - `GET /invites/{token}` (no auth) / `POST /invites/{token}/accept` (signed-in)
 
-There is no `GET /households/{id}/context`.
+There is no `GET /households/{id}/context`. `GET /households` returns the key's kitchen. `GET /people` lists people. `GET /people/{id}/rules` lists a person's rules. MCP `get_household_context` returns all of it in one call.
 
 ### Uploads and API keys
 
@@ -140,6 +150,8 @@ There is no `GET /households/{id}/context`.
 - `GET /api-keys` / `POST /api-keys` / `DELETE /api-keys/{id}`
 
 See [Kitchen invites](/docs/kitchen-invites).
+
+This page lists common endpoints. The complete, current list is the OpenAPI spec at `/api/v1/openapi.json`.
 
 ## OpenAPI Specification
 
@@ -180,4 +192,4 @@ data = requests.get(
 
 ## Multi-Tenant Security
 
-Requests are scoped to the authenticated kitchen. Cross-kitchen access is rejected in the handler.
+Every query is filtered by the caller's household in application code. Cross-kitchen access returns `404` on every id route, including the shopping list. A malformed id returns `404`.

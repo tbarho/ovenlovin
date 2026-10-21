@@ -39,6 +39,12 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 | `OVENLOVIN_VERCEL_TEAM_SLUG` | Optional Vercel team slug for dashboard links (not the GitHub owner) | From the Vercel dashboard URL |
 | `OVENLOVIN_VERCEL_PROJECT_SLUG` | Optional Vercel project slug if it differs from the git repo name | Vercel project settings |
 | `VERCEL_TOKEN` | Optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset | [Account tokens](https://vercel.com/account/tokens) |
+| `NEXT_PUBLIC_APP_URL` | Optional public origin for problem+json types and OpenAPI servers | Your deploy URL |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | Clerk sign-in and sign-up paths | Defaults `/sign-in` and `/sign-up` |
+| `RECIPE_IMPORT_CACHE_FALLBACK` | Optional. `0` skips Google Translate / Jina public copies | Leave unset to try copies |
+| `NEXT_PUBLIC_IOS_SHORTCUT_URL` | Optional iCloud link for the iOS shortcut | Leave unset for manual steps |
+| `E2E_AUTH_BYPASS` | Signed-in kitchen harness only. Never set on Vercel production | See README |
+| `OVENLOVIN_DEMO_MODE` / `OVENLOVIN_DEMO_PROJECT` / `CRON_SECRET` / `NEXT_PUBLIC_DEMO_URL` | Public demo project only. Never on product production | [docs/demo.md](https://github.com/tbarho/ovenlovin/blob/main/docs/demo.md) |
 
 ## Local Development
 
@@ -231,4 +237,4 @@ MCP (Streamable HTTP):
 
 - [Connect Your Agent](./agents) - Set up Grok Bot, ChatGPT, or Claude Desktop
 - [Learn Concepts](./concepts) - Understand households, rules, and meal planning
-- [API Reference](./api) - Explore the REST API and MCP tools
+- [API Reference](./reference/api) - Explore the REST API and MCP tools

@@ -72,13 +72,19 @@ The public no-signup demo is a **separate Vercel project**. See [docs/demo.md](d
 
 ## Local development
 
+Prereqs: Node 20+, pnpm 9 (`corepack enable`), Postgres 15+ or Docker. `git clone https://github.com/tbarho/ovenlovin && cd ovenlovin && cp .env.example .env.local`. Full guide: https://tbarho.github.io/ovenlovin/docs/quickstart
+
 ```bash
 pnpm install
 pnpm dev
 pnpm test
 ```
 
+`pnpm dev` starts the kitchen at http://localhost:3000 and docs at http://localhost:3001/ovenlovin/docs. Without env vars, pages load but sign-in and data do not; check http://localhost:3000/api/v1/status for what is missing.
+
 Signed-in kitchen (no production Clerk):
+
+Requires Docker (starts Postgres from docker-compose.e2e.yml) or an existing Postgres at postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin.
 
 ```bash
 ./scripts/e2e-kitchen-up.sh

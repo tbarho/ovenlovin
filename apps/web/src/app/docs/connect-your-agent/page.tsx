@@ -22,9 +22,14 @@ export default async function ConnectYourAgentPage() {
         <code>Authorization: ApiKey rkapi_…</code> (Bearer + the same key also works).
       </p>
       <p className="intro">
-        Copy the API key from Settings (the public demo already shows a sandbox key), then paste it
-        into the snippet. Allergen findings name the person and the ingredient - not medical advice.
-        Always check labels.
+        Copy the API key from Settings, then paste it into the snippet. Allergen findings name the
+        person and the ingredient - not medical advice. Always check labels.
+      </p>
+      <p className="intro">
+        No account?{" "}
+        <code>{"curl 'https://ovenlovin-demo.vercel.app/api/demo/enter?format=json'"}</code> returns
+        a sandbox <code>apiKey</code> (valid 24h; each call creates a new sandbox). Use it with
+        https://ovenlovin-demo.vercel.app/api/v1 and https://ovenlovin-demo.vercel.app/mcp.
       </p>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>

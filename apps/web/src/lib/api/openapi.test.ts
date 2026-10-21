@@ -46,7 +46,22 @@ describe("generateOpenApiDocument", () => {
         "/api-keys",
       ])
     );
+    expect(spec.paths?.["/health"]?.get).toBeTruthy();
+    expect(spec.paths?.["/openapi.json"]?.get).toBeTruthy();
     expect(spec.paths?.["/status"]?.get).toBeTruthy();
+    expect(spec.paths?.["/recipes/{id}/image"]?.post).toBeTruthy();
+    expect(spec.paths?.["/cookbooks/{id}/recipes"]?.delete).toBeTruthy();
+    expect(spec.paths?.["/people/{id}/rules/{ruleId}"]?.get).toBeTruthy();
+    expect(spec.paths?.["/people/{id}/rules/{ruleId}"]?.patch).toBeTruthy();
+    expect(spec.paths?.["/people/{id}/preferences/{prefId}"]?.get).toBeTruthy();
+    expect(spec.paths?.["/households"]?.patch).toBeTruthy();
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("status");
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("nextCursor");
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hasMore");
+    expect(spec.paths?.["/recipes"]?.get?.responses?.["401"]).toBeTruthy();
+    expect(spec.paths?.["/recipes"]?.get?.responses?.["400"]).toBeTruthy();
+    expect(spec.paths?.["/recipes"]?.get?.responses?.["404"]).toBeTruthy();
+    expect(spec.paths?.["/health"]?.get?.responses?.["401"]).toBeUndefined();
     const configStatus = spec.components?.schemas?.ConfigStatus as {
       properties?: Record<string, unknown>;
     };

@@ -13,9 +13,15 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("X-Kitchen-Id");
     expect(text).toContain("mismatched");
     expect(text).toContain("whoami");
-    expect(text).toContain(
-      "POST /api/v1/recipes/import (preview unless save:true; body source/content)"
-    );
+    expect(text).toContain("import_recipe_from_image");
+    expect(text).toContain("edit_meal_plan");
+    expect(text).toContain("manage_kitchen_invites");
+    expect(text).toContain("manage_kitchen_members");
+    expect(text).toContain("GET/POST /api/v1/recipes");
+    expect(text).toContain("GET/POST /api/v1/meal-plans/{id}/check");
+    expect(text).toContain("ovenlovin-demo.vercel.app/api/demo/enter?format=json");
+    expect(text).toContain("curl -H 'Authorization: ApiKey $KEY'");
+    expect(text).toContain("There is no llms-full.txt");
     expect(text).toContain("Not medical advice");
   });
 });

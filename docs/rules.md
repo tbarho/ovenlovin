@@ -357,12 +357,10 @@ Any recipes containing peanuts will now be flagged as unsafe for Parent A."
 
 **API**:
 ```bash
-POST /api/v1/recipes/{recipeId}/check
-
-{
-  "attendees": ["person-1", "person-2", "person-3"]
-}
+GET /api/v1/recipes?forAttendees=<personId>
 ```
+
+Blocked recipes are listed in `hidden`. Or call the MCP tool `get_recipe`. To check a week, `GET` or `POST /api/v1/meal-plans/{id}/check` (POST saves the report; GET only reads).
 
 **Response**:
 ```json
@@ -574,7 +572,7 @@ GET /api/v1/meal-plans/{planId}/shopping-list
 ## Resources
 
 - **[Bot Setup Guide](bot-setup.md)** - Configure bots to use rule checking
-- **[API Reference](api-reference.md)** - API endpoints for rules and checking
+- **[API Reference](https://tbarho.github.io/ovenlovin/docs/reference/api)** - REST endpoints for rules and checking
 - **[GitHub Issues](https://github.com/tbarho/ovenlovin/issues)** - Report taxonomy gaps or bugs
 
 ---

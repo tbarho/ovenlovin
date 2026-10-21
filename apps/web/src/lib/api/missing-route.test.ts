@@ -15,7 +15,8 @@ describe("missing API routes", () => {
     expect(response.headers.get("content-type")).toContain("application/problem+json");
     const body = (await response.json()) as { detail?: string };
     expect(body.detail).toBe(missingApiMessage("/api/v1"));
-    expect(body.detail).not.toMatch(/apiKey/i);
+    expect(body.detail).toContain("https://ovenlovin-demo.vercel.app/api/demo/enter?format=json");
+    expect(body.detail).not.toMatch(/mint a demo key with \/api\/demo\/enter/);
   });
 
   it("treats ApiKey and JSON Accept as API-shaped, not kitchen HTML", () => {

@@ -173,7 +173,7 @@ Once configured, ChatGPT can call:
 - `GET /api/v1/recipes` - List recipes
 - `GET /api/v1/recipes/{id}` - Get recipe details
 - `POST /api/v1/recipes/import` - Import from URL/text (`source` + `content`; persist only with `save:true`)
-- `GET /api/v1/households/{id}/context` - Get household context
+- `GET /api/v1/households` - The key's kitchen. MCP `get_household_context` returns people and rules in one call.
 - `POST /api/v1/meal-plans` - Create meal plan
 - `POST /api/v1/meal-plans/{id}/check` - Check meal plan for allergens
 - `GET /api/v1/meal-plans/{id}/shopping-list` - Generate shopping list

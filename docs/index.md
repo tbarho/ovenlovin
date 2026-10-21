@@ -86,7 +86,7 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 - **[Bot Setup Guide](bot-setup.md)** - Connect Grok Bot, ChatGPT, or Claude to OvenLovin
 - **[Allergy & Dietary Rules](rules.md)** - Configure per-person dietary restrictions and allergen checking
 - **[Kitchen invites](kitchen-invites.md)** - Share a kitchen with a spouse or family member
-- **[API Reference](api-reference.md)** - REST API endpoints and OpenAPI specification
+- **[API Reference](https://tbarho.github.io/ovenlovin/docs/reference/api)** - REST API and OpenAPI
 
 ### For Developers
 
@@ -226,7 +226,7 @@ Standard REST API with OpenAPI 3.1 specification:
 Download the OpenAPI spec:
 - JSON: `https://your-app.vercel.app/api/v1/openapi.json`
 
-[View full API reference →](api-reference.md)
+[View full API reference →](https://tbarho.github.io/ovenlovin/docs/reference/api)
 
 ### MCP Server
 

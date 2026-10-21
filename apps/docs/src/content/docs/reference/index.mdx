@@ -5,6 +5,16 @@ description: API and MCP tools reference documentation
 
 REST `/api/v1` and the MCP tools an agent sees via `tools/list`.
 
+No `initialize` call needed. Run `tools/list` for each tool's input schema.
+
+```bash
+curl -X POST https://your-app.vercel.app/mcp \
+  -H "Authorization: ApiKey $KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_recipe","arguments":{"title":"Veggie Stir Fry","ingredients":[{"rawText":"2 cups broccoli"}],"steps":[{"text":"Heat oil in a large wok."}]}}}'
+```
+
 ## REST API
 
 - [API Overview](/docs/reference/api)

@@ -16,6 +16,7 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
+import { VERSION } from "@ovenlovin/core";
 import type { AuthContext } from "./auth/index";
 import { listResources, readResource } from "./resources/index";
 import { listedTools, wrapToolResult } from "./protocol";
@@ -47,7 +48,7 @@ export function createServer(config: ServerConfig = {}) {
   const server = new Server(
     {
       name: config.name || "ovenlovin-mcp",
-      version: config.version || "0.1.0",
+      version: config.version || VERSION,
     },
     {
       capabilities: {

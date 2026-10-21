@@ -131,7 +131,7 @@ ovenlovin/
 │   ├── index.md
 │   ├── bot-setup.md
 │   ├── rules.md
-│   └── api-reference.md
+│   └── (REST lives on the docs site)
 │
 ├── .github/
 │   └── workflows/          # CI/CD pipelines
@@ -336,15 +336,15 @@ apps/web/src/app/api/v1/
 │   ├── import/route.ts       # POST /recipes/import
 │   └── [id]/
 │       ├── route.ts          # GET /recipes/{id}, PATCH /recipes/{id}
-│       └── check/route.ts    # POST /recipes/{id}/check
+│       ├── image/route.ts    # GET/POST /recipes/{id}/image
+│       └── restore/route.ts
+│
+├── people/
+│   └── [id]/rules/route.ts   # GET/POST /people/{id}/rules
 │
 ├── households/
-│   └── [id]/
-│       ├── context/route.ts  # GET /households/{id}/context
-│       └── people/
-│           └── [personId]/
-│               └── rules/
-│                   └── route.ts # POST /people/{id}/rules
+│   ├── route.ts              # GET /households, PATCH /households
+│   └── mine/route.ts
 │
 ├── meal-plans/
 │   ├── route.ts              # GET /meal-plans, POST /meal-plans
@@ -567,7 +567,7 @@ See [AGENTS.md](../AGENTS.md) for detailed guidelines on adding importers, MCP t
 ## Resources
 
 - **[Bot Setup Guide](bot-setup.md)** - Connect AI bots to OvenLovin
-- **[API Reference](api-reference.md)** - REST API endpoints and schemas
+- **[API Reference](https://tbarho.github.io/ovenlovin/docs/reference/api)** - REST API and OpenAPI
 - **[Allergy & Dietary Rules](rules.md)** - Safety invariants and rule types
 - **[AGENTS.md](../AGENTS.md)** - Development guidelines for AI agents
 

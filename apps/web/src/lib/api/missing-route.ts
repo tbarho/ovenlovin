@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isClerkProtectExempt } from "@/lib/clerk-protect";
 
 export function missingApiMessage(pathname: string): string {
-  return `${pathname} is not an API route. Use /api/v1/{resource}, or mint a demo key with /api/demo/enter?format=json.`;
+  return `${pathname} is not an API route. Use /api/v1/{resource}. For a no-signup sandbox key, call https://ovenlovin-demo.vercel.app/api/demo/enter?format=json.`;
 }
 
 export function isApiOrMcpPath(pathname: string): boolean {

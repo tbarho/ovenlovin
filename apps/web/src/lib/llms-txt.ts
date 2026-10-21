@@ -1,4 +1,27 @@
+import { listedTools } from "@ovenlovin/mcp";
+import { generateOpenApiDocument } from "./api/openapi";
+
 const PITCH = "The family recipe box your AI can actually use, and it knows who can't eat what.";
+
+const DEMO_HOST = "https://ovenlovin-demo.vercel.app";
+
+function restLines(origin: string): string[] {
+  const spec = generateOpenApiDocument(origin);
+  const lines: string[] = [];
+  for (const [path, item] of Object.entries(spec.paths ?? {})) {
+    if (!item || typeof item !== "object") continue;
+    const methods = (["get", "post", "put", "patch", "delete"] as const)
+      .filter((method) => item[method])
+      .map((method) => method.toUpperCase());
+    if (methods.length === 0) continue;
+    lines.push(`- ${methods.join("/")} /api/v1${path}`);
+  }
+  return lines;
+}
+
+function mcpLines(): string[] {
+  return listedTools().map((tool) => `- ${tool.name}`);
+}
 
 export function buildLlmsTxt(origin: string): string {
   const base = origin.replace(/\/$/, "") || "https://ovenlovin.vercel.app";
@@ -14,6 +37,10 @@ export function buildLlmsTxt(origin: string): string {
     `## This instance`,
     ``,
     `- Home: ${base}/`,
+    `- Recipes: ${base}/recipes`,
+    `- Plans: ${base}/plans`,
+    `- List: ${base}/list`,
+    `- Settings: ${base}/settings`,
     `- Docs: ${base}/docs`,
     `- Connect your agent: ${base}/docs/connect-your-agent`,
     `- MCP (Streamable HTTP): ${base}/mcp`,
@@ -28,36 +55,27 @@ export function buildLlmsTxt(origin: string): string {
     `- \`Authorization: Bearer <Clerk JWT>\``,
     ``,
     `Create a key in Settings, or copy the sandbox key on the public demo. Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is rejected.`,
+    `A request outside the key's scopes returns 403.`,
     `Unauthenticated REST returns problem+json 401.`,
     `Unauthenticated MCP POST returns a JSON-RPC error envelope (HTTP 401).`,
     ``,
+    `No account? \`curl '${DEMO_HOST}/api/demo/enter?format=json'\` returns a sandbox \`apiKey\` (valid 24h; each call creates a new sandbox). Use it with ${DEMO_HOST}/api/v1 and ${DEMO_HOST}/mcp.`,
+    `GET /api/demo/reset and GET /api/cron/demo-cleanup are internal.`,
+    ``,
+    `## Example`,
+    ``,
+    `curl -H 'Authorization: ApiKey $KEY' ${base}/api/v1/recipes?limit=5`,
+    ``,
     `## MCP tools`,
     ``,
-    `- whoami`,
-    `- search_recipes, get_recipe, create_recipe, import_recipe, delete_recipe`,
-    `- get_household_context, manage_household_schedule, manage_household_settings, get_person_rules, manage_people, manage_person_rules, manage_person_loves, reorder_people`,
-    `- check_meal_plan, save_meal_plan, get_meal_plan, delete_meal_plan, export_shopping_list`,
-    `- list_cookbooks, get_cookbook, manage_cookbook`,
+    ...mcpLines(),
     ``,
-    `## REST (selected)`,
+    `## REST`,
     ``,
-    `- GET /api/v1/status (commitSha = VERCEL_GIT_COMMIT_SHA)`,
-    `- GET/POST /api/v1/recipes`,
-    `- GET/PATCH/DELETE /api/v1/recipes/{id}`,
-    `- POST /api/v1/recipes/import (preview unless save:true; body source/content)`,
-    `- POST /api/v1/recipes/import/page`,
-    `- GET/POST /api/v1/people`,
-    `- GET/POST /api/v1/people/{id}/rules`,
-    `- GET/POST /api/v1/people/{id}/preferences`,
-    `- GET/POST /api/v1/meal-plans`,
-    `- GET /api/v1/meal-plans/{id}/check`,
-    `- GET /api/v1/meal-plans/{id}/shopping-list`,
-    `- GET/PATCH /api/v1/meal-plans/{id}/shopping-list/state`,
-    `- GET/POST /api/v1/cookbooks`,
-    `- GET /api/v1/households`,
-    `- GET/PATCH /api/v1/households/settings`,
-    `- GET/PUT /api/v1/households/schedule`,
-    `- GET/POST /api/v1/api-keys`,
+    ...restLines(base),
+    ``,
+    `GET /api/v1/meal-plans/{id}/check only reads. POST /api/v1/meal-plans/{id}/check saves the report on the plan.`,
+    `There is no llms-full.txt; use /api/v1/openapi.json.`,
     ``,
     `## Safety`,
     ``,

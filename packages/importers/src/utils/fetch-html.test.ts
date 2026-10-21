@@ -3,6 +3,29 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("dns/promises", () => ({
   lookup: vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]),
 }));
+
+vi.mock("@ovenlovin/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@ovenlovin/core")>();
+  return {
+    ...actual,
+    async fetchPublicHttp(
+      url: string,
+      init: {
+        fetchImpl?: typeof fetch;
+        headers?: Record<string, string>;
+        signal?: AbortSignal;
+      } = {}
+    ) {
+      if (!actual.isPublicHttpUrl(url)) throw new actual.NotAPublicUrlError();
+      const fetchImpl = init.fetchImpl ?? globalThis.fetch;
+      return fetchImpl(url, {
+        redirect: "manual",
+        headers: init.headers,
+        signal: init.signal,
+      });
+    },
+  };
+});
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
