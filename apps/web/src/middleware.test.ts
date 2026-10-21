@@ -27,4 +27,10 @@ describe("middleware", () => {
     expect(location).toContain("/sign-in");
     expect(location).toContain("redirect_url=%2Fsettings");
   });
+
+  it("lets a signed-in user through /settings", async () => {
+    const req = new NextRequest("http://localhost/settings");
+    const result = await clerkHandler!(async () => ({ userId: "user_1" }), req);
+    expect(result).toBeUndefined();
+  });
 });

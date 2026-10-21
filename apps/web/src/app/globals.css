@@ -14,7 +14,6 @@
   --orange-deep: #c45d28;
   --orange-press: #b85420;
   --orange-press-hover: #9a4519;
-  color-scheme: light;
   --cream: #fff1de;
   --ok: #2f9e62;
   --warn: #c46a1b;
@@ -1031,7 +1030,11 @@ select {
   position: relative;
   min-width: 0;
   overflow: hidden;
-  --fade-to: var(--bg);
+}
+
+.tabs-fade[data-overflow] .tabs {
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
 }
 
 .tab {
@@ -1125,8 +1128,7 @@ select {
 }
 
 .copy-scroll[data-overflow]::after,
-.copy-pre[data-overflow]::after,
-.tabs-fade[data-overflow]::after {
+.copy-pre[data-overflow]::after {
   content: "";
   position: absolute;
   top: 0;

@@ -55,7 +55,9 @@ export function CopyBox({
         </div>
       </header>
       <OverflowX className="copy-scroll">
-        <pre data-scroll>{shown}</pre>
+        <pre data-scroll tabIndex={0} aria-label={label}>
+          {shown}
+        </pre>
       </OverflowX>
       <p className="copy-status" role="status" aria-live="polite">
         {copied ? "Copied to clipboard" : copyError}

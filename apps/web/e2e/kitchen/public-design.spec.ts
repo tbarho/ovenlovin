@@ -195,15 +195,15 @@ test.describe("public design sign-off", () => {
             const tabs = page.locator(".tabs-fade");
             const tabFade = await tabs.evaluate((el) => {
               const row = el.querySelector("[data-scroll]");
-              const after = getComputedStyle(el, "::after");
+              const style = row ? getComputedStyle(row) : null;
               return {
                 overflows: Boolean(row && row.scrollWidth > row.clientWidth + 1),
                 marked: el.hasAttribute("data-overflow"),
-                width: parseFloat(after.width),
+                mask: style?.webkitMaskImage || style?.maskImage || "",
               };
             });
             expect(tabFade.marked).toBe(tabFade.overflows);
-            if (tabFade.overflows) expect(tabFade.width).toBeGreaterThanOrEqual(24);
+            if (tabFade.overflows) expect(tabFade.mask).toMatch(/linear-gradient/i);
           }
         }
         if (item.name === "connect-your-agent") {

@@ -3,18 +3,27 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isClerkProtectExempt, isClerkProtectedPath } from "./clerk-protect";
 
-// Pages outside this set must be kitchen-protected so a new route can't skip auth.
-const publicTops = new Set(["sign-in", "sign-up", "docs", "invite", "dev", "prototype"]);
+// Pages and non-api routes outside this set must be kitchen-protected.
+const publicTops = new Set([
+  "sign-in",
+  "sign-up",
+  "docs",
+  "invite",
+  "dev",
+  "prototype",
+  "llms.txt",
+  "mcp",
+]);
 
-function listPageRoutes(dir: string, prefix = ""): string[] {
+function listAppRoutes(dir: string, prefix = ""): string[] {
   const routes: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === "api") continue;
     const next = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       const segment = entry.name.startsWith("(") ? "" : `/${entry.name}`;
-      routes.push(...listPageRoutes(next, `${prefix}${segment}`));
-    } else if (entry.name === "page.tsx") {
+      routes.push(...listAppRoutes(next, `${prefix}${segment}`));
+    } else if (entry.name === "page.tsx" || entry.name === "route.ts") {
       routes.push(prefix || "/");
     }
   }
@@ -22,9 +31,9 @@ function listPageRoutes(dir: string, prefix = ""): string[] {
 }
 
 describe("isClerkProtectedPath", () => {
-  it("protects every App Router page that is not a known public root", () => {
+  it("protects every App Router page and non-api route that is not a known public root", () => {
     const appDir = path.resolve(__dirname, "../app");
-    for (const route of listPageRoutes(appDir)) {
+    for (const route of listAppRoutes(appDir)) {
       if (route === "/") continue;
       const top =
         route

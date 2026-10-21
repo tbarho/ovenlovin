@@ -7,8 +7,8 @@ export default async function NotFound() {
   let signedIn = false;
   if (clerkEnabled) {
     try {
-      const { currentUser } = await import("@clerk/nextjs/server");
-      signedIn = Boolean(await currentUser());
+      const { auth } = await import("@clerk/nextjs/server");
+      signedIn = Boolean((await auth()).userId);
     } catch {
       signedIn = false;
     }
