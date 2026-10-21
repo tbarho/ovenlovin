@@ -6,14 +6,12 @@
  * kitchen pages to `/api/demo/enter`, which seeds and Set-Cookies.
  */
 
+import { safeAuthRedirect } from "@/lib/auth-redirect";
+
 export const DEMO_ENTER_PATH = "/api/demo/enter";
 
 export function safeDemoEnterNext(raw: string | null | undefined): string {
-  if (!raw) return "/recipes";
-  if (!raw.startsWith("/")) return "/recipes";
-  if (raw.startsWith("//") || raw.includes("://")) return "/recipes";
-  if (raw.startsWith("/api") || raw.startsWith("/mcp")) return "/recipes";
-  return raw;
+  return safeAuthRedirect(raw);
 }
 
 const PUBLIC_PREFIXES = [
