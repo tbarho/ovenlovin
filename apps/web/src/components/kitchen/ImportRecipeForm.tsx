@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
-import { IMPORT_NOT_A_RECIPE_MESSAGE, type RecipeDetails } from "@ovenlovin/core";
+import type { RecipeDetails } from "@ovenlovin/core";
+import { IMPORT_NOT_A_RECIPE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import {
   displayImportFailure,
   importGuessedNotice,
