@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { HouseholdAccessError, InvalidImageUrlError } from "@ovenlovin/core";
+import { HouseholdAccessError, InvalidImageUrlError, NotAPublicUrlError } from "@ovenlovin/core";
 import {
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
@@ -220,6 +220,17 @@ describe("handleApiError", () => {
     expect(IMPORT_BLOCKED_MESSAGE).toMatch(/Paste the recipe text or add a photo/);
     expect(IMPORT_PAGE_GONE_MESSAGE).toMatch(/Paste the recipe text or add a photo/);
     expect(IMPORT_NOT_A_RECIPE_MESSAGE).toMatch(/Paste the recipe text or add a photo/);
+
+    const privateUrl = handleApiError(
+      new NotAPublicUrlError(),
+      "https://ovenlovin-demo.vercel.app/api/v1/recipes/import"
+    );
+    expect(privateUrl.status).toBe(400);
+    expect(await privateUrl.json()).toMatchObject({
+      code: "not_a_public_url",
+      detail:
+        "That isn't a public web address. Use a public http or https address, or paste the recipe instead.",
+    });
   });
 
   it("maps a gateway 4xx to not-a-recipe, not 500", async () => {

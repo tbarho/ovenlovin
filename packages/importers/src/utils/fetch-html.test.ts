@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("dns/promises", () => ({
+  lookup: vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]),
+}));
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -141,6 +145,14 @@ describe("page classification", () => {
 describe("fetchHtml layers", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("refuses a private import URL before any fetch or public copy", async () => {
+    const fetchMock = vi.fn();
+    await expect(
+      fetchHtml("http://10.0.0.1/", { fetchImpl: fetchMock as unknown as typeof fetch })
+    ).rejects.toMatchObject({ name: "NotAPublicUrlError", code: "not_a_public_url" });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("sends a full browser header set on the first request", async () => {

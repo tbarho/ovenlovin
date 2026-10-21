@@ -101,7 +101,7 @@ Errors follow [RFC 9457 Problem Details](https://datatracker.ietf.org/doc/html/r
 ```
 
 **Common error types**:
-- `400 Bad Request` - Invalid request, including classified import failures (`import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`)
+- `400 Bad Request` - Invalid request, including classified import failures (`not_a_public_url`, `import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`)
 - `401 Unauthorized` - Missing or invalid API key
 - `403 Forbidden` - Insufficient permissions (check API key scopes)
 - `404 Not Found` - Resource not found
@@ -332,6 +332,7 @@ Paste uses `RK_MODEL_DEFAULT` (default `deepseek/deepseek-v4.1-flash`). URL extr
 
 | `code` | HTTP | When |
 | --- | --- | --- |
+| `not_a_public_url` | 400 | URL is not a public http(s) address on port 80 or 443 |
 | `import_blocked` | 400 | Site blocked the importer |
 | `import_page_gone` | 400 | Page is gone |
 | `import_not_a_recipe` | 400 | No recipe found, including leftover `AI_*` errors that are not unavailable |
