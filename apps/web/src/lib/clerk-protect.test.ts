@@ -1,7 +1,41 @@
+import { readdirSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isClerkProtectExempt, isClerkProtectedPath } from "./clerk-protect";
 
+// Pages outside this set must be kitchen-protected so a new route can't skip auth.
+const publicTops = new Set(["sign-in", "sign-up", "docs", "invite", "dev", "prototype"]);
+
+function listPageRoutes(dir: string, prefix = ""): string[] {
+  const routes: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "api") continue;
+    const next = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const segment = entry.name.startsWith("(") ? "" : `/${entry.name}`;
+      routes.push(...listPageRoutes(next, `${prefix}${segment}`));
+    } else if (entry.name === "page.tsx") {
+      routes.push(prefix || "/");
+    }
+  }
+  return routes;
+}
+
 describe("isClerkProtectedPath", () => {
+  it("protects every App Router page that is not a known public root", () => {
+    const appDir = path.resolve(__dirname, "../app");
+    for (const route of listPageRoutes(appDir)) {
+      if (route === "/") continue;
+      const top =
+        route
+          .split("/")
+          .filter(Boolean)[0]
+          ?.replace(/\[.+\]/g, "") ?? "";
+      if (publicTops.has(top)) continue;
+      expect(isClerkProtectedPath(route), route).toBe(true);
+    }
+  });
+
   it("protects kitchen pages and leaves unknown public URLs alone", () => {
     expect(isClerkProtectedPath("/recipes")).toBe(true);
     expect(isClerkProtectedPath("/recipes/abc")).toBe(true);

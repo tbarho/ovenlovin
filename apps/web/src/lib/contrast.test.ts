@@ -1,4 +1,7 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { brandTokens } from "./brand-tokens";
 
 function hexToRgb(hex: string): [number, number, number] {
   const value = hex.replace("#", "");
@@ -24,11 +27,27 @@ function contrast(foreground: string, background: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function cssVar(source: string, name: string): string {
+  const match = source.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`));
+  if (!match?.[1]) throw new Error(`missing ${name} in globals.css`);
+  return match[1].toLowerCase();
+}
+
 describe("public design contrast", () => {
+  const css = readFileSync(path.resolve(__dirname, "../app/globals.css"), "utf8");
+
+  it("keeps CSS tokens aligned with brandTokens", () => {
+    expect(cssVar(css, "--orange-press")).toBe(brandTokens.orangePress);
+    expect(cssVar(css, "--orange-press-hover")).toBe(brandTokens.orangePressHover);
+    expect(cssVar(css, "--muted")).toBe(brandTokens.muted);
+    expect(cssVar(css, "--panel")).toBe(brandTokens.panel);
+    expect(cssVar(css, "--bg")).toBe(brandTokens.bg);
+  });
+
   it("keeps primary fill, step labels, and footer at or above 4.5:1", () => {
-    expect(contrast("#ffffff", "#B85420")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#B85420", "#fffdf9")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#5c564c", "#ffffff")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#ffffff", "#E07A3D")).toBeLessThan(4.5);
+    expect(contrast(brandTokens.bg, brandTokens.orangePress)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(brandTokens.orangePress, brandTokens.panel)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(brandTokens.muted, brandTokens.bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(brandTokens.bg, brandTokens.orange)).toBeLessThan(4.5);
   });
 });

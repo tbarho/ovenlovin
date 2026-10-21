@@ -1,14 +1,15 @@
 "use client";
 
 import { ClerkProvider } from "@clerk/nextjs";
+import { brandTokens } from "@/lib/brand-tokens";
 
 const clerkAppearance = {
   variables: {
-    colorPrimary: "#B85420",
-    colorBackground: "#ffffff",
-    colorInputBackground: "#ffffff",
-    colorNeutral: "#161310",
-    colorText: "#161310",
+    colorPrimary: brandTokens.orangePress,
+    colorBackground: brandTokens.bg,
+    colorInputBackground: brandTokens.bg,
+    colorNeutral: brandTokens.ink,
+    colorText: brandTokens.ink,
     fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
     fontSize: "16px",
     borderRadius: "8px",

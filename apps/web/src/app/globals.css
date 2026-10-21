@@ -13,6 +13,7 @@
   --orange-2: #ff8001;
   --orange-deep: #c45d28;
   --orange-press: #b85420;
+  --orange-press-hover: #9a4519;
   color-scheme: light;
   --cream: #fff1de;
   --ok: #2f9e62;
@@ -254,8 +255,8 @@ select {
 }
 
 .btn.primary:hover {
-  background: #9a4519;
-  border-color: #9a4519;
+  background: var(--orange-press-hover);
+  border-color: var(--orange-press-hover);
 }
 
 .btn.ghost {
@@ -940,7 +941,8 @@ select {
   white-space: pre;
 }
 
-.docs-page .copy-pre::after {
+.docs-page .copy-pre::after,
+.copy-scroll::after {
   content: "";
   position: absolute;
   top: 0;
@@ -1103,17 +1105,6 @@ select {
 .copy-scroll {
   position: relative;
   min-width: 0;
-}
-
-.copy-scroll::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 28px;
-  pointer-events: none;
-  background: linear-gradient(to right, transparent, var(--code));
 }
 
 .copy-box pre {

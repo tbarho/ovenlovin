@@ -1,3 +1,4 @@
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
@@ -18,9 +19,18 @@ export default function NotFound() {
               Docs
             </Link>
             {clerkEnabled ? (
-              <Link className="btn" href="/sign-in">
-                Sign in
-              </Link>
+              <>
+                <SignedOut>
+                  <Link className="btn" href="/sign-in">
+                    Sign in
+                  </Link>
+                </SignedOut>
+                <SignedIn>
+                  <Link className="btn" href="/recipes">
+                    Open kitchen
+                  </Link>
+                </SignedIn>
+              </>
             ) : null}
           </div>
         </div>
