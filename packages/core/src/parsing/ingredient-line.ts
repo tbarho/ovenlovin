@@ -86,10 +86,10 @@ const PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const SHOP_PREP_NOTES =
-  /^(minced|chopped|diced|cubed|sliced|grated|shredded|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
-  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+)/i;
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomatoes))/i;
 
 /** Shop-only: a comma/paren tail that is an instruction, not another grocery item. */
 function isShopPrepPhrase(text: string): boolean {
@@ -98,7 +98,11 @@ function isShopPrepPhrase(text: string): boolean {
   if (SHOP_PREP_NOTES.test(t) || /^(or|and)$/i.test(t)) return true;
   if (/^(otherwise|if|into|for|with|in)\b/i.test(t)) return true;
   if (/^[\p{L}'-]+ed$/iu.test(t)) return true;
-  return /^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t);
+  if (/^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t)) return true;
+  const parts = t
+    .split(/\s*(?:,|&|\band\b)\s*/)
+    .filter((part) => part && !/^(or|and)$/i.test(part));
+  return parts.length > 1 && parts.every((part) => isShopPrepPhrase(part));
 }
 
 function stripShopParens(text: string): string {

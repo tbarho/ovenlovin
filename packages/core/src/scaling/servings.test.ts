@@ -311,5 +311,8 @@ describe("countable shopping amounts", () => {
     expect(shopItemDisplayName("onion", 2)).toBe("onions");
     expect(shopItemDisplayName("egg", 1)).toBe("egg");
     expect(shopItemDisplayName("all purpose flour", 3, "cup")).toBe("all purpose flour");
+    expect(shopItemDisplayName("garlic", 4, "clove")).toBe("garlic");
+    expect(shopItemDisplayName("coconut milk", 2, "can")).toBe("coconut milk");
+    expect(shopItemDisplayName("peach", 2)).toBe("peaches");
   });
 });

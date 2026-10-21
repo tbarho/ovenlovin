@@ -187,11 +187,13 @@ export function ShoppingList({
                       onChange={() => toggle(item.key)}
                     />
                     <span className="shop-item-body">
-                      <strong>{shopItemDisplayName(item.name, item.quantity, item.unit)}</strong>
-                      <span className="muted">
-                        {[qty, item.recipes.length > 0 ? item.recipes.join(" · ") : null]
+                      <strong>
+                        {[qty, shopItemDisplayName(item.name, item.quantity, item.unit)]
                           .filter(Boolean)
-                          .join(" · ")}
+                          .join(" ")}
+                      </strong>
+                      <span className="muted">
+                        {item.recipes.length > 0 ? item.recipes.join(" · ") : null}
                       </span>
                       {uniqueWarnings(item.warnings).map((warning) => (
                         <span

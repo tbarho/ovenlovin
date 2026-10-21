@@ -101,8 +101,7 @@ describe("ShoppingList", () => {
         ]}
       />
     );
-    expect(screen.getByText("eggs")).toBeInTheDocument();
-    expect(screen.getByText(/7/)).toBeInTheDocument();
+    expect(screen.getByRole("listitem")).toHaveTextContent("7 eggs");
   });
 
   it("shows friendly fractions instead of long decimals", () => {

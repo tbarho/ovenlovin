@@ -158,6 +158,18 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("1 lemon, juiced")).toEqual([
       expect.objectContaining({ name: "lemon" }),
     ]);
+    expect(parseShopIngredientLines("2 lemons, zested and juiced")).toEqual([
+      expect.objectContaining({ name: "lemons" }),
+    ]);
+    expect(parseShopIngredientLines("3 cloves garlic, crushed")).toEqual([
+      expect.objectContaining({ name: "garlic" }),
+    ]);
+    expect(parseShopIngredientLines("crushed garlic")).toEqual([
+      expect.objectContaining({ name: "garlic" }),
+    ]);
+    expect(parseShopIngredientLines("eggs (room temperature))")).toEqual([
+      expect.objectContaining({ name: "eggs" }),
+    ]);
     expect(parseShopIngredientLines("1 1/8 cups plain / all purpose flour")).toEqual([
       expect.objectContaining({ name: "plain all purpose flour" }),
     ]);

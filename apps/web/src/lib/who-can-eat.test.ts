@@ -1,3 +1,4 @@
+import { ShoppingListService } from "@ovenlovin/core";
 import { describe, expect, it } from "vitest";
 import { testPerson, testPersonRule } from "@/test/fixtures";
 import { whoCanEat } from "./who-can-eat";
@@ -151,5 +152,62 @@ describe("whoCanEat", () => {
     expect(result.status).toBe("incomplete");
     expect(result.people[0]?.mark).not.toBe("ok");
     expect(result.people[0]?.title).toMatch(/could not finish/i);
+  });
+
+  it("still warns on a built list that includes almond flour and peanut butter", () => {
+    const peanutKid = testPerson({
+      id: "00000000-0000-4000-8000-000000000013",
+      displayName: "Child C",
+    });
+    const peanut = testPersonRule({
+      personId: peanutKid.id,
+      target: "peanut",
+      severity: "block",
+    });
+    const list = new ShoppingListService().build({
+      mealPlanId: "plan-1",
+      weekStart: "2026-10-12",
+      generatedAt: "2026-10-14T00:00:00.000Z",
+      entries: [
+        {
+          entry: {
+            id: "entry-1",
+            createdAt: "2026-10-12T00:00:00.000Z",
+            updatedAt: "2026-10-12T00:00:00.000Z",
+            deletedAt: null,
+            mealPlanId: "plan-1",
+            date: "2026-10-12",
+            mealSlot: "dinner",
+            recipeId: "cookies",
+            freeformMeal: null,
+            servings: 4,
+            attendees: [],
+            scaleFactor: 1,
+            prepAheadNotes: null,
+            leftoverSourceId: null,
+          },
+          recipeTitle: "Cookies",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 cup almond flour" }, { rawText: "1/2 cup peanut butter" }],
+        },
+      ],
+    });
+    const names = list.ingredients.map((item) => item.name);
+    expect(names).toContain("almond flour");
+    expect(names).toContain("peanut butter");
+    expect(names).not.toContain("all purpose flour");
+
+    const warnings = list.ingredients.flatMap((item) => {
+      const check = whoCanEat({
+        people: [child, peanutKid],
+        rules: [treeNut, peanut],
+        ingredients: [{ id: item.key || `shop-${item.name}`, name: item.name }],
+      });
+      return check.people.flatMap((person) => person.reasons);
+    });
+    expect(warnings.join(" ")).toMatch(/almond|tree nut/i);
+    expect(warnings.join(" ")).toMatch(/peanut/i);
+    expect(warnings.join(" ")).toMatch(/Child B can't eat this/);
+    expect(warnings.join(" ")).toMatch(/Child C can't eat this/);
   });
 });

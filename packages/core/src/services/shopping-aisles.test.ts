@@ -100,13 +100,20 @@ describe("canonicalIngredientName", () => {
   it("merges plain flour with all purpose flour", () => {
     expect(canonicalShopName("flour")).toBe("all purpose flour");
     expect(canonicalShopName("all-purpose flour")).toBe("all purpose flour");
+    expect(canonicalShopName("plain all purpose flour")).toBe("all purpose flour");
     expect(canonicalShopName("bread flour")).toBe("bread flour");
+    expect(canonicalShopName("almond flour")).toBe("almond flour");
+    expect(canonicalShopName("rice flour")).toBe("rice flour");
+    expect(canonicalShopName("whole wheat flour")).toBe("whole wheat flour");
   });
 
   it("merges descriptor variants of the same grocery", () => {
     expect(canonicalShopName("unsalted butter")).toBe("butter");
+    expect(canonicalShopName("salted butter")).toBe("butter");
     expect(canonicalShopName("Parmesan cheese")).toBe("parmesan");
+    expect(canonicalShopName("parmigiano reggiano")).toBe("parmesan");
     expect(canonicalShopName("vanilla extract")).toBe("vanilla");
+    expect(canonicalShopName("pure vanilla extract")).toBe("vanilla");
     expect(canonicalShopName("goat cheese")).toBe("goat cheese");
     expect(canonicalShopName("vegan butter")).toBe("vegan butter");
   });
@@ -119,7 +126,11 @@ describe("canned and plant-milk aisles", () => {
       canonicalName: "crushed tomatoes",
     });
     expect(assignAisle("tomatoes", "can")).toMatchObject({ aisle: "Canned goods" });
+    expect(assignAisle("canned beans")).toMatchObject({ aisle: "Canned goods" });
     expect(assignAisle("tomato")).toMatchObject({ aisle: "Produce" });
+    expect(assignAisle("red pepper flakes").aisle).not.toBe("Canned goods");
+    expect(assignAisle("graham crackers").aisle).not.toBe("Canned goods");
+    expect(assignAisle("garlic").aisle).not.toBe("Canned goods");
   });
 
   it("keeps oat, almond, and soy milk out of Dairy", () => {

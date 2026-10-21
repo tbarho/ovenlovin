@@ -155,6 +155,7 @@ const AISLE_RULES: AisleRule[] = [
       "baking soda",
       "baking powder",
       "chocolate chips",
+      "pure vanilla extract",
       "vanilla extract",
       "vanilla",
       "sugar",
@@ -291,6 +292,12 @@ const AISLE_RULES: AisleRule[] = [
     aisle: "Produce",
     category: "produce",
     canonical: "garlic",
+  },
+  {
+    aliases: ["parmigiano reggiano", "parmesan cheese", "parmesan"],
+    aisle: "Dairy",
+    category: "dairy",
+    canonical: "parmesan",
   },
   {
     aliases: [
@@ -497,7 +504,14 @@ export function isPantryStaple(name: string): boolean {
 }
 
 const MERGE_DESCRIPTORS =
-  /\b(unsalted|salted|plain|all purpose|grated|shredded|freshly|fresh|dried|large|small|whole|low sodium)\b/g;
+  /\b(unsalted|salted|plain|all purpose|pure|grated|shredded|freshly|fresh|dried|large|small|whole|low sodium)\b/g;
+
+const GENERIC_FLOUR_NAMES = new Set([
+  "flour",
+  "all purpose flour",
+  "plain flour",
+  "plain all purpose flour",
+]);
 const MERGE_KIND = /\b(extract|cheese)\b/g;
 
 function descriptorlessName(name: string): string {
@@ -509,12 +523,18 @@ function descriptorlessName(name: string): string {
 }
 
 function canonicalNameFor(name: string, match: CompiledAlias): string {
+  const normalized = normalizeIngredientName(name);
+  if (match.canonical === "all purpose flour") {
+    if (GENERIC_FLOUR_NAMES.has(normalized) || GENERIC_FLOUR_NAMES.has(descriptorlessName(name))) {
+      return "all purpose flour";
+    }
+    return name;
+  }
   const stripped = descriptorlessName(name);
   const strippedMatch = stripped ? findRule(stripped) : undefined;
   const use = strippedMatch ?? match;
   const alias = use.canonical ?? use.alias;
   if (stripped === use.alias || stripped === `${use.alias}s` || stripped === alias) return alias;
-  const normalized = normalizeIngredientName(name);
   if (normalized === match.alias || normalized === `${match.alias}s`) {
     return match.canonical ?? match.alias;
   }
@@ -530,11 +550,8 @@ export function assignAisle(name: string, unit?: string | null): AisleAssignment
         canonicalName: canonicalNameFor(name, match),
       }
     : { aisle: "Other", category: "other" as const, canonicalName: name };
-  // shortcut: can / canned / crushed means the canned-goods aisle, not produce
-  if (
-    unit?.trim().toLowerCase() === "can" ||
-    /\b(canned|crushed)\b/.test(normalizeIngredientName(name))
-  ) {
+  // shortcut: a can / canned label is the canned-goods aisle, not produce
+  if (unit?.trim().toLowerCase() === "can" || /\bcanned\b/.test(normalizeIngredientName(name))) {
     return { ...placement, aisle: "Canned goods" };
   }
   return placement;
