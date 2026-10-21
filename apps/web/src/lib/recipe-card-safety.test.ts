@@ -26,6 +26,7 @@ describe("recipeSafetySummary", () => {
     });
     expect(safety.blockPersonIds).toEqual([child.id]);
     expect(safety.warnPersonIds).toEqual([]);
+    expect(safety.blockTitles).toEqual(["Child C can't eat this"]);
     expect(safety.warnings[0]).toMatch(/pine nuts/i);
     expect(safety.warnings[0]).toMatch(/Child C can't eat this/);
   });
@@ -40,6 +41,7 @@ describe("recipeSafetySummary", () => {
       blockPersonIds: [],
       warnPersonIds: [],
       warnings: [],
+      blockTitles: [],
     });
   });
 });

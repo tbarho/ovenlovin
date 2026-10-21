@@ -2801,6 +2801,8 @@ select {
 .who-can-eat .olp-who-row {
   padding: 0;
   gap: 12px;
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 .servings-card {

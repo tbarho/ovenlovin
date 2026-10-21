@@ -5,12 +5,13 @@ export function LoveTags({
   hits,
   warningPersonIds = [],
   blockPersonIds = [],
+  blockTitles = [],
 }: {
   hits: LoveHit[];
   warningPersonIds?: Iterable<string>;
   blockPersonIds?: Iterable<string>;
+  blockTitles?: string[];
 }) {
-  if (hits.length === 0) return null;
   const safety: Pick<RecipeSafetySummary, "blockPersonIds" | "warnPersonIds"> = {
     blockPersonIds: [...blockPersonIds],
     warnPersonIds: [...warningPersonIds],
@@ -23,9 +24,14 @@ export function LoveTags({
     })
     .filter((tag): tag is { key: string; text: string } => Boolean(tag));
   const unique = [...new Map(tags.map((tag) => [tag.text, tag])).values()];
-  if (unique.length === 0) return null;
+  if (unique.length === 0 && blockTitles.length === 0) return null;
   return (
     <p className="love-tags" data-testid="love-tags">
+      {blockTitles.map((text) => (
+        <span key={text} className="who-chip who-chip-block" data-testid="block-headline">
+          {text}
+        </span>
+      ))}
       {unique.map((tag) => (
         <span key={tag.key} className="love-tag">
           {tag.text}

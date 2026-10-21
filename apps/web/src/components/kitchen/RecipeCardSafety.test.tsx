@@ -17,6 +17,10 @@ const childC = testPerson({
   id: "00000000-0000-4000-8000-000000000013",
   displayName: "Child C",
 });
+const parentB = testPerson({
+  id: "00000000-0000-4000-8000-000000000014",
+  displayName: "Parent B",
+});
 const treeNut = testPersonRule({
   personId: childC.id,
   target: "tree_nut",
@@ -29,6 +33,10 @@ const treeNut = testPersonRule({
 const pastaLove = householdLovePeople(
   [childC],
   [testPreference({ personId: childC.id, type: "love", value: "pasta" })]
+);
+const parentBPastaLove = householdLovePeople(
+  [parentB],
+  [testPreference({ personId: parentB.id, type: "love", value: "pasta" })]
 );
 
 describe("RecipeCardSafety", () => {
@@ -54,6 +62,7 @@ describe("RecipeCardSafety", () => {
     expect(screen.queryByText(/loves this - check first/)).not.toBeInTheDocument();
     expect(screen.getByTestId("recipe-card-warnings")).toHaveTextContent(/pine nuts/i);
     expect(screen.getByTestId("recipe-card-warnings")).toHaveTextContent(/Child C can't eat this/);
+    expect(screen.queryByTestId("block-headline")).not.toBeInTheDocument();
   });
 
   it("does not soften a can't-eat conflict to check first on the recipe page", () => {
@@ -85,6 +94,39 @@ describe("RecipeCardSafety", () => {
     expect(screen.getByText("Can't eat")).toBeVisible();
   });
 
+  it("leads recipe detail with Child C's block before Parent B's love", () => {
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({
+          title: "Weeknight pesto pasta",
+          ingredients: [
+            {
+              id: "00000000-0000-4000-8000-000000000031",
+              recipeId: "00000000-0000-4000-8000-000000000030",
+              order: 0,
+              rawText: "1/3 cup basil pesto",
+              isOptional: false,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-01T00:00:00.000Z",
+            },
+          ],
+        })}
+        cookbooks={[testCookbook()]}
+        people={[parentB, childC]}
+        rules={[treeNut]}
+        lovePeople={parentBPastaLove}
+      />
+    );
+
+    const headline = screen.getByTestId("love-tags");
+    expect(headline.firstChild).toHaveTextContent("Child C can't eat this");
+    expect(headline.firstChild).toHaveClass("who-chip-block");
+    expect(screen.getByText("Parent B loves this")).toBeVisible();
+    expect(screen.getByTestId("who-can-eat")).toHaveClass("olp-who-row");
+    expect(screen.getByTestId(`mark-${parentB.id}`)).toBeVisible();
+    expect(screen.getByTestId(`mark-${childC.id}`)).toBeVisible();
+  });
+
   it("does not show loves chips on an ingredient-less recipe card", () => {
     const recipe = testRecipe({ title: "Weeknight pesto pasta" });
     render(
@@ -93,7 +135,9 @@ describe("RecipeCardSafety", () => {
         uncategorized={[recipe]}
         recipes={[recipe]}
         lovePeople={pastaLove}
-        safetyByRecipe={{ [recipe.id]: { blockPersonIds: [], warnPersonIds: [], warnings: [] } }}
+        safetyByRecipe={{
+          [recipe.id]: { blockPersonIds: [], warnPersonIds: [], warnings: [], blockTitles: [] },
+        }}
       />
     );
 

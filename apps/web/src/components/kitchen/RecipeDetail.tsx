@@ -24,6 +24,7 @@ import {
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
 import { recipeDeleteConfirmCopy, writeRecipeDeleteToast } from "@/lib/recipe-delete";
+import { recipeSafetyFromCheck } from "@/lib/recipe-card-safety";
 import { whoCanEat } from "@/lib/who-can-eat";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { KitchenToast } from "./KitchenToast";
@@ -117,12 +118,7 @@ export function RecipeDetail({
     () => whoCanEat({ people, rules, ingredients: checkIngredients }),
     [people, rules, recipe.ingredients]
   );
-  const blockPersonIds = eat.people
-    .filter((person) => person.mark === "block")
-    .map((person) => person.personId);
-  const warningPersonIds = eat.people
-    .filter((person) => person.mark === "warn")
-    .map((person) => person.personId);
+  const safety = recipeSafetyFromCheck(eat);
 
   useEffect(() => {
     const raw = window.sessionStorage.getItem("ovenlovin.import-toast");
@@ -203,8 +199,9 @@ export function RecipeDetail({
                   },
                   lovePeople
                 )}
-                warningPersonIds={warningPersonIds}
-                blockPersonIds={blockPersonIds}
+                warningPersonIds={safety.warnPersonIds}
+                blockPersonIds={safety.blockPersonIds}
+                blockTitles={safety.blockTitles}
               />
               <div className="recipe-meta">
                 {formatDurationMinutes(recipe.prepTimeMinutes) ? (
