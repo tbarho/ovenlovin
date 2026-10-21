@@ -14,12 +14,13 @@ Open-source recipe box and meal planner for families and their AI agents. Per-pe
 - Recipes and cookbooks (URL / paste / photo import, plus [Safari and bookmarklet save](import-from-device.md) when a site blocks the server)
 - People with Can't eat / Doesn't like / Loves
 - Who-can-eat checks with named per-person findings
+- Meal plan week view and shopping list
 - REST + OpenAPI, MCP, `/llms.txt`
 - Clerk households, Neon Postgres, Vercel Blob, Vercel AI Gateway
+- Import AI: `deepseek/deepseek-v4.1-flash` for paste, photo, and URL extract; DeepSeek failures retry `openai/gpt-6-luna`
 
 ## Roadmap
 
-- Meal plan week view and shopping list UI
 - CLI, published SDK, voice import, app export
 - Optional USDA FoodData Central nutrition (`USDA_FDC_API_KEY` is not required to deploy)
 
@@ -48,8 +49,10 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 - **BLOB_READ_WRITE_TOKEN** - Vercel Blob (auto-configured by the Blob store)
 - **USDA_FDC_API_KEY** - optional USDA FoodData Central key ([get one](https://fdc.nal.usda.gov/api-key-signup.html)). Not required to deploy.
 - **NEXT_PUBLIC_INSTANCE_NAME** - optional landing-page name (defaults to "Your OvenLovin")
-- **AI_GATEWAY_API_KEY** - optional; on Vercel, AI Gateway authenticates with OIDC
-- **RK_MODEL_EXTRACT** - optional; URL-import text model after JSON-LD/HTML miss. Default: `deepseek/deepseek-v4.1-flash` (same as paste), then gateway fallbacks `openai/gpt-6-luna` and `spacexai/grok-4.7`. Leave unset unless you want a different primary.
+- **AI_GATEWAY_API_KEY** - optional; on Vercel, AI Gateway authenticates with OIDC (`VERCEL=1` or `VERCEL_OIDC_TOKEN`)
+- **RK_MODEL_DEFAULT** - optional paste-import model. Default: `deepseek/deepseek-v4.1-flash`
+- **RK_MODEL_VISION** - optional photo-import model. Default: `deepseek/deepseek-v4.1-flash`
+- **RK_MODEL_EXTRACT** - optional URL-import text model after JSON-LD/HTML miss. Falls back to `RK_MODEL_DEFAULT`, then `deepseek/deepseek-v4.1-flash`. DeepSeek failures retry `openai/gpt-6-luna`.
 - **OVENLOVIN_VERCEL_TEAM_SLUG** - optional Vercel team/account slug for dashboard links (not the GitHub owner)
 - **OVENLOVIN_VERCEL_PROJECT_SLUG** - optional Vercel project slug if it differs from the git repo name
 - **VERCEL_TOKEN** / **OVENLOVIN_VERCEL_TOKEN** - optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset. Otherwise links fall back to https://vercel.com/dashboard
@@ -189,9 +192,9 @@ OvenLovin is built as a monorepo with clear separation of concerns:
 - **@ovenlovin/core** - Pure TypeScript business logic, zod schemas, services
 - **@ovenlovin/db** - Drizzle ORM schema and migrations for Neon Postgres
 - **@ovenlovin/allergens** - Allergen taxonomy and rule checker
-- **@ovenlovin/importers** - Recipe importers (URL, photo/OCR, text, app exports)
+- **@ovenlovin/importers** - Recipe importers (URL, photo/OCR, paste)
 - **@ovenlovin/mcp** - Model Context Protocol server for AI agents
-- **@ovenlovin/cli** - Command-line interface tool
+- **@ovenlovin/brand** - Wordmark, deploy URL, tokens
 
 ### Web App
 
@@ -199,7 +202,7 @@ OvenLovin is built as a monorepo with clear separation of concerns:
 
 ### Design Principles
 
-1. **Business logic in @ovenlovin/core** - All validation and services are pure TypeScript, shared across REST API, MCP server, CLI, and UI
+1. **Business logic in @ovenlovin/core** - All validation and services are pure TypeScript, shared across REST API, MCP server, and UI
 2. **Zod-first schemas** - Every data structure starts as a zod schema, generates OpenAPI specs
 3. **Safety-critical rule checking** - Per-person rules, deterministic, always reports affected person
 4. **Bot-optimized** - External bots (Grok, ChatGPT, Claude) get identical behavior through any interface
@@ -230,39 +233,13 @@ Download the OpenAPI spec:
 
 Model Context Protocol server for structured tool access:
 
-- **Stdio transport**: `npx @ovenlovin/mcp`
-- **HTTP transport**: `https://your-app.vercel.app/mcp`
+- **HTTP transport**: `https://your-app.vercel.app/mcp` (Streamable HTTP). `@ovenlovin/mcp` is a private workspace package, not an npm CLI.
 
-Available tools:
-- `search_recipes` - Search recipes by text, filters
-- `get_recipe` - Get full recipe details
-- `import_recipe` - Import from URL or pasted text (copies the main image into Vercel Blob)
-- `import_recipe_from_image` - Import from a photo URL or base64 (AI Gateway vision; first photo is the main image)
-- `list_cookbooks` / `get_cookbook` / `manage_cookbook` - Organize recipes in many-to-many cookbooks
-- `get_household_context` - Get household members and dietary rules
-- `save_meal_plan` - Create or update a meal plan
-- `check_meal_plan` - Run allergen and dietary rule checks
-- `export_shopping_list` - Generate shopping list with quantities
+Registered tools (`listedTools` / `MCP_TOOLS`): `whoami`, `search_recipes`, `get_recipe`, `create_recipe`, `import_recipe`, `import_recipe_from_image`, `delete_recipe`, `get_household_context`, `manage_household_schedule`, `manage_household_settings`, `manage_kitchen_invites`, `manage_kitchen_members`, `get_person_rules`, `manage_people`, `manage_person_rules`, `manage_person_loves`, `check_meal_plan`, `export_shopping_list`, `save_meal_plan`, `get_meal_plan`, `edit_meal_plan`, `delete_meal_plan`, `list_cookbooks`, `get_cookbook`, `manage_cookbook`, `reorder_people`.
 
-[View full Bot Setup Guide →](bot-setup.md)
+[MCP tools](mcp-tools.md) · [Bot Setup Guide](bot-setup.md)
 
-### CLI
-
-Command-line interface for scripting and automation:
-
-```bash
-# Search recipes
-ovenlovin recipes search "chicken pasta"
-
-# Import a recipe
-ovenlovin recipes import --url https://example.com/recipe
-
-# Check a meal plan
-ovenlovin plans check plan-123
-
-# Export shopping list
-ovenlovin plans shopping-list plan-123
-```
+The CLI package is not shipped.
 
 ## Contributing
 

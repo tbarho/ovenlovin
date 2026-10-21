@@ -19,7 +19,8 @@ The URL importer:
 4. Pulls the main image from schema.org Recipe `image`, falling back to `og:image`
 5. Copies that image into Vercel Blob when a blob token is configured
 6. Calculates confidence scores based on completeness
-7. Returns a validated recipe draft
+7. If JSON-LD and HTML miss, extracts from page text with `RK_MODEL_EXTRACT` (else `RK_MODEL_DEFAULT`, else `deepseek/deepseek-v4.1-flash`). DeepSeek failures retry `openai/gpt-6-luna`
+8. Returns a validated recipe draft
 
 ### Supported Sites
 
@@ -127,7 +128,7 @@ The photo importer:
 
 1. Accepts one or more images (JPEG, PNG, WebP, GIF, AVIF) as a file upload, Blob URL, or base64
 2. Stores the first photo in Vercel Blob as the recipe's single main image
-3. Sends all pages to a vision-capable AI Gateway model (default: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`)
+3. Sends all pages to a vision-capable AI Gateway model (default: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`). DeepSeek failures retry `openai/gpt-6-luna`
 4. Extracts title, servings, times, ingredients (name, quantity, unit), steps, notes, and a visible source
 5. Classifies ingredients with the existing allergen catalog and lists `uncertainFields` when the photo is hard to read
 6. Returns a draft for review (`save` omitted) or persists when `save=true`
@@ -203,7 +204,7 @@ Parse recipes from pasted plain text, including recipes copied from emails, PDFs
 The paste importer:
 
 1. Accepts plain text input
-2. Sends to LLM (default: `deepseek/deepseek-v4.1-flash`) for parsing
+2. Sends to LLM (`RK_MODEL_DEFAULT` or `deepseek/deepseek-v4.1-flash`) for parsing. DeepSeek failures retry `openai/gpt-6-luna`
 3. Identifies title, ingredients, instructions, and metadata
 4. Structures data into recipe format
 5. Returns draft with confidence scores
@@ -377,6 +378,20 @@ All importers calculate confidence scores to help you identify recipes that may 
 - No servings specified
 - No images available
 
+## Import failures
+
+`classifyImportFailure` maps fetch/parse errors to 400. AI Gateway down is `import_ai_unavailable` (503), not from classify.
+
+| `code` | HTTP | When |
+| --- | --- | --- |
+| `import_blocked` | 400 | Site blocked the importer |
+| `import_page_gone` | 400 | Page is gone |
+| `import_not_a_recipe` | 400 | No recipe found, including leftover `AI_*` errors that are not unavailable |
+| `import_unsupported_site` | 400 | Site is not supported |
+| `import_ai_unavailable` | 503 | Gateway / model down, overloaded, or rate-limited. `Retry-After: 60` |
+
+MCP: classified codes are JSON-RPC `-32602`. `import_ai_unavailable` is `-32603`.
+
 ## Import Strategy
 
 For best results, use importers in this order:
@@ -397,4 +412,3 @@ For best results, use importers in this order:
 
 - [Self-Hosting Guide](./self-hosting) - Set up API keys for importers
 - [Connect Your Agent](./agents) - Use importers via MCP or REST API
-- [CLI Reference](./cli) - Import recipes from the command line

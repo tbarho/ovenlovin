@@ -152,11 +152,11 @@ All business logic lives in `packages/core` as pure TypeScript:
 - Pure functions for transformations
 - No framework dependencies (no Next.js, no React)
 
-**Why**: External bots (Grok, ChatGPT, Claude) must get identical behavior through any interface (REST API, MCP, CLI, UI).
+**Why**: External bots (Grok, ChatGPT, Claude) must get identical behavior through any interface (REST API, MCP, UI).
 
 ### 2. Thin Adapters
 
-REST routes, MCP tools, and CLI commands are thin wrappers around `@ovenlovin/core`:
+REST routes and MCP tools are thin wrappers around `@ovenlovin/core`:
 
 ```typescript
 // ❌ Bad: Logic in API route

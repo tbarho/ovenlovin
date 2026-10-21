@@ -30,8 +30,11 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key | Auto-configured by the Clerk store, or [clerk.com](https://clerk.com) |
 | `CLERK_SECRET_KEY` | Clerk secret key | Auto-configured by the Clerk store, or [clerk.com](https://clerk.com) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token | Auto-configured by the Blob store |
-| `AI_GATEWAY_API_KEY` | Optional; on Vercel, AI Gateway uses OIDC | [OIDC docs](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc) |
-| `USDA_FDC_API_KEY` | Optional USDA FoodData Central API key - not required to deploy | [fdc.nal.usda.gov](https://fdc.nal.usda.gov) |
+| `AI_GATEWAY_API_KEY` | Optional; on Vercel, AI Gateway uses OIDC (`VERCEL=1` or `VERCEL_OIDC_TOKEN`) | [OIDC docs](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc) |
+| `USDA_FDC_API_KEY` | Optional; reserved for FoodData Central nutrition (not read today). Not required to deploy | [fdc.nal.usda.gov](https://fdc.nal.usda.gov) |
+| `RK_MODEL_DEFAULT` | Optional paste-import model. Default `deepseek/deepseek-v4.1-flash` | Leave unset for DeepSeek |
+| `RK_MODEL_VISION` | Optional photo-import model. Default `deepseek/deepseek-v4.1-flash` | Leave unset for DeepSeek |
+| `RK_MODEL_EXTRACT` | Optional URL-import text model after JSON-LD/HTML miss. Else `RK_MODEL_DEFAULT`, then DeepSeek. DeepSeek failures retry `openai/gpt-6-luna` | Leave unset for DeepSeek |
 | `NEXT_PUBLIC_INSTANCE_NAME` | Optional landing-page name | Defaults to `Your OvenLovin` |
 | `OVENLOVIN_VERCEL_TEAM_SLUG` | Optional Vercel team slug for dashboard links (not the GitHub owner) | From the Vercel dashboard URL |
 | `OVENLOVIN_VERCEL_PROJECT_SLUG` | Optional Vercel project slug if it differs from the git repo name | Vercel project settings |
@@ -62,7 +65,7 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
     # Edit .env.local with your API keys
 
     # Run database migrations
-    pnpm --filter @ovenlovin/db migrate
+    pnpm --filter @ovenlovin/db db:migrate
 
     # Start development server
     pnpm dev
@@ -82,7 +85,7 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
     # Edit .env.local with your API keys
 
     # Run database migrations
-    npm run --workspace @ovenlovin/db migrate
+    npm run --workspace @ovenlovin/db db:migrate
 
     # Start development server
     npm run dev
@@ -102,7 +105,7 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
     # Edit .env.local with your API keys
 
     # Run database migrations
-    yarn workspace @ovenlovin/db migrate
+    yarn workspace @ovenlovin/db db:migrate
 
     # Start development server
     yarn dev

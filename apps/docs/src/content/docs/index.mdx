@@ -24,13 +24,13 @@ Traditional meal planning tools aren't built for AI agents. OvenLovin is designe
 
 - **Agent-first APIs** - REST `/api/v1` with OpenAPI, MCP Streamable HTTP at `/mcp`, `/llms.txt`
 - **Safety-critical rules** - Per-person allergy and dietary restrictions with deterministic checking
-- **Import** - URL, paste, and photo. Voice and third-party app export are on the roadmap
+- **Import** - URL, paste, and photo. Default model `deepseek/deepseek-v4.1-flash` (`RK_MODEL_DEFAULT` / `RK_MODEL_VISION` / `RK_MODEL_EXTRACT`). DeepSeek failures retry `openai/gpt-6-luna`. Voice and third-party app export are on the roadmap
 - **Multi-household** - Clerk organizations as households
 
 ### How It Works
 
 1. **Configure dietary rules** - Set up per-person allergies and dietary restrictions with severity levels (block/warn/prefer_avoid)
-2. **Import recipes** - Add recipes from any source: URLs, photos, voice, or paste
+2. **Import recipes** - Add recipes from a URL, photo, or paste
 3. **Plan meals** - Let your AI agent propose weekly meal plans with automatic rule checking
 4. **Generate shopping lists** - Get aggregated ingredient lists with allergen warnings
 

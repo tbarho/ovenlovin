@@ -32,21 +32,11 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 2. Go to Settings → API Keys
 3. Click "Create API Key"
 4. Select scopes:
-   - `recipes:read` - Read recipes
-   - `recipes:write` - Create/update/import recipes
-   - `plans:read` - Read meal plans
-   - `plans:write` - Create/update meal plans
-   - `household:read` - Read household context
-   - `household:admin` - Manage household members and rules
-5. Copy the API key (shown only once)
-
-### API Key Format
-
-```
-olvn_key_abc123def456ghi789jkl012mno345pqr678stu901vwx234yz
-```
-
-API keys start with `olvn_key_` followed by a random string.
+   - `recipes:read` / `recipes:write`
+   - `plans:read` / `plans:write`
+   - `people:read` / `people:write`
+   - `lists:export`
+5. Copy the API key (shown only once). Keys start with `rkapi_`.
 
 ## OpenAPI Specification
 
@@ -111,39 +101,14 @@ Errors follow [RFC 9457 Problem Details](https://datatracker.ietf.org/doc/html/r
 ```
 
 **Common error types**:
-- `400 Bad Request` - Invalid request (missing/invalid parameters)
+- `400 Bad Request` - Invalid request, including classified import failures (`import_blocked`, `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`)
 - `401 Unauthorized` - Missing or invalid API key
 - `403 Forbidden` - Insufficient permissions (check API key scopes)
 - `404 Not Found` - Resource not found
 - `409 Conflict` - Resource conflict (duplicate name, version mismatch)
 - `422 Unprocessable Entity` - Validation failed (invalid data)
-- `429 Too Many Requests` - Rate limit exceeded
 - `500 Internal Server Error` - Server error
-
-## Rate Limiting
-
-**Limits** (per API key):
-- 100 requests per minute
-- 1,000 requests per hour
-- 10,000 requests per day
-
-**Response headers**:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1704067200
-```
-
-**429 response** when limit exceeded:
-```json
-{
-  "type": "https://ovenlovin.example/errors/rate-limit",
-  "title": "Rate limit exceeded",
-  "status": 429,
-  "detail": "Too many requests. Try again after 2026-10-12T21:30:00Z",
-  "retryAfter": "2026-10-12T21:30:00Z"
-}
-```
+- `503 Service Unavailable` - AI recipe reading is busy (`import_ai_unavailable`). `Retry-After: 60`
 
 ## Endpoints
 
@@ -361,6 +326,18 @@ URL and paste import **preview by default**. Persist only when `save` is `true` 
 
 **Response**: `200` preview when `save` is omitted or false; `201` when saved; `200` on an idempotent replay. Demo responses include `remainingImports`. Duplicate URL imports return `409` with `recipeId`, `title`, and `recipeUrl`.
 
+Paste uses `RK_MODEL_DEFAULT` (default `deepseek/deepseek-v4.1-flash`). URL extract after JSON-LD/HTML miss uses `RK_MODEL_EXTRACT`, then `RK_MODEL_DEFAULT`, then the same DeepSeek default. DeepSeek failures retry `openai/gpt-6-luna`.
+
+**Import failures** (`classifyImportFailure` → 400; `isImportAiUnavailable` → 503):
+
+| `code` | HTTP | When |
+| --- | --- | --- |
+| `import_blocked` | 400 | Site blocked the importer |
+| `import_page_gone` | 400 | Page is gone |
+| `import_not_a_recipe` | 400 | No recipe found, including leftover `AI_*` errors that are not unavailable |
+| `import_unsupported_site` | 400 | Site is not supported |
+| `import_ai_unavailable` | 503 | Gateway / model down, overloaded, or rate-limited. `Retry-After: 60` |
+
 ```json
 {
   "id": "recipe-456",
@@ -380,7 +357,7 @@ POST /api/v1/recipes/import/photo
 
 Extract a recipe from a recipe card, cookbook page, screenshot, or several pages of one recipe. Default is **preview only** (`save` omitted or false), same as URL import. Preview JSON includes `saved: false` and `preview: true`. The first photo is stored in Vercel Blob when configured and becomes the recipe's single main image. Exact SHA matches return `409` with the existing `recipeId`. Near-duplicate PNG photos (perceptual hash of PNG bytes only) add `possibleDuplicate {recipeId,title}` on preview, and on `409` when `save:true` without `allowDuplicate:true`. Send `Idempotency-Key` when `save=true`.
 
-Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC on Vercel). Vision model: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`.
+Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC / `VERCEL=1` on Vercel). Vision model: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`. Same import failure codes as URL/paste.
 
 **JSON** (Blob URL or base64):
 
@@ -813,24 +790,18 @@ In addition to the REST API, OvenLovin provides a Model Context Protocol (MCP) s
 
 **Transport**: HTTP with Streamable HTTP
 
-**Tools**:
-- `search_recipes` - Search recipes by text and filters
-- `get_recipe` - Get full recipe details
-- `import_recipe` - Import from URL or pasted text
-- `import_recipe_from_image` - Import from a photo URL or base64
-- `get_household_context` - Get household members and dietary rules
-- `save_meal_plan` - Create or update a meal plan
-- `check_meal_plan` - Run allergen and dietary rule checks
-- `export_shopping_list` - Generate shopping list with warnings
+Registered tools: `whoami`, `search_recipes`, `get_recipe`, `create_recipe`, `import_recipe`, `import_recipe_from_image`, `delete_recipe`, `get_household_context`, `manage_household_schedule`, `manage_household_settings`, `manage_kitchen_invites`, `manage_kitchen_members`, `get_person_rules`, `manage_people`, `manage_person_rules`, `manage_person_loves`, `check_meal_plan`, `export_shopping_list`, `save_meal_plan`, `get_meal_plan`, `edit_meal_plan`, `delete_meal_plan`, `list_cookbooks`, `get_cookbook`, `manage_cookbook`, `reorder_people`.
 
-See the [Bot Setup Guide](bot-setup.md) for MCP configuration instructions.
+Classified import failures are JSON-RPC `-32602` (`invalidParams`). `import_ai_unavailable` is `-32603` (`internal`).
+
+See [MCP tools](mcp-tools.md) and the [Bot Setup Guide](bot-setup.md).
 
 ## Code Examples
 
 ### JavaScript/TypeScript
 
 ```typescript
-const OVENLOVIN_API_KEY = 'olvn_key_abc123...';
+const OVENLOVIN_API_KEY = 'rkapi_...';
 const BASE_URL = 'https://your-app.vercel.app/api/v1';
 
 // Search recipes
@@ -872,7 +843,7 @@ const checkMealPlan = async (planId: string) => {
 ```python
 import requests
 
-OVENLOVIN_API_KEY = 'olvn_key_abc123...'
+OVENLOVIN_API_KEY = 'rkapi_...'
 BASE_URL = 'https://your-app.vercel.app/api/v1'
 
 # Search recipes

@@ -24,6 +24,7 @@ Open-source recipe box and meal planner for families and their agents. Per-perso
 - **Meal plan & list** - week view and shopping list, with the same per-person warnings
 - **Agents** - REST `/api/v1` (API key or Clerk), MCP Streamable HTTP at `/mcp`, OpenAPI, `/llms.txt`
 - **Auth & data** - Clerk organizations as households, Neon Postgres + Drizzle, Vercel Blob, Vercel AI Gateway
+- **Import AI** - paste, photo, and URL extract use `deepseek/deepseek-v4.1-flash`. DeepSeek failures retry `openai/gpt-6-luna`. Overrides: `RK_MODEL_DEFAULT` (paste), `RK_MODEL_VISION` (photo), `RK_MODEL_EXTRACT` (URL; else `RK_MODEL_DEFAULT`)
 - **Public demo** - no-signup sandbox kitchen (separate demo project; never on product production)
 
 <p align="center">
@@ -97,7 +98,7 @@ ovenlovin/
     ├── core/              # Zod schemas and services
     ├── db/                # Drizzle + Postgres
     ├── mcp/               # MCP tools (thin adapters over core)
-    ├── importers/         # URL / paste / HTML import
+    ├── importers/         # URL / paste / photo / HTML import
     ├── allergens/         # Taxonomy + per-person rule checker
     └── brand/             # Wordmark, deploy URL, tokens
 ```
