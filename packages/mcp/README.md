@@ -25,6 +25,8 @@ Scopes:
 - `people:write` - Edit rules and preferences
 - `lists:export` - Export shopping lists
 
+A tool call outside the key's scopes returns JSON-RPC `-32003` (forbidden). The message names the missing scope. Keys created in Settings have full access. Clerk sessions are not scope-checked.
+
 ## Tools
 
 ### `search_recipes`

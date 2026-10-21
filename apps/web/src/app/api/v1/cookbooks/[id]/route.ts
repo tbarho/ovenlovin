@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { CookbookService, RecipeService, updateCookbookBodySchema } from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
-import { ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
+import { handleApiError, NotFoundError } from "@/lib/api/errors";
+import { loadOwnedCookbook } from "@/lib/api/cookbooks";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import {
   getRequestContext,
@@ -10,15 +11,6 @@ import {
   requireWritableHousehold,
 } from "@/lib/api/middleware";
 import { presentListedRecipe, requestApiOrigin } from "@/lib/recipe-media";
-
-async function loadOwnedCookbook(id: string, householdId: string) {
-  const cookbook = await new CookbookService(getDatabase()).getCookbook(id);
-  if (!cookbook) throw new NotFoundError("Cookbook", id);
-  if (cookbook.householdId !== householdId) {
-    throw new ForbiddenError("Cookbook is not in this household");
-  }
-  return cookbook;
-}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

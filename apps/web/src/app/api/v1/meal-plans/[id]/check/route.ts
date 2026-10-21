@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { handleApiError, requireResourceId } from "@/lib/api/errors";
+import { handleApiError } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireWriteRole } from "@/lib/api/middleware";
 import { persistMealPlanCheck, runMealPlanCheck } from "@/lib/run-meal-plan-check";
@@ -10,7 +10,6 @@ async function handleCheck(request: NextRequest, params: Promise<{ id: string }>
   if (persist) requireWriteRole(context);
 
   const { id } = await params;
-  requireResourceId("MealPlan", id);
 
   const report = persist
     ? await persistMealPlanCheck(id, householdId)

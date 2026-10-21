@@ -77,12 +77,8 @@ async function handler(
   const shoppingListService = new ShoppingListService();
 
   const plan = await planService.getMealPlan(input.planId);
-  if (!plan) {
+  if (!plan || plan.householdId !== context.householdId) {
     throw new Error(`Meal plan not found: ${input.planId}`);
-  }
-
-  if (plan.householdId !== context.householdId) {
-    throw new Error("Unauthorized access to meal plan");
   }
 
   const entries = planEntriesForWeek(await planService.getMealPlanEntries(plan.id), plan.weekStart);

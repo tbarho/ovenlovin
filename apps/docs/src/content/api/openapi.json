@@ -37,7 +37,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "Authorization",
-        "description": "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected."
+        "description": "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings (full access if you omit scopes). A request outside the key's scopes returns 403 with type `<origin>/problems/forbidden`. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected."
       },
       "bearerAuth": {
         "type": "http",
@@ -967,7 +967,37 @@
         "required": ["householdId", "householdName", "role", "expiresAt", "status"]
       }
     },
-    "parameters": {}
+    "parameters": {},
+    "responses": {
+      "Forbidden": {
+        "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                },
+                "title": {
+                  "type": "string",
+                  "example": "Forbidden"
+                },
+                "status": {
+                  "type": "integer",
+                  "example": 403
+                },
+                "detail": {
+                  "type": "string",
+                  "example": "This API key is missing the recipes:write scope. Create a new key in Settings with that scope (or omit scopes for full access)."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "paths": {
     "/health": {
@@ -1195,7 +1225,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1349,7 +1379,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1401,7 +1431,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1520,7 +1550,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1552,7 +1582,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1590,7 +1620,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Recipe or image not found"
@@ -1638,7 +1668,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1679,7 +1709,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1747,7 +1777,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1805,7 +1835,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1949,7 +1979,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -1991,7 +2021,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2037,7 +2067,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2078,7 +2108,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2135,7 +2165,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2167,7 +2197,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2217,7 +2247,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2258,7 +2288,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2317,7 +2347,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2369,7 +2399,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2429,7 +2459,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2479,7 +2509,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2520,7 +2550,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2556,7 +2586,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2595,7 +2625,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2641,7 +2671,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2682,7 +2712,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2739,7 +2769,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2771,7 +2801,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2815,7 +2845,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2887,7 +2917,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -2937,7 +2967,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3021,7 +3051,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3062,7 +3092,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3127,7 +3157,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3226,7 +3256,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3267,7 +3297,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3423,7 +3453,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3455,7 +3485,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3490,7 +3520,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Plan or revision not found"
@@ -3524,7 +3554,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3558,7 +3588,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Meal plan not found (including a malformed id)"
@@ -3590,7 +3620,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Meal plan not found (including a malformed id)"
@@ -3681,7 +3711,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3722,7 +3752,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3770,7 +3800,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3793,7 +3823,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3831,7 +3861,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3862,7 +3892,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3912,7 +3942,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -3942,7 +3972,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4010,7 +4040,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4030,10 +4060,7 @@
             "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
           },
           "401": {
-            "description": "Unauthorized. Missing or invalid Authorization."
-          },
-          "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4042,7 +4069,7 @@
       },
       "post": {
         "tags": ["api-keys"],
-        "summary": "Create an API key. The plaintext is returned once.",
+        "summary": "Create an API key. The plaintext is returned once. Omit scopes for full access.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4056,7 +4083,8 @@
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Defaults to full access: recipes:read, recipes:write, plans:read, plans:write, people:read, people:write, lists:export."
                   }
                 }
               }
@@ -4071,10 +4099,7 @@
             "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
           },
           "401": {
-            "description": "Unauthorized. Missing or invalid Authorization."
-          },
-          "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4105,10 +4130,7 @@
             "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
           },
           "401": {
-            "description": "Unauthorized. Missing or invalid Authorization."
-          },
-          "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4131,7 +4153,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4170,7 +4192,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4209,7 +4231,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4258,7 +4280,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4290,7 +4312,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4313,7 +4335,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4352,7 +4374,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4392,7 +4414,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4426,7 +4448,7 @@
             "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."
@@ -4494,7 +4516,7 @@
             "description": "Signed-in user required. An API key cannot accept; the problem detail includes the invite link."
           },
           "403": {
-            "description": "Forbidden. Role not allowed, kitchen header mismatch, or demo write/upload cap."
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Not Found. Missing resource or unknown path."

@@ -250,7 +250,7 @@ Verify:
 
 - API key format: `Authorization: ApiKey rkapi_...` or `Bearer rkapi_...`
 - Key is still listed under Settings
-- Key has required scopes for the operation
+- Key has required scopes for the operation. A request outside the key's scopes returns REST 403 (`<origin>/problems/forbidden`) or MCP JSON-RPC `-32003`.
 
 ## Next Steps
 

@@ -32,5 +32,6 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("curl -H 'Authorization: ApiKey $KEY'");
     expect(text).toContain("There is no llms-full.txt");
     expect(text).toContain("Not medical advice");
+    expect(text).toContain("problems/forbidden");
   });
 });
