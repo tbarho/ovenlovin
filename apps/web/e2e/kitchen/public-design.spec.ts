@@ -167,14 +167,62 @@ test.describe("public design sign-off", () => {
           expect(type.fontSize).toBeCloseTo(40, 0);
           expect(type.lineHeight / type.fontSize).toBeCloseTo(1.1, 1);
         }
-        const fade = page.locator(".copy-scroll").first();
-        if (await fade.count()) {
-          const overlay = await fade.evaluate((el) => {
-            const style = getComputedStyle(el, "::after");
-            return { width: parseFloat(style.width), image: style.backgroundImage };
+        if (item.name === "docs" || item.name === "connect-your-agent") {
+          await expect(page.locator(".intro").first()).toContainText("Always read the label.");
+        }
+        if (item.name === "home" || item.name === "connect-your-agent") {
+          const box = page.locator(".copy-scroll").first();
+          const fade = await box.evaluate((el) => {
+            const pre = el.querySelector("pre");
+            const after = getComputedStyle(el, "::after");
+            return {
+              overflows: Boolean(pre && pre.scrollWidth > pre.clientWidth + 1),
+              marked: el.hasAttribute("data-overflow"),
+              width: parseFloat(after.width),
+              image: after.backgroundImage,
+            };
           });
-          expect(overlay.width, `${item.name} fade`).toBeGreaterThanOrEqual(24);
-          expect(overlay.image).toMatch(/linear-gradient/i);
+          expect(fade.marked, `${item.name} fade attr`).toBe(fade.overflows);
+          if (fade.overflows) {
+            expect(fade.width, `${item.name} fade`).toBeGreaterThanOrEqual(24);
+            expect(fade.image).toMatch(/linear-gradient/i);
+          }
+          if (width === 390) {
+            const copy = await page.locator(".copy-btn").first().boundingBox();
+            const tab = await page.locator(".tab").first().boundingBox();
+            expect(copy?.height ?? 0).toBeGreaterThanOrEqual(44);
+            expect(tab?.height ?? 0).toBeGreaterThanOrEqual(44);
+            const tabs = page.locator(".tabs-fade");
+            const tabFade = await tabs.evaluate((el) => {
+              const row = el.querySelector("[data-scroll]");
+              const after = getComputedStyle(el, "::after");
+              return {
+                overflows: Boolean(row && row.scrollWidth > row.clientWidth + 1),
+                marked: el.hasAttribute("data-overflow"),
+                width: parseFloat(after.width),
+              };
+            });
+            expect(tabFade.marked).toBe(tabFade.overflows);
+            if (tabFade.overflows) expect(tabFade.width).toBeGreaterThanOrEqual(24);
+          }
+        }
+        if (item.name === "connect-your-agent") {
+          const claude = page.locator(".copy-pre");
+          const fade = await claude.evaluate((el) => {
+            const pre = el.querySelector("pre");
+            const after = getComputedStyle(el, "::after");
+            return {
+              overflows: Boolean(pre && pre.scrollWidth > pre.clientWidth + 1),
+              marked: el.hasAttribute("data-overflow"),
+              width: parseFloat(after.width),
+              image: after.backgroundImage,
+            };
+          });
+          expect(fade.marked, "claude fade attr").toBe(fade.overflows);
+          if (fade.overflows) {
+            expect(fade.width, "claude fade").toBeGreaterThanOrEqual(24);
+            expect(fade.image).toMatch(/linear-gradient/i);
+          }
         }
 
         const authNoise = errors.filter(

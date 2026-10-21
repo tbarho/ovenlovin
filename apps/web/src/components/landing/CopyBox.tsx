@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { maskSecret } from "@/lib/mask-secret";
+import { OverflowX } from "./OverflowX";
 
 const COPIED_MS = 2000;
 
@@ -53,9 +54,9 @@ export function CopyBox({
           </button>
         </div>
       </header>
-      <div className="copy-scroll">
-        <pre>{shown}</pre>
-      </div>
+      <OverflowX className="copy-scroll">
+        <pre data-scroll>{shown}</pre>
+      </OverflowX>
       <p className="copy-status" role="status" aria-live="polite">
         {copied ? "Copied to clipboard" : copyError}
       </p>
