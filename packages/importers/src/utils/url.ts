@@ -21,6 +21,7 @@ export {
   looksLikeSoftBlock,
   shouldKeepLooking,
   shouldRetryFetchWithBrowserHeaders,
+  extractJsonLd,
   jinaReaderUrl,
   googleTranslateUrl,
   translateGoogUrl,
@@ -31,52 +32,6 @@ export {
   type FetchResult,
 } from "./fetch-html";
 export { extractHtmlRecipe, htmlLooksLikeRecipe } from "./html-recipe";
-
-function isRecipeType(value: unknown): boolean {
-  if (value === "Recipe") return true;
-  return Array.isArray(value) && value.includes("Recipe");
-}
-
-function findRecipeNode(data: unknown): Record<string, unknown> | null {
-  if (!data || typeof data !== "object") return null;
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      const found = findRecipeNode(item);
-      if (found) return found;
-    }
-    return null;
-  }
-  const obj = data as Record<string, unknown>;
-  if (isRecipeType(obj["@type"])) return obj;
-  if (obj["@graph"]) return findRecipeNode(obj["@graph"]);
-  return null;
-}
-
-/**
- * Extract JSON-LD schema.org Recipe data from HTML
- */
-export function extractJsonLd(html: string): Record<string, unknown> | null {
-  const $ = cheerio.load(html);
-
-  const jsonLdScripts = $('script[type="application/ld+json"]');
-
-  for (let i = 0; i < jsonLdScripts.length; i++) {
-    const script = jsonLdScripts.eq(i);
-    const content = script.html();
-    if (!content) continue;
-
-    try {
-      const data = JSON.parse(content);
-
-      const recipe = findRecipeNode(data);
-      if (recipe) return recipe;
-    } catch {
-      continue;
-    }
-  }
-
-  return null;
-}
 
 /**
  * Normalize a schema.org time duration to minutes

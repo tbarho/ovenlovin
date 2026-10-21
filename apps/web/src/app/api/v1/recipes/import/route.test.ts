@@ -1,6 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { IMPORT_BLOCKED_CODE, IMPORT_BLOCKED_MESSAGE } from "@ovenlovin/core";
+
+const fixtures = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../../../../../../packages/importers/src/__tests__/fixtures/url"
+);
 
 vi.mock("@ovenlovin/db", () => ({
   getDatabase: () => ({}),
@@ -30,20 +38,38 @@ vi.mock("@ovenlovin/core", async (importOriginal) => {
   };
 });
 
-vi.mock("@ovenlovin/importers", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@ovenlovin/importers")>();
+function food52LayeredFetch(requested: string) {
+  if (requested.includes("jina") || requested.includes("translate")) {
+    return {
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: requested,
+      text: async () => readFileSync(join(fixtures, "food52-nav-chrome.html"), "utf8"),
+    };
+  }
   return {
-    ...actual,
-    createUrlImporter: () => ({
-      extract: async () => {
-        throw new actual.RecipeImportFetchError("https://food52.com/x", 429, "Too Many Requests");
-      },
-    }),
+    ok: false,
+    status: 429,
+    statusText: "Too Many Requests",
+    url: requested,
+    headers: {
+      get: (name: string) => (name.toLowerCase() === "x-vercel-mitigated" ? "challenge" : null),
+    },
+    text: async () => readFileSync(join(fixtures, "vercel-security-checkpoint.html"), "utf8"),
   };
-});
+}
 
 describe("POST /recipes/import", () => {
-  it("keeps import_blocked on a classified fetch error", async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns import_blocked for a Food52 429 plus nav-chrome fallback", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (requested: string) => food52LayeredFetch(String(requested)))
+    );
     const { POST } = await import("./route");
     const response = await POST(
       new NextRequest("http://localhost/api/v1/recipes/import", {

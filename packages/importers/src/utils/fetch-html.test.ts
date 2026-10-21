@@ -13,6 +13,7 @@ import {
   looksLikeBotChallenge,
   looksLikeCompleteDocument,
   looksLikeGonePage,
+  looksLikeStructuredMarkdownRecipe,
   jinaReaderUrl,
   relatedRecipeUrls,
   shouldKeepLooking,
@@ -40,6 +41,27 @@ const ALLRECIPES_404 = fixture("allrecipes-404.html");
 const RECIPETIN_404 = fixture("recipetin-404.html");
 const SALLY_WIDGET = fixture("sally-recipe-with-turnstile.html");
 const HBH_WIDGET = fixture("hbh-recipe-with-turnstile.html");
+const FOOD52_NAV = fixture("food52-nav-chrome.html");
+const FOOD52_NAV_MD = `Title: Chili Recipes
+
+URL Source: https://food52.com/recipes/chili
+
+Markdown Content:
+Search
+
+### [Ingredients](https://food52.com/pages/recipes)
+*   [Chicken](https://food52.com/recipes/chicken)
+*   [Steak](https://food52.com/recipes/steak)
+*   [Salmon](https://food52.com/recipes/salmon)
+*   [Pasta](https://food52.com/recipes/pasta)
+
+### [How To & Hacks](https://food52.com/food/how-to-and-hacks)
+### Method
+# Beef Chili With Bacon & Black Beans
+
+This Jina copy is Food52 site nav and a title, not a recipe card with amounts and steps.
+Browse more chili recipes on Food52. The live importer saw this after a Vercel 429.
+`;
 const NATASHA = fixture("natashaskitchen-beef-stroganoff.html");
 const BUDGET = fixture("budgetbytes-beef-stroganoff.html");
 const WELLPLATED = fixture("wellplated-beef-stroganoff.html");
@@ -642,6 +664,198 @@ describe("fetchHtml layers", () => {
       name: "RecipeImportFetchError",
       message: expect.stringMatching(/blocked the importer/),
     });
+  });
+
+  it("throws blocked when a Vercel 429 is followed by Food52 nav chrome", async () => {
+    expect(isUsableRecipeHtml(FOOD52_NAV)).toBe(true);
+    expect(isUsableRecipeHtml(FOOD52_NAV_MD)).toBe(true);
+    expect(FOOD52_NAV).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+
+    const live = "https://food52.com/recipes/chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => FOOD52_NAV_MD,
+        };
+      }
+      if (requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => FOOD52_NAV,
+        };
+      }
+      return {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: requested,
+        headers: {
+          get: (name: string) => (name.toLowerCase() === "x-vercel-mitigated" ? "challenge" : null),
+        },
+        text: async () => VERCEL_CHECKPOINT,
+      };
+    });
+
+    await expect(
+      fetchHtml(live, {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
+    });
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+    expect(extractJsonLd(FOOD52_NAV)).toBeNull();
+  });
+
+  it("imports a list-type JSON-LD recipe from cache after a 403", async () => {
+    const html = `<!doctype html><html><head><title>List chili</title>
+      <script type="application/ld+json">{"@type":["Recipe","NewsArticle"],"name":"List chili","recipeIngredient":["1 cup beans"]}</script>
+      </head><body><h1>List chili</h1></body></html>`;
+    expect(html).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+    expect(extractJsonLd(html)?.name).toMatch(/list chili/i);
+
+    const live = "https://www.allrecipes.com/recipe/list-chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("translate")) {
+        return { ok: true, status: 200, statusText: "OK", url: requested, text: async () => html };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/list chili/i);
+  });
+
+  it("imports a @graph Recipe from cache after a 403", async () => {
+    const html = `<!doctype html><html><head><title>Graph chili</title>
+      <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"Serious Eats"},{"@type":["Recipe"],"name":"Graph chili","recipeIngredient":["1 onion"]}]}</script>
+      </head><body><h1>Graph chili</h1></body></html>`;
+    expect(html).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+    expect(extractJsonLd(html)?.name).toMatch(/graph chili/i);
+
+    const live = "https://www.seriouseats.com/graph-chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("translate")) {
+        return { ok: true, status: 200, statusText: "OK", url: requested, text: async () => html };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/graph chili/i);
+  });
+
+  it("imports a structured Jina markdown recipe after a 403", async () => {
+    const markdown = `# Best Lentil Soup
+
+## Ingredients
+- 2 cups green lentils
+- 1 onion, diced
+- 2 tbsp olive oil
+- 4 cups vegetable broth
+
+## Instructions
+1. Warm the oil and cook the onion.
+2. Add lentils and broth and simmer until tender.
+`;
+    expect(looksLikeStructuredMarkdownRecipe(markdown)).toBe(true);
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => markdown,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(result.html).toMatch(/2 cups green lentils/);
+  });
+
+  it("imports Jina markdown whose ingredients use stacked task-checkbox bullets", async () => {
+    const markdown = `# Best Lentil Soup
+
+## Ingredients
+* - [x] ¼ cup extra virgin olive oil
+* - [x] 1 medium yellow onion
+* - [x] 2 carrots, peeled and chopped
+* - [x] 4 cups vegetable broth
+
+## Instructions
+1. Warm the oil and cook the onion.
+2. Add lentils and broth and simmer until tender.
+`;
+    expect(looksLikeStructuredMarkdownRecipe(markdown)).toBe(true);
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => markdown,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(result.html).toMatch(/¼ cup extra virgin olive oil/);
   });
 
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {

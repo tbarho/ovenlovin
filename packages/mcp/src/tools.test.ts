@@ -2,8 +2,17 @@
  * Unit tests for MCP tool schemas
  */
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { HouseholdAccessError, HouseholdService, RecipeService } from "@ovenlovin/core";
+import {
+  HouseholdAccessError,
+  HouseholdService,
+  IMPORT_BLOCKED_CODE,
+  IMPORT_BLOCKED_MESSAGE,
+  RecipeService,
+} from "@ovenlovin/core";
 import * as db from "@ovenlovin/db";
 import * as importers from "@ovenlovin/importers";
 import {
@@ -35,6 +44,12 @@ import {
   manageKitchenMembersTool,
   canonicalizePersonRuleTarget,
 } from "./index.js";
+import { jsonRpcFromThrown } from "./json-rpc";
+
+const urlFixtures = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../importers/src/__tests__/fixtures/url"
+);
 
 describe("MCP Tool Schemas", () => {
   describe("search_recipes", () => {
@@ -789,6 +804,60 @@ describe("MCP Tool Schemas", () => {
       expect(result.created).toBe(false);
       expect(result.title).toBe("Weeknight Chili");
       expect(extract).not.toHaveBeenCalled();
+    });
+
+    it("returns import_blocked for a Food52 429 plus nav-chrome fallback", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "findUrlImportCollision").mockResolvedValue(null);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (requested: string) => {
+          const url = String(requested);
+          if (url.includes("jina") || url.includes("translate")) {
+            return {
+              ok: true,
+              status: 200,
+              statusText: "OK",
+              url,
+              text: async () => readFileSync(join(urlFixtures, "food52-nav-chrome.html"), "utf8"),
+            };
+          }
+          return {
+            ok: false,
+            status: 429,
+            statusText: "Too Many Requests",
+            url,
+            headers: {
+              get: (name: string) =>
+                name.toLowerCase() === "x-vercel-mitigated" ? "challenge" : null,
+            },
+            text: async () =>
+              readFileSync(join(urlFixtures, "vercel-security-checkpoint.html"), "utf8"),
+          };
+        })
+      );
+
+      try {
+        await importRecipeTool.handler(
+          {
+            source: "url",
+            content: "https://food52.com/recipes/chili",
+            skipReview: false,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        );
+        throw new Error("expected import to fail");
+      } catch (error) {
+        const rpc = jsonRpcFromThrown(1, error);
+        expect(rpc.error.message).toBe(IMPORT_BLOCKED_MESSAGE);
+        expect(rpc.error.data).toEqual({ code: IMPORT_BLOCKED_CODE });
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
   });
 
