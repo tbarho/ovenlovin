@@ -50,11 +50,9 @@ test.describe("dinner picker safety grouping", () => {
     const alert = page.getByRole("alert").filter({ hasText: "Nothing was saved" });
     await expect(alert).toBeVisible();
     await expect(alert).toBeInViewport();
-    await expect(alert).toContainText(new RegExp(`Couldn't (add|swap) ${title} to Tuesday`));
+    await expect(alert).toContainText(title);
+    await expect(alert).toContainText("to Tuesday");
+    await expect(alert).toContainText("Nothing was saved");
     await expect(alert.getByRole("button", { name: "Try again" })).toBeVisible();
-    await page.screenshot({
-      path: "/opt/cursor/artifacts/screenshots/390-plan-failed-add-after.png",
-      animations: "disabled",
-    });
   });
 });

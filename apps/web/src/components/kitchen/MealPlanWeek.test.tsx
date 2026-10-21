@@ -685,6 +685,7 @@ describe("MealPlanWeek", () => {
     expect(alert).toHaveTextContent("Couldn't add Veggie tacos to Wednesday. Nothing was saved.");
     expect(alert).toHaveClass("kitchen-toast");
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Dismiss" })).toBeVisible();
     expect(screen.getAllByText("Add dinner")).toHaveLength(7);
 
     vi.mocked(api).mockResolvedValue({ id: "plan-1" });

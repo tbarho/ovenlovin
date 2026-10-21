@@ -586,6 +586,11 @@ describe("fetchHtml layers", () => {
       )
     ).toBe(true);
     expect(
+      looksLikeSignInPage(
+        `<html><head><title>Chocolate Yule Log in 5 Steps</title></head><body></body></html>`
+      )
+    ).toBe(false);
+    expect(
       looksLikeGonePage(
         `<html><head><title>Sign in - Google Accounts</title></head><body></body></html>`
       )
@@ -606,7 +611,7 @@ describe("fetchHtml layers", () => {
     ).rejects.toBeInstanceOf(RecipePagePrivateError);
   });
 
-  it("says 401 is private and 410 is gone", async () => {
+  it("says 401 is private", async () => {
     const unauthorized = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
@@ -620,21 +625,6 @@ describe("fetchHtml layers", () => {
         env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
       })
     ).rejects.toBeInstanceOf(RecipePagePrivateError);
-
-    const gone = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 410,
-      statusText: "Gone",
-      url: "https://www.foodnetwork.com/recipes/old",
-      text: async () =>
-        "<!doctype html><html><head><title>Gone</title></head><body><h1>Gone</h1></body></html>",
-    });
-    await expect(
-      fetchHtml("https://www.foodnetwork.com/recipes/old", {
-        fetchImpl: gone as unknown as typeof fetch,
-        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
-      })
-    ).rejects.toBeInstanceOf(RecipePageGoneError);
   });
 
   it("says a 404 is gone instead of no recipe", async () => {

@@ -190,7 +190,7 @@ export function looksLikeSignInUrl(url: string): boolean {
 export function looksLikeSignInPage(html: string): boolean {
   if (!html || looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) return false;
   const title = /<title[^>]*>([^<]*)<\/title>/i.exec(html)?.[1]?.toLowerCase() ?? "";
-  if (/(^|\b)(sign[- ]?in|log[- ]?in|you need (access|permission))\b/.test(title)) return true;
+  if (/^(sign[- ]?in|log[- ]?in|you need (access|permission))\b/.test(title)) return true;
   const head = html.slice(0, 12_000).toLowerCase();
   return (
     /you need (access|permission) (to|before)/.test(head) ||
@@ -539,9 +539,10 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
         }
       }
       if (
-        looksLikeSignInUrl(direct.finalUrl) ||
-        direct.status === 401 ||
-        (direct.status === 403 && looksLikeSignInPage(direct.html))
+        layer === "direct" &&
+        (looksLikeSignInUrl(direct.finalUrl) ||
+          direct.status === 401 ||
+          (direct.status === 403 && looksLikeSignInPage(direct.html)))
       ) {
         throw new RecipePagePrivateError(url);
       }
@@ -569,7 +570,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     if (relatedHit) return relatedHit;
   }
 
-  if (directStatus === 404 || directStatus === 410) throw new RecipePageGoneError(url);
+  if (directStatus === 404) throw new RecipePageGoneError(url);
 
   const settledPage = state.fallback;
   const haveSettledNonRecipe =

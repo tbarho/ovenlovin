@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
@@ -41,6 +41,18 @@ describe("dirty recipe edit sheets", () => {
     );
     expect(within(dialog).getByRole("button", { name: "Remove photo" })).toBeVisible();
     expect(within(dialog).getByText(/JPEG, PNG, or WebP/i)).toBeVisible();
+  });
+
+  it("saves the steps sheet when steps are empty", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValueOnce({});
+    render(<RecipeDetail recipe={testRecipeDetails()} cookbooks={[testCookbook()]} />);
+    await user.click(screen.getByRole("button", { name: "Edit steps" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit steps" });
+    await user.clear(within(dialog).getByRole("textbox"));
+    await user.click(within(dialog).getByRole("button", { name: "Save steps" }));
+    await waitFor(() => expect(api).toHaveBeenCalled());
+    expect(JSON.parse(String(vi.mocked(api).mock.calls[0]?.[1]?.body))).toEqual({ steps: [] });
   });
 
   it("shows Saved after a title or servings save", async () => {

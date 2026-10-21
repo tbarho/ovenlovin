@@ -110,7 +110,20 @@ export function ImportReviewForm({
   const ingredientsNote = uncertainFieldNote(uncertain, "ingredients");
   const stepsNote = uncertainFieldNote(uncertain, "steps");
   return (
-    <form className="form-card photo-review-form" style={{ margin: 0 }} onSubmit={onSave}>
+    <form
+      className="form-card photo-review-form"
+      style={{ margin: 0 }}
+      onSubmit={(event) => {
+        if (!draft.ingredientsText.split(/\r?\n/).some((line) => line.trim())) {
+          event.preventDefault();
+          const box = event.currentTarget.querySelector<HTMLTextAreaElement>("#review-ingredients");
+          box?.setCustomValidity("Add at least one ingredient");
+          box?.reportValidity();
+          return;
+        }
+        onSave(event);
+      }}
+    >
       {showPhotoChrome ? (
         <ol className="sheet-steps">
           {PHOTO_IMPORT_STEPS.map((step) => (
@@ -238,9 +251,13 @@ export function ImportReviewForm({
         >
           Ingredients
           <textarea
+            id="review-ingredients"
             rows={6}
             value={draft.ingredientsText}
-            onChange={(event) => onChange({ ...draft, ingredientsText: event.target.value })}
+            onChange={(event) => {
+              event.currentTarget.setCustomValidity("");
+              onChange({ ...draft, ingredientsText: event.target.value });
+            }}
             aria-describedby={ingredientsNote ? "photo-note-ingredients" : undefined}
             required
           />

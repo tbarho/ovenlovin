@@ -30,11 +30,10 @@ export function KitchenToast({
         <button type="button" onClick={onUndo}>
           {actionLabel ?? "Undo"}
         </button>
-      ) : (
-        <button type="button" onClick={onDismiss}>
-          Dismiss
-        </button>
-      )}
+      ) : null}
+      <button type="button" onClick={onDismiss}>
+        Dismiss
+      </button>
     </div>
   );
 }

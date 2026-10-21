@@ -80,10 +80,10 @@ function dinnerWriteError(
   date: string,
   next: { recipeId?: string | null }
 ): string {
-  const weekday = days.find((day) => day.date === date)?.weekday ?? "that night";
+  const day = days.find((item) => item.date === date);
+  const weekday = day?.weekday ?? "that night";
   const recipe = next.recipeId ? recipes.find((item) => item.id === next.recipeId) : undefined;
   if (!recipe) return "Could not update the plan";
-  const day = days.find((item) => item.date === date);
   const prior = day ? dinnerMeal(day) : undefined;
   return `Couldn't ${prior?.recipeId ? "swap" : "add"} ${recipe.title} to ${weekday}. Nothing was saved.`;
 }
