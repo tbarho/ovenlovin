@@ -145,6 +145,7 @@ function DayEditor({
   onClear,
   onNoCook,
   onClose,
+  onRetry,
 }: {
   open: boolean;
   day: WeekDay;
@@ -158,6 +159,7 @@ function DayEditor({
   onClear: () => void;
   onNoCook: () => void;
   onClose: () => void;
+  onRetry?: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -307,7 +309,24 @@ function DayEditor({
             </>
           )}
           {pending ? <p className="muted">Saving this night…</p> : null}
-          {error ? <p className="muted">{error}</p> : null}
+          {error ? (
+            <p className="week-finding" data-severity="block" role="alert">
+              {error}
+              {onRetry ? (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="btn compact"
+                    onClick={onRetry}
+                    disabled={pending}
+                  >
+                    Try again
+                  </button>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>
@@ -342,6 +361,11 @@ export function MealPlanWeek({
   );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const createdPlanIdRef = useRef<string | null>(null);
+  const [failedDinner, setFailedDinner] = useState<{
+    date: string;
+    next: { recipeId?: string | null; freeformMeal?: string | null; servings?: number | null };
+  } | null>(null);
   const [daysView, setDaysView] = useState(days);
   const [entriesView, setEntriesView] = useState(entries);
   const [pendingPick, setPendingPick] = useState<PlanRecipePick | null>(null);
@@ -351,6 +375,10 @@ export function MealPlanWeek({
     undoDays: WeekDay[];
   } | null>(null);
   const resolvedWeekStart = weekStart ?? days[0]?.date ?? "";
+
+  function currentPlanId() {
+    return planId ?? createdPlanIdRef.current;
+  }
 
   useEffect(() => {
     setDaysView(days);
@@ -367,6 +395,7 @@ export function MealPlanWeek({
     setQuery("");
     setError(null);
     setPendingPick(null);
+    setFailedDinner(null);
   }, []);
 
   function toEntryWrite(entry: PlanEntryDraft) {
@@ -389,8 +418,9 @@ export function MealPlanWeek({
       setError(null);
       const writes = nextEntries.map(toEntryWrite);
       try {
-        if (!planId) {
-          await api<MealPlanWrite>("/api/v1/meal-plans", {
+        const id = currentPlanId();
+        if (!id) {
+          const created = await api<MealPlanWrite>("/api/v1/meal-plans", {
             method: "POST",
             body: JSON.stringify({
               weekStart: resolvedWeekStart,
@@ -398,9 +428,10 @@ export function MealPlanWeek({
               entries: writes,
             }),
           });
+          createdPlanIdRef.current = created.id;
           router.refresh();
         } else {
-          await api(`/api/v1/meal-plans/${planId}`, {
+          await api(`/api/v1/meal-plans/${id}`, {
             method: "PATCH",
             body: JSON.stringify(patch ?? { entries: writes }),
           });
@@ -452,12 +483,14 @@ export function MealPlanWeek({
         : [];
     setDaysView(applyDinnerToDays(daysView, date, next, recipes));
     setEntriesView(nextEntries);
-    const ok = await persist(nextEntries, planId ? { entries: nightPatch } : undefined);
+    const ok = await persist(nextEntries, currentPlanId() ? { entries: nightPatch } : undefined);
     if (!ok) {
       setDaysView(previousDays);
       setEntriesView(previous);
+      setFailedDinner({ date, next });
       return;
     }
+    setFailedDinner(null);
     const weekday = daysView.find((day) => day.date === date)?.weekday ?? "that night";
     const message = cleared
       ? `Cleared ${weekday} dinner`
@@ -544,6 +577,7 @@ export function MealPlanWeek({
                     setQuery("");
                     setError(null);
                     setPendingPick(null);
+                    setFailedDinner(null);
                   }}
                 >
                   <header className="week-day-head">
@@ -596,6 +630,11 @@ export function MealPlanWeek({
                     })
                   }
                   onClose={closeEditor}
+                  onRetry={
+                    failedDinner
+                      ? () => void withDinner(failedDinner.date, failedDinner.next)
+                      : undefined
+                  }
                 />
               ) : null}
             </Fragment>

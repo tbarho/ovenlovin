@@ -635,4 +635,86 @@ describe("MealPlanWeek", () => {
       }),
     });
   });
+
+  it("adds a clear recipe in one tap when nobody has food rules", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={[
+          {
+            id: "recipe-pizza",
+            title: "Weeknight pizza",
+            image: null,
+            servings: 4,
+            cookTimeMinutes: 20,
+            prepTimeMinutes: 10,
+            safety: "ok",
+            warning: null,
+          },
+        ]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    await user.click(screen.getByRole("button", { name: /weeknight pizza/i }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add anyway" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/no rules provided/i)).not.toBeInTheDocument();
+    expect(api).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a visible error and retry when adding dinner fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValueOnce(new Error("Could not update the plan"));
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Could not update the plan");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getAllByText("Add dinner")).toHaveLength(7);
+
+    vi.mocked(api).mockResolvedValue({ id: "plan-1" });
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Veggie tacos" })).toBeInTheDocument();
+  });
+
+  it("patches the created plan when adding a second night before refresh", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockResolvedValue({ id: "plan-new" });
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /monday/i }));
+    await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(1));
+    expect(api).toHaveBeenCalledWith(
+      "/api/v1/meal-plans",
+      expect.objectContaining({ method: "POST" })
+    );
+
+    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    expect(api).toHaveBeenLastCalledWith(
+      "/api/v1/meal-plans/plan-new",
+      expect.objectContaining({ method: "PATCH" })
+    );
+  });
 });

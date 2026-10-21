@@ -495,13 +495,15 @@ describe("checkIngredientsAgainstRules", () => {
     expect(result.incompleteReasons).toContain("No ingredients provided");
   });
 
-  it("reports incomplete when no rules", () => {
+  it("treats people with no food rules as a finished check", () => {
     const ingredients: IngredientCheckInput[] = [{ name: "peanut" }];
 
     const result = checkIngredientsAgainstRules(ingredients, []);
 
-    expect(result.status).toBe("incomplete");
-    expect(result.incompleteReasons).toContain("No rules provided");
+    expect(result.status).toBe("complete");
+    expect(result.incompleteReasons).toBeUndefined();
+    expect(result.findings.block).toEqual([]);
+    expect(result.findings.warn).toEqual([]);
   });
 
   it("groups findings by severity", () => {

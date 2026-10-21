@@ -13,7 +13,7 @@ import {
   startOfWeekMonday,
   weekDates,
 } from "./week-plan";
-import type { WhoCanEatResult } from "./who-can-eat";
+import { whoCanEat, type WhoCanEatResult } from "./who-can-eat";
 
 describe("week-plan dates", () => {
   it("snaps Wednesday Oct 14 2026 to Monday Oct 12", () => {
@@ -135,6 +135,28 @@ describe("week-plan view", () => {
       safety: "ok",
       warning: null,
     });
+  });
+
+  it("does not warn when the household has people but no food rules", () => {
+    const parentA = testPerson({ displayName: "Parent A" });
+    const parentB = testPerson({
+      id: "00000000-0000-4000-8000-000000000011",
+      displayName: "Parent B",
+    });
+    const childC = testPerson({
+      id: "00000000-0000-4000-8000-000000000013",
+      displayName: "Child C",
+    });
+    const pasta = [{ id: "ing-pasta", name: "pasta" }];
+    expect(pickSafety([parentA, parentB, childC], [], pasta)).toEqual({
+      safety: "ok",
+      warning: null,
+    });
+    const check = whoCanEat({ people: [parentA, parentB, childC], rules: [], ingredients: pasta });
+    expect(check.status).toBe("complete");
+    expect(findingsFromCheck(check)).toEqual([]);
+    expect(check.people.every((person) => person.mark === "ok")).toBe(true);
+    expect(check.incompleteReasons.join(" ")).not.toMatch(/no rules provided/i);
   });
 
   it("names a dislike in the pre-add warning along with other rules", () => {
