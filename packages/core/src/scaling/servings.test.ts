@@ -158,16 +158,26 @@ describe("toFriendlyMeasure", () => {
     expect(formatMeasureText(0.125, "cup")).toBe("2 tbsp");
   });
 
-  it("keeps large spoon amounts when a cup snap would be more than 5% off", () => {
-    expect(toFriendlyMeasure(13.75, "tbsp")).toEqual({
-      displayQuantity: "3/4 cup + 1 3/4 tbsp",
-    });
-    expect(formatMeasureText(13.75, "tbsp")).toBe("3/4 cup + 1 3/4 tbsp");
-    expect(toFriendlyMeasure(8, "tbsp")).toEqual({ displayQuantity: "1/2", displayUnit: "cup" });
+  it("drops a leftover when the cup amount is within 5%, else leftover is tsp", () => {
     expect(toFriendlyMeasure(12.25, "tbsp")).toEqual({
-      displayQuantity: "3/4 cup + 1/4 tbsp",
+      displayQuantity: "3/4",
+      displayUnit: "cup",
     });
-    expect(formatMeasureText(12.25, "tbsp")).toBe("3/4 cup + 1/4 tbsp");
+    expect(formatMeasureText(12.25, "tbsp")).toBe("3/4 cup");
+    expect(formatMeasureText(12.25, "tbsp")).not.toContain("1/4 tbsp");
+    expect(toFriendlyMeasure(16.125, "tbsp")).toEqual({
+      displayQuantity: "1",
+      displayUnit: "cup",
+    });
+    expect(formatMeasureText(16.125, "tbsp")).toBe("1 cup");
+    expect(formatMeasureText(16.125, "tbsp")).not.toContain("1/8 tbsp");
+    expect(toFriendlyMeasure(13.75, "tbsp")).toEqual({
+      displayQuantity: "3/4 cup + 5 1/4 tsp",
+    });
+    expect(formatMeasureText(13.75, "tbsp")).toBe("3/4 cup + 5 1/4 tsp");
+    expect(toFriendlyMeasure(8, "tbsp")).toEqual({ displayQuantity: "1/2", displayUnit: "cup" });
+    expect(scaleIngredientDisplay({ rawText: "12 1/4 tbsp oil" }, 4, 4)).toBe("3/4 cup oil");
+    expect(scaleIngredientDisplay({ rawText: "16 1/8 tbsp oil" }, 4, 4)).toBe("1 cup oil");
   });
 });
 

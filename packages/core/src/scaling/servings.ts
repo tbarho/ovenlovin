@@ -187,10 +187,10 @@ function mixedCupTbsp(tbsp: number): FriendlyMeasure | null {
     if (step <= frac + 1e-9 && step < 1) cupDown = whole + step;
   }
   if (cupDown < 0.25) return null;
-  const rem = tbsp - cupDown * 16;
-  if (rem < 1 / 8 - 1e-9) return null;
+  const remTsp = (tbsp - cupDown * 16) * 3;
+  if (remTsp < 1 / 8 - 1e-9) return null;
   return {
-    displayQuantity: `${formatQuantity(cupDown)} cup + ${formatQuantity(rem)} tbsp`,
+    displayQuantity: `${formatQuantity(cupDown)} cup + ${formatQuantity(remTsp)} tsp`,
   };
 }
 
@@ -234,16 +234,15 @@ export function toFriendlyMeasure(
   if (normalized === "tbsp" && best.unit === "cup") {
     const cups = quantity / 16;
     const shown = quantityValue(formatQuantity(best.quantity, roundUp));
-    const mixed = mixedCupTbsp(quantity);
-    if (shown <= 0 || Math.abs(shown - cups) / cups > 0.05) {
-      return (
-        mixed ?? {
-          displayQuantity: formatQuantity(quantity, roundUp),
-          displayUnit: "tbsp",
-        }
-      );
+    if (shown > 0 && Math.abs(shown - cups) / cups <= 0.05) {
+      return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };
     }
-    if (mixed) return mixed;
+    return (
+      mixedCupTbsp(quantity) ?? {
+        displayQuantity: formatQuantity(quantity, roundUp),
+        displayUnit: "tbsp",
+      }
+    );
   }
 
   return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };
