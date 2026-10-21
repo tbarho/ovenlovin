@@ -138,7 +138,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       "`images` is a thumbnail URL only. Photo imports never inline `data:` bytes here; fetch `GET /recipes/{id}/image` when Blob is not configured.",
     request: {
       query: z.object({
-        limit: z.coerce.number().int().positive().max(100).optional(),
+        limit: z.coerce.number().int().positive().optional(),
         cursor: z.string().optional(),
         search: z.string().optional(),
         forAttendees: z

@@ -68,7 +68,7 @@ Response:
 
 ## Idempotency
 
-`Idempotency-Key` (any string, up to 512 characters) is honored on `POST /recipes`, `POST /recipes/import` with `save: true`, and `POST /recipes/import/photo` with `save: true`. A replay returns 200 with the original resource.
+`Idempotency-Key` (trimmed, first 512 characters) is honored on `POST /recipes`, `POST /recipes/import` with `save: true`, and `POST /recipes/import/photo` with `save: true`. A replay returns 200 with the original resource.
 
 ```bash
 curl -X POST \

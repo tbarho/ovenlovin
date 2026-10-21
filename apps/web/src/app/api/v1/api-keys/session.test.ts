@@ -1,10 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { API_KEY_SCOPES } from "@ovenlovin/core";
 
 vi.mock("@ovenlovin/db", () => ({
   getDatabase: () => ({}),
 }));
+
+let creatorRole: "owner" | "admin" | "member" | "viewer" = "owner";
 
 vi.mock("@ovenlovin/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@ovenlovin/core")>();
@@ -25,7 +27,7 @@ vi.mock("@ovenlovin/core", async (importOriginal) => {
     },
     HouseholdService: class {
       async getMembershipsForUser() {
-        return [{ householdId: "22222222-2222-4222-8222-222222222222", role: "owner" }];
+        return [{ householdId: "22222222-2222-4222-8222-222222222222", role: creatorRole }];
       }
     },
   };
@@ -53,11 +55,28 @@ async function expectKeyRejected(response: Response) {
 }
 
 describe("API keys are session-only", () => {
+  afterEach(() => {
+    creatorRole = "owner";
+  });
+
   it("returns 401 for an API key on GET, POST, and DELETE", async () => {
     const { GET, POST } = await import("./route");
     const { DELETE } = await import("./[id]/route");
 
     await expectKeyRejected(await GET(request("GET", "/api/v1/api-keys")));
+    await expectKeyRejected(await POST(request("POST", "/api/v1/api-keys", { name: "Agent" })));
+    await expectKeyRejected(
+      await DELETE(request("DELETE", "/api/v1/api-keys/44444444-4444-4444-8444-444444444444"), {
+        params: Promise.resolve({ id: "44444444-4444-4444-8444-444444444444" }),
+      })
+    );
+  });
+
+  it("returns 401 for an API key whose creator is now a member", async () => {
+    creatorRole = "member";
+    const { POST } = await import("./route");
+    const { DELETE } = await import("./[id]/route");
+
     await expectKeyRejected(await POST(request("POST", "/api/v1/api-keys", { name: "Agent" })));
     await expectKeyRejected(
       await DELETE(request("DELETE", "/api/v1/api-keys/44444444-4444-4444-8444-444444444444"), {

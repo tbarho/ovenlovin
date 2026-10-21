@@ -62,7 +62,7 @@ export function buildLlmsTxt(origin: string): string {
     `Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is \`403\`.`,
     `Unauthenticated REST returns problem+json 401.`,
     `A request outside an API key's scopes returns 403 problem+json (\`<origin>/problems/forbidden\`). Clerk sessions are not scope-checked. Keys created in Settings have full access. HEAD is treated as GET.`,
-    `GET /api-keys, POST /api-keys, and DELETE /api-keys/{id} are session-only. An API key gets 401.`,
+    `GET /api-keys, POST /api-keys, and DELETE /api-keys/{id} are session-only. An API key gets 401. POST and DELETE also require a signed-in admin or owner.`,
     `A malformed or foreign id on every [id] route is 404 (never 500, never another kitchen's data).`,
     `Unauthenticated MCP POST returns a JSON-RPC error envelope (HTTP 401). MCP scope denial is JSON-RPC -32003 with data.code "forbidden". MCP id fields and id arrays must be UUIDs.`,
     ``,

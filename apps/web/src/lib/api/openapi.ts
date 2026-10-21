@@ -12,27 +12,29 @@ extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
 
+registry.registerComponent("securitySchemes", "apiKey", {
+  type: "apiKey",
+  in: "header",
+  name: "Authorization",
+  description:
+    "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings (full access if you omit scopes). A request outside the key's scopes returns 403 with type `<origin>/problems/forbidden`. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.",
+});
+
+registry.registerComponent("securitySchemes", "bearerAuth", {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "API key or Clerk JWT",
+  description:
+    "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.",
+});
+
 registerApiPaths(registry);
 
+const DEFAULT_ORIGIN = "https://your-app.vercel.app";
+
 export function generateOpenApiDocument(origin?: string): oas30.OpenAPIObject {
-  registry.registerComponent("securitySchemes", "apiKey", {
-    type: "apiKey",
-    in: "header",
-    name: "Authorization",
-    description:
-      "Household API key. Send `ApiKey rkapi_…` or `Bearer rkapi_…`. Create a key under Settings (full access if you omit scopes). A request outside the key's scopes returns 403 with type `<origin>/problems/forbidden`. Bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.",
-  });
-
-  registry.registerComponent("securitySchemes", "bearerAuth", {
-    type: "http",
-    scheme: "bearer",
-    bearerFormat: "API key or Clerk JWT",
-    description:
-      "Same API key as `rkapi_…` (ChatGPT Actions often send Bearer) or a Clerk session JWT. On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.",
-  });
-
   const generator = new OpenApiGeneratorV3(registry.definitions);
-  const base = (origin ?? "https://ovenlovin.vercel.app").replace(/\/$/, "");
+  const base = (origin ?? DEFAULT_ORIGIN).replace(/\/$/, "");
 
   return attachForbiddenResponses(
     withSharedErrorResponses(
@@ -81,6 +83,7 @@ const SHARED_ERRORS: Record<string, oas30.ResponseObject> = {
 };
 
 const PUBLIC_OPS = new Set(["/health", "/status", "/openapi.json", "/invites/{token}"]);
+const SKIP_SHARED_CLIENT_ERRORS = new Set(["/health", "/status", "/openapi.json"]);
 
 function withSharedErrorResponses(doc: oas30.OpenAPIObject): oas30.OpenAPIObject {
   for (const [path, item] of Object.entries(doc.paths ?? {})) {
@@ -88,10 +91,15 @@ function withSharedErrorResponses(doc: oas30.OpenAPIObject): oas30.OpenAPIObject
     for (const method of ["get", "put", "post", "delete", "patch"] as const) {
       const op = item[method];
       if (!op?.responses) continue;
-      op.responses["400"] ??= SHARED_ERRORS["400"];
-      op.responses["404"] ??= SHARED_ERRORS["404"];
+      if (!SKIP_SHARED_CLIENT_ERRORS.has(path)) {
+        op.responses["400"] ??= SHARED_ERRORS["400"];
+        op.responses["404"] ??= SHARED_ERRORS["404"];
+      }
       if (!PUBLIC_OPS.has(path) || method !== "get") {
         op.responses["401"] ??= SHARED_ERRORS["401"];
+      }
+      if (path === "/invites/{token}" && method === "get") {
+        op.responses["410"] ??= { description: "Gone. Expired invite." };
       }
     }
   }
@@ -109,16 +117,21 @@ const OPENAPI_METHODS = [
   "trace",
 ] as const;
 
+const ROLE_FORBIDDEN: oas30.ResponseObject = {
+  description:
+    "Admin or owner role required. Type is `<origin>/problems/forbidden`. Distinct from a missing-scope 403. An API key still gets 401.",
+};
+
 function attachForbiddenResponses(doc: oas30.OpenAPIObject): oas30.OpenAPIObject {
   const forbidden = {
     description:
-      "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+      "Forbidden. Type is `<origin>/problems/forbidden`. Causes: missing scope, role not allowed, mismatched `X-Kitchen-Id`, or the public demo write/upload cap. Clerk sessions are not scope-checked.",
     content: {
       "application/problem+json": {
         schema: {
           type: "object",
           properties: {
-            type: { type: "string", example: "https://ovenlovin.vercel.app/problems/forbidden" },
+            type: { type: "string", example: "https://your-app.vercel.app/problems/forbidden" },
             title: { type: "string", example: "Forbidden" },
             status: { type: "integer", example: 403 },
             detail: {
@@ -143,7 +156,12 @@ function attachForbiddenResponses(doc: oas30.OpenAPIObject): oas30.OpenAPIObject
       const operation = pathItem[method];
       if (!operation || typeof operation !== "object" || !operation.responses) continue;
       if (Array.isArray(operation.security) && operation.security.length === 0) continue;
-      if (path.startsWith("/api-keys")) continue;
+      if (path.startsWith("/api-keys")) {
+        if (method === "post" || method === "delete") {
+          operation.responses["403"] = ROLE_FORBIDDEN;
+        }
+        continue;
+      }
       operation.responses["403"] = ref;
     }
   }

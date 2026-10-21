@@ -32,9 +32,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
+    const createdBy = requireUserId(context);
     requireAdminRole(context);
     const householdId = requireHouseholdId(context);
-    const createdBy = requireUserId(context);
 
     const raw = await request.json().catch(() => ({}));
     const body = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};

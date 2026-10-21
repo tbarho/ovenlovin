@@ -8,6 +8,6 @@ if [ ! -f .source/index.ts ]; then
 fi
 
 if [ -f .source/index.ts ]; then
-  sed -i -E 's/^export const docs = /export const docs: any = /' .source/index.ts
-  sed -i -E 's/^export const meta = /export const meta: any = /' .source/index.ts
+  perl -pi -e 's/^export const docs = /export const docs: any = /' .source/index.ts
+  perl -pi -e 's/^export const meta = /export const meta: any = /' .source/index.ts
 fi
