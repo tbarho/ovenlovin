@@ -10,6 +10,7 @@ import {
   requireUserOrKeyOwner,
 } from "@/lib/api/middleware";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
+import { readJsonBody } from "@/lib/api/read-json";
 
 const patchSchema = z.object({
   role: membershipRoleSchema,
@@ -26,7 +27,7 @@ export async function PATCH(
     const actorUserId = requireUserOrKeyOwner(context);
     const { userId } = await params;
     requireResourceId("User", userId);
-    const body = patchSchema.parse(await request.json().catch(() => ({})));
+    const body = await readJsonBody(request, patchSchema);
     const membership = await new HouseholdService(getDatabase()).updateMemberRole({
       householdId,
       targetUserId: userId,

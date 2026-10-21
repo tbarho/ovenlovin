@@ -108,5 +108,8 @@ export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure
     });
   }
   const messageText = error instanceof Error ? error.message : "Internal error";
+  if (/\bnot found\b/i.test(messageText)) {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, messageText, { code: "not_found" });
+  }
   return jsonRpcError(id, JsonRpcErrorCode.internal, messageText);
 }

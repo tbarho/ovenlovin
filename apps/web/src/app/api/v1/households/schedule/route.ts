@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { ScheduleService } from "@ovenlovin/core";
+import { replaceScheduleBodySchema, ScheduleService } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
-import { BadRequestError, handleApiError } from "@/lib/api/errors";
+import { handleApiError } from "@/lib/api/errors";
 import { jsonResponse } from "@/lib/api/response";
 import {
   getRequestContext,
@@ -25,10 +26,7 @@ export async function PUT(request: NextRequest) {
     const context = await getRequestContext(request);
     const householdId = requireWritableHousehold(context);
     const createdBy = context.userId || context.clientId || householdId;
-    const body = (await request.json()) as { week?: unknown };
-    if (!Array.isArray(body.week)) {
-      throw new BadRequestError("Provide week: an array of weekday availability objects");
-    }
+    const body = await readJsonBody(request, replaceScheduleBodySchema);
     const schedule = await new ScheduleService(getDatabase()).replaceSchedule(
       householdId,
       body.week,

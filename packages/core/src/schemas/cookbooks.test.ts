@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { slugifyCookbookName } from "./cookbooks";
+import {
+  createCookbookBodySchema,
+  slugifyCookbookName,
+  updateCookbookBodySchema,
+} from "./cookbooks";
+
+describe("cookbook write bodies", () => {
+  it("rejects blank and empty cookbook writes", () => {
+    expect(createCookbookBodySchema.safeParse({}).success).toBe(false);
+    expect(updateCookbookBodySchema.safeParse({}).success).toBe(false);
+    expect(createCookbookBodySchema.parse({ name: " Weeknights " }).name).toBe("Weeknights");
+  });
+});
 
 describe("slugifyCookbookName", () => {
   it("turns a name into a url-safe slug", () => {

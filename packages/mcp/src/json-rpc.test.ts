@@ -50,6 +50,16 @@ describe("jsonRpcFromThrown", () => {
     expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.invalidParams);
   });
 
+  it("maps not-found to invalid params with a data.code", () => {
+    const response = jsonRpcFromThrown(
+      6,
+      new Error("Person not found: 550e8400-e29b-41d4-a716-446655440000")
+    );
+    expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(response.error.data).toEqual({ code: "not_found" });
+    expect(response.error.message).toMatch(/Person not found/);
+  });
+
   it("keeps unexpected failures as internal error", () => {
     const response = jsonRpcFromThrown(4, new Error("connection refused"));
     expect(response.error.code).toBe(JsonRpcErrorCode.internal);

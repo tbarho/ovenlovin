@@ -48,6 +48,9 @@ export interface ImportRecipeOutput {
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
   images: string[];
+  ingredients?: unknown[];
+  steps?: unknown[];
+  draft?: unknown;
   confidence: number;
   lowConfidenceFields?: string[];
   reviewReasons?: string[];
@@ -144,6 +147,9 @@ async function handler(
       prepTimeMinutes: draft.prepTimeMinutes,
       cookTimeMinutes: draft.cookTimeMinutes,
       images: draft.images ?? [],
+      ingredients: draft.ingredients,
+      steps: draft.steps,
+      draft,
       confidence: 1,
       reviewReasons: draft.reviewReasons,
       uncertainFields: draft.uncertainFields,
