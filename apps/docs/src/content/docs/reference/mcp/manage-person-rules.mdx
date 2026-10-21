@@ -1,0 +1,30 @@
+---
+title: manage_person_rules
+description: List, add, or remove Can't eat / Doesn't like rules
+---
+
+List, add, or remove Can't eat / Doesn't like rules for a person. Dislikes spicy food: `kind=ingredient` or `tag`, `target=spicy`, `severity=prefer_avoid`. Other taste dislikes: cilantro, olives, mushrooms, onions, garlic. Diets: `kind=diet`, `target=vegetarian|vegan|pescatarian|gluten_free|dairy_free`. Allergens: `kind=allergen`, `target=peanut|tree_nut|milk|...`. Unknown targets need `confirmUnknown=true`. Tree-nut rules accept `treatCoconutAsTreeNut` (default false). Not medical advice - always check ingredient labels before serving.
+
+## Input
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `action` | `"list"` \| `"add"` \| `"remove"` | Yes | What to do |
+| `personId` | string (UUID) | Yes | Person |
+| `id` | string (UUID) | For `remove` | Rule id |
+| `kind` | enum | For `add` | `allergen` / `ingredient` / `ingredient_category` / `diet` / `tag` / `custom` |
+| `target` | string | For `add` | What the rule matches |
+| `severity` | `"block"` \| `"warn"` \| `"prefer_avoid"` | For `add` | How strictly to treat a hit |
+| `label` | string | No | - |
+| `note` | string | No | - |
+| `includeMayContain` | boolean | No | - |
+| `includeCrossContact` | boolean | No | - |
+| `sharedFacility` | `"block"` \| `"warn"` \| `"ignore"` | No | - |
+| `includeDescendants` | boolean | No | - |
+| `treatCoconutAsTreeNut` | boolean | No | For `tree_nut` rules. Default false |
+| `confirmUnknown` | boolean | No | Required to save a target not in the catalog |
+
+## Related
+
+- [get_person_rules](/docs/reference/mcp/get-person-rules)
+- [manage_person_loves](/docs/reference/mcp/manage-person-loves)

@@ -1,128 +1,38 @@
 ---
 title: import_recipe
-description: Import a recipe from URL or pasted text
+description: Import a recipe from a URL or pasted text
 ---
 
-Import a recipe from a URL or pasted text. Automatically extracts and parses recipe data, returning a draft recipe that may need review if parsing confidence is low.
+Import a recipe from a URL or pasted text. Pulls schema.org prep/cook times, servings, and the main image (copied into Vercel Blob). `save:false` returns a preview; omit `save` to persist. `skipReview` clears `needsReview`. `idempotencyKey` replays a save.
 
-## Input Schema
+## Input
 
-| Parameter    | Type          | Required | Default | Description                               |
-| ------------ | ------------- | -------- | ------- | ----------------------------------------- |
-| `source`     | enum          | Yes      | -       | Import source: `"url"` or `"paste"`       |
-| `content`    | string        | Yes      | -       | URL to fetch from or pasted recipe text   |
-| `skipReview` | boolean       | No       | `false` | Skip review queue and publish immediately |
-| `cookbookId` | string (UUID) | No       | -       | File the imported recipe in this cookbook |
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `source` | `"url"` \| `"paste"` | Yes | - | Import source |
+| `content` | string | No | - | URL or pasted recipe text. Required unless `draft` is sent |
+| `draft` | object | No | - | Previewed recipe from a prior import. Skips extract |
+| `save` | boolean | No | persist | `false` returns a preview without saving |
+| `idempotencyKey` | string | No | - | Same key replays the same saved recipe |
+| `allowDuplicate` | boolean | No | - | Persist even when this URL or draft already exists |
+| `skipReview` | boolean | No | `false` | Skip review queue and publish immediately |
+| `cookbookId` | string (UUID) | No | - | Optional cookbook to file the recipe in |
 
-## Output Schema
+Classified import failures are JSON-RPC `-32602`. `import_ai_unavailable` is `-32603`.
 
-```typescript
-{
-  recipeId: string,
-  status: "draft" | "needs_review" | "published",
-  confidence: number,
-  lowConfidenceFields?: string[],
-  message: string
-}
-```
-
-## Import Sources
-
-### URL Import (`source: "url"`)
-
-- Fetches recipe from provided URL
-- Supports major recipe sites with schema.org markup
-- Extracts metadata, ingredients, and instructions
-- Best for recipes from cooking blogs and recipe aggregators
-
-### Paste Import (`source: "paste"`)
-
-- Parses freeform recipe text
-- Handles various text formats
-- Attempts to identify title, ingredients, and steps
-- Lower confidence than URL import
-
-## Confidence Scoring
-
-The importer calculates an `overallConfidence` score (0.0 - 1.0):
-
-- **≥ 0.90**: High confidence, auto-publish safe
-- **0.70 - 0.89**: Medium confidence, review recommended
-- **< 0.70**: Low confidence, needs review
-
-When confidence is low:
-
-- Recipe is marked `status: "needs_review"`
-- `lowConfidenceFields` lists problematic fields
-- Manual review and editing recommended
-
-## Example Call (URL)
+## Example (preview)
 
 ```json
 {
   "source": "url",
   "content": "https://example.com/recipes/chicken-pasta",
-  "skipReview": false
+  "save": false
 }
 ```
 
-## Example Call (Paste)
+Send `save:true` with the returned `draft` to persist without extracting again.
 
-```json
-{
-  "source": "paste",
-  "content": "Classic Marinara Sauce\n\nIngredients:\n- 2 cans (28 oz) crushed tomatoes\n- 4 cloves garlic, minced\n- 1/4 cup olive oil\n- 1 tsp basil\n\nInstructions:\n1. Heat oil and sauté garlic\n2. Add tomatoes and basil\n3. Simmer 30 minutes",
-  "skipReview": false
-}
-```
+## Related
 
-## Example Result (High Confidence)
-
-```json
-{
-  "recipeId": "recipe-abc-123",
-  "status": "published",
-  "confidence": 0.95,
-  "message": "Recipe imported successfully"
-}
-```
-
-## Example Result (Low Confidence)
-
-```json
-{
-  "recipeId": "recipe-def-456",
-  "status": "needs_review",
-  "confidence": 0.68,
-  "lowConfidenceFields": ["ingredient quantities", "cooking times", "servings"],
-  "message": "Recipe imported but needs review (confidence: 68%)"
-}
-```
-
-## Review Workflow
-
-1. **Import**: Call `import_recipe` with URL or text
-2. **Check status**: If `status: "needs_review"`, recipe requires editing
-3. **Review fields**: Check `lowConfidenceFields` for areas needing attention
-4. **Edit recipe**: Use [get_recipe](/docs/reference/mcp/get-recipe) to view, then update via REST API
-5. **Publish**: Update recipe status to `"published"` when ready
-
-## Usage Notes
-
-1. **URL imports preferred**: Schema.org markup provides highest quality extraction
-2. **Skip review cautiously**: Only use `skipReview: true` for trusted high-quality sources
-3. **Ingredient parsing**: Complex ingredient descriptions may parse imperfectly; raw text is preserved
-4. **Missing data**: Times, servings, and nutrition may not be extracted from all sources
-5. **Attribution**: Source URL is stored for attribution and licensing compliance
-
-## Limitations
-
-- URL fetching requires public access (no paywall or authentication)
-- Paste import is best-effort; structured data improves accuracy
-- Images may not be extracted from all sites
-- Nutrition facts rarely included in imports (must be calculated separately)
-
-## Related Tools
-
-- [get_recipe](/docs/reference/mcp/get-recipe) - View imported recipe details
-- [search_recipes](/docs/reference/mcp/search-recipes) - Find existing recipes before importing
+- [import_recipe_from_image](/docs/reference/mcp/import-recipe-from-image)
+- [get_recipe](/docs/reference/mcp/get-recipe)

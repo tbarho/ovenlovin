@@ -1,0 +1,17 @@
+---
+title: reorder_people
+description: Set household people display order
+---
+
+Set the persistent household people order. `personIds` must list every person exactly once. This order is used by people lists, who-can-eat, meal-planner attendees, and household context.
+
+## Input
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `personIds` | uuid[] | Yes | Every household person id, in the desired display order |
+
+## Related
+
+- [manage_people](/docs/reference/mcp/manage-people)
+- [get_household_context](/docs/reference/mcp/get-household-context)

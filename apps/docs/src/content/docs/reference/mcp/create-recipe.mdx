@@ -1,0 +1,41 @@
+---
+title: create_recipe
+description: Create a recipe from title, ingredients, and steps
+---
+
+Create a recipe directly from title, ingredients, and steps (no URL import). Prefer `import_recipe` when a public URL exists.
+
+## Input
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `title` | string | Yes | Recipe title (1-500) |
+| `description` | string | No | - |
+| `notes` | string | No | - |
+| `servings` | integer | No | Positive |
+| `prepTimeMinutes` | integer | No | - |
+| `cookTimeMinutes` | integer | No | - |
+| `totalTimeMinutes` | integer | No | - |
+| `cuisine` | string | No | - |
+| `course` | string | No | - |
+| `images` | string[] | No | Image URLs |
+| `ingredients` | `{ rawText }[]` | No | Ingredient lines as written |
+| `steps` | `{ text }[]` | No | Instruction steps in order |
+| `cookbookId` | string (UUID) | No | File in this cookbook |
+| `sourceUrl` | string | No | Attribution URL |
+| `status` | `"draft"` \| `"needs_review"` \| `"published"` | No | Stored status |
+
+## Example
+
+```json
+{
+  "title": "Weeknight pasta",
+  "ingredients": [{ "rawText": "1 lb spaghetti" }],
+  "steps": [{ "text": "Boil water and cook pasta." }]
+}
+```
+
+## Related
+
+- [import_recipe](/docs/reference/mcp/import-recipe)
+- [get_recipe](/docs/reference/mcp/get-recipe)

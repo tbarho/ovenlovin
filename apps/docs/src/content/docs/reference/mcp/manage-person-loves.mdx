@@ -1,0 +1,21 @@
+---
+title: manage_person_loves
+description: List, add, or remove a person's Loves
+---
+
+List, add, or remove a person's Loves (foods, ingredients, cuisines, styles). Loves never hide recipes; they boost meal-planner ranking and show "Name loves this" on matching dishes.
+
+## Input
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `action` | `"list"` \| `"add"` \| `"remove"` | Yes | What to do |
+| `personId` | string (UUID) | Yes | Person whose Loves list to change |
+| `value` | string | For `add` | Food, ingredient, cuisine, or style |
+| `id` | string (UUID) | For `remove` | Preference id |
+| `weight` | integer 1-10 | No | Ranking weight, default 1 |
+
+## Related
+
+- [get_person_rules](/docs/reference/mcp/get-person-rules)
+- [search_recipes](/docs/reference/mcp/search-recipes)

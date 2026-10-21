@@ -201,11 +201,11 @@ Registered tools: `whoami`, `search_recipes`, `get_recipe`, `create_recipe`, `im
 User: "Plan my meals for next week"
 
 Bot:
-1. Calls get_household_context() to learn dietary rules
-2. Searches recipes with appropriate filters
-3. Creates draft meal plan with save_meal_plan()
-4. Checks for allergen conflicts with check_meal_plan()
-5. Generates shopping list with export_shopping_list()
+1. Calls whoami, then get_household_context
+2. Searches with search_recipes (forAttendees hides block hits)
+3. Calls check_meal_plan (nights may use freeformMeal instead of recipeId)
+4. Calls save_meal_plan with that checkReportJson
+5. Calls export_shopping_list with the saved planId
 
 Returns:
 - Meal plan for the week
@@ -219,10 +219,9 @@ Returns:
 User: "Import this recipe: https://example.com/cookies"
 
 Bot:
-1. Calls import_recipe(url)
-2. Retrieves imported recipe details
-3. Checks safety for household members
-4. Suggests substitutions if needed
+1. Calls import_recipe with source=url and content=the URL (save:false to preview)
+2. Calls get_recipe on the saved id
+3. Calls check_meal_plan for household attendees
 
 Returns:
 - Recipe details

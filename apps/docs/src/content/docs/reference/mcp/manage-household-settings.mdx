@@ -11,7 +11,7 @@ Kitchen Default servings controls how recipes open and how new meal-plan entries
 | --------- | ---------------------------------- | -------------- | ------- | ------------------------------------------------ |
 | `action`  | `get` \| `update`                  | No             | `get`   | Read or save the setting                         |
 | `mode`    | `family` \| `fixed` \| `recipe`    | For `update`   |         | How recipes scale                                |
-| `servings`| number                             | When `fixed`   |         | 1-24. Required when `mode` is `fixed`            |
+| `servings`| number                             | When `fixed`   |         | 1-99. Required when `mode` is `fixed`            |
 
 - `family` (default): display `max(recipe yield, people count)`
 - `fixed`: always use `servings`

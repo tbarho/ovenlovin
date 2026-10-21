@@ -3,83 +3,38 @@ title: import_recipe_from_image
 description: Import a recipe from a photo URL or base64 image
 ---
 
-Import a recipe from a recipe card, cookbook page, screenshot, or several pages of one recipe. Uses a vision-capable model through Vercel AI Gateway. The first photo is stored in Vercel Blob as the recipe's single main image.
+Import a recipe from a photo (URL or base64). Uses AI Gateway vision. The first image is stored as the single main photo. `save:false` returns a preview; omit `save` to persist. `skipReview` clears `needsReview`. Returns `uncertainFields` when the photo is hard to read.
 
-## Input Schema
+## Input
 
-| Parameter       | Type          | Required | Default | Description                                     |
-| --------------- | ------------- | -------- | ------- | ----------------------------------------------- |
-| `imageUrl`      | string        | No\*     | -       | Public image or Vercel Blob URL                 |
-| `imageBase64`   | string        | No\*     | -       | Raw base64 or data URL                          |
-| `mimeType`      | string        | No       | -       | MIME type when sending raw base64               |
-| `images`        | array         | No\*     | -       | Extra pages (`url` or `base64` each)            |
-| `isHandwritten` | boolean       | No       | -       | Hint that the card is handwritten               |
-| `skipReview`    | boolean       | No       | `false` | Publish immediately even when confidence is low |
-| `cookbookId`    | string (UUID) | No       | -       | File the imported recipe in this cookbook       |
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `imageUrl` | string | No | - | Public image or Vercel Blob URL |
+| `imageBase64` | string | No | - | Raw base64 or data URL |
+| `mimeType` | string | No | - | MIME type when sending raw base64 |
+| `images` | array | No | - | Extra pages (`url` or `base64` each). First photo is the main image |
+| `isHandwritten` | boolean | No | - | Hint that the card is handwritten |
+| `draft` | object | No | - | Previewed recipe from a prior import. Skips extract |
+| `save` | boolean | No | persist | `false` returns a preview without saving |
+| `idempotencyKey` | string | No | - | Same key replays the same saved recipe |
+| `allowDuplicate` | boolean | No | - | Persist a near-duplicate photo instead of returning the existing recipe |
+| `skipReview` | boolean | No | `false` | Skip review queue and publish immediately |
+| `cookbookId` | string (UUID) | No | - | File the imported recipe in this cookbook |
 
-\*Provide `imageUrl`, `imageBase64`, or `images[]`.
+Provide `imageUrl`, `imageBase64`, `images[]`, or `draft`.
 
-## Output Schema
+Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC / `VERCEL=1` on Vercel). Vision model: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`.
 
-```typescript
-{
-  recipeId: string,
-  status: "draft" | "needs_review" | "published",
-  title: string,
-  confidence: number,
-  uncertainFields: string[],
-  allergenClassifications: Array<{
-    ingredientText: string,
-    allergenCode: string,
-    allergenName: string,
-    relation: string
-  }>,
-  lowConfidenceFields?: string[],
-  message: string
-}
-```
-
-`uncertainFields` names values to check after a bad photo (`title`, `servings`, `times`, `ingredient: …`, `step N`). Extracted ingredient lines are classified with the existing allergen catalog (not per-person rules).
-
-## Example Call (URL)
+## Example
 
 ```json
 {
-  "imageUrl": "https://blob.vercel-storage.com/recipe-card.jpg"
+  "imageUrl": "https://blob.vercel-storage.com/recipe-card.jpg",
+  "save": false
 }
 ```
 
-## Example Call (base64, multi-page)
+## Related
 
-```json
-{
-  "imageBase64": "<page-1-base64>",
-  "mimeType": "image/jpeg",
-  "images": [{ "url": "https://blob.vercel-storage.com/page-2.jpg" }]
-}
-```
-
-## Example Result (needs review)
-
-```json
-{
-  "recipeId": "recipe-abc-123",
-  "status": "needs_review",
-  "title": "Something soup?",
-  "confidence": 0.32,
-  "uncertainFields": ["title", "servings", "times", "ingredient: [unclear line]", "step 1"],
-  "message": "Recipe imported from photo but needs review. Uncertain: title, servings, times, ingredient: [unclear line], step 1"
-}
-```
-
-## Notes
-
-- Needs AI Gateway (`AI_GATEWAY_API_KEY` locally; OIDC on Vercel)
-- Vision model: `RK_MODEL_VISION` or `deepseek/deepseek-v4.1-flash`
-- Only the first photo is saved as the recipe image
-- Prefer reviewing `uncertainFields` before cooking from a blurry card
-
-## Related Tools
-
-- [import_recipe](/docs/reference/mcp/import-recipe) - URL or paste import
-- [get_recipe](/docs/reference/mcp/get-recipe) - view the imported recipe
+- [import_recipe](/docs/reference/mcp/import-recipe)
+- [get_recipe](/docs/reference/mcp/get-recipe)

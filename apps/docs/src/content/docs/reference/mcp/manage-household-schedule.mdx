@@ -1,0 +1,20 @@
+---
+title: manage_household_schedule
+description: Get or replace the weekly availability schedule
+---
+
+Get or replace the household weekly availability and busy-night schedule (dinner time budget per weekday).
+
+## Input
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `action` | `"get"` \| `"replace"` | No | `"get"` | Read or replace the week |
+| `week` | array | For `replace` | - | One object per weekday |
+
+`week[]` fields: `dayOfWeek` (0-6), `day`, `busyLevel` (`low` / `medium` / `high`), `timeBudgetMinutes`, `cooking`, `attendees` (person IDs), `constraints`.
+
+## Related
+
+- [get_household_context](/docs/reference/mcp/get-household-context)
+- [check_meal_plan](/docs/reference/mcp/check-meal-plan)

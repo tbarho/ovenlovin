@@ -18,8 +18,9 @@ Edit a saved week without resending every night. `set` / `swap` upsert by date +
 | `freeformMeal` | string        | For leftovers / no-cook  | Label such as `Leftovers`                |
 | `servings`     | number        | No                       | Kept from the current night when omitted |
 | `attendees`    | uuid[]        | No                       | Kept from the current night when omitted |
+| `prepAheadNotes` | string      | No                       | Prep-ahead notes                         |
 
-\*Provide `planId` or `weekStart`.
+\*Provide `planId` or `weekStart`. `set` / `swap` require `recipeId` or `freeformMeal`.
 
 ## Example: leftovers on Friday
 
