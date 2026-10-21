@@ -22,6 +22,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { KitchenToast } from "./KitchenToast";
 import {
   NO_COOK_LABEL,
+  planRecipeHref,
   slotLabel,
   type PlanEntryDraft,
   type PlanRecipePick,
@@ -589,7 +590,11 @@ export function MealPlanWeek({
                   .map((meal) => (
                     <Link
                       className="week-meal-open"
-                      href={meal.href ?? "/recipes"}
+                      href={
+                        meal.recipeId
+                          ? planRecipeHref(meal.recipeId, servings)
+                          : (meal.href ?? "/recipes")
+                      }
                       key={meal.entryId}
                     >
                       View {meal.title}

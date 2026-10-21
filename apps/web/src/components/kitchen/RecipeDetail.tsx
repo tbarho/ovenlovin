@@ -84,9 +84,8 @@ export function RecipeDetail({
     mode: servingsMode,
     fixedServings,
   });
-  const openedServings =
-    servingsOverride && servingsOverride > 0 ? clampServings(servingsOverride) : autoServings;
-  const planServings = fromPlan && servingsOverride && servingsOverride > 0 ? openedServings : null;
+  const openedServings = servingsOverride ?? autoServings;
+  const planServings = fromPlan ? servingsOverride : null;
   const servingsMax = servingsRangeMax(storedServings, openedServings);
   const [servings, setServings] = useState(openedServings);
   const [sheet, setSheet] = useState<
@@ -156,7 +155,7 @@ export function RecipeDetail({
     [recipe.ingredients, recipe.servings, servings, storedServings]
   );
   const servingsLabel =
-    planServings != null && servings === planServings
+    planServings != null && servings === planServings && planServings !== storedServings
       ? `Scaled to ${planServings} for this week's plan`
       : cookForServingsLabel({
           cookFor: servings,

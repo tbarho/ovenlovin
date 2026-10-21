@@ -151,7 +151,7 @@ describe("applyDinnerToDays", () => {
       pick({ id: "tacos", title: "Veggie tacos" }),
     ]);
     expect(next[0]?.meals[0]?.title).toBe("Veggie tacos");
-    expect(next[0]?.meals[0]?.href).toBe("/recipes/tacos?servings=4&from=plan");
+    expect(next[0]?.meals[0]?.href).toBe("/recipes/tacos");
     expect(next[0]?.meals[0]?.findings).toEqual([]);
   });
 

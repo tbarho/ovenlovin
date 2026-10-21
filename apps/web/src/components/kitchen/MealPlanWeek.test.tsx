@@ -87,7 +87,7 @@ describe("MealPlanWeek", () => {
     expect(screen.queryByText(/block\s*:/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /view weeknight pesto pasta/i })).toHaveAttribute(
       "href",
-      "/recipes/pesto"
+      "/recipes/recipe-pesto?servings=4&from=plan"
     );
     expect(screen.getAllByText("Add dinner")).toHaveLength(6);
     expect(screen.queryByText(/couldn't finish checking this dinner/i)).not.toBeInTheDocument();
@@ -822,6 +822,19 @@ describe("MealPlanWeek", () => {
     );
     expect(screen.getByText("Recipe makes 48 · cooking for 8")).toBeVisible();
     expect(screen.queryByText("48 servings")).not.toBeInTheDocument();
+  });
+
+  it("updates the recipe view link when cook-for changes", async () => {
+    const user = userEvent.setup();
+    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [pesto])} defaultServings={5} />);
+
+    const view = screen.getByRole("link", { name: /view weeknight pesto pasta/i });
+    expect(view).toHaveAttribute("href", "/recipes/recipe-pesto?servings=5&from=plan");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /scale shopping and portions for/i }),
+      "8"
+    );
+    expect(view).toHaveAttribute("href", "/recipes/recipe-pesto?servings=8&from=plan");
   });
 
   it("does not drop a cook-for change made before planId comes back", async () => {

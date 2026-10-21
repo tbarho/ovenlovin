@@ -1,6 +1,5 @@
 import {
   NO_COOK_LABEL,
-  planRecipeHref,
   type PlanEntryDraft,
   type PlanRecipePick,
   type WeekDay,
@@ -142,7 +141,7 @@ export function applyDinnerToDays(
       mealSlot: "dinner",
       recipeId: next.recipeId ?? null,
       title: recipe?.title ?? next.freeformMeal ?? NO_COOK_LABEL,
-      href: recipe ? planRecipeHref(recipe.id, next.servings ?? existing?.servings ?? 1) : null,
+      href: recipe ? `/recipes/${recipe.id}` : null,
       image: recipe?.image ?? null,
       servings: next.servings ?? existing?.servings ?? null,
       recipeServings: recipe?.servings ?? existing?.recipeServings ?? null,

@@ -156,6 +156,21 @@ describe("RecipeDetail default servings", () => {
     expect(screen.getByTestId("scaled-servings-note")).toHaveTextContent("24 servings");
   });
 
+  it("hides the plan scale note when cook-for matches the recipe yield", () => {
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Weeknight pesto pasta", servings: 4 })}
+        cookbooks={[testCookbook()]}
+        servingsOverride={4}
+        fromPlan
+      />
+    );
+
+    expect(screen.getByLabelText("Servings")).toHaveAttribute("aria-valuenow", "4");
+    expect(screen.getByTestId("scaled-servings-note")).toHaveTextContent("4 servings");
+    expect(screen.queryByText(/scaled to/i)).not.toBeInTheDocument();
+  });
+
   it("lets the slider reach a 48-serving recipe yield", () => {
     render(
       <RecipeDetail
