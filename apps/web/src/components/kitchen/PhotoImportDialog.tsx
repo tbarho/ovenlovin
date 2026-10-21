@@ -259,7 +259,6 @@ export function ImportReviewForm({
             value={draft.stepsText}
             onChange={(event) => onChange({ ...draft, stepsText: event.target.value })}
             aria-describedby={stepsNote ? "photo-note-steps" : undefined}
-            required
           />
         </label>
         {stepsNote ? (
