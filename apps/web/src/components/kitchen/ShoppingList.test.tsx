@@ -86,6 +86,25 @@ describe("ShoppingList", () => {
     );
   });
 
+  it("pluralizes counted names over 1", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "egg",
+            name: "egg",
+            quantity: 7,
+            displayQuantity: "7",
+            recipes: ["Cookies"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("eggs")).toBeInTheDocument();
+    expect(screen.getByText(/7/)).toBeInTheDocument();
+  });
+
   it("shows friendly fractions instead of long decimals", () => {
     render(
       <ShoppingList

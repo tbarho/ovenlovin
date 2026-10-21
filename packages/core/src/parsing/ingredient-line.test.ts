@@ -152,6 +152,9 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("2 cups arugula, tossed with olive oil")).toEqual([
       expect.objectContaining({ quantityMin: 2, unit: "cup", name: "arugula" }),
     ]);
+    expect(parseShopIngredientLines("1 can crushed tomatoes")).toEqual([
+      expect.objectContaining({ quantityMin: 1, unit: "can", name: "crushed tomatoes" }),
+    ]);
     expect(isShopJunkName("")).toBe(true);
     expect(isShopJunkName("Note 1")).toBe(true);
     expect(isShopJunkName("parsley")).toBe(false);

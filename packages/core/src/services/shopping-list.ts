@@ -9,6 +9,7 @@ import {
   inflectedUnit,
   isCountableShopItem,
   scaleFactorForPlanEntry,
+  shopItemDisplayName,
   toFriendlyMeasure,
   wholeShopQuantity,
 } from "../scaling/servings";
@@ -284,7 +285,7 @@ export class ShoppingListService {
         for (const parsed of shopLines) {
           if (!parsed.name) continue;
 
-          const placement = assignAisle(parsed.name);
+          const placement = assignAisle(parsed.name, parsed.unit ?? line.unit);
           const itemName = placement.canonicalName;
           const quantityMin = parsed.quantityMin ?? line.quantityMin ?? line.quantity ?? null;
           const scaledQuantity = quantityMin != null ? quantityMin * scale : undefined;
@@ -620,9 +621,7 @@ export function applyShoppingTrip(
 }
 
 function shopItemName(ing: ShoppingListIngredient): string {
-  if (ing.name !== "egg" && ing.name !== "eggs") return ing.name;
-  if (ing.quantity == null) return ing.name;
-  return ing.quantity === 1 ? "egg" : "eggs";
+  return shopItemDisplayName(ing.name, ing.quantity, ing.unit);
 }
 
 function formatItemLine(ing: ShoppingListIngredient, includeRecipes = true): string {

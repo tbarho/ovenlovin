@@ -11,6 +11,7 @@ import {
   scaleFactorForPlanEntry,
   scaleIngredientDisplay,
   scaleQuantity,
+  shopItemDisplayName,
   toFriendlyMeasure,
   wholeShopQuantity,
 } from "./servings";
@@ -304,5 +305,11 @@ describe("countable shopping amounts", () => {
     expect(formatMeasureText(2 / 3, "can")).toBe("1 can");
     expect(formatMeasureText(5 / 6, "lb")).toBe("3/4 lb");
     expect(formatMeasureText(5 / 6, "lb", true)).toBe("1 lb");
+    expect(wholeShopQuantity(6.67)).toBe(7);
+    expect(shopItemDisplayName("egg", 7)).toBe("eggs");
+    expect(shopItemDisplayName("apple", 4)).toBe("apples");
+    expect(shopItemDisplayName("onion", 2)).toBe("onions");
+    expect(shopItemDisplayName("egg", 1)).toBe("egg");
+    expect(shopItemDisplayName("all purpose flour", 3, "cup")).toBe("all purpose flour");
   });
 });

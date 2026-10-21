@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { normalizeIngredientName } from "@ovenlovin/core/parsing";
-import { cookForPeopleLabel } from "@ovenlovin/core/scaling";
+import { cookForPeopleLabel, shopItemDisplayName } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
 import type { ShopItem, ShoppingExtra, ShoppingTripState } from "@/lib/week-plan-view";
@@ -187,7 +187,7 @@ export function ShoppingList({
                       onChange={() => toggle(item.key)}
                     />
                     <span className="shop-item-body">
-                      <strong>{item.name}</strong>
+                      <strong>{shopItemDisplayName(item.name, item.quantity, item.unit)}</strong>
                       <span className="muted">
                         {[qty, item.recipes.length > 0 ? item.recipes.join(" · ") : null]
                           .filter(Boolean)

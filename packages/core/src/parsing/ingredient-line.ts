@@ -86,10 +86,10 @@ const PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const SHOP_PREP_NOTES =
-  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
-  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+)/i;
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+)/i;
 
 export type BackfillableIngredient = {
   rawText: string;

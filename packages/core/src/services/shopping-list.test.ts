@@ -939,4 +939,42 @@ describe("ShoppingListService", () => {
       "Refrigerated",
     ]);
   });
+
+  it("rounds counted items up, merges flour, keeps crushed tomatoes, and files plant milk outside Dairy", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "a", servings: 4 }),
+        recipeTitle: "Cookies",
+        recipeServings: 4,
+        ingredients: [
+          { rawText: "3.75 eggs" },
+          { rawText: "2 cups all-purpose flour" },
+          { rawText: "1 can crushed tomatoes" },
+          { rawText: "1 cup oat milk" },
+        ],
+      },
+      {
+        entry: entry({ id: "entry-2", recipeId: "b", servings: 4 }),
+        recipeTitle: "Pancakes",
+        recipeServings: 4,
+        ingredients: [
+          { rawText: "2.5 eggs" },
+          { rawText: "1 cup flour" },
+          { rawText: "0.42 eggs" },
+        ],
+      },
+    ]);
+    const eggs = list.ingredients.find((item) => item.name === "egg");
+    expect(eggs?.quantity).toBe(7);
+    expect(eggs?.displayQuantity).toBe("7");
+    expect(service.exportAsMarkdown(list)).toContain("7 eggs");
+    expect(list.ingredients.filter((item) => item.name === "all purpose flour")).toHaveLength(1);
+    expect(list.ingredients.find((item) => item.name === "flour")).toBeUndefined();
+    expect(list.ingredients.find((item) => item.name === "crushed tomatoes")).toMatchObject({
+      aisle: "Canned goods",
+      unit: "can",
+    });
+    expect(list.ingredients.find((item) => item.name === "oat milk")?.aisle).not.toBe("Dairy");
+    expect(list.ingredients.find((item) => item.name === "tomatoes")).toBeUndefined();
+  });
 });

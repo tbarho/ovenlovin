@@ -96,6 +96,30 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("goat cheese")).toBe("goat cheese");
     expect(canonicalShopName("beef short ribs")).toBe("beef short ribs");
   });
+
+  it("merges plain flour with all purpose flour", () => {
+    expect(canonicalShopName("flour")).toBe("all purpose flour");
+    expect(canonicalShopName("all-purpose flour")).toBe("all purpose flour");
+    expect(canonicalShopName("bread flour")).toBe("bread flour");
+  });
+});
+
+describe("canned and plant-milk aisles", () => {
+  it("files cans and crushed tomatoes as canned goods", () => {
+    expect(assignAisle("crushed tomatoes")).toMatchObject({
+      aisle: "Canned goods",
+      canonicalName: "crushed tomatoes",
+    });
+    expect(assignAisle("tomatoes", "can")).toMatchObject({ aisle: "Canned goods" });
+    expect(assignAisle("tomato")).toMatchObject({ aisle: "Produce" });
+  });
+
+  it("keeps oat, almond, and soy milk out of Dairy", () => {
+    expect(assignAisle("oat milk").aisle).not.toBe("Dairy");
+    expect(assignAisle("almond milk").aisle).not.toBe("Dairy");
+    expect(assignAisle("soy milk").aisle).not.toBe("Dairy");
+    expect(assignAisle("milk")).toMatchObject({ aisle: "Dairy" });
+  });
 });
 
 describe("isPantryStaple", () => {

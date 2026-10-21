@@ -142,9 +142,13 @@ const AISLE_RULES: AisleRule[] = [
     category: "spices",
   },
   {
+    aliases: ["all-purpose flour", "all purpose flour", "flour"],
+    aisle: "Baking",
+    category: "pantry",
+    canonical: "all purpose flour",
+  },
+  {
     aliases: [
-      "all-purpose flour",
-      "all purpose flour",
       "bread flour",
       "brown sugar",
       "powdered sugar",
@@ -153,7 +157,6 @@ const AISLE_RULES: AisleRule[] = [
       "chocolate chips",
       "vanilla extract",
       "vanilla",
-      "flour",
       "sugar",
       "cocoa",
     ],
@@ -351,6 +354,11 @@ const AISLE_RULES: AisleRule[] = [
     canonical: "salmon",
   },
   {
+    aliases: ["oat milk", "almond milk", "soy milk"],
+    aisle: "Refrigerated",
+    category: "other",
+  },
+  {
     aliases: ["tofu", "tempeh", "seitan", "extra-firm tofu", "firm tofu", "silken tofu"],
     aisle: "Refrigerated",
     category: "protein",
@@ -495,16 +503,23 @@ function canonicalNameFor(name: string, match: CompiledAlias): string {
   return name;
 }
 
-export function assignAisle(name: string): AisleAssignment {
+export function assignAisle(name: string, unit?: string | null): AisleAssignment {
   const match = findRule(name);
-  if (!match) {
-    return { aisle: "Other", category: "other", canonicalName: name };
+  const placement = match
+    ? {
+        aisle: match.aisle,
+        category: match.category,
+        canonicalName: canonicalNameFor(name, match),
+      }
+    : { aisle: "Other", category: "other" as const, canonicalName: name };
+  // shortcut: can / canned / crushed means the canned-goods aisle, not produce
+  if (
+    unit?.trim().toLowerCase() === "can" ||
+    /\b(canned|crushed)\b/.test(normalizeIngredientName(name))
+  ) {
+    return { ...placement, aisle: "Canned goods" };
   }
-  return {
-    aisle: match.aisle,
-    category: match.category,
-    canonicalName: canonicalNameFor(name, match),
-  };
+  return placement;
 }
 
 /** Merge key for the shopping list: "lemons" and "lemon" share "lemon". */
