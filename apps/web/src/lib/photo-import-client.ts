@@ -64,7 +64,9 @@ export function classifyPhotoImportProblem(problem: PhotoImportProblem): PhotoIm
   if (code === "photo_blurry" || text.includes("blurry")) return "blurry";
   if (
     code === "photo_not_recipe" ||
+    code === "import_not_a_recipe" ||
     text.includes("not look like a recipe") ||
+    text.includes("couldn't find a recipe") ||
     text.includes("no recipe found") ||
     text.includes("not a recipe page")
   ) {

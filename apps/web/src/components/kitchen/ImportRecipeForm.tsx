@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
-import type { RecipeDetails } from "@ovenlovin/core";
+import { IMPORT_NOT_A_RECIPE_MESSAGE, type RecipeDetails } from "@ovenlovin/core";
 import {
   displayImportFailure,
   importGuessedNotice,
@@ -257,7 +257,10 @@ export function ImportRecipeForm({
       const message = err instanceof Error ? err.message : "Could not import recipe";
       setError(message);
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(displayImportFailure(message) !== NOT_A_RECIPE_COPY);
+      setRetryable(
+        displayImportFailure(message) !== NOT_A_RECIPE_COPY &&
+          message !== IMPORT_NOT_A_RECIPE_MESSAGE
+      );
     } finally {
       if (previewAbortRef.current === controller) previewAbortRef.current = null;
       setPending(false);

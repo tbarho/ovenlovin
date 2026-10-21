@@ -101,6 +101,12 @@ describe("photo import copy helpers", () => {
       "not_recipe"
     );
     expect(
+      classifyPhotoImportProblem({
+        code: "import_not_a_recipe",
+        detail: "We couldn't find a recipe in that text/photo",
+      })
+    ).toBe("not_recipe");
+    expect(
       photoImportErrorMessage(Object.assign(new Error("Failed to fetch"), { name: "TypeError" }))
     ).toBe(PHOTO_IMPORT_NETWORK_MESSAGE);
     expect(photoImportErrorMessage(new Error(PHOTO_IMPORT_BLURRY_MESSAGE))).toBe(

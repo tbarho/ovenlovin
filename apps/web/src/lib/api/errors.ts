@@ -2,7 +2,11 @@ import {
   HouseholdAccessError,
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
   IMPORT_NOT_A_RECIPE_MESSAGE,
+  INVALID_IMAGE_URL_CODE,
+  INVALID_IMAGE_URL_MESSAGE,
+  InvalidImageUrlError,
   importAiUnavailableMeta,
   isImportAiNotARecipe,
   isImportAiUnavailable,
@@ -236,6 +240,15 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
     return ValidationError.fromZodError(error).toResponse(instance);
   }
 
+  if (error instanceof InvalidImageUrlError) {
+    return new BadRequestError(error.message, { code: error.code }).toResponse(instance);
+  }
+  if (error instanceof Error && error.message === "blocked image url") {
+    return new BadRequestError(INVALID_IMAGE_URL_MESSAGE, {
+      code: INVALID_IMAGE_URL_CODE,
+    }).toResponse(instance);
+  }
+
   // Demo HTML routes redirect to /api/demo/enter. If that throw leaks into a
   // REST handler, return problem+json 401 instead of a 500.
   if (isNextRedirectError(error)) {
@@ -243,7 +256,9 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
   }
 
   if (isImportAiNotARecipe(error)) {
-    return new BadRequestError(IMPORT_NOT_A_RECIPE_MESSAGE).toResponse(instance);
+    return new BadRequestError(IMPORT_NOT_A_RECIPE_MESSAGE, {
+      code: IMPORT_NOT_A_RECIPE_CODE,
+    }).toResponse(instance);
   }
 
   if (isImportAiUnavailable(error)) {

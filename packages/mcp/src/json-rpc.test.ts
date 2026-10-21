@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InvalidImageUrlError } from "@ovenlovin/core";
 import { JsonRpcErrorCode, McpInvalidParamsError, jsonRpcFromThrown } from "./json-rpc";
 
 describe("jsonRpcFromThrown", () => {
@@ -36,6 +37,12 @@ describe("jsonRpcFromThrown", () => {
     expect(duplicate.error.message).toMatch(/already imported/i);
   });
 
+  it("maps a blocked image URL to invalid params, not internal error", () => {
+    const response = jsonRpcFromThrown(5, new InvalidImageUrlError());
+    expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(response.error.data).toEqual({ code: "invalid_image_url" });
+  });
+
   it("keeps quota, auth, and validation as distinct codes", () => {
     expect(JsonRpcErrorCode.quota).toBe(-32004);
     expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.forbidden);
@@ -56,6 +63,7 @@ describe("jsonRpcFromThrown", () => {
       })
     );
     expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
-    expect(response.error.message).toBe("No recipe found on this page.");
+    expect(response.error.message).toBe("We couldn't find a recipe in that text/photo");
+    expect(response.error.data).toEqual({ code: "import_not_a_recipe" });
   });
 });

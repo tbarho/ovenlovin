@@ -70,6 +70,30 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.draft).toMatchObject({ title: "Weeknight Tomato Pasta" });
   });
 
+  it("accepts a public image URL without a file extension", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ imageUrl: "https://images.unsplash.com/photo-abc" }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.images).toEqual([{ blob: "https://images.unsplash.com/photo-abc" }]);
+  });
+
+  it("rejects a private photo URL before fetch", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ imageUrl: "http://127.0.0.1/card.png" }),
+    });
+
+    await expect(readPhotoImportRequest(request)).rejects.toMatchObject({
+      name: "InvalidImageUrlError",
+      code: "invalid_image_url",
+    });
+  });
+
   it("rejects an empty body", async () => {
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",

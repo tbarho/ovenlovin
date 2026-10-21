@@ -1,7 +1,9 @@
 import {
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
   IMPORT_NOT_A_RECIPE_MESSAGE,
+  InvalidImageUrlError,
   isImportAiNotARecipe,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
@@ -92,8 +94,13 @@ export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure
   if (error instanceof McpInvalidParamsError) {
     return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, error.data);
   }
+  if (error instanceof InvalidImageUrlError) {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, { code: error.code });
+  }
   if (isImportAiNotARecipe(error)) {
-    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, IMPORT_NOT_A_RECIPE_MESSAGE);
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, IMPORT_NOT_A_RECIPE_MESSAGE, {
+      code: IMPORT_NOT_A_RECIPE_CODE,
+    });
   }
   if (isImportAiUnavailable(error)) {
     return jsonRpcError(id, JsonRpcErrorCode.internal, IMPORT_AI_UNAVAILABLE_MESSAGE, {

@@ -3,7 +3,9 @@ export const IMPORT_AI_UNAVAILABLE_CODE = "import_ai_unavailable";
 export const IMPORT_AI_UNAVAILABLE_MESSAGE =
   "Recipe reading is busy right now. Try again in a minute.";
 
-export const IMPORT_NOT_A_RECIPE_MESSAGE = "No recipe found on this page.";
+export const IMPORT_NOT_A_RECIPE_CODE = "import_not_a_recipe";
+
+export const IMPORT_NOT_A_RECIPE_MESSAGE = "We couldn't find a recipe in that text/photo";
 
 const UNAVAILABLE_STATUSES = new Set([429, 500, 502, 503, 504, 529]);
 

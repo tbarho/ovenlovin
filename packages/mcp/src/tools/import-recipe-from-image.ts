@@ -9,9 +9,12 @@ import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
 import { McpInvalidParamsError } from "../json-rpc";
 import {
+  assertAllowedRecipeImageUrls,
   copyRemoteImages,
   draftFromSavedPreview,
   fingerprintImageBlob,
+  isAllowedRecipeImageUrl,
+  INVALID_IMAGE_URL_MESSAGE,
   keepMainRecipeImages,
   persistRecipeImageUrl,
   presentPhotoImportImages,
@@ -25,14 +28,26 @@ import { createDbClient } from "@ovenlovin/db";
 import { runPhotoImport } from "@ovenlovin/importers";
 
 const imagePartSchema = z.object({
-  url: z.string().optional().describe("Public image or Vercel Blob URL"),
+  url: z
+    .string()
+    .refine((url) => !url.trim() || isAllowedRecipeImageUrl(url), {
+      message: INVALID_IMAGE_URL_MESSAGE,
+    })
+    .optional()
+    .describe("Public image or Vercel Blob URL"),
   base64: z.string().optional().describe("Raw base64 or data URL"),
   mimeType: z.string().optional().describe("MIME type when sending raw base64"),
 });
 
 export const importRecipeFromImageSchema = z
   .object({
-    imageUrl: z.string().optional().describe("Public image or Vercel Blob URL"),
+    imageUrl: z
+      .string()
+      .refine((url) => !url.trim() || isAllowedRecipeImageUrl(url), {
+        message: INVALID_IMAGE_URL_MESSAGE,
+      })
+      .optional()
+      .describe("Public image or Vercel Blob URL"),
     imageBase64: z.string().optional().describe("Raw base64 or data URL"),
     mimeType: z.string().optional().describe("MIME type when sending raw base64"),
     images: z
@@ -127,6 +142,7 @@ async function handler(input: ImportRecipeFromImageInput, context: AuthContext) 
   }
 
   const images = collectImages(input);
+  assertAllowedRecipeImageUrls(images.map((image) => image.blob));
   const first = images[0]?.blob;
   if (!first && !savedDraft) {
     throw new McpInvalidParamsError("Provide imageUrl, imageBase64, or images[]");

@@ -204,4 +204,17 @@ describe("persistMainPhoto", () => {
     );
     expect(stored[0]).toMatch(/^data:image\/png;base64,/);
   });
+
+  it("drops a public photo that fails to download instead of rejecting the URL", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      })
+    );
+    await expect(
+      persistMainPhoto([{ blob: "https://images.unsplash.com/photo-abc" }], "household-1", vi.fn())
+    ).resolves.toEqual([]);
+    vi.unstubAllGlobals();
+  });
 });
