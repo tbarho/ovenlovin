@@ -218,7 +218,38 @@ describe("fetchHtml layers", () => {
         waits.push(ms);
       },
     });
-    expect(waits).toEqual([1_000]);
+    expect(waits[0]).toBeGreaterThan(900);
+    expect(waits[0]).toBeLessThanOrEqual(1_000);
+  });
+
+  it("caps a 60s Retry-After at 2.5s so the import route does not 504", async () => {
+    const waits: number[] = [];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        headers: { get: (name: string) => (name.toLowerCase() === "retry-after" ? "60" : null) },
+        text: async () => CHALLENGE,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        text: async () => BUDGET,
+      });
+
+    await fetchHtml("https://www.budgetbytes.com/beef-stroganoff/", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(waits).toEqual([2_500]);
   });
 
   it("uses the Google Translate copy when the live response is a challenge", async () => {

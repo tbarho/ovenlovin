@@ -253,12 +253,14 @@ function headerValue(headers: unknown, name: string): string | null {
 }
 
 function retryAfterWaitMs(header: string | null, remainingMs: number): number {
-  const fallback = Math.min(1_500, remainingMs);
+  // shortcut: cap 2.5s so Retry-After: 60 cannot eat the 60s import route
+  const cap = Math.min(2_500, remainingMs);
+  const fallback = Math.min(1_500, cap);
   if (!header) return fallback;
   const seconds = Number(header);
-  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, remainingMs);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, cap);
   const at = Date.parse(header);
-  if (!Number.isNaN(at)) return Math.min(Math.max(0, at - Date.now()), remainingMs);
+  if (!Number.isNaN(at)) return Math.min(Math.max(0, at - Date.now()), cap);
   return fallback;
 }
 
