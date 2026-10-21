@@ -132,6 +132,13 @@ export type ImportFailure = { code: string; message: string };
 export function classifyImportFailure(error: unknown): ImportFailure | null {
   const name = errorName(error);
   const message = error instanceof Error ? error.message : "";
+  if (
+    error &&
+    typeof error === "object" &&
+    (error as { directBlocked?: unknown }).directBlocked === true
+  ) {
+    return { code: IMPORT_BLOCKED_CODE, message: IMPORT_BLOCKED_MESSAGE };
+  }
   if (name === "RecipeImportFetchError" || /blocked the importer/i.test(message)) {
     return { code: IMPORT_BLOCKED_CODE, message: IMPORT_BLOCKED_MESSAGE };
   }

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { classifyImportFailure, IMPORT_BLOCKED_CODE } from "@ovenlovin/core";
 import { createUrlImporter } from "../importers/url";
 import { extractJsonLd, RecipeNotFoundError } from "../utils/url";
 import * as llmRecipe from "../utils/llm-recipe";
@@ -559,6 +560,56 @@ describe("URL Importer", () => {
         ),
       });
       expect(RecipeNotFoundError).toBeTruthy();
+    });
+
+    const microdataFallback = `<!doctype html><html><head><title>Lentil soup</title></head>
+      <body>
+      <p itemprop="recipeIngredient">lentils</p>
+      <p>This cache copy has a recipeIngredient itemprop but is not a recipe card with amounts or steps. Extra copy so extractHtmlRecipe finds no list.</p>
+      </body></html>`;
+
+    function fetchChallengeThen(html: string) {
+      return vi.fn(async (requested: string) => {
+        if (String(requested).includes("jina") || String(requested).includes("translate")) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            url: requested,
+            text: async () => html,
+          };
+        }
+        return {
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+          url: requested,
+          text: async () =>
+            `<html><body><h1>Just a moment...</h1><p>Enable JavaScript and cookies to continue</p></body></html>`,
+        };
+      });
+    }
+
+    it("says blocked when a 403 challenge fallback is rejected by the LLM", async () => {
+      vi.stubGlobal("fetch", fetchChallengeThen(microdataFallback));
+      const error = await createUrlImporter({ extractWithLlm: async () => null })
+        .extract({ url: "https://cookieandkate.com/best-lentil-soup-recipe/" })
+        .catch((err: unknown) => err);
+      expect(error).toMatchObject({ name: "RecipeNotFoundError", directBlocked: true });
+      expect(classifyImportFailure(error)?.code).toBe(IMPORT_BLOCKED_CODE);
+    });
+
+    it("says blocked when a 403 challenge fallback throws in parse", async () => {
+      vi.stubGlobal("fetch", fetchChallengeThen(microdataFallback));
+      const error = await createUrlImporter({
+        extractWithLlm: async () => {
+          throw new Error("parse failed");
+        },
+      })
+        .extract({ url: "https://cookieandkate.com/best-lentil-soup-recipe/" })
+        .catch((err: unknown) => err);
+      expect(error).toMatchObject({ message: "parse failed", directBlocked: true });
+      expect(classifyImportFailure(error)?.code).toBe(IMPORT_BLOCKED_CODE);
     });
   });
 });

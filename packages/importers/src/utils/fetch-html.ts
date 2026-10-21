@@ -18,6 +18,8 @@ export interface FetchResult {
   finalUrl: string;
   via: FetchLayer;
   layersTried: string[];
+  directStatus?: number;
+  directBlocked: boolean;
 }
 
 export type FetchHtmlOptions = {
@@ -74,12 +76,14 @@ export class RecipeImportFetchError extends Error {
 export class RecipeNotFoundError extends Error {
   readonly url: string;
   readonly layersTried: string[];
+  readonly directBlocked: boolean;
 
-  constructor(url: string, layersTried: string[] = []) {
+  constructor(url: string, layersTried: string[] = [], directBlocked = false) {
     super(IMPORT_NOT_A_RECIPE_MESSAGE);
     this.name = "RecipeNotFoundError";
     this.url = url;
     this.layersTried = layersTried;
+    this.directBlocked = directBlocked;
   }
 }
 
@@ -423,7 +427,15 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
 
   const remember = (hit: PageHit): FetchResult | null => {
     if (sawDirectBlock ? isFallbackRecipe(hit.html) : isUsableRecipeHtml(hit.html)) {
-      return { html: hit.html, url, finalUrl: hit.finalUrl, via: hit.via, layersTried };
+      return {
+        html: hit.html,
+        url,
+        finalUrl: hit.finalUrl,
+        via: hit.via,
+        layersTried,
+        directStatus,
+        directBlocked: sawDirectBlock,
+      };
     }
     if (
       !state.fallback &&
@@ -441,6 +453,8 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
         finalUrl: hit.finalUrl,
         via: hit.via,
         layersTried,
+        directStatus,
+        directBlocked: sawDirectBlock,
       };
     }
     return null;
@@ -530,7 +544,10 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   }
 
   if (state.fallback && looksLikeGonePage(state.fallback.html)) {
-    throw new RecipePageGoneError(url);
+    throw Object.assign(new RecipePageGoneError(url), {
+      directBlocked: sawDirectBlock,
+      directStatus,
+    });
   }
   if (state.fallback && !sawDirectBlock) return state.fallback;
 

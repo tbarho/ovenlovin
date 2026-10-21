@@ -105,6 +105,24 @@ describe("importAiUnavailableMeta", () => {
         Object.assign(new Error("No object generated"), { name: "AI_NoObjectGeneratedError" })
       )?.code
     ).toBe(IMPORT_NOT_A_RECIPE_CODE);
+
+    expect(
+      classifyImportFailure(
+        Object.assign(new Error("We couldn't find a recipe."), {
+          name: "RecipeNotFoundError",
+          directBlocked: true,
+        })
+      )?.code
+    ).toBe(IMPORT_BLOCKED_CODE);
+    expect(
+      classifyImportFailure(
+        Object.assign(new Error("aborted"), {
+          name: "TimeoutError",
+          importAiTimeout: true,
+          directBlocked: true,
+        })
+      )?.code
+    ).toBe(IMPORT_BLOCKED_CODE);
   });
 
   it("tags a timeout nested under an AI call error", () => {
