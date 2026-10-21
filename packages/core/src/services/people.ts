@@ -54,12 +54,11 @@ export class PeopleService extends BaseService {
   ): Promise<void> {
     const ids = [...new Set([...personIds].filter((id): id is string => Boolean(id)))];
     if (ids.length === 0) return;
+    // Soft-deleted people stay on saved nights; household is the tenancy check.
     const rows = await this._db
       .select({ id: person.id })
       .from(person)
-      .where(
-        and(eq(person.householdId, householdId), isNull(person.deletedAt), inArray(person.id, ids))
-      );
+      .where(and(eq(person.householdId, householdId), inArray(person.id, ids)));
     if (rows.length !== ids.length) {
       throw new HouseholdAccessError("Person not found", "not_found");
     }

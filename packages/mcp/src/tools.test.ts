@@ -15,6 +15,7 @@ import {
   HouseholdService,
   IMPORT_BLOCKED_CODE,
   IMPORT_BLOCKED_MESSAGE,
+  PeopleService,
   PlanService,
   RecipeService,
 } from "@ovenlovin/core";
@@ -313,6 +314,38 @@ describe("MCP Tool Schemas", () => {
           }
         )
       ).rejects.toThrow(/Recipe not found/);
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it("treats another kitchen's attendee as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockResolvedValue();
+      vi.spyOn(PeopleService.prototype, "requireOwnedPersonIds").mockRejectedValue(
+        new HouseholdAccessError("Person not found", "not_found")
+      );
+      const create = vi.spyOn(PlanService.prototype, "createMealPlan");
+
+      await expect(
+        saveMealPlanTool.handler(
+          {
+            weekStart: "2026-10-13",
+            entries: [
+              {
+                date: "2026-10-13",
+                meal: "dinner",
+                attendees: ["550e8400-e29b-41d4-a716-446655440000"],
+              },
+            ],
+            checkReportJson: {},
+            status: "draft",
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Person not found/);
       expect(create).not.toHaveBeenCalled();
     });
   });
@@ -1110,6 +1143,30 @@ describe("MCP Tool Schemas", () => {
           action: "set",
         }).success
       ).toBe(false);
+    });
+
+    it("treats another kitchen's recipe as not found", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(PlanService.prototype, "getMealPlan").mockResolvedValue({
+        id: planId,
+        householdId: "22222222-2222-4222-8222-222222222222",
+      } as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockRejectedValue(
+        new HouseholdAccessError("Recipe not found", "not_found")
+      );
+      const merge = vi.spyOn(PlanService.prototype, "mergeMealPlanEntries");
+
+      await expect(
+        editMealPlanTool.handler(
+          { planId, date: "2026-10-14", action: "swap", recipeId, meal: "dinner" },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        )
+      ).rejects.toThrow(/Recipe not found/);
+      expect(merge).not.toHaveBeenCalled();
     });
   });
 
