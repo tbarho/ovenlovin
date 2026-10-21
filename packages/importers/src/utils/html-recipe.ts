@@ -14,12 +14,46 @@ function headingText($el: ReturnType<cheerio.CheerioAPI>): string {
   return $el.text().replace(/\s+/g, " ").trim();
 }
 
+function tableIngredientRows(
+  $: cheerio.CheerioAPI,
+  table: ReturnType<cheerio.CheerioAPI>
+): string[] {
+  const rows: string[] = [];
+  table.find("tr").each((_, tr) => {
+    const cells = $(tr)
+      .children("td")
+      .toArray()
+      .map((td) => $(td).text().replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    if (cells.length === 0 || /^total\b/i.test(cells[0] ?? "")) return;
+    rows.push(cells.join(" "));
+  });
+  return rows;
+}
+
+function isSectionHeading(node: ReturnType<cheerio.CheerioAPI>): boolean {
+  const tag = node.prop("tagName")?.toLowerCase() ?? "";
+  if (/^h[1-6]$/.test(tag)) return true;
+  const inner = node.find("h1, h2, h3, h4").first();
+  return (
+    inner.length > 0 &&
+    (INGREDIENT_HEADING.test(headingText(inner)) || STEP_HEADING.test(headingText(inner)))
+  );
+}
+
 function listFromNode($: cheerio.CheerioAPI, start: ReturnType<cheerio.CheerioAPI>): string[] {
   const items: string[] = [];
   let node = start;
   for (let i = 0; i < 12 && node.length > 0; i++) {
     const tag = node.prop("tagName")?.toLowerCase() ?? "";
-    if (/^h[1-6]$/.test(tag)) break;
+    if (isSectionHeading(node)) break;
+    if (tag === "table") {
+      // shortcut: 2+ data rows after Ingredients is the list; nutrition tables sit under Nutrition
+      const rows = tableIngredientRows($, node);
+      if (rows.length >= 2) return rows;
+      node = node.next();
+      continue;
+    }
     if (tag === "ul" || tag === "ol") {
       node.find("li").each((_, li) => {
         const text = $(li).text().replace(/\s+/g, " ").trim();
