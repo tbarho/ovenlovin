@@ -17,7 +17,7 @@ Families have diverse dietary needs:
 
 - **Parent A** might have a severe peanut allergy (block)
 - **Child B** might be vegetarian (block animal products)
-- **Parent C** might prefer to avoid gluten (prefer-avoid)
+- **Parent C** might prefer to avoid gluten (prefer_avoid)
 - **Child D** might need low-sodium meals (warn)
 
 OvenLovin allows each person to have their own rules with different severity levels, ensuring safe and appropriate meal planning for everyone.
@@ -79,8 +79,8 @@ Every rule has a severity that determines how it's handled:
 
 **Behavior**:
 - Recipe is flagged as **not preferred**
-- Meal plans show a **prefer-avoid** finding
-- Shopping lists mark ingredients with **prefer-avoid** notes
+- Meal plans show a **prefer_avoid** finding
+- Shopping lists mark ingredients with **prefer_avoid** notes
 - Bot suggests alternatives when available
 
 **Example**:
@@ -90,7 +90,7 @@ Every rule has a severity that determines how it's handled:
   "personName": "Parent C",
   "kind": "ingredient",
   "target": "gluten",
-  "severity": "prefer-avoid"
+  "severity": "prefer_avoid"
 }
 ```
 
@@ -410,12 +410,12 @@ POST /api/v1/meal-plans/{planId}/check
       {
         "personId": "person-3",
         "personName": "Parent C",
-        "severity": "prefer-avoid",
+        "severity": "prefer_avoid",
         "ingredientName": "wheat flour",
         "mealDate": "2026-10-15",
         "mealSlot": "dinner",
         "recipeName": "Spaghetti Carbonara",
-        "message": "Parent C: recipe contains wheat flour (prefer-avoid rule)"
+        "message": "Parent C: recipe contains wheat flour (prefer_avoid rule)"
       }
     ]
   },
