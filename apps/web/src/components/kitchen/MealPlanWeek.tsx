@@ -7,7 +7,6 @@ import { type DefaultServingsMode } from "@ovenlovin/core";
 import {
   cookForServingsLabel,
   planEntryServings,
-  planListScale,
   SERVINGS_HARD_MAX,
 } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
@@ -99,16 +98,16 @@ function mealThumb(title: string, image: string | null) {
   );
 }
 
-function servingsCopy(meal: WeekMeal): string | null {
-  if (meal.isNoCook || !meal.servings) return null;
+function servingsCopy(meal: WeekMeal, cookFor: number): string | null {
+  if (meal.isNoCook) return null;
   return cookForServingsLabel({
-    cookFor: meal.servings,
+    cookFor,
     recipeServings: meal.recipeServings,
   });
 }
 
-function MealCopy({ meal }: { meal: WeekMeal }) {
-  const servings = servingsCopy(meal);
+function MealCopy({ meal, cookFor }: { meal: WeekMeal; cookFor: number }) {
+  const servings = servingsCopy(meal, cookFor);
   return (
     <div className="week-meal-copy">
       <p className="week-slot">{meal.isNoCook ? "Night off" : slotLabel(meal.mealSlot)}</p>
@@ -353,12 +352,7 @@ export function MealPlanWeek({
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [servings, setServings] = useState(
-    planListScale(
-      days.flatMap((day) => day.meals.filter((meal) => meal.recipeId).map((meal) => meal.servings)),
-      defaultServings
-    ).scaledFor
-  );
+  const [servings, setServings] = useState(defaultServings);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createdPlanIdRef = useRef<string | null>(null);
@@ -389,6 +383,8 @@ export function MealPlanWeek({
 
   const selectedDay = daysView.find((day) => day.date === selectedDate);
   const persistQueue = useRef(Promise.resolve());
+  const servingsRef = useRef(servings);
+  servingsRef.current = servings;
   const dismissToast = useCallback(() => setToast(null), []);
   const closeEditor = useCallback(() => {
     setSelectedDate(null);
@@ -411,7 +407,7 @@ export function MealPlanWeek({
 
   async function persist(
     nextEntries: PlanEntryDraft[],
-    patch?: { entries: Array<Record<string, unknown>> }
+    patch?: { entries?: Array<Record<string, unknown>>; cookFor?: number }
   ): Promise<boolean> {
     const run = async () => {
       setPending(true);
@@ -425,10 +421,11 @@ export function MealPlanWeek({
             body: JSON.stringify({
               weekStart: resolvedWeekStart,
               status: "draft",
+              cookFor: patch?.cookFor ?? servingsRef.current,
               entries: writes,
             }),
           });
-          createdPlanIdRef.current = created.id;
+          if (created?.id) createdPlanIdRef.current = created.id;
           router.refresh();
         } else {
           await api(`/api/v1/meal-plans/${id}`, {
@@ -518,19 +515,9 @@ export function MealPlanWeek({
   }
 
   function applyServings(nextServings: number) {
+    servingsRef.current = nextServings;
     setServings(nextServings);
-    setDaysView((current) =>
-      current.map((day) => ({
-        ...day,
-        meals: day.meals.map((meal) =>
-          meal.recipeId ? { ...meal, servings: nextServings } : meal
-        ),
-      }))
-    );
-    if (entriesView.length === 0) return;
-    void persist(
-      entriesView.map((entry) => (entry.recipeId ? { ...entry, servings: nextServings } : entry))
-    );
+    void persist(entriesView, { cookFor: nextServings });
   }
 
   return (
@@ -591,7 +578,7 @@ export function MealPlanWeek({
                       {day.meals.map((meal) => (
                         <div className="week-meal-link" key={meal.entryId}>
                           {mealThumb(meal.title, meal.image)}
-                          <MealCopy meal={meal} />
+                          <MealCopy meal={meal} cookFor={servings} />
                         </div>
                       ))}
                     </div>

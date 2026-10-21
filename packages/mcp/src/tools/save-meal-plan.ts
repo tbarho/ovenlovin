@@ -7,11 +7,23 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
-import { PlanService, resolveWriteActor } from "@ovenlovin/core";
+import {
+  agreedEntryCookFor,
+  PlanService,
+  resolveWriteActor,
+  SERVINGS_HARD_MAX,
+} from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const saveMealPlanSchema = z.object({
   weekStart: z.string().date(),
+  cookFor: z
+    .number()
+    .int()
+    .min(1)
+    .max(SERVINGS_HARD_MAX)
+    .optional()
+    .describe("Week cook-for. Night labels and the shopping list all use this one count."),
   entries: z.array(
     z.object({
       date: z.string().date(),
@@ -60,6 +72,7 @@ async function handler(
   const plan = await planService.createMealPlan({
     householdId: context.householdId,
     weekStart: input.weekStart,
+    cookFor: input.cookFor ?? agreedEntryCookFor(input.entries.map((entry) => entry.servings)),
     status: input.status,
     latestCheckReport: input.checkReportJson,
     checkedAt: new Date().toISOString(),

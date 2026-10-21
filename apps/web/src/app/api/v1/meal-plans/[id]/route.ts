@@ -50,6 +50,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const plan = await service.updateMealPlan(id, {
       ...(body.status !== undefined ? { status: body.status } : {}),
+      ...(body.cookFor !== undefined ? { cookFor: body.cookFor } : {}),
       ...(body.acknowledgedWarnings !== undefined
         ? { acknowledgedWarnings: body.acknowledgedWarnings }
         : {}),

@@ -7,7 +7,12 @@ import {
   requireWritableHousehold,
   getIdempotencyKey,
 } from "@/lib/api/middleware";
-import { createMealPlanBodySchema, PlanService, resolveWriteActor } from "@ovenlovin/core";
+import {
+  agreedEntryCookFor,
+  createMealPlanBodySchema,
+  PlanService,
+  resolveWriteActor,
+} from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
@@ -60,6 +65,8 @@ export async function POST(request: NextRequest) {
     const plan = await service.createMealPlan({
       householdId,
       weekStart: body.weekStart,
+      cookFor:
+        body.cookFor ?? agreedEntryCookFor(body.entries?.map((entry) => entry.servings) ?? []),
       status: body.status ?? "draft",
       acknowledgedWarnings: [],
       needsRecheck: false,

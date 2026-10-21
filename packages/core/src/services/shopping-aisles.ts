@@ -27,8 +27,8 @@ type AisleRule = {
   canonical?: string;
 };
 
-const PANTRY_STAPLE_ALIASES = new Set(
-  [
+const PANTRY_STAPLES = {
+  aliases: [
     "salt",
     "kosher salt",
     "sea salt",
@@ -52,7 +52,15 @@ const PANTRY_STAPLE_ALIASES = new Set(
     "cooking spray",
     "oil",
     "water",
-  ].map((alias) => normalizeIngredientName(alias))
+  ],
+  except: ["bell pepper", "bell peppers"],
+};
+
+const PANTRY_STAPLE_ALIASES = new Set(
+  PANTRY_STAPLES.aliases.map((alias) => normalizeIngredientName(alias))
+);
+const PANTRY_STAPLE_EXCEPTIONS = new Set(
+  PANTRY_STAPLES.except.map((alias) => normalizeIngredientName(alias))
 );
 
 /**
@@ -137,6 +145,7 @@ const AISLE_RULES: AisleRule[] = [
     aliases: [
       "all-purpose flour",
       "all purpose flour",
+      "bread flour",
       "brown sugar",
       "powdered sugar",
       "baking soda",
@@ -190,9 +199,6 @@ const AISLE_RULES: AisleRule[] = [
       "baby carrots",
       "carrot",
       "carrots",
-      "onion",
-      "onions",
-      "garlic",
       "shallot",
       "leek",
       "scallion",
@@ -265,6 +271,26 @@ const AISLE_RULES: AisleRule[] = [
   },
   {
     aliases: [
+      "yellow onion",
+      "white onion",
+      "red onion",
+      "sweet onion",
+      "large onion",
+      "onion",
+      "onions",
+    ],
+    aisle: "Produce",
+    category: "produce",
+    canonical: "onion",
+  },
+  {
+    aliases: ["minced garlic", "garlic cloves", "garlic clove", "garlic"],
+    aisle: "Produce",
+    category: "produce",
+    canonical: "garlic",
+  },
+  {
+    aliases: [
       "sour cream",
       "cottage cheese",
       "cream cheese",
@@ -314,9 +340,15 @@ const AISLE_RULES: AisleRule[] = [
     category: "protein",
   },
   {
-    aliases: ["salmon", "shrimp", "tuna", "cod", "tilapia", "scallop", "crab", "fish"],
+    aliases: ["shrimp", "tuna", "cod", "tilapia", "scallop", "crab", "fish"],
     aisle: "Seafood",
     category: "protein",
+  },
+  {
+    aliases: ["salmon fillet", "salmon fillets", "salmon"],
+    aisle: "Seafood",
+    category: "protein",
+    canonical: "salmon",
   },
   {
     aliases: ["tofu", "tempeh", "seitan", "extra-firm tofu", "firm tofu", "silken tofu"],
@@ -369,6 +401,9 @@ const AISLE_RULES: AisleRule[] = [
       "vegetable broth",
       "chicken broth",
       "beef broth",
+      "vegetable stock",
+      "chicken stock",
+      "beef stock",
       "coconut milk",
       "maple syrup",
       "peanut",
@@ -437,6 +472,15 @@ function findRule(name: string): CompiledAlias | undefined {
 
 export function isPantryStaple(name: string): boolean {
   const normalized = normalizeIngredientName(name);
+  if (
+    PANTRY_STAPLE_EXCEPTIONS.has(normalized) ||
+    [...PANTRY_STAPLE_EXCEPTIONS].some((alias) => {
+      const pattern = new RegExp(`(?:^| )${escapeRegExp(alias)}s?(?: |$)`);
+      return pattern.test(normalized);
+    })
+  ) {
+    return false;
+  }
   if (PANTRY_STAPLE_ALIASES.has(normalized)) return true;
   return [...PANTRY_STAPLE_ALIASES].some((alias) => {
     const pattern = new RegExp(`(?:^| )${escapeRegExp(alias)}s?(?: |$)`);

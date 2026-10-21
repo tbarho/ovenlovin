@@ -1,12 +1,8 @@
-import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
+import { parseShopIngredientLines, normalizeIngredientName } from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
-import {
-  cookForPeopleLabel,
-  effectivePlanServings,
-  planListScale,
-} from "../scaling/default-servings";
+import { cookForPeopleLabel } from "../scaling/default-servings";
 import {
   formatMeasureText,
   formatQuantity,
@@ -189,11 +185,8 @@ function addQuantities(
   return { quantity: base / UNIT_TO_BASE[smaller]!.toBase, unit: smaller };
 }
 
-function mergeKey(name: string, unit: string | undefined, recipeKey: string): string {
-  const normalized = normalizeIngredientName(name);
-  const meta = unit ? UNIT_TO_BASE[unit] : undefined;
-  const unitGroup = meta ? meta.dimension : (unit ?? "count");
-  return `${recipeKey}|${normalized}|${unitGroup}`;
+function mergeKey(name: string, recipeKey: string): string {
+  return `${recipeKey}|${normalizeIngredientName(name)}`;
 }
 
 function sectionForItem(
@@ -274,44 +267,64 @@ export class ShoppingListService {
     const includeStaples = resolveIncludeStaples(input);
     const ingredientMap = new Map<string, ShoppingListIngredient>();
 
+    const cookFor = input.defaultCookFor && input.defaultCookFor > 0 ? input.defaultCookFor : null;
+
     for (const source of input.entries) {
-      const scale = scaleFactorForPlanEntry(
-        source.entry.servings,
-        source.recipeServings,
-        source.entry.scaleFactor,
-        input.defaultCookFor,
-        input.mode
-      );
+      // Per-night servings are labels only; list amounts follow the week cook-for.
+      const scale = cookFor
+        ? scaleFactorForPlanEntry(cookFor, source.recipeServings, null, cookFor, "fixed")
+        : 1;
       const recipeId = source.entry.recipeId ?? "";
       const recipeTitle = source.recipeTitle || "Unknown Recipe";
       const recipeKey = groupBy === "recipe" ? recipeId : "";
 
       for (const line of source.ingredients) {
-        const parsed = backfillParsedIngredient({
-          rawText: line.rawText,
-          name: line.name,
-          quantityMin: line.quantityMin ?? line.quantity ?? null,
-          unit: line.unit ?? null,
-        });
-        if (!parsed.name) continue;
+        const shopLines = parseShopIngredientLines(line.rawText);
 
-        const placement = assignAisle(parsed.name);
-        const itemName = placement.canonicalName;
-        const scaledQuantity = parsed.quantityMin != null ? parsed.quantityMin * scale : undefined;
-        const unit = parsed.unit ?? undefined;
-        const key = mergeKey(itemName, unit, recipeKey);
-        const pantry = isPantryStaple(parsed.name);
+        for (const parsed of shopLines) {
+          if (!parsed.name) continue;
 
-        const recipeRef: ShoppingListRecipeRef = {
-          recipeId,
-          recipeTitle,
-          quantity: scaledQuantity,
-          unit,
-        };
+          const placement = assignAisle(parsed.name);
+          const itemName = placement.canonicalName;
+          const quantityMin = parsed.quantityMin ?? line.quantityMin ?? line.quantity ?? null;
+          const scaledQuantity = quantityMin != null ? quantityMin * scale : undefined;
+          const unit = parsed.unit ?? line.unit ?? undefined;
+          const key = mergeKey(itemName, recipeKey);
+          const pantry = isPantryStaple(parsed.name);
 
-        const existing = ingredientMap.get(key);
-        if (!existing) {
-          ingredientMap.set(key, {
+          const recipeRef: ShoppingListRecipeRef = {
+            recipeId,
+            recipeTitle,
+            quantity: scaledQuantity,
+            unit,
+          };
+
+          let mapKey = key;
+          let existing = ingredientMap.get(mapKey);
+          if (existing && scaledQuantity != null) {
+            const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
+            if (merged) {
+              existing.recipes.push(recipeRef);
+              existing.quantity = merged.quantity;
+              existing.unit = merged.unit;
+              continue;
+            }
+            mapKey = `${key}|${unit ?? ""}`;
+            existing = ingredientMap.get(mapKey);
+          }
+          if (existing) {
+            existing.recipes.push(recipeRef);
+            if (scaledQuantity != null) {
+              const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
+              if (merged) {
+                existing.quantity = merged.quantity;
+                existing.unit = merged.unit;
+              }
+            }
+            continue;
+          }
+
+          ingredientMap.set(mapKey, {
             key: shopItemKey(itemName, unit),
             name: itemName,
             quantity: scaledQuantity,
@@ -322,16 +335,6 @@ export class ShoppingListService {
             isPantryItem: pantry,
             recipes: [recipeRef],
           });
-          continue;
-        }
-
-        existing.recipes.push(recipeRef);
-        if (scaledQuantity != null) {
-          const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
-          if (merged) {
-            existing.quantity = merged.quantity;
-            existing.unit = merged.unit;
-          }
         }
       }
     }
@@ -344,12 +347,15 @@ export class ShoppingListService {
           rawQuantity != null && isCountableShopItem(item.unit)
             ? wholeShopQuantity(rawQuantity)
             : rawQuantity;
-        const display = quantity != null ? toFriendlyMeasure(quantity, item.unit, true) : undefined;
-        const displayQuantity = display?.displayQuantity;
+        const display =
+          quantity != null
+            ? toFriendlyMeasure(quantity, item.unit, true)
+            : { displayQuantity: "as needed" };
+        const displayQuantity = display.displayQuantity;
         const displayUnit =
-          displayQuantity && display.displayUnit
+          displayQuantity && displayQuantity !== "as needed" && display.displayUnit
             ? inflectedUnit(displayQuantity, display.displayUnit)
-            : display?.displayUnit;
+            : display.displayUnit;
         return {
           ...item,
           key: shopItemKey(item.name, item.unit),
@@ -367,20 +373,6 @@ export class ShoppingListService {
       })
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const entryScales = input.entries
-      .filter((source) => source.entry.recipeId)
-      .map((source) =>
-        effectivePlanServings({
-          entryServings: source.entry.servings,
-          defaultCookFor: input.defaultCookFor ?? 0,
-          mode: input.mode,
-          recipeServings: source.recipeServings,
-          scaleFactor: source.entry.scaleFactor,
-        })
-      );
-    const listScale = planListScale(entryScales, input.defaultCookFor ?? 0);
-    const hasCookFor = Boolean(input.defaultCookFor && input.defaultCookFor > 0);
-
     return {
       mealPlanId: input.mealPlanId,
       weekStart: input.weekStart,
@@ -392,8 +384,8 @@ export class ShoppingListService {
       itemCount: ingredients.length,
       generatedAt: input.generatedAt ?? new Date().toISOString(),
       warnings: input.warnings ?? [],
-      scaledFor: entryScales.length > 0 || hasCookFor ? listScale.scaledFor : undefined,
-      scaledForMixed: listScale.mixed,
+      scaledFor: cookFor ?? undefined,
+      scaledForMixed: false,
     };
   }
 
@@ -635,7 +627,11 @@ function shopItemName(ing: ShoppingListIngredient): string {
 
 function formatItemLine(ing: ShoppingListIngredient, includeRecipes = true): string {
   const quantityPart =
-    ing.quantity != null ? `${formatMeasureText(ing.quantity, ing.unit, true)} ` : "";
+    ing.quantity != null
+      ? `${formatMeasureText(ing.quantity, ing.unit, true)} `
+      : ing.recipes.length > 0
+        ? "as needed "
+        : "";
   const recipes = includeRecipes
     ? ` (${ing.recipes
         .map((r) => r.recipeTitle)

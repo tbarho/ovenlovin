@@ -85,6 +85,12 @@ export type ParsedIngredientLine = {
 const PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
+const SHOP_PREP_NOTES =
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+
+const LEADING_PREP =
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+)/i;
+
 export type BackfillableIngredient = {
   rawText: string;
   name?: string | null;
@@ -273,6 +279,93 @@ function cleanItemName(rest: string): string {
   return name;
 }
 
+function cleanShopItemName(rest: string): string {
+  let name = rest
+    .replace(/^of\s+/i, "")
+    .replace(/^,\s*/, "")
+    .replace(/^optional:\s*/i, "")
+    .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
+    .replace(/\(\s*note\s*\d+\s*\)/gi, "")
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/,?\s+or$/i, "")
+    .replace(/\s+to taste$/i, "")
+    .replace(/,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i, "")
+    .replace(/[.…]+$/g, "")
+    .trim();
+
+  while (true) {
+    const comma = name.lastIndexOf(",");
+    if (comma <= 0) break;
+    const tail = name.slice(comma + 1).trim();
+    if (SHOP_PREP_NOTES.test(tail) || /^(or|and)$/i.test(tail)) {
+      name = name.slice(0, comma).trim();
+      continue;
+    }
+    break;
+  }
+
+  while (LEADING_PREP.test(name)) {
+    name = name.replace(LEADING_PREP, "").trim();
+  }
+
+  return name;
+}
+
+function splitShopNameList(name: string): string[] {
+  const each = name.match(/^each(?:\s+of)?\s+(.+)/i);
+  const source = each?.[1] ?? name;
+  const parts = source
+    .split(/\s*(?:,|\/|&|\band\b)\s*/i)
+    .map((part) => part.replace(/^and\s+/i, "").trim())
+    .map((part) => part.replace(LEADING_PREP, "").trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts : [name];
+}
+
+function consumeTrailingMeasure(text: string): {
+  min: number | null;
+  max: number | null;
+  unit: string;
+  rest: string;
+} | null {
+  const aliases = UNIT_ALIASES_BY_LENGTH.map((alias) => escapeRegExp(alias.match)).join("|");
+  const match = text
+    .trim()
+    .match(
+      new RegExp(
+        `^(.*?)\\s+(\\d+\\s+\\d+/\\d+|\\d+/\\d+|\\d+(?:\\.\\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])\\s+(${aliases})\\.?$`,
+        "i"
+      )
+    );
+  if (!match?.[1] || !match[2] || !match[3]) return null;
+  const rest = match[1].trim();
+  if (!rest) return null;
+  const min = parseNumberToken(match[2]);
+  if (min == null) return null;
+  const unit = splitLeadingUnit(match[3]).unit;
+  if (!unit) return null;
+  return { min, max: null, unit, rest };
+}
+
+function stripLeadingAlternateMeasure(text: string): string {
+  return text.replace(/^\([^)]+\)\s*/, "").trim();
+}
+
+function stripAlternateSlashMeasure(text: string): string {
+  const slash = text.match(/^\/\s*/);
+  if (!slash) return text;
+  const qty = consumeLeadingQuantity(text.slice(slash[0].length));
+  if (qty.min == null) return text;
+  const unit = consumeUnit(qty.rest);
+  return unit.unit ? unit.rest : text;
+}
+
+/** Note leftovers and empty names are not grocery items. */
+export function isShopJunkName(name: string): boolean {
+  const normalized = normalizeIngredientName(name);
+  return !normalized || /^note\s*\d+$/.test(normalized);
+}
+
 export function parseIngredientLine(rawText: string): ParsedIngredientLine {
   const trimmed = rawText.trim();
   const quantity = consumeLeadingQuantity(trimmed);
@@ -286,6 +379,43 @@ export function parseIngredientLine(rawText: string): ParsedIngredientLine {
     unit: unit.unit,
     name: cleanItemName(unit.rest),
   };
+}
+
+function parseShopIngredientLine(rawText: string): ParsedIngredientLine {
+  const original = rawText.trim();
+  const trimmed = original
+    .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
+    .replace(/\(\s*note\s*\d+\s*\)/gi, "")
+    .trim();
+  const withoutLeadParen = stripLeadingAlternateMeasure(trimmed);
+  let quantity = consumeLeadingQuantity(withoutLeadParen);
+  const afterQty = stripLeadingAlternateMeasure(quantity.rest);
+  let unit = quantity.min == null ? { unit: null, rest: afterQty } : consumeUnit(afterQty);
+  if (unit.unit) {
+    unit = { unit: unit.unit, rest: stripAlternateSlashMeasure(unit.rest) };
+  }
+  if (quantity.min == null) {
+    const trailing = consumeTrailingMeasure(unit.rest);
+    if (trailing) {
+      quantity = { min: trailing.min, max: trailing.max, rest: trailing.rest };
+      unit = { unit: trailing.unit, rest: trailing.rest };
+    }
+  }
+
+  return {
+    rawText: original,
+    quantityMin: quantity.min,
+    quantityMax: quantity.max,
+    unit: unit.unit,
+    name: cleanShopItemName(unit.rest),
+  };
+}
+
+/** Shopping-list names only. Allergen checks keep {@link parseIngredientLine}. */
+export function parseShopIngredientLines(rawText: string): ParsedIngredientLine[] {
+  const parsed = parseShopIngredientLine(rawText);
+  if (isShopJunkName(parsed.name)) return [];
+  return splitShopNameList(parsed.name).map((name) => ({ ...parsed, name }));
 }
 
 /** Lowercase merge key so "Olive Oil" and "olive oil" collapse together. */

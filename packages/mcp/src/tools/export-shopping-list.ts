@@ -18,6 +18,7 @@ import {
   parseShoppingTripState,
   planEntriesForWeek,
   resolveIncludeStaples,
+  weekCookFor,
   type ShoppingListData,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
@@ -164,7 +165,10 @@ async function handler(
       groupBy: input.groupBy,
       includeStaples: resolveIncludeStaples(input),
       warnings,
-      defaultCookFor: servingsSettings.defaultCookFor,
+      defaultCookFor: weekCookFor({
+        planCookFor: plan.cookFor,
+        householdCookFor: servingsSettings.defaultCookFor,
+      }),
       mode: servingsSettings.mode,
     }),
     parseShoppingTripState(plan.shoppingState)

@@ -149,10 +149,12 @@ describe("generateOpenApiDocument", () => {
 
     expect(postSchema.properties).toHaveProperty("entries");
     expect(postSchema.properties).toHaveProperty("weekStart");
+    expect(postSchema.properties).toHaveProperty("cookFor");
     expect(postSchema.additionalProperties).toBe(false);
 
     expect(patchSchema.properties).toHaveProperty("entries");
     expect(patchSchema.properties).toHaveProperty("status");
+    expect(patchSchema.properties).toHaveProperty("cookFor");
     expect(patchSchema.properties).toHaveProperty("entriesMode");
     expect(patchSchema.additionalProperties).toBe(false);
     expect(JSON.stringify(spec.paths?.["/meal-plans/{id}"]?.patch)).toMatch(/merge/);

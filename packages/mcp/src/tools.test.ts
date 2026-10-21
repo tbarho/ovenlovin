@@ -241,6 +241,16 @@ describe("MCP Tool Schemas", () => {
         expect(result.data.status).toBe("draft");
       }
     });
+
+    it("rejects cookFor above the hard max", () => {
+      const result = saveMealPlanTool.inputSchema.safeParse({
+        weekStart: "2026-10-13",
+        cookFor: 100,
+        entries: [],
+        checkReportJson: {},
+      });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("export_shopping_list", () => {

@@ -27,6 +27,7 @@ describe("scaleFactorForPlanEntry", () => {
     expect(scaleFactorForPlanEntry(8, null, 1)).toBe(1);
     expect(scaleFactorForPlanEntry(6, undefined, 1)).toBe(1);
     expect(scaleFactorForPlanEntry(5, null)).toBe(1);
+    expect(scaleFactorForPlanEntry(null, null, 1, 8)).toBe(1);
   });
 
   it("falls back to an explicit scaleFactor only when the entry has no servings", () => {
@@ -35,9 +36,9 @@ describe("scaleFactorForPlanEntry", () => {
     expect(scaleFactorForPlanEntry()).toBe(1);
   });
 
-  it("uses the larger of recipe yield and cook-for when the entry has no servings", () => {
-    expect(scaleFactorForPlanEntry(null, 6, 1, 5)).toBe(1);
-    expect(scaleFactorForPlanEntry(undefined, 6, 1, 5)).toBe(1);
+  it("scales a night to the week cook-for when the entry has no servings", () => {
+    expect(scaleFactorForPlanEntry(null, 6, 1, 5)).toBe(0.8333);
+    expect(scaleFactorForPlanEntry(undefined, 6, 1, 5)).toBe(0.8333);
     expect(scaleFactorForPlanEntry(5, 6, 1, 8)).toBe(0.8333);
   });
 

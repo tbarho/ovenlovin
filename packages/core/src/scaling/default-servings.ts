@@ -71,14 +71,32 @@ export function planEntryServings(input: {
   const yieldServings = recipeYieldServings(input.recipeServings);
   const cookFor = clampServings(input.cookFor);
   if (input.mode === "recipe") return clampServings(yieldServings);
-  if (input.mode === "fixed") return cookFor;
-  return clampServings(Math.max(yieldServings, cookFor));
+  return cookFor;
+}
+
+/** Week cook-for: the plan's stored value, else the household default. */
+export function weekCookFor(input: {
+  planCookFor?: number | null;
+  householdCookFor: number;
+}): number {
+  if (input.planCookFor && input.planCookFor > 0) return clampServings(input.planCookFor);
+  return clampServings(input.householdCookFor);
+}
+
+/** When every night agrees, that count can seed a new plan's cook-for. */
+export function agreedEntryCookFor(servings: Array<number | null | undefined>): number | null {
+  const values = servings
+    .filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0)
+    .map((n) => Math.round(n));
+  const first = values[0];
+  if (first == null) return null;
+  return values.every((n) => n === first) ? clampServings(first) : null;
 }
 
 /**
  * Servings used for a plan card, recipe read, and shopping line.
  * Entry servings win; otherwise a stored scaleFactor other than 1; otherwise
- * recipe yield in recipe mode; otherwise max(yield, cook-for) in family mode.
+ * recipe yield in recipe mode; otherwise the week cook-for.
  */
 export function effectivePlanServings(input: {
   entryServings?: number | null;
@@ -94,8 +112,7 @@ export function effectivePlanServings(input: {
     return clampServings(input.scaleFactor * yieldServings);
   }
   if (input.mode === "recipe") return clampServings(yieldServings);
-  if (input.mode === "fixed") return clampServings(input.defaultCookFor);
-  return clampServings(Math.max(yieldServings, input.defaultCookFor));
+  return clampServings(input.defaultCookFor);
 }
 
 /**
@@ -113,22 +130,6 @@ export function cookForServingsLabel(input: {
     return `Recipe makes ${recipeMakes} · cooking for ${cookFor}`;
   }
   return `${cookFor} ${cookFor === 1 ? "serving" : "servings"}`;
-}
-
-/** Shopping-list heading from the servings the list actually used. */
-export function planListScale(
-  entryServings: Array<number | null | undefined>,
-  fallback: number
-): { scaledFor: number; mixed: boolean } {
-  const values = entryServings
-    .filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0)
-    .map((n) => Math.round(n));
-  const cookFor = clampServings(fallback);
-  if (values.length === 0) return { scaledFor: cookFor, mixed: false };
-  const first = values[0] ?? cookFor;
-  const mixed = values.some((n) => n !== first);
-  if (!mixed) return { scaledFor: first, mixed: false };
-  return { scaledFor: cookFor, mixed: true };
 }
 
 /** Shopping-list line for the week cook-for. */
