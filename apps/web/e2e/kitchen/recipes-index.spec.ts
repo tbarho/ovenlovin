@@ -29,7 +29,7 @@ test("recipe list is in the first phone viewport", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Photo" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Save from your browser" })).toHaveCount(0);
   await expect(page.getByText("Save from Safari on iPhone")).toBeVisible();
-  await expect(page.getByText("Advanced")).toBeVisible();
+  await expect(page.getByText("Bookmarklet for desktop browsers")).toBeVisible();
 });
 
 test("paste import previews then saves from review", async ({ page }) => {

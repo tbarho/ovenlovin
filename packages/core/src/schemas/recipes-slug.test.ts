@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recipeSchema, slugifyTitle } from "./recipes";
+import { parseRecipeImages, recipeSchema, slugifyTitle } from "./recipes";
 
 describe("slugifyTitle", () => {
   it("turns a title into a url-safe slug", () => {
@@ -8,6 +8,14 @@ describe("slugifyTitle", () => {
 
   it("falls back when the title has no letters", () => {
     expect(slugifyTitle("!!!")).toBe("recipe");
+  });
+});
+
+describe("parseRecipeImages", () => {
+  it("rejects object-shaped image entries", () => {
+    expect(() => parseRecipeImages([{ url: "https://example.com/a.png" }])).toThrow();
+    expect(parseRecipeImages(["https://example.com/a.png"])).toEqual(["https://example.com/a.png"]);
+    expect(parseRecipeImages(undefined)).toEqual([]);
   });
 });
 

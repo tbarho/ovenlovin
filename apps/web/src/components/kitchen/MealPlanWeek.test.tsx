@@ -535,6 +535,15 @@ describe("MealPlanWeek", () => {
     expect(screen.getByText("Scale shopping and portions for")).toBeVisible();
   });
 
+  it("lets the plan scale select go to 99 and follows the meals' actual scale", () => {
+    const seven: WeekMeal = { ...pesto, servings: 7, recipeServings: 4 };
+    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [seven])} defaultServings={4} />);
+    const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
+    expect(scale).toHaveValue("7");
+    expect(screen.getByRole("option", { name: "99" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "100" })).not.toBeInTheDocument();
+  });
+
   it("uses household Default servings on a chili card when the entry has no servings", () => {
     const chili: WeekMeal = {
       ...pesto,

@@ -65,10 +65,41 @@ export class RecipeNotFoundError extends Error {
   readonly layersTried: string[];
 
   constructor(url: string, layersTried: string[] = []) {
-    super("No recipe found on this page.");
+    super("This is not a recipe page.");
     this.name = "RecipeNotFoundError";
     this.url = url;
     this.layersTried = layersTried;
+  }
+}
+
+/** Direct fetch was a 404 and no public copy had a recipe. */
+export class RecipePageGoneError extends Error {
+  readonly url: string;
+
+  constructor(url: string) {
+    super("That page is gone.");
+    this.name = "RecipePageGoneError";
+    this.url = url;
+  }
+}
+
+/** Social hosts we cannot fetch a recipe from. */
+export class RecipeUnsupportedSiteError extends Error {
+  readonly url: string;
+
+  constructor(url: string) {
+    super("We can't import from this site. Paste the text or add a photo.");
+    this.name = "RecipeUnsupportedSiteError";
+    this.url = url;
+  }
+}
+
+export function isUnsupportedImportUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "instagram.com" || host.endsWith(".instagram.com");
+  } catch {
+    return false;
   }
 }
 
@@ -260,14 +291,25 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
   const layersTried: string[] = [];
   let lastStatus = 403;
   let lastStatusText = "Forbidden";
+  let directStatus: number | undefined;
+  let sawBlock = false;
   const state: { fallback: FetchResult | null } = { fallback: null };
 
+  const noteBlock = (html: string, status: number) => {
+    if (BLOCKED_STATUSES.has(status) || looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
+      sawBlock = true;
+    }
+  };
+
   const remember = (hit: PageHit): FetchResult | null => {
+    noteBlock(hit.html, hit.status);
     if (isUsableRecipeHtml(hit.html)) {
       return { html: hit.html, url, finalUrl: hit.finalUrl, via: hit.via, layersTried };
     }
     if (
       !state.fallback &&
+      hit.status >= 200 &&
+      hit.status < 300 &&
       (looksLikeCompleteDocument(hit.html) || looksLikePaywall(hit.html)) &&
       !looksLikeBotChallenge(hit.html) &&
       !looksLikeSoftBlock(hit.html)
@@ -289,6 +331,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
       const direct = await readResponse(fetchImpl, candidate);
       lastStatus = direct.status;
       lastStatusText = direct.statusText;
+      if (layer === "direct") directStatus = direct.status;
       return remember({
         html: direct.html,
         finalUrl: direct.finalUrl,
@@ -298,6 +341,7 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     } catch {
       lastStatus = 503;
       lastStatusText = "Fetch failed";
+      if (layer === "direct") directStatus = 503;
       return null;
     }
   };
@@ -345,7 +389,8 @@ export async function fetchHtml(url: string, options: FetchHtmlOptions = {}): Pr
     }
   }
 
-  if (state.fallback) return state.fallback;
+  if (directStatus === 404) throw new RecipePageGoneError(url);
+  if (state.fallback && !sawBlock) return state.fallback;
 
   throw new RecipeImportFetchError(url, lastStatus, lastStatusText, layersTried);
 }

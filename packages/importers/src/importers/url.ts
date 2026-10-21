@@ -16,6 +16,8 @@ import {
   extractPageImages,
   pickImportRecipeImage,
   RecipeNotFoundError,
+  RecipeUnsupportedSiteError,
+  isUnsupportedImportUrl,
 } from "../utils/url";
 import { extractHtmlRecipe } from "../utils/html-recipe";
 import { extractRecipeWithLlm } from "../utils/llm-recipe";
@@ -48,6 +50,9 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
     },
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
+      if (isUnsupportedImportUrl(input.url)) {
+        throw new RecipeUnsupportedSiteError(input.url);
+      }
       const startedAt = Date.now();
       const captured = Boolean(input.html?.trim() || input.jsonLd);
       const { html, finalUrl, layersTried } = captured

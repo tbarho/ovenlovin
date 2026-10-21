@@ -8,6 +8,8 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("https://ovenlovin.vercel.app/mcp");
     expect(text).toContain("https://ovenlovin.vercel.app/api/v1/openapi.json");
     expect(text).toContain("Authorization: ApiKey");
+    expect(text).toContain("sandbox key");
+    expect(text).not.toMatch(/after signing in/i);
     expect(text).toContain("X-Kitchen-Id");
     expect(text).toContain("mismatched");
     expect(text).toContain("whoami");

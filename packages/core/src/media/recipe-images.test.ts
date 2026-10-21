@@ -18,6 +18,7 @@ import {
   assertAllowedRecipeImageUrls,
   isStoredBlobUrl,
   keepMainRecipeImages,
+  normalizeStoredRecipeImages,
   omitInlineImagePayloads,
   parseImageDataUrl,
   presentPhotoImportImages,
@@ -40,6 +41,13 @@ describe("recipe images", () => {
     expect(recipeGalleryImages(["https://a", "", "https://b"])).toEqual(["https://a", "https://b"]);
     expect(keepMainRecipeImages(["", "https://a", "https://b"])).toEqual(["https://a"]);
     expect(keepMainRecipeImages([])).toEqual([]);
+  });
+
+  it("tolerates object-shaped images already stored on a row", () => {
+    const stored = [{ url: "https://example.com/a.png" }, "https://example.com/ok.jpg"];
+    expect(normalizeStoredRecipeImages(stored)).toEqual(["https://example.com/ok.jpg"]);
+    expect(recipeMainImage(stored)).toBe("https://example.com/ok.jpg");
+    expect(() => presentRecipeImages({ id: "recipe-1", images: stored as string[] })).not.toThrow();
   });
 
   it("recognizes Vercel Blob URLs", () => {

@@ -80,11 +80,6 @@ export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolea
         Used when you open a recipe, add dinner to the meal plan, and scale the shopping list. You
         can still change servings on each view.
       </p>
-      {saved ? (
-        <p className="default-servings-saved" role="status" data-testid="default-servings-saved">
-          Saved
-        </p>
-      ) : null}
       {error ? <p className="muted">{error}</p> : null}
       {settings ? (
         <fieldset className="default-servings-options" disabled={pending || !canWrite}>
@@ -136,6 +131,11 @@ export function DefaultServingsSettings({ canWrite = true }: { canWrite?: boolea
       ) : (
         <p className="empty-note">Loading default servings…</p>
       )}
+      {saved ? (
+        <p className="default-servings-saved" role="status" data-testid="default-servings-saved">
+          Saved
+        </p>
+      ) : null}
     </section>
   );
 }

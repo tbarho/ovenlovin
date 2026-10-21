@@ -8,6 +8,7 @@ import {
 } from "@/lib/api/middleware";
 import {
   assertAllowedRecipeImageUrls,
+  parseRecipeImages,
   RecipeService,
   type RecipeContentUpdate,
 } from "@ovenlovin/core";
@@ -41,7 +42,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     const body = (await request.json()) as RecipeContentUpdate;
-    if (body.images) assertAllowedRecipeImageUrls(body.images);
+    if (body.images !== undefined) {
+      body.images = parseRecipeImages(body.images);
+      assertAllowedRecipeImageUrls(body.images);
+    }
     const service = new RecipeService(getDatabase());
     const existing = await service.getRecipe(id);
     assertRecipeHousehold(existing, householdId, id);

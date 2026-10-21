@@ -8,14 +8,14 @@ describe("ImportFromDevice", () => {
     render(<ImportFromDevice origin="https://ovenlovin-demo.vercel.app" shortcutUrl="" />);
 
     expect(screen.getByText("Save from Safari on iPhone")).toBeVisible();
-    expect(screen.getByText("Advanced")).toBeVisible();
+    expect(screen.getByText("Bookmarklet for desktop browsers")).toBeVisible();
     expect(
       screen.queryByRole("link", { name: "Add the OvenLovin Shortcut" })
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Save from your browser" })
     ).not.toBeInTheDocument();
-    expect(screen.queryByText(/bookmarklet/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Save to OvenLovin" })).not.toBeVisible();
     expect(screen.queryByText(/token/i)).not.toBeInTheDocument();
     expect(document.body.textContent).toMatch(/POST that to/);
   });
@@ -36,7 +36,7 @@ describe("ImportFromDevice", () => {
     Object.assign(navigator, { clipboard: { writeText } });
     render(<ImportFromDevice origin="https://ovenlovin-demo.vercel.app" shortcutUrl="" />);
 
-    await userEvent.click(screen.getByText("Advanced"));
+    await userEvent.click(screen.getByText("Bookmarklet for desktop browsers"));
     expect(screen.getByRole("link", { name: "Save to OvenLovin" })).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
     expect(writeText).toHaveBeenCalled();

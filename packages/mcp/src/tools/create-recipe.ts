@@ -6,6 +6,7 @@ import {
   CookbookService,
   isAllowedRecipeImageUrl,
   INVALID_IMAGE_URL_MESSAGE,
+  recipeImagesSchema,
   RecipeService,
 } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
@@ -20,12 +21,10 @@ export const createRecipeSchema = z.object({
   totalTimeMinutes: z.number().int().nonnegative().optional(),
   cuisine: z.string().optional(),
   course: z.string().optional(),
-  images: z
-    .array(
-      z.string().refine((url) => !url.trim() || isAllowedRecipeImageUrl(url), {
-        message: INVALID_IMAGE_URL_MESSAGE,
-      })
-    )
+  images: recipeImagesSchema
+    .refine((urls) => urls.every((url) => !url.trim() || isAllowedRecipeImageUrl(url)), {
+      message: INVALID_IMAGE_URL_MESSAGE,
+    })
     .optional(),
   ingredients: z
     .array(z.object({ rawText: z.string().min(1) }))

@@ -43,6 +43,13 @@ describe("jsonRpcFromThrown", () => {
     expect(response.error.data).toEqual({ code: "invalid_image_url" });
   });
 
+  it("keeps quota, auth, and validation as distinct codes", () => {
+    expect(JsonRpcErrorCode.quota).toBe(-32004);
+    expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.forbidden);
+    expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.unauthorized);
+    expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.invalidParams);
+  });
+
   it("keeps unexpected failures as internal error", () => {
     const response = jsonRpcFromThrown(4, new Error("connection refused"));
     expect(response.error.code).toBe(JsonRpcErrorCode.internal);
