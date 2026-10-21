@@ -1,6 +1,7 @@
 /* eslint-disable no-undef */
 import * as cheerio from "cheerio";
 import { cleanImportedTitle } from "@ovenlovin/core";
+import { cleanImportedIngredientLine } from "./recipe-ld";
 
 const INGREDIENT_HEADING = /\b(ingredients?|you will need|what you need)\b/i;
 const STEP_HEADING =
@@ -124,11 +125,64 @@ function extractCardMarkdown(text: string): Record<string, unknown> | null {
   };
 }
 
+export function parseHtmlRecipeServings(html: string): number | undefined {
+  const $ = cheerio.load(html);
+  const wprm = $(".wprm-recipe-servings").first();
+  const raw = wprm.attr("value") || wprm.text() || $('[itemprop="recipeYield"]').first().text();
+  const match = raw
+    .replace(/\s+/g, " ")
+    .trim()
+    .match(/(\d+(?:\.\d+)?)/);
+  if (!match?.[1]) return undefined;
+  const n = Number(match[1]);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined;
+}
+
+function extractWprmRecipe(html: string): Record<string, unknown> | null {
+  const $ = cheerio.load(html);
+  const card = $(".wprm-recipe-container, .wprm-recipe").first();
+  if (!card.length) return null;
+
+  const ingredients: string[] = [];
+  card.find(".wprm-recipe-ingredient").each((_, el) => {
+    const $el = $(el);
+    const amount = $el.find(".wprm-recipe-ingredient-amount").text().trim();
+    const unit = $el.find(".wprm-recipe-ingredient-unit").text().trim();
+    const name = $el.find(".wprm-recipe-ingredient-name").text().trim();
+    const notes = $el.find(".wprm-recipe-ingredient-notes").text().trim();
+    const core = [amount, unit, name].filter(Boolean).join(" ");
+    const line = notes ? `${core} (${notes})` : core || $el.text().replace(/\s+/g, " ").trim();
+    if (line) ingredients.push(cleanImportedIngredientLine(line));
+  });
+
+  const steps: string[] = [];
+  card.find(".wprm-recipe-instruction-text").each((_, el) => {
+    const text = $(el).text().replace(/\s+/g, " ").trim();
+    if (text) steps.push(text);
+  });
+
+  if (ingredients.length < 2 || steps.length < 1) return null;
+  const title =
+    card.find(".wprm-recipe-name").first().text().replace(/\s+/g, " ").trim() ||
+    $("h1").first().text().replace(/\s+/g, " ").trim();
+  const servings = parseHtmlRecipeServings(html);
+  return {
+    "@type": "Recipe",
+    name: cleanImportedTitle(title) || title,
+    recipeIngredient: ingredients,
+    recipeInstructions: steps.map((text) => ({ "@type": "HowToStep", text })),
+    ...(servings != null ? { recipeYield: servings } : {}),
+  };
+}
+
 /**
  * Best-effort recipe from HTML that has no schema.org Recipe JSON-LD
  * (Wikibooks cookbooks, older blogs, public cache copies).
  */
 export function extractHtmlRecipe(html: string): Record<string, unknown> | null {
+  const wprm = extractWprmRecipe(html);
+  if (wprm) return wprm;
+
   const card = /<(h1|h2|h3|ul|ol|li|script)\b/i.test(html) ? null : extractCardMarkdown(html);
   if (card) return card;
 

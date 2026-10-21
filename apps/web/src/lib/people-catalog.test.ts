@@ -8,11 +8,10 @@ import {
 } from "./people-catalog";
 
 describe("people catalog search", () => {
-  it("shows featured allergens and diets when the query is empty", () => {
-    const tiles = searchPeopleCatalog("");
-    expect(tiles.some((entry) => entry.code === "peanut")).toBe(true);
-    expect(tiles.some((entry) => entry.code === "tree_nut")).toBe(true);
-    expect(tiles.some((entry) => entry.group === "diet")).toBe(true);
+  it("hides suggestions until the cook types", () => {
+    expect(searchPeopleCatalog("")).toEqual([]);
+    expect(searchPeopleCatalog("", { mode: "loves" })).toEqual([]);
+    expect(searchPeopleCatalog("pean").some((entry) => entry.code === "peanut")).toBe(true);
   });
 
   it("finds tree nuts and a custom ingredient from search", () => {
@@ -26,9 +25,11 @@ describe("people catalog search", () => {
   });
 
   it("features Loves suggestions separately from Can't eat", () => {
-    const loves = searchPeopleCatalog("", { mode: "loves" });
+    const loves = searchPeopleCatalog("salm", { mode: "loves" });
     expect(loves.some((entry) => entry.code === "salmon")).toBe(true);
-    expect(loves.some((entry) => entry.code === "mexican")).toBe(true);
+    const allergies = searchPeopleCatalog("pean", { mode: "cant_eat" });
+    expect(allergies.some((entry) => entry.code === "peanut")).toBe(true);
+    expect(allergies.some((entry) => entry.code === "salmon")).toBe(false);
   });
 
   it("keeps wheat and shrimp as themselves in the kitchen add form", () => {
@@ -43,13 +44,17 @@ describe("people catalog search", () => {
     expect(resolveFoodAdd("Sesame Seeds", { mode: "cant_eat" })?.entry.code).toBe("sesame");
   });
 
-  it("resolves a peanut typo to the canonical allergen", () => {
-    const resolved = resolveFoodAdd("pean", { mode: "cant_eat" });
-    expect(resolved?.kind).toBe("canonical");
-    expect(resolved?.entry.code).toBe("peanut");
-    expect(customCatalogOffer("pean")?.code).toBe("pean");
-    expect(unknownAllergenWarning("Pean", resolved?.entry ?? null)).toContain("Peanut");
-    expect(resolveFoodAdd("peanutz", { mode: "cant_eat" })?.entry.code).toBe("peanut");
+  it("adds the typed food on Enter instead of the first suggestion", () => {
+    const resolved = resolveFoodAdd("Pea", { mode: "cant_eat" });
+    expect(resolved).toMatchObject({
+      kind: "unknown",
+      entry: { name: "Pea" },
+      suggestion: { code: "peanut" },
+    });
+    expect(resolveFoodAdd("peanut", { mode: "cant_eat" })?.entry.code).toBe("peanut");
+    expect(
+      unknownAllergenWarning("Pea", resolved?.kind === "unknown" ? resolved.suggestion : null)
+    ).toContain("Peanut");
   });
 
   it("flags a free-text allergen that is not in the catalog", () => {
@@ -60,6 +65,7 @@ describe("people catalog search", () => {
       suggestion: null,
     });
     expect(unknownAllergenWarning("xyzzy", null)).toMatch(/can't check 'xyzzy'/i);
+    expect(unknownAllergenWarning("xyzzy", null)).toContain("spicy");
   });
 
   it("maps catalog codes onto food icons", () => {

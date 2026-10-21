@@ -11,7 +11,7 @@ Open-source recipe box and meal planner for families and their AI agents. Per-pe
 
 ## Shipped
 
-- Recipes and cookbooks (URL / paste / photo import, plus [Safari and Advanced save](import-from-device.md) when a site blocks the server)
+- Recipes and cookbooks (URL / paste / photo import, plus [Safari and bookmarklet save](import-from-device.md) when a site blocks the server)
 - People with Can't eat / Doesn't like / Loves
 - Who-can-eat checks with named per-person findings
 - REST + OpenAPI, MCP, `/llms.txt`
@@ -141,7 +141,7 @@ Each household member can have custom dietary rules with three severity levels:
 
 - **block** - Recipe is unsafe for this person (hard allergen)
 - **warn** - Recipe should be flagged for review (possible cross-contamination)
-- **prefer-avoid** - Recipe is not preferred but not dangerous (dietary preference)
+- **prefer_avoid** - Recipe is not preferred but not dangerous (dietary preference)
 
 ### Rule Types
 

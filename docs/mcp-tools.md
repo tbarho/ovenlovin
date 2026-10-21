@@ -10,8 +10,8 @@ Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk 
 
 - `search_recipes` - search by text, method tags, and attendee warnings. `forAttendees` hides block hits and returns `hiddenCount` / `hidden` (recipe, person, ingredient, why). `images` is a thumbnail URL only (never inline `data:` bytes)
 - `get_recipe` - full recipe including servings (stored yield), `displayServings` (kitchen Default servings), `scaledNote`, prep/cook times, images, cookbooks, and source URL (`includeSource` defaults to true). Same thumbnail-URL rule for `images`. `ingredients.displayText` is the cooking-fraction line at `displayServings`; `rawText` is the stored import string.
-- `import_recipe` - URL or paste import (always persists). Pulls schema.org times and the main image, then copies that image into Vercel Blob. Retries of the same URL return the existing recipe (`created: false`) instead of a second copy. Optional `cookbookId`
-- `import_recipe_from_image` - photo import from an `imageUrl` or `imageBase64` (optional extra `images[]` pages). Uses AI Gateway vision (`RK_MODEL_VISION`). Saves the first photo as the single main image (Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise list/search expose `GET /api/v1/recipes/{id}/image`). Exact and near-duplicate photos return the existing recipe id. Returns `reviewReasons` / `uncertainFields` when the photo is hard to read.
+- `import_recipe` - URL or paste import. `save:false` returns a preview (same as REST). `idempotencyKey` replays a save. `allowDuplicate` skips the existing-URL short circuit. Pulls schema.org times and the main image, then copies that image into Vercel Blob. Retries of the same URL return the existing recipe (`created: false`) instead of a second copy. Optional `cookbookId`
+- `import_recipe_from_image` - photo import from an `imageUrl` or `imageBase64` (optional extra `images[]` pages). Uses AI Gateway vision (`RK_MODEL_VISION`). `save:false` previews. `idempotencyKey` / `allowDuplicate` match REST. Exact duplicate photos return `duplicate:true` with the existing recipe id (not `-32602`). Saves the first photo as the single main image (Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise list/search expose `GET /api/v1/recipes/{id}/image`). Returns `reviewReasons` / `uncertainFields` when the photo is hard to read.
 
 ## Cookbooks
 
@@ -28,7 +28,7 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 - `manage_kitchen_invites` - create, list, or revoke shareable kitchen invite links (owner or admin; default role member)
 - `manage_kitchen_members` - list signed-in kitchen members, change roles, remove a member, or leave
 - `get_person_rules` - Can't eat / Doesn't like rules plus Loves
-- `manage_person_rules` - list / add / remove rules. Tree-nut rules accept `treatCoconutAsTreeNut` (default `false`; coconut is not a tree nut unless set)
+- `manage_person_rules` - list / add / remove rules. Dislikes spicy: `kind=ingredient` or `tag`, `target=spicy`, `severity=prefer_avoid` (matches cayenne, chiles, chili powder, hot sauce, and similar heat). Other taste dislikes: cilantro, olives, mushrooms, onions, garlic. Unknown targets need `confirmUnknown=true`. Tree-nut rules accept `treatCoconutAsTreeNut` (default `false`; coconut is not a tree nut unless set)
 - `reorder_people` - persist household people order (`personIds` must list everyone once)
 - `manage_person_loves` - `list`, `add`, `remove` a food, cuisine, or style someone loves
 - `search_recipes` - attendee warnings plus love boosts and “Name loves this” tags

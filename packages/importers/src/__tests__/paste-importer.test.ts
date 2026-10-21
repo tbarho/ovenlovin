@@ -12,6 +12,10 @@ vi.mock("ai", () => ({
   generateObject: vi.fn(),
 }));
 
+vi.mock("@ai-sdk/gateway", () => ({
+  gateway: (id: string) => id,
+}));
+
 vi.mock("@ai-sdk/openai", () => ({
   createOpenAI: () => () => "mock-model",
 }));
@@ -66,8 +70,9 @@ describe("Paste Importer", () => {
           schema: expect.any(Object),
           prompt: expect.stringContaining("Extract recipe data"),
           maxRetries: 2,
+          abortSignal: expect.any(AbortSignal),
           providerOptions: {
-            gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
+            gateway: { models: ["openai/gpt-6-luna"] },
           },
         })
       );
@@ -96,6 +101,27 @@ describe("Paste Importer", () => {
 
       expect(result.sourceUrl).toBe("https://example.com");
       expect(result.author).toBe("Chef Baker");
+    });
+
+    it("rethrows a gateway 502 as import AI unavailable", async () => {
+      const { generateObject } = await import("ai");
+      const { isImportAiUnavailable } = await import("@ovenlovin/core/import-ai-unavailable");
+      const error = Object.assign(new Error("Bad gateway"), {
+        name: "AI_APICallError",
+        statusCode: 502,
+      });
+      (generateObject as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
+      await expect(importer.extract({ text: "Recipe text" })).rejects.toBe(error);
+      expect(isImportAiUnavailable(error)).toBe(true);
+    });
+
+    it("tags a generateObject timeout as import AI unavailable", async () => {
+      const { generateObject } = await import("ai");
+      const { isImportAiUnavailable } = await import("@ovenlovin/core/import-ai-unavailable");
+      const error = Object.assign(new Error("aborted"), { name: "TimeoutError" });
+      (generateObject as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
+      await expect(importer.extract({ text: "Recipe text" })).rejects.toBe(error);
+      expect(isImportAiUnavailable(error)).toBe(true);
     });
   });
 

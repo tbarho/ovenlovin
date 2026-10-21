@@ -16,9 +16,10 @@ test("a gated zero score fails the eval (exit non-zero)", () => {
   assert.equal(verdict === "failed" ? 1 : 0, 1);
 });
 
-test("a thrown model error fails the eval and keeps the text", () => {
-  const error = "No object generated: response did not match schema";
-  const verdict = computeEvalVerdict({ error, assertions: [] });
+test("a thrown model error fails the eval", () => {
+  const verdict = computeEvalVerdict({
+    error: "No object generated: response did not match schema",
+    assertions: [],
+  });
   assert.equal(verdict, "failed");
-  assert.match(error, /No object generated/);
 });

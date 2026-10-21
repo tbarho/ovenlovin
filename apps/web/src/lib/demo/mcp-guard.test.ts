@@ -1,5 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { isSuccessfulImportRecipeCall } from "./mcp-guard";
+import { isDemoMcpWriteCall, isSuccessfulImportRecipeCall } from "./mcp-guard";
+
+describe("isDemoMcpWriteCall", () => {
+  it("lets household settings reads through after the write limit", () => {
+    expect(
+      isDemoMcpWriteCall({
+        method: "tools/call",
+        params: { name: "manage_household_settings", arguments: { action: "get" } },
+      })
+    ).toBe(false);
+    expect(
+      isDemoMcpWriteCall({
+        method: "tools/call",
+        params: { name: "manage_household_settings" },
+      })
+    ).toBe(false);
+    expect(
+      isDemoMcpWriteCall({
+        method: "tools/call",
+        params: {
+          name: "manage_household_settings",
+          arguments: { action: "update", mode: "family" },
+        },
+      })
+    ).toBe(true);
+  });
+
+  it("does not count an import preview as a write", () => {
+    expect(
+      isDemoMcpWriteCall({
+        method: "tools/call",
+        params: { name: "import_recipe", arguments: { save: false, source: "paste" } },
+      })
+    ).toBe(false);
+    expect(
+      isDemoMcpWriteCall({
+        method: "tools/call",
+        params: { name: "import_recipe", arguments: { source: "paste" } },
+      })
+    ).toBe(true);
+  });
+});
 
 describe("isSuccessfulImportRecipeCall", () => {
   const importCall = {
@@ -38,5 +79,17 @@ describe("isSuccessfulImportRecipeCall", () => {
         JSON.stringify({ result: { recipeId: "1" } })
       )
     ).toBe(true);
+  });
+
+  it("does not count a save:false preview toward the demo import cap", () => {
+    expect(
+      isSuccessfulImportRecipeCall(
+        {
+          method: "tools/call",
+          params: { name: "import_recipe", arguments: { save: false, source: "paste" } },
+        },
+        JSON.stringify({ result: { title: "Toast", preview: true, saved: false } })
+      )
+    ).toBe(false);
   });
 });

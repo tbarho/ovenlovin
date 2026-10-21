@@ -1,20 +1,21 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { PeopleOrderError, PeopleService } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
 import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 import { jsonResponse } from "@/lib/api/response";
 
 const reorderPeopleSchema = z.object({
-  personIds: z.array(z.string().uuid()).min(1),
+  personIds: z.array(z.string().uuid()).min(1).max(200),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
     const householdId = requireWritableHousehold(context);
-    const body = reorderPeopleSchema.parse(await request.json());
+    const body = await readJsonBody(request, reorderPeopleSchema);
 
     const service = new PeopleService(getDatabase());
     const people = await service.reorderPeople(householdId, body.personIds);

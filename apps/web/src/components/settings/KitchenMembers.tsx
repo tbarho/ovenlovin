@@ -108,7 +108,11 @@ export function KitchenMembers({
       ) : (
         <ul className="member-list">
           {members.map((member) => {
-            const label = member.displayName?.trim() || member.email;
+            const name = member.displayName?.trim();
+            const nameClash =
+              Boolean(name) &&
+              members.filter((item) => item.displayName?.trim() === name).length > 1;
+            const label = nameClash || !name ? member.email : name;
             const isSelf = member.userId === currentUserId;
             return (
               <li key={member.membershipId} className="member-row">

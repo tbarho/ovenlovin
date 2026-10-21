@@ -24,7 +24,6 @@ export type CaseScores = {
   ingredientRecall: number;
   ingredientPrecision: number;
   stepCompleteness: number;
-  validStructured: number;
   score: number;
 };
 
@@ -53,22 +52,20 @@ function tokenSet(value: string): Set<string> {
   );
 }
 
+function tokensMatch(a: string, b: string): boolean {
+  return a === b || a === `${b}s` || b === `${a}s`;
+}
+
 function titleMatched(got: string | undefined, expected: ExpectedRecipe): boolean {
   const observed = normalizeText(got ?? "");
   if (!observed) return false;
   const candidates = [expected.title, ...(expected.titleAliases ?? [])].map(normalizeText);
-  if (
-    candidates.some(
-      (title) => observed === title || observed.includes(title) || title.includes(observed)
-    )
-  ) {
-    return true;
-  }
+  if (candidates.some((title) => observed === title)) return true;
   return candidates.some((title) => {
     const need = tokenSet(title);
-    if (need.size === 0) return false;
     const have = tokenSet(observed);
-    return [...need].every((token) => have.has(token));
+    if (need.size === 0 || have.size < need.size) return false;
+    return [...need].every((token) => [...have].some((gotToken) => tokensMatch(gotToken, token)));
   });
 }
 
@@ -78,16 +75,96 @@ function servingsMatched(got: number | undefined, expected: ExpectedRecipe): boo
   return got != null && allowed.includes(got);
 }
 
+const FILLER = new Set([
+  "a",
+  "an",
+  "and",
+  "the",
+  "of",
+  "or",
+  "to",
+  "with",
+  "for",
+  "in",
+  "into",
+  "cup",
+  "cups",
+  "tbsp",
+  "tsp",
+  "teaspoon",
+  "teaspoons",
+  "tablespoon",
+  "tablespoons",
+  "oz",
+  "ounce",
+  "ounces",
+  "lb",
+  "pound",
+  "pounds",
+  "g",
+  "kg",
+  "ml",
+  "can",
+  "jar",
+  "large",
+  "small",
+  "medium",
+  "fresh",
+  "dried",
+  "chopped",
+  "diced",
+  "minced",
+  "grated",
+  "sliced",
+  "peeled",
+  "crushed",
+  "cooked",
+  "frozen",
+  "canned",
+  "softened",
+  "melted",
+  "packed",
+  "unsalted",
+  "salted",
+  "optional",
+  "all",
+  "purpose",
+  "extra",
+  "virgin",
+  "ripe",
+  "old",
+  "fashioned",
+  "leaves",
+  "cloves",
+  "stick",
+  "sticks",
+]);
+
+function isFillerToken(token: string): boolean {
+  return FILLER.has(token) || /^\d/.test(token) || token.includes("/");
+}
+
+function lastContentToken(value: string): string | undefined {
+  return normalizeText(value)
+    .split(" ")
+    .filter((token) => token.length > 1 && !isFillerToken(token))
+    .at(-1);
+}
+
 function ingredientMatched(got: string, expected: string): boolean {
   const a = normalizeText(got);
   const b = normalizeText(expected);
   if (!a || !b) return false;
-  if (a === b || a.includes(b) || b.includes(a)) return true;
-  const need = tokenSet(expected);
+  if (a === b) return true;
   const have = tokenSet(got);
+  const need = tokenSet(expected);
   if (need.size === 0) return false;
-  const overlap = [...need].filter((token) => have.has(token)).length;
-  return overlap / need.size >= 0.7;
+  if (![...need].every((token) => [...have].some((gotToken) => tokensMatch(gotToken, token)))) {
+    return false;
+  }
+  const gotHead = lastContentToken(got);
+  const needHead = lastContentToken(expected);
+  return Boolean(gotHead && needHead && tokensMatch(gotHead, needHead));
 }
 
 export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe): CaseScores {
@@ -106,25 +183,19 @@ export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe):
   const ingredientPrecision =
     observed.ingredients.length === 0 ? 0 : gotHits / observed.ingredients.length;
 
-  const countScore =
-    expected.stepCount <= 0
-      ? 1
-      : Math.min(observed.steps.length, expected.stepCount) / expected.stepCount;
+  const expectedSteps = expected.stepCount;
+  const observedSteps = observed.steps.length;
+  const countRecall = expectedSteps <= 0 ? 1 : Math.min(observedSteps, expectedSteps) / expectedSteps;
+  const countPrecision =
+    observedSteps === 0 ? (expectedSteps === 0 ? 1 : 0) : Math.min(observedSteps, expectedSteps) / observedSteps;
   const keyHits = expected.stepMustInclude.filter((key) =>
     observed.steps.some((step) => normalizeText(step).includes(normalizeText(key)))
   ).length;
   const keyScore =
     expected.stepMustInclude.length === 0 ? 1 : keyHits / expected.stepMustInclude.length;
-  const stepCompleteness = (countScore + keyScore) / 2;
+  const stepCompleteness = (countRecall + countPrecision + keyScore) / 3;
 
-  const validStructured =
-    Boolean(observed.title?.trim()) &&
-    observed.ingredients.length >= 2 &&
-    observed.steps.length >= 1
-      ? 1
-      : 0;
-
-  const parts = [title, ingredientRecall, ingredientPrecision, stepCompleteness, validStructured];
+  const parts = [title, ingredientRecall, ingredientPrecision, stepCompleteness];
   if (servingsHit != null) parts.push(servings);
   const score = mean(parts);
 
@@ -134,7 +205,6 @@ export function scoreRecipe(observed: ObservedRecipe, expected: ExpectedRecipe):
     ingredientRecall,
     ingredientPrecision,
     stepCompleteness,
-    validStructured,
     score,
   };
 }

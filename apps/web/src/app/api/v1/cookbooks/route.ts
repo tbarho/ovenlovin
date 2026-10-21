@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { CookbookService } from "@ovenlovin/core";
+import { CookbookService, createCookbookBodySchema } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { handleApiError, BadRequestError } from "@/lib/api/errors";
 import { createdResponse, paginatedResponse } from "@/lib/api/response";
@@ -37,10 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
     const householdId = requireWritableHousehold(context);
-    const body = (await request.json()) as { name?: string; description?: string };
-    if (!body.name?.trim()) {
-      throw new BadRequestError("Cookbook name is required");
-    }
+    const body = await readJsonBody(request, createCookbookBodySchema);
 
     const createdBy = context.userId || context.clientId;
     if (!createdBy) {

@@ -1,6 +1,8 @@
 import {
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  InvalidImageUrlError,
+  classifyImportFailure,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
 
@@ -14,6 +16,7 @@ export const JsonRpcErrorCode = {
   internal: -32603,
   unauthorized: -32001,
   forbidden: -32003,
+  quota: -32004,
 } as const;
 
 /** User/input mistakes (missing fields, unknown allergen, duplicate photo). */
@@ -89,11 +92,23 @@ export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure
   if (error instanceof McpInvalidParamsError) {
     return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, error.data);
   }
+  if (error instanceof InvalidImageUrlError) {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, error.message, { code: error.code });
+  }
+  const importFailure = classifyImportFailure(error);
+  if (importFailure) {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, importFailure.message, {
+      code: importFailure.code,
+    });
+  }
   if (isImportAiUnavailable(error)) {
     return jsonRpcError(id, JsonRpcErrorCode.internal, IMPORT_AI_UNAVAILABLE_MESSAGE, {
       code: IMPORT_AI_UNAVAILABLE_CODE,
     });
   }
   const messageText = error instanceof Error ? error.message : "Internal error";
+  if (/\bnot found\b/i.test(messageText)) {
+    return jsonRpcError(id, JsonRpcErrorCode.invalidParams, messageText, { code: "not_found" });
+  }
   return jsonRpcError(id, JsonRpcErrorCode.internal, messageText);
 }

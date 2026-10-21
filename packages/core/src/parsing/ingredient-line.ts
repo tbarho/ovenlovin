@@ -8,6 +8,7 @@ const UNIT_ALIASES: Array<{ match: string; unit: string }> = [
   { match: "tsp", unit: "tsp" },
   { match: "cups", unit: "cup" },
   { match: "cup", unit: "cup" },
+  { match: "c", unit: "cup" },
   { match: "pounds", unit: "lb" },
   { match: "pound", unit: "lb" },
   { match: "lbs", unit: "lb" },
@@ -20,6 +21,7 @@ const UNIT_ALIASES: Array<{ match: string; unit: string }> = [
   { match: "kg", unit: "kg" },
   { match: "grams", unit: "g" },
   { match: "gram", unit: "g" },
+  { match: "g", unit: "g" },
   { match: "milliliters", unit: "ml" },
   { match: "milliliter", unit: "ml" },
   { match: "ml", unit: "ml" },
@@ -156,6 +158,19 @@ function consumeLeadingQuantity(text: string): {
     .replace(/\s+/g, " ")
     .trim();
 
+  const hyphenMixed = normalized.match(/^(\d+)-(\d+)\/(\d+)(?:\s+|$)/);
+  if (hyphenMixed?.[1] && hyphenMixed[2] && hyphenMixed[3]) {
+    const denom = Number(hyphenMixed[3]);
+    return {
+      min:
+        denom === 0
+          ? Number(hyphenMixed[1])
+          : Number(hyphenMixed[1]) + Number(hyphenMixed[2]) / denom,
+      max: null,
+      rest: normalized.slice(hyphenMixed[0].length).trim(),
+    };
+  }
+
   const range = normalized.match(
     /^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])\s*(?:-|\u2013|to)\s*(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])(?:\s+|$)/i
   );
@@ -167,6 +182,17 @@ function consumeLeadingQuantity(text: string): {
     };
   }
 
+  const andMixed = normalized.match(/^(\d+)\s+and\s+(\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞])(?:\s+|$)/i);
+  if (andMixed?.[1] && andMixed[2]) {
+    const whole = Number(andMixed[1]);
+    const frac = parseNumberToken(andMixed[2]);
+    return {
+      min: frac == null ? whole : whole + frac,
+      max: null,
+      rest: normalized.slice(andMixed[0].length).trim(),
+    };
+  }
+
   const mixed = normalized.match(/^(\d+)\s+(\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞])(?:\s+|$)/);
   if (mixed?.[1] && mixed[2]) {
     const whole = Number(mixed[1]);
@@ -175,6 +201,15 @@ function consumeLeadingQuantity(text: string): {
       min: frac == null ? whole : whole + frac,
       max: null,
       rest: normalized.slice(mixed[0].length).trim(),
+    };
+  }
+
+  const glued = normalized.match(/^(\d+\/\d+|\d+(?:\.\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])(?=[a-z])/i);
+  if (glued?.[1]) {
+    return {
+      min: parseNumberToken(glued[1]),
+      max: null,
+      rest: normalized.slice(glued[1].length).trim(),
     };
   }
 
@@ -207,6 +242,15 @@ function consumeUnit(text: string): { unit: string | null; rest: string } {
       };
     }
   }
+
+  for (const alias of ["tbsp", "tsp", "cup", "oz", "lb"] as const) {
+    if (!lower.startsWith(alias)) continue;
+    const next = lower[alias.length];
+    if (!next || !/[a-z]/.test(next)) continue;
+    if (alias === "cup" && lower.startsWith("cups") && !/[a-z]/.test(lower[4] ?? "")) continue;
+    return { unit: alias, rest: text.slice(alias.length).trim() };
+  }
+
   return { unit: null, rest: text };
 }
 
@@ -232,8 +276,8 @@ function cleanItemName(rest: string): string {
 export function parseIngredientLine(rawText: string): ParsedIngredientLine {
   const trimmed = rawText.trim();
   const quantity = consumeLeadingQuantity(trimmed);
-  const unit =
-    quantity.min == null ? { unit: null, rest: quantity.rest } : consumeUnit(quantity.rest);
+  const afterQty = quantity.rest.replace(/^\([^)]*\)\s*/, "");
+  const unit = quantity.min == null ? { unit: null, rest: afterQty } : consumeUnit(afterQty);
 
   return {
     rawText: trimmed,

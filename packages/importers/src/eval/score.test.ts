@@ -37,7 +37,6 @@ describe("scoreRecipe", () => {
       expected
     );
     expect(scores.score).toBe(1);
-    expect(scores.validStructured).toBe(1);
   });
 
   it("penalizes a dropped step and a missed ingredient", () => {
@@ -50,10 +49,59 @@ describe("scoreRecipe", () => {
       },
       expected
     );
+    expect(scores.title).toBe(0);
     expect(scores.ingredientRecall).toBeLessThan(1);
     expect(scores.stepCompleteness).toBeLessThan(1);
-    expect(scores.score).toBeGreaterThan(0.4);
+    expect(scores.score).toBeGreaterThan(0.2);
     expect(scores.score).toBeLessThan(0.9);
+  });
+
+  it("does not treat egg as a match for egg noodles", () => {
+    const soup = {
+      title: "Chicken Noodle Soup",
+      servings: 6,
+      ingredients: ["chicken", "egg noodles", "carrot"],
+      stepCount: 2,
+      stepMustInclude: ["noodles"],
+    };
+    const scores = scoreRecipe(
+      {
+        title: "Chicken Noodle Soup",
+        servings: 6,
+        ingredients: ["chicken", "egg", "carrot"],
+        steps: ["Simmer the chicken.", "Add the egg."],
+      },
+      soup
+    );
+    expect(scores.ingredientRecall).toBeLessThan(1);
+  });
+
+  it("penalizes extra steps", () => {
+    const scores = scoreRecipe(
+      {
+        title: "Weeknight Tomato Pasta",
+        servings: 4,
+        ingredients: ["pasta", "olive oil", "garlic", "crushed tomatoes", "basil"],
+        steps: ["Boil.", "Garlic.", "Basil.", "Plate leftovers.", "Wash the pot."],
+      },
+      expected
+    );
+    expect(scores.stepCompleteness).toBeLessThan(1);
+  });
+
+  it("scores a plausibly wrong extract below the eve gate", () => {
+    const scores = scoreRecipe(
+      {
+        title: "Pasta",
+        servings: 2,
+        ingredients: ["egg", "olive oil", "noodles"],
+        steps: ["Boil water.", "Add noodles.", "Drain.", "Eat.", "Clean up."],
+      },
+      expected
+    );
+    expect(scores.score).toBeLessThan(IMPORT_EVAL_SCORE_GATE);
+    expect(scores.title).toBe(0);
+    expect(scores.ingredientRecall).toBeLessThan(1);
   });
 
   it("accepts either pot-pie serving reading", () => {
@@ -88,9 +136,8 @@ describe("scoreRecipe", () => {
       (scores.title +
         scores.ingredientRecall +
         scores.ingredientPrecision +
-        scores.stepCompleteness +
-        scores.validStructured) /
-        5
+        scores.stepCompleteness) /
+        4
     );
   });
 

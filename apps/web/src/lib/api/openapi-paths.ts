@@ -302,14 +302,18 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     tags: ["recipes"],
     summary: "Import a recipe from a URL or pasted text",
     description:
-      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
+      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send the previewed `draft` with `save=true` to persist without extracting again. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
     request: {
       body: {
         content: {
           "application/json": {
             schema: z.object({
               source: z.enum(["url", "paste"]),
-              content: z.string(),
+              content: z.string().optional(),
+              draft: z
+                .unknown()
+                .optional()
+                .describe("Previewed recipe from a prior save:false call. Skips extract."),
               save: z
                 .boolean()
                 .optional()
@@ -423,6 +427,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
                 .optional(),
               isHandwritten: z.boolean().optional(),
               save: z.boolean().optional(),
+              draft: z
+                .unknown()
+                .optional()
+                .describe("Previewed recipe from a prior save:false call. Skips extract."),
               allowDuplicate: z
                 .boolean()
                 .optional()

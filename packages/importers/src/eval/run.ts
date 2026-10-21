@@ -6,7 +6,7 @@ import { createPhotoImporter } from "../importers/photo";
 import { extractRecipeWithLlm } from "../utils/llm-recipe";
 import { pageTextFromHtml } from "../utils/page-text";
 import { parseRecipeServings } from "../utils/recipe-ld";
-import { ALL_CASES, type EvalCase, type EvalJob } from "./cases";
+import { type EvalCase, type EvalJob } from "./cases";
 import { mean, median, scoreRecipe, type CaseScores, type ObservedRecipe } from "./score";
 
 export type CaseResult = {
@@ -143,19 +143,6 @@ export async function runImportCase(model: string, evalCase: EvalCase): Promise<
     costUsd: costFromMeta(tracked.usage),
     gateway: tracked.usage.providerMetadata?.gateway,
   };
-}
-
-export async function runImportEval(
-  models: string[],
-  cases: EvalCase[] = ALL_CASES
-): Promise<CaseResult[]> {
-  const results: CaseResult[] = [];
-  for (const model of models) {
-    for (const evalCase of cases) {
-      results.push(await runImportCase(model, evalCase));
-    }
-  }
-  return results;
 }
 
 export function summarizeResults(results: CaseResult[]): JobSummary[] {

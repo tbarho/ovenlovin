@@ -144,6 +144,7 @@ test.describe("REST + MCP with a real API key", () => {
           kind: "custom",
           target: "blueberries",
           severity: "prefer_avoid",
+          confirmUnknown: true,
         },
       });
       expect(addedRule.status(), await addedRule.text()).toBe(200);
@@ -158,7 +159,12 @@ test.describe("REST + MCP with a real API key", () => {
 
       const restRule = await request.post(`/api/v1/people/${personId}/rules`, {
         headers,
-        data: { kind: "custom", target: "food coloring", severity: "prefer_avoid" },
+        data: {
+          kind: "custom",
+          target: "food coloring",
+          severity: "prefer_avoid",
+          confirmUnknown: true,
+        },
       });
       expect(restRule.status(), await restRule.text()).toBe(201);
       const restBody = (await restRule.json()) as {
@@ -561,6 +567,24 @@ test.describe("REST + MCP with a real API key", () => {
     };
     expect(unknownBody.error?.code).toBe(-32602);
     expect(unknownBody.error?.message).toContain("confirmUnknown: true");
+
+    const unknownTag = await mcp(request, key, 32, "tools/call", {
+      name: "manage_person_rules",
+      arguments: {
+        action: "add",
+        personId,
+        kind: "tag",
+        target: "xyzzy",
+        severity: "prefer_avoid",
+      },
+    });
+    expect(unknownTag.status(), await unknownTag.text()).toBe(200);
+    const unknownTagBody = (await unknownTag.json()) as {
+      error?: { code?: number; message?: string };
+    };
+    expect(unknownTagBody.error?.code).toBe(-32602);
+    expect(unknownTagBody.error?.message).toContain("spicy");
+    expect(unknownTagBody.error?.message).toContain("confirmUnknown: true");
   });
 
   test("deletes a TEST Olive Cookbook if one exists in this kitchen", async ({ request }) => {

@@ -6,7 +6,13 @@ import {
   requireHouseholdId,
   requireWritableHousehold,
 } from "@/lib/api/middleware";
-import { RecipeService, type RecipeContentUpdate } from "@ovenlovin/core";
+import {
+  assertAllowedRecipeImageUrls,
+  parseRecipeImages,
+  RecipeService,
+  updateRecipeBodySchema,
+} from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { assertRecipeHousehold } from "@/lib/api/recipes";
 import { loadKitchenServingsSettings, presentRecipeForKitchen } from "@/lib/kitchen-servings";
@@ -36,7 +42,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const context = await getRequestContext(request);
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
-    const body = (await request.json()) as RecipeContentUpdate;
+    const body = await readJsonBody(request, updateRecipeBodySchema);
+    if (body.images !== undefined) {
+      body.images = parseRecipeImages(body.images);
+      assertAllowedRecipeImageUrls(body.images);
+    }
     const service = new RecipeService(getDatabase());
     const existing = await service.getRecipe(id);
     assertRecipeHousehold(existing, householdId, id);

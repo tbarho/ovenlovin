@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
+import { BLOCKED_IMPORT_COPY, NOT_A_RECIPE_COPY, PAGE_GONE_COPY } from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_TIMEOUT_MESSAGE,
@@ -297,6 +298,45 @@ describe("ImportRecipeForm url and paste validation", () => {
     expect(screen.getByTestId("import-quota")).toHaveTextContent("3 of 5 left");
   });
 
+  it.each(["url", "paste"] as const)(
+    "reuses photo stages, estimate, and Cancel while a %s import is in flight",
+    async (tab) => {
+      const user = userEvent.setup();
+      let signal: AbortSignal | undefined;
+      vi.mocked(api).mockImplementation(
+        (_path, init) =>
+          new Promise((_, reject) => {
+            signal = init?.signal ?? undefined;
+            init?.signal?.addEventListener("abort", () => {
+              const error = new Error("Aborted");
+              error.name = "AbortError";
+              reject(error);
+            });
+          })
+      );
+      render(<ImportRecipeForm />);
+      if (tab === "paste") {
+        await user.click(screen.getByRole("tab", { name: "Paste" }));
+        await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Parent A pasta");
+      } else {
+        await user.type(
+          screen.getByPlaceholderText(/example.com/i),
+          "https://www.allrecipes.com/cookies"
+        );
+      }
+      await user.click(screen.getByRole("button", { name: "Import" }));
+      expect(await screen.findByTestId("import-progress")).toBeVisible();
+      expect(screen.getByText("Reading")).toBeVisible();
+      expect(screen.getByText(`${PHOTO_IMPORT_ESTIMATE}.`)).toBeVisible();
+      expect(screen.queryByText("Importing…")).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(signal?.aborted).toBe(true);
+      expect(await screen.findByRole("button", { name: "Import" })).toBeVisible();
+      expect(screen.queryByTestId("import-progress")).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    }
+  );
+
   it("keeps Paste import disabled until there is text", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
@@ -329,9 +369,52 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://example.com/chocolate-chip-cookies"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByText("No recipe found on this page.")).toBeVisible();
+    expect(screen.getByText(NOT_A_RECIPE_COPY)).toBeVisible();
     expect(document.querySelector(".import-error")?.textContent).not.toMatch(/blocked/i);
     expect(api).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
+  it("treats a paste schema-miss as not a recipe, not busy", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValueOnce(new Error("We couldn't find a recipe in that text/photo"));
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "lorem ipsum");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText(NOT_A_RECIPE_COPY)).toBeVisible();
+    expect(screen.queryByText(/busy right now/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
+  it("names a gone page and an unsupported site", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValueOnce(new Error("That page is gone."));
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/example.com/i),
+      "https://www.foodnetwork.com/recipes/old"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText(PAGE_GONE_COPY)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+  });
+
+  it("shows Try again on a paste failure", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValue(new Error("An unexpected error occurred"));
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Soup\nServes 2");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByText("An unexpected error occurred")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Paste the recipe text" })).not.toBeInTheDocument();
   });
 
   it("offers paste and photo when a site blocks the URL importer", async () => {
@@ -345,8 +428,8 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://www.budgetbytes.com/beef-stroganoff/"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(await screen.findByText("That site would not let us read its recipe.")).toBeVisible();
-    expect(screen.queryByText(/bookmarklet/i)).not.toBeInTheDocument();
+    expect(await screen.findByText(BLOCKED_IMPORT_COPY)).toBeVisible();
+    expect(screen.getByText(BLOCKED_IMPORT_COPY)).not.toHaveTextContent(/bookmarklet/i);
     const pasteHelp = screen.getByRole("button", { name: "Paste the recipe text" });
     const photoHelp = screen.getByRole("button", { name: "Add a photo" });
     expect(pasteHelp.compareDocumentPosition(photoHelp) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
@@ -355,9 +438,7 @@ describe("ImportRecipeForm url and paste validation", () => {
 
     await user.click(pasteHelp);
     expect(screen.getByRole("tab", { name: "Paste" })).toHaveAttribute("aria-selected", "true");
-    expect(
-      screen.queryByText("That site would not let us read its recipe.")
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(BLOCKED_IMPORT_COPY)).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "URL" }));
     expect(screen.getByPlaceholderText(/example.com/i)).toHaveValue(
       "https://www.budgetbytes.com/beef-stroganoff/"
@@ -388,40 +469,80 @@ describe("ImportRecipeForm url and paste validation", () => {
       ...crypto,
       randomUUID: () => `import-key-${++n}`,
     });
-    vi.mocked(api).mockRejectedValueOnce(new Error("Connection lost")).mockResolvedValueOnce({
-      id: "00000000-0000-4000-8000-000000000088",
+    const urlPreview = {
       title: "Cookies",
       servings: 4,
-    });
+      ingredients: [{ rawText: "flour" }],
+      steps: [{ text: "Mix." }],
+      source: {
+        type: "url",
+        importerName: "url-importer",
+        importerVersion: "0.1.0",
+        rawExtractionJson: {},
+      },
+    };
+    vi.mocked(api)
+      .mockResolvedValueOnce(urlPreview)
+      .mockRejectedValueOnce(new Error("Connection lost"))
+      .mockResolvedValueOnce(urlPreview)
+      .mockResolvedValueOnce({
+        id: "00000000-0000-4000-8000-000000000088",
+        title: "Cookies",
+        servings: 4,
+      });
     render(<ImportRecipeForm />);
     const field = screen.getByPlaceholderText(/example.com/i);
     await user.type(field, "https://www.budgetbytes.com/pasta");
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(await screen.findByText("Connection lost")).toBeVisible();
+    const firstDialog = await screen.findByRole("dialog");
+    await user.click(within(firstDialog).getByRole("button", { name: "Save recipe" }));
+    expect(await within(firstDialog).findByText("Connection lost")).toBeVisible();
     await user.clear(field);
     await user.type(field, "https://www.budgetbytes.com/cookies");
     await user.click(screen.getByRole("button", { name: "Import" }));
-    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    const secondDialog = await screen.findByRole("dialog");
+    await user.click(within(secondDialog).getByRole("button", { name: "Save recipe" }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(4));
     const keys = vi.mocked(api).mock.calls.map((call) => {
       const headers = call[1]?.headers as Record<string, string> | undefined;
       return headers?.["Idempotency-Key"];
     });
-    expect(keys[0]).toBe("import-key-1");
-    expect(keys[1]).toBe("import-key-2");
+    expect(keys[0]).toBeUndefined();
+    expect(keys[1]).toBe("import-key-1");
+    expect(keys[2]).toBeUndefined();
+    expect(keys[3]).toBe("import-key-2");
     vi.unstubAllGlobals();
   });
 
-  it("shows guessed servings after a paste import", async () => {
+  it("shows guessed servings after a paste import is reviewed and saved", async () => {
     const user = userEvent.setup();
-    vi.mocked(api).mockResolvedValue({
-      id: "00000000-0000-4000-8000-000000000099",
-      title: "Test Recipe 1",
-      servings: 4,
-    });
+    vi.mocked(api)
+      .mockResolvedValueOnce({
+        title: "Test Recipe 1",
+        servings: 4,
+        ingredients: [{ rawText: "pasta" }],
+        steps: [{ text: "Boil." }],
+        source: {
+          type: "paste",
+          importerName: "paste-importer",
+          importerVersion: "0.1.0",
+          rawExtractionJson: {},
+        },
+      })
+      .mockResolvedValueOnce({
+        id: "00000000-0000-4000-8000-000000000099",
+        title: "Test Recipe 1",
+        servings: 4,
+      });
     render(<ImportRecipeForm />);
     await user.click(screen.getByRole("tab", { name: "Paste" }));
     await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Test Recipe 1");
     await user.click(screen.getByRole("button", { name: "Import" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText("Title")).toHaveValue("Test Recipe 1");
+    await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(api).mock.calls[1]?.[1]?.body).toContain("save");
     expect(await screen.findByTestId("import-review")).toHaveTextContent(
       "Imported Test Recipe 1 · 4 servings (guessed)"
     );

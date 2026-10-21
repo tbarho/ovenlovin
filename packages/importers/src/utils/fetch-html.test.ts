@@ -5,16 +5,24 @@ import { fileURLToPath } from "node:url";
 import {
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
-  fetchHtml,
+  RecipePageGoneError,
+  fetchHtml as fetchHtmlImpl,
   googleTranslateUrl,
   importBlockedMessage,
   isUsableRecipeHtml,
   looksLikeBotChallenge,
   looksLikeCompleteDocument,
+  looksLikeGonePage,
+  looksLikeStructuredMarkdownRecipe,
   jinaReaderUrl,
   relatedRecipeUrls,
   shouldKeepLooking,
+  type FetchHtmlOptions,
 } from "./fetch-html";
+
+function fetchHtml(url: string, options: FetchHtmlOptions = {}) {
+  return fetchHtmlImpl(url, { sleep: async () => {}, ...options });
+}
 import { createUrlImporter } from "../importers/url";
 import { extractJsonLd } from "./url";
 
@@ -27,6 +35,33 @@ function fixture(name: string): string {
 const CHALLENGE = fixture("cloudflare-challenge.html");
 const VERCEL_CHECKPOINT = fixture("vercel-security-checkpoint.html");
 const CF_TURNSTILE = fixture("cloudflare-turnstile.html");
+const ABOUT_ALLRECIPES = fixture("about-allrecipes.html");
+const ABOUT_SERIOUSEATS = fixture("about-seriouseats.html");
+const ALLRECIPES_404 = fixture("allrecipes-404.html");
+const RECIPETIN_404 = fixture("recipetin-404.html");
+const SALLY_WIDGET = fixture("sally-recipe-with-turnstile.html");
+const HBH_WIDGET = fixture("hbh-recipe-with-turnstile.html");
+const FOOD52_NAV = fixture("food52-nav-chrome.html");
+const FOOD52_NAV_MD = `Title: Chili Recipes
+
+URL Source: https://food52.com/recipes/chili
+
+Markdown Content:
+Search
+
+### [Ingredients](https://food52.com/pages/recipes)
+*   [Chicken](https://food52.com/recipes/chicken)
+*   [Steak](https://food52.com/recipes/steak)
+*   [Salmon](https://food52.com/recipes/salmon)
+*   [Pasta](https://food52.com/recipes/pasta)
+
+### [How To & Hacks](https://food52.com/food/how-to-and-hacks)
+### Method
+# Beef Chili With Bacon & Black Beans
+
+This Jina copy is Food52 site nav and a title, not a recipe card with amounts and steps.
+Browse more chili recipes on Food52. The live importer saw this after a Vercel 429.
+`;
 const NATASHA = fixture("natashaskitchen-beef-stroganoff.html");
 const BUDGET = fixture("budgetbytes-beef-stroganoff.html");
 const WELLPLATED = fixture("wellplated-beef-stroganoff.html");
@@ -92,11 +127,13 @@ describe("page classification", () => {
       <p>The Recipe you are looking for has been moved. Browse more recipes on Food Network.</p>
       </body></html>`;
     expect(isUsableRecipeHtml(notFound)).toBe(false);
+    expect(looksLikeGonePage(notFound)).toBe(true);
+    expect(looksLikeBotChallenge(notFound)).toBe(false);
   });
 
-  it("lists tried layers in the blocked message", () => {
+  it("lists paste and photo in the blocked message", () => {
     expect(importBlockedMessage(["direct", "google-translate", "jina"])).toBe(
-      "This site blocked the importer (tried direct, google-translate, jina)."
+      "This site blocked the importer. Paste the recipe text or add a photo instead."
     );
   });
 });
@@ -148,6 +185,102 @@ describe("fetchHtml layers", () => {
     expect(result.html).toMatch(/Example Domain/);
     expect(isUsableRecipeHtml(result.html)).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a flaky 403 on the direct layer once", async () => {
+    const waits: number[] = [];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        headers: { get: (name: string) => (name.toLowerCase() === "retry-after" ? "2" : null) },
+        text: async () => CHALLENGE,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        text: async () => BUDGET,
+      });
+
+    const result = await fetchHtml("https://www.budgetbytes.com/beef-stroganoff/", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(result.via).toBe("direct");
+    expect(result.layersTried).toEqual(["direct"]);
+    expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(waits).toEqual([2000]);
+  });
+
+  it("caps Retry-After to the remaining URL budget", async () => {
+    const waits: number[] = [];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        headers: { get: (name: string) => (name.toLowerCase() === "retry-after" ? "30" : null) },
+        text: async () => CHALLENGE,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        text: async () => BUDGET,
+      });
+
+    await fetchHtml("https://www.budgetbytes.com/beef-stroganoff/", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      startedAt: Date.now() - 49_000,
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(waits[0]).toBeGreaterThan(900);
+    expect(waits[0]).toBeLessThanOrEqual(1_000);
+  });
+
+  it("caps a 60s Retry-After at 2.5s so the import route does not 504", async () => {
+    const waits: number[] = [];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        headers: { get: (name: string) => (name.toLowerCase() === "retry-after" ? "60" : null) },
+        text: async () => CHALLENGE,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: "https://www.budgetbytes.com/beef-stroganoff/",
+        text: async () => BUDGET,
+      });
+
+    await fetchHtml("https://www.budgetbytes.com/beef-stroganoff/", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(waits).toEqual([2_500]);
   });
 
   it("uses the Google Translate copy when the live response is a challenge", async () => {
@@ -333,7 +466,8 @@ describe("fetchHtml layers", () => {
       });
     } catch (error) {
       expect(error).toBeInstanceOf(RecipeImportFetchError);
-      expect((error as Error).message).toMatch(/tried direct, google-translate, jina/);
+      expect((error as Error).message).toMatch(/blocked the importer/);
+      expect((error as Error).message).toMatch(/Paste the recipe text or add a photo/);
       expect((error as Error).message).not.toMatch(/No recipe found/);
     }
   });
@@ -372,6 +506,358 @@ describe("fetchHtml layers", () => {
     expect(extractJsonLd(result.html)?.name).toMatch(/stroganoff/i);
   });
 
+  it("keeps a recipe page that embeds Turnstile when JSON-LD Recipe is present", async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <title>Tomato pasta</title>
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
+      <script type="application/ld+json">{"@type":"Recipe","name":"Tomato pasta","recipeIngredient":["pasta"]}</script>
+      </head><body>
+      <div class="cf-turnstile" data-sitekey="example"></div>
+      <p>Verify you are human to continue.</p>
+      </body></html>`;
+    expect(looksLikeBotChallenge(html)).toBe(true);
+    expect(isUsableRecipeHtml(html)).toBe(true);
+    expect(shouldKeepLooking(html, 200)).toBe(false);
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://example.com/tomato-pasta",
+      text: async () => html,
+    });
+    const result = await fetchHtml("https://example.com/tomato-pasta", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+    });
+    expect(result.via).toBe("direct");
+    expect(extractJsonLd(result.html)?.name).toMatch(/tomato pasta/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("says a 200 gone page is gone instead of not a recipe", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://www.foodnetwork.com/recipes/old",
+      text: async () =>
+        `<!DOCTYPE HTML><html lang="en"><head>
+        <title>Page Not Found | Food Network</title>
+        </head><body><h1>Page Not Found</h1>
+        <p>The Recipe you are looking for has been moved.</p>
+        </body></html>`,
+    });
+    await expect(
+      fetchHtml("https://www.foodnetwork.com/recipes/old", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      })
+    ).rejects.toMatchObject({
+      name: "RecipePageGoneError",
+      message: expect.stringMatching(/page is gone[\s\S]*Paste the recipe text or add a photo/),
+    });
+  });
+
+  it("says a 404 is gone instead of no recipe", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      url: "https://www.foodnetwork.com/recipes/old",
+      text: async () =>
+        "<!doctype html><html><head><title>Not Found</title></head><body><h1>Not Found</h1><p>This recipe has been removed.</p></body></html>",
+    });
+    await expect(
+      fetchHtml("https://www.foodnetwork.com/recipes/old", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      })
+    ).rejects.toBeInstanceOf(RecipePageGoneError);
+  });
+
+  it("keeps a full-page fallback when a later layer is blocked", async () => {
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested === "https://en.wikibooks.org/wiki/Cookbook:Pancakes") {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => EXAMPLE_COM,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+
+    const result = await fetchHtml("https://en.wikibooks.org/wiki/Cookbook:Pancakes", {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("direct");
+    expect(result.html).toMatch(/Example Domain/);
+    expect(isUsableRecipeHtml(result.html)).toBe(false);
+  });
+
+  it("throws blocked when a later layer is a non-recipe after a challenge", async () => {
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => ABOUT_ALLRECIPES,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    await expect(
+      fetchHtml("https://www.allrecipes.com/about-us-6648104", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
+    });
+  });
+
+  it("throws blocked when a Cloudflare challenge is followed by a non-recipe cache page", async () => {
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => EXAMPLE_COM,
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    await expect(
+      fetchHtml(live, {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
+    });
+  });
+
+  it("throws blocked when a Vercel 429 is followed by Food52 nav chrome", async () => {
+    expect(isUsableRecipeHtml(FOOD52_NAV)).toBe(true);
+    expect(isUsableRecipeHtml(FOOD52_NAV_MD)).toBe(true);
+    expect(FOOD52_NAV).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+
+    const live = "https://food52.com/recipes/chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => FOOD52_NAV_MD,
+        };
+      }
+      if (requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => FOOD52_NAV,
+        };
+      }
+      return {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        url: requested,
+        headers: {
+          get: (name: string) => (name.toLowerCase() === "x-vercel-mitigated" ? "challenge" : null),
+        },
+        text: async () => VERCEL_CHECKPOINT,
+      };
+    });
+
+    await expect(
+      fetchHtml(live, {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toMatchObject({
+      name: "RecipeImportFetchError",
+      message: expect.stringMatching(/blocked the importer/),
+    });
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+    expect(extractJsonLd(FOOD52_NAV)).toBeNull();
+  });
+
+  it("imports a list-type JSON-LD recipe from cache after a 403", async () => {
+    const html = `<!doctype html><html><head><title>List chili</title>
+      <script type="application/ld+json">{"@type":["Recipe","NewsArticle"],"name":"List chili","recipeIngredient":["1 cup beans"]}</script>
+      </head><body><h1>List chili</h1></body></html>`;
+    expect(html).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+    expect(extractJsonLd(html)?.name).toMatch(/list chili/i);
+
+    const live = "https://www.allrecipes.com/recipe/list-chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("translate")) {
+        return { ok: true, status: 200, statusText: "OK", url: requested, text: async () => html };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/list chili/i);
+  });
+
+  it("imports a @graph Recipe from cache after a 403", async () => {
+    const html = `<!doctype html><html><head><title>Graph chili</title>
+      <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"Serious Eats"},{"@type":["Recipe"],"name":"Graph chili","recipeIngredient":["1 onion"]}]}</script>
+      </head><body><h1>Graph chili</h1></body></html>`;
+    expect(html).not.toMatch(/"@type"\s*:\s*"Recipe"/);
+    expect(extractJsonLd(html)?.name).toMatch(/graph chili/i);
+
+    const live = "https://www.seriouseats.com/graph-chili";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("translate")) {
+        return { ok: true, status: 200, statusText: "OK", url: requested, text: async () => html };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(extractJsonLd(result.html)?.name).toMatch(/graph chili/i);
+  });
+
+  it("imports a structured Jina markdown recipe after a 403", async () => {
+    const markdown = `# Best Lentil Soup
+
+## Ingredients
+- 2 cups green lentils
+- 1 onion, diced
+- 2 tbsp olive oil
+- 4 cups vegetable broth
+
+## Instructions
+1. Warm the oil and cook the onion.
+2. Add lentils and broth and simmer until tender.
+`;
+    expect(looksLikeStructuredMarkdownRecipe(markdown)).toBe(true);
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => markdown,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(result.html).toMatch(/2 cups green lentils/);
+  });
+
+  it("imports Jina markdown whose ingredients use stacked task-checkbox bullets", async () => {
+    const markdown = `# Best Lentil Soup
+
+## Ingredients
+* - [x] ¼ cup extra virgin olive oil
+* - [x] 1 medium yellow onion
+* - [x] 2 carrots, peeled and chopped
+* - [x] 4 cups vegetable broth
+
+## Instructions
+1. Warm the oil and cook the onion.
+2. Add lentils and broth and simmer until tender.
+`;
+    expect(looksLikeStructuredMarkdownRecipe(markdown)).toBe(true);
+    expect(looksLikeStructuredMarkdownRecipe(FOOD52_NAV_MD)).toBe(false);
+
+    const live = "https://cookieandkate.com/best-lentil-soup-recipe/";
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => markdown,
+        };
+      }
+      return {
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        url: requested,
+        text: async () => CHALLENGE,
+      };
+    });
+    const result = await fetchHtml(live, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      env: {},
+    });
+    expect(result.via).toBe("cache");
+    expect(result.html).toMatch(/¼ cup extra virgin olive oil/);
+  });
+
   it("throws blocked, not no-recipe, when every layer is a checkpoint", async () => {
     expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
 
@@ -406,6 +892,66 @@ describe("fetchHtml layers", () => {
   });
 });
 
+describe("import failure reasons", () => {
+  it("does not treat a Turnstile widget on an About page as a block", () => {
+    expect(looksLikeBotChallenge(ABOUT_ALLRECIPES)).toBe(false);
+    expect(looksLikeBotChallenge(ABOUT_SERIOUSEATS)).toBe(false);
+    expect(looksLikeGonePage(ABOUT_ALLRECIPES)).toBe(false);
+    expect(isUsableRecipeHtml(ABOUT_ALLRECIPES)).toBe(false);
+  });
+
+  it("treats 404 chrome with a Recipe ad slot as gone, not a recipe", () => {
+    expect(ALLRECIPES_404).toMatch(/"Recipe"/);
+    expect(RECIPETIN_404).toMatch(/"Recipe"/);
+    expect(looksLikeGonePage(ALLRECIPES_404)).toBe(true);
+    expect(looksLikeGonePage(RECIPETIN_404)).toBe(true);
+    expect(isUsableRecipeHtml(ALLRECIPES_404)).toBe(false);
+    expect(isUsableRecipeHtml(RECIPETIN_404)).toBe(false);
+  });
+
+  it("still treats a real interstitial as a challenge", () => {
+    expect(looksLikeBotChallenge(CHALLENGE)).toBe(true);
+    expect(looksLikeBotChallenge(VERCEL_CHECKPOINT)).toBe(true);
+    expect(looksLikeBotChallenge(CF_TURNSTILE)).toBe(true);
+  });
+
+  it("imports Sally and HBH recipe pages that include a Turnstile widget", () => {
+    expect(looksLikeBotChallenge(SALLY_WIDGET)).toBe(false);
+    expect(looksLikeBotChallenge(HBH_WIDGET)).toBe(false);
+    expect(isUsableRecipeHtml(SALLY_WIDGET)).toBe(true);
+    expect(isUsableRecipeHtml(HBH_WIDGET)).toBe(true);
+    expect(extractJsonLd(SALLY_WIDGET)?.name).toMatch(/chewy chocolate chip/i);
+    expect(extractJsonLd(HBH_WIDGET)?.name).toMatch(/giant chocolate chip/i);
+  });
+
+  it("says an HTTP 404 is gone even if cache HTML quotes Recipe", async () => {
+    const fetchMock = vi.fn(async (requested: string) => {
+      if (requested.includes("jina") || requested.includes("translate")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          url: requested,
+          text: async () => RECIPETIN_404,
+        };
+      }
+      return {
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+        url: requested,
+        text: async () => RECIPETIN_404,
+      };
+    });
+    await expect(
+      fetchHtml("https://www.recipetineats.com/missing/", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: {},
+      })
+    ).rejects.toBeInstanceOf(RecipePageGoneError);
+  });
+});
+
 describe("url importer extract messages", () => {
   it("says no recipe found for example.com", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
@@ -422,7 +968,7 @@ describe("url importer extract messages", () => {
         createUrlImporter().extract({ url: "https://example.com/" })
       ).rejects.toMatchObject({
         name: "RecipeNotFoundError",
-        message: "No recipe found on this page.",
+        message: expect.stringMatching(/couldn't find a recipe/),
       });
     } finally {
       vi.unstubAllGlobals();

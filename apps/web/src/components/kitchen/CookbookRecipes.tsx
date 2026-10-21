@@ -124,7 +124,7 @@ export function CookbookRecipes({
   const [addOpen, setAddOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; recipeId: string } | null>(null);
+  const [toast, setToast] = useState<{ message: string; recipeId?: string } | null>(null);
   const closeRename = useCallback(() => setRenameOpen(false), []);
   const closeAdd = useCallback(() => setAddOpen(false), []);
   const dismissToast = useCallback(() => setToast(null), []);
@@ -153,6 +153,12 @@ export function CookbookRecipes({
         });
       }
       setAddOpen(false);
+      setToast({
+        message:
+          recipeIds.length === 1
+            ? `Added to ${cookbook.name}`
+            : `Added ${recipeIds.length} recipes`,
+      });
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add recipes");
@@ -289,7 +295,14 @@ export function CookbookRecipes({
       />
       <KitchenToast
         message={toast?.message ?? null}
-        onUndo={toast ? () => void undoRemove(toast.recipeId) : undefined}
+        onUndo={
+          toast?.recipeId
+            ? () => {
+                const recipeId = toast.recipeId;
+                if (recipeId) void undoRemove(recipeId);
+              }
+            : undefined
+        }
         onDismiss={dismissToast}
       />
     </>

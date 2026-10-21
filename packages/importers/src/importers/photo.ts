@@ -1,6 +1,5 @@
 /* eslint-disable no-undef */
 import { generateObject } from "ai";
-import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
 import type {
   Importer,
@@ -14,7 +13,9 @@ import type {
 import { stripLeadingStepNumber } from "@ovenlovin/core";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
 import { classifyDraftIngredients } from "../utils/classify-allergens";
-import { importGenerateOptions, resolveVisionModelId } from "../utils/models";
+import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
+import { optionalField } from "../utils/llm-schema";
+import { generateImportObject, resolveVisionModelId } from "../utils/models";
 import { listUncertainFields, type FieldConfidence } from "../utils/uncertain-fields";
 
 const IMPORTER_VERSION = "0.1.0";
@@ -41,50 +42,54 @@ const ocrConfidence = z.enum(["high", "medium", "low", "illegible"]).describe("R
 
 const recipeSchema = z.object({
   title: z.string().describe("Recipe title"),
-  titleConfidence: ocrConfidence.optional().describe("Confidence for the title"),
-  description: z.string().optional().describe("Brief description"),
-  servings: z.number().int().positive().optional().describe("Number of servings"),
-  servingsConfidence: ocrConfidence.optional().describe("Confidence for servings"),
-  prepTimeMinutes: z.number().int().nonnegative().optional().describe("Prep time in minutes"),
-  cookTimeMinutes: z.number().int().nonnegative().optional().describe("Cook time in minutes"),
-  totalTimeMinutes: z.number().int().nonnegative().optional().describe("Total time in minutes"),
-  timesConfidence: ocrConfidence.optional().describe("Confidence for prep/cook/total times"),
-  notes: z.string().optional().describe("Cook notes, tips, or handwritten margin notes if visible"),
-  visibleSource: z
-    .string()
-    .optional()
-    .describe("Cookbook title, author, URL, or card attribution if visible"),
-  cuisine: z.string().optional().describe("Cuisine type"),
-  course: z.string().optional().describe("Course type"),
+  titleConfidence: optionalField(ocrConfidence).describe("Confidence for the title"),
+  description: optionalField(z.string()).describe("Brief description"),
+  servings: optionalField(z.number().positive()).describe("Number of servings"),
+  servingsConfidence: optionalField(ocrConfidence).describe("Confidence for servings"),
+  prepTimeMinutes: optionalField(z.number().nonnegative()).describe("Prep time in minutes"),
+  cookTimeMinutes: optionalField(z.number().nonnegative()).describe("Cook time in minutes"),
+  totalTimeMinutes: optionalField(z.number().nonnegative()).describe("Total time in minutes"),
+  timesConfidence: optionalField(ocrConfidence).describe("Confidence for prep/cook/total times"),
+  notes: optionalField(z.string()).describe(
+    "Cook notes, tips, or handwritten margin notes if visible"
+  ),
+  visibleSource: optionalField(z.string()).describe(
+    "Cookbook title, author, URL, or card attribution if visible"
+  ),
+  cuisine: optionalField(z.string()).describe("Cuisine type"),
+  course: optionalField(z.string()).describe("Course type"),
   ingredients: z
     .array(
       z.object({
         text: z.string().describe("Full ingredient line exactly as written"),
-        quantity: z.string().optional().describe("Quantity if legible"),
-        unit: z.string().optional().describe("Unit of measurement if legible"),
-        ingredient: z.string().optional().describe("Ingredient name if legible"),
-        preparation: z.string().optional().describe("Preparation notes if present"),
-        confidence: ocrConfidence,
+        quantity: optionalField(z.string()).describe("Quantity if legible"),
+        unit: optionalField(z.string()).describe("Unit of measurement if legible"),
+        ingredient: optionalField(z.string()).describe("Ingredient name if legible"),
+        preparation: optionalField(z.string()).describe("Preparation notes if present"),
+        confidence: optionalField(ocrConfidence),
       })
     )
+    .optional()
     .describe("List of ingredients"),
   steps: z
     .array(
       z.object({
         text: z.string().describe("Step instruction text exactly as written"),
-        confidence: ocrConfidence,
+        confidence: optionalField(ocrConfidence),
       })
     )
+    .optional()
     .describe("Cooking steps in order"),
-  ocrQuality: z.enum(["excellent", "good", "fair", "poor"]).describe("Overall image/text quality"),
+  ocrQuality: optionalField(z.enum(["excellent", "good", "fair", "poor"])).describe(
+    "Overall image/text quality"
+  ),
   looksLikeRecipe: z
     .boolean()
     .optional()
     .describe("False when the photo is not a recipe card, cookbook page, or recipe screenshot"),
-  handwrittenNotes: z
-    .string()
-    .optional()
-    .describe("Notes about handwriting quality or legibility issues"),
+  handwrittenNotes: optionalField(z.string()).describe(
+    "Notes about handwriting quality or legibility issues"
+  ),
 });
 
 export function createPhotoImporter(config: ImporterConfig = {}): Importer<PhotoImportInput> {
@@ -110,19 +115,17 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         ? "\n\nIMPORTANT: This is a HANDWRITTEN recipe card. Handwriting recognition is challenging:\n- Mark ingredients/steps as 'illegible' if you cannot read them with high confidence\n- Mark as 'low' confidence for uncertain readings\n- Preserve exact text as written, including quirks\n- Note any legibility issues in handwrittenNotes"
         : "";
 
-      const result = await generate({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
-        model: gateway(visionModelId) as any,
-        abortSignal: combineAbortSignals(AbortSignal.timeout(55_000), config.abortSignal),
-        ...importGenerateOptions(visionModelId),
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
+      let result;
+      try {
+        result = await generateImportObject(generate, visionModelId, {
+          abortSignal: combineAbortSignals(AbortSignal.timeout(55_000), config.abortSignal),
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
 
 Extract:
 - title, servings, prep/cook/total times
@@ -135,13 +138,16 @@ Mark confidence for the title, servings, times, each ingredient, and each step: 
 
 Rate overall ocrQuality: excellent (printed, perfect), good (printed, minor issues), fair (handwritten but mostly legible), poor (blurry, cropped, or significant legibility issues).
 Set looksLikeRecipe false when the photo is not a recipe (a receipt, landscape, random object, or blank page).`,
-              },
-              ...imageMessages,
-            ],
-          },
-        ],
-        schema: recipeSchema,
-      });
+                },
+                ...imageMessages,
+              ],
+            },
+          ],
+          schema: recipeSchema,
+        });
+      } catch (error) {
+        throw tagImportAiTimeout(error);
+      }
 
       return {
         sourceType: "photo",

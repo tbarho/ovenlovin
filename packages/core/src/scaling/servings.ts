@@ -9,8 +9,8 @@ import { effectivePlanServings } from "./default-servings";
 export { SERVINGS_HARD_MAX };
 
 /**
- * Recipe cards often omit yield. Treat those as a 4-serving card so a plan
- * entry's servings still produce a stored `scaleFactor`.
+ * Recipe cards often omit yield. Display and plan cook-for still use 4 as a
+ * fallback count; scaling amounts must not guess a 4-serving card.
  */
 export const DEFAULT_RECIPE_SERVINGS = 4;
 
@@ -25,7 +25,10 @@ export function scaleFactorForPlanEntry(
   defaultCookFor?: number | null,
   mode?: DefaultServingsMode
 ): number {
-  const base = recipeServings && recipeServings > 0 ? recipeServings : DEFAULT_RECIPE_SERVINGS;
+  if (!(recipeServings && recipeServings > 0)) {
+    return scaleFactor && scaleFactor > 0 ? roundScaleFactor(scaleFactor) : 1;
+  }
+  const base = recipeServings;
   const servings = effectivePlanServings({
     entryServings,
     defaultCookFor: defaultCookFor && defaultCookFor > 0 ? defaultCookFor : base,
@@ -87,7 +90,9 @@ export function formatQuantity(value: number, roundUp = false): string {
   const sign = value < 0 ? "-" : "";
   const abs = Math.abs(value);
   const whole = Math.floor(abs + 1e-9);
-  const snapped = snapFraction(abs - whole, roundUp);
+  let snapped = snapFraction(abs - whole, roundUp);
+  // a leftover closer to 0 than 1/8 used to print as 0 tsp
+  if (whole === 0 && snapped.value < 1e-9) snapped = { value: 1 / 8, label: "1/8" };
 
   if (snapped.value < 1e-9) return `${sign}${whole}`;
   if (Math.abs(snapped.value - 1) < 1e-9) return `${sign}${whole + 1}`;
@@ -175,7 +180,7 @@ export type FriendlyMeasure = {
  * Pick a shoppable unit and cooking-fraction label. Raw `quantity`/`unit`
  * stay unchanged; this is display-only.
  */
-function mixedCupTbsp(tbsp: number): FriendlyMeasure | null {
+function mixedCupTbsp(tbsp: number, roundUp = false): FriendlyMeasure | null {
   const cups = tbsp / 16;
   if (cups < 0.25) return null;
   const whole = Math.floor(cups + 1e-9);
@@ -186,9 +191,13 @@ function mixedCupTbsp(tbsp: number): FriendlyMeasure | null {
   }
   if (cupDown < 0.25) return null;
   const rem = tbsp - cupDown * 16;
-  if (rem < 0.5) return null;
+  if (rem < 1 / 24 - 1e-9) return null;
+  const leftover =
+    rem >= 1 - 1e-9
+      ? `${formatQuantity(rem, roundUp)} tbsp`
+      : `${formatQuantity(rem * 3, roundUp)} tsp`;
   return {
-    displayQuantity: `${formatQuantity(cupDown)} cup + ${formatQuantity(rem)} tbsp`,
+    displayQuantity: `${formatQuantity(cupDown, roundUp)} cup + ${leftover}`,
   };
 }
 
@@ -208,6 +217,9 @@ export function toFriendlyMeasure(
   if (!family || !from) {
     return { displayQuantity: formatQuantity(quantity, roundUp), displayUnit: normalized };
   }
+  if (normalized === "tsp" && quantity > 0 && quantity < 1 / 16) {
+    return { displayQuantity: "a pinch" };
+  }
 
   const base = quantity * from.toBase;
   let best = { unit: normalized, quantity, score: Number.POSITIVE_INFINITY };
@@ -226,17 +238,25 @@ export function toFriendlyMeasure(
     }
   }
 
-  if (normalized === "tbsp" && best.unit === "cup") {
+  if (normalized === "tbsp") {
     const cups = quantity / 16;
-    const shown = quantityValue(formatQuantity(best.quantity, roundUp));
-    if (shown <= 0 || Math.abs(shown - cups) / cups > 0.05) {
+    const shown = quantityValue(
+      formatQuantity(best.unit === "cup" ? best.quantity : cups, roundUp)
+    );
+    if (best.unit === "cup" && shown > 0 && Math.abs(shown - cups) / cups <= 0.05) {
+      return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };
+    }
+    const mixed = mixedCupTbsp(quantity, roundUp);
+    if (best.unit === "cup") {
       return (
-        mixedCupTbsp(quantity) ?? {
+        mixed ?? {
           displayQuantity: formatQuantity(quantity, roundUp),
           displayUnit: "tbsp",
         }
       );
     }
+    // leftover under 1 tbsp (tsp), even when scoring kept tbsp
+    if (mixed?.displayQuantity.includes("tsp")) return mixed;
   }
 
   return { displayQuantity: formatQuantity(best.quantity, roundUp), displayUnit: best.unit };

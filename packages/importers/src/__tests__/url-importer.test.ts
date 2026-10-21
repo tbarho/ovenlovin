@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  classifyImportFailure,
+  IMPORT_AI_UNAVAILABLE_CODE,
+  IMPORT_BLOCKED_CODE,
+  isImportAiUnavailable,
+} from "@ovenlovin/core";
 import { createUrlImporter } from "../importers/url";
 import { extractJsonLd, RecipeNotFoundError } from "../utils/url";
+import * as llmRecipe from "../utils/llm-recipe";
 import chocolateChipCookiesJson from "./fixtures/url/chocolate-chip-cookies.json";
 
 describe("URL Importer", () => {
@@ -110,6 +117,35 @@ describe("URL Importer", () => {
         extractorVersion: "0.1.0",
       });
       expect(draft.images).toEqual(["https://example.com/og.jpg"]);
+    });
+
+    it("cleans Budget Bytes cost notes and glued units", async () => {
+      const draft = await importer.toDraft({
+        sourceType: "url",
+        sourceUrl: "https://www.budgetbytes.com/beef-stroganoff/",
+        rawData: {
+          name: "Beef Stroganoff",
+          recipeYield: ["4", "4 about 1.5 cups each"],
+          recipeIngredient: [
+            "2 cloves garlic ($0.16)",
+            "1/2 lb.ground beef ($2.50*)",
+            "1 cupsour cream",
+            "10 oz.mushrooms ($1.49)",
+          ],
+          recipeInstructions: [{ "@type": "HowToStep", text: "Brown the beef." }],
+        },
+        extractedAt: new Date(),
+        extractorVersion: "0.1.0",
+      });
+      expect(draft.servings).toBe(4);
+      expect(draft.ingredients.map((item) => item.rawText)).toEqual([
+        "2 cloves garlic",
+        "1/2 lb. ground beef",
+        "1 cup sour cream",
+        "10 oz. mushrooms",
+      ]);
+      expect(draft.ingredients[1]?.unit).toBe("lb");
+      expect(draft.ingredients[2]?.unit).toBe("cup");
     });
 
     it("parses array recipeYield and strips a trailing Recipe from the title", async () => {
@@ -363,6 +399,145 @@ describe("URL Importer", () => {
       expect(raw.rawData.recipeIngredient).toHaveLength(3);
     });
 
+    it("starts the AI time budget before the page fetch", async () => {
+      const extract = vi.spyOn(llmRecipe, "extractRecipeWithLlm").mockResolvedValue({
+        "@type": "Recipe",
+        name: "Grandma soup",
+        recipeIngredient: ["1 chicken", "2 carrots"],
+        recipeInstructions: [{ "@type": "HowToStep", text: "Simmer." }],
+      });
+      let fetchedAt = 0;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          fetchedAt = Date.now();
+          return {
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            url: "https://example-blog.test/grandma-soup",
+            text: async () => prosePage,
+          };
+        })
+      );
+
+      const started = Date.now();
+      await createUrlImporter().extract({ url: "https://example-blog.test/grandma-soup" });
+      const startedAt = extract.mock.calls[0]?.[1]?.startedAt;
+      expect(startedAt).toBeGreaterThanOrEqual(started);
+      expect(startedAt).toBeLessThanOrEqual(fetchedAt);
+      extract.mockRestore();
+    });
+
+    it("says blocked when captured HTML is a bot check", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://www.halfbakedharvest.com/giant-chocolate-chip-cookies/",
+          html: `<html><body><h1>Just a moment...</h1><p>Enable JavaScript and cookies to continue</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeImportFetchError",
+        message: expect.stringMatching(
+          /blocked the importer[\s\S]*Paste the recipe text or add a photo/
+        ),
+      });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
+    it("says blocked for a Vercel Security Checkpoint before the LLM", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://food52.com/recipes/chili",
+          html: `<html><head><title>Vercel Security Checkpoint</title></head>
+            <body><h1>Vercel Security Checkpoint</h1><p>This request was blocked (429).</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeImportFetchError",
+        message: expect.stringMatching(
+          /blocked the importer[\s\S]*Paste the recipe text or add a photo/
+        ),
+      });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
+    it("says gone for a 404 chrome page before the LLM", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://www.foodnetwork.com/recipes/old",
+          html: `<html><head><title>Page Not Found | Food Network</title></head>
+            <body><h1>Page Not Found</h1><p>The Recipe you are looking for has been moved.</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipePageGoneError",
+        message: expect.stringMatching(/page is gone[\s\S]*Paste the recipe text or add a photo/),
+      });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
+    it("rejects Instagram before fetching", async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      await expect(
+        createUrlImporter().extract({
+          url: "https://www.instagram.com/p/example/",
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeUnsupportedSiteError",
+        message: "We can't import from this site. Paste the recipe text or add a photo.",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("says not a recipe for About pages that only embed Turnstile", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://www.allrecipes.com/about-us-6648104",
+          html: `<html><head><title>About Us - Allrecipes</title>
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script></head>
+            <body><div class="cf-turnstile"></div><h1>About Allrecipes</h1>
+            <p>This about page is not a recipe.</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipeNotFoundError",
+        message: expect.stringMatching(/couldn't find a recipe/),
+      });
+      expect(extractWithLlm).toHaveBeenCalledOnce();
+    });
+
+    it("extracts Sally and HBH recipes that include a Turnstile widget", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      const sally = await createUrlImporter({ extractWithLlm }).extract({
+        url: "https://sallysbakingaddiction.com/chewy-chocolate-chip-cookies/",
+        html: `<html><head><title>Chewy Chocolate Chip Cookies</title>
+          <script type="application/ld+json">${JSON.stringify({
+            "@type": "Recipe",
+            name: "Chewy Chocolate Chip Cookies",
+            recipeIngredient: ["2 cups flour", "1 cup butter"],
+            recipeInstructions: [{ "@type": "HowToStep", text: "Mix." }],
+          })}</script>
+          <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script></head>
+          <body><div class="cf-turnstile"></div><h1>Chewy Chocolate Chip Cookies</h1></body></html>`,
+      });
+      expect(sally.rawData).toMatchObject({ name: "Chewy Chocolate Chip Cookies" });
+      const hbh = await createUrlImporter({ extractWithLlm }).extract({
+        url: "https://www.halfbakedharvest.com/giant-chocolate-chip-cookies/",
+        html: `<html><head><title>Giant Chocolate Chip Cookies</title>
+          <script type="application/ld+json">${JSON.stringify({
+            "@type": "Recipe",
+            name: "Giant Chocolate Chip Cookies",
+            recipeIngredient: ["2 cups flour", "1 cup brown sugar"],
+            recipeInstructions: [{ "@type": "HowToStep", text: "Bake." }],
+          })}</script>
+          <div class="cf-turnstile"></div></html>`,
+      });
+      expect(hbh.rawData).toMatchObject({ name: "Giant Chocolate Chip Cookies" });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
     it("says no recipe found when every extract layer misses", async () => {
       vi.stubGlobal(
         "fetch",
@@ -385,9 +560,95 @@ describe("URL Importer", () => {
         })
       ).rejects.toMatchObject({
         name: "RecipeNotFoundError",
-        message: "No recipe found on this page.",
+        message: expect.stringMatching(
+          /couldn't find a recipe[\s\S]*Paste the recipe text or add a photo/
+        ),
       });
       expect(RecipeNotFoundError).toBeTruthy();
+    });
+
+    const microdataFallback = `<!doctype html><html><head><title>Lentil soup</title></head>
+      <body>
+      <p itemprop="recipeIngredient">lentils</p>
+      <p>This cache copy has a recipeIngredient itemprop but is not a recipe card with amounts or steps. Extra copy so extractHtmlRecipe finds no list.</p>
+      </body></html>`;
+
+    function fetchChallengeThen(html: string) {
+      return vi.fn(async (requested: string) => {
+        if (String(requested).includes("jina") || String(requested).includes("translate")) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            url: requested,
+            text: async () => html,
+          };
+        }
+        return {
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+          url: requested,
+          text: async () =>
+            `<html><body><h1>Just a moment...</h1><p>Enable JavaScript and cookies to continue</p></body></html>`,
+        };
+      });
+    }
+
+    it("says blocked when a 403 challenge fallback is rejected by the LLM", async () => {
+      vi.stubGlobal("fetch", fetchChallengeThen(microdataFallback));
+      const error = await createUrlImporter({ extractWithLlm: async () => null })
+        .extract({ url: "https://cookieandkate.com/best-lentil-soup-recipe/" })
+        .catch((err: unknown) => err);
+      expect(error).toMatchObject({ name: "RecipeNotFoundError", directBlocked: true });
+      expect(classifyImportFailure(error)?.code).toBe(IMPORT_BLOCKED_CODE);
+    });
+
+    it("says blocked when a 403 challenge fallback throws in parse", async () => {
+      vi.stubGlobal("fetch", fetchChallengeThen(microdataFallback));
+      const error = await createUrlImporter({
+        extractWithLlm: async () => {
+          throw new Error("parse failed");
+        },
+      })
+        .extract({ url: "https://cookieandkate.com/best-lentil-soup-recipe/" })
+        .catch((err: unknown) => err);
+      expect(error).toMatchObject({ message: "parse failed", directBlocked: true });
+      expect(classifyImportFailure(error)?.code).toBe(IMPORT_BLOCKED_CODE);
+    });
+
+    it("keeps AI-unavailable when a 403 challenge fallback hits an AI outage", async () => {
+      vi.stubGlobal("fetch", fetchChallengeThen(microdataFallback));
+      const error = await createUrlImporter({
+        extractWithLlm: async () => {
+          throw Object.assign(new Error("aborted"), {
+            name: "TimeoutError",
+            importAiTimeout: true,
+          });
+        },
+      })
+        .extract({ url: "https://cookieandkate.com/best-lentil-soup-recipe/" })
+        .catch((err: unknown) => err);
+      expect(
+        classifyImportFailure(error)?.code ??
+          (isImportAiUnavailable(error) ? IMPORT_AI_UNAVAILABLE_CODE : null)
+      ).toBe(IMPORT_AI_UNAVAILABLE_CODE);
+    });
+
+    it("logs host and path without query, fragment, or newline", async () => {
+      const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+      await createUrlImporter({ extractWithLlm: async () => null })
+        .extract({
+          url: "https://example.com/recipe?token=secret#frag\ninjected",
+          html: "<!doctype html><html><body><p>Example Domain</p></body></html>",
+        })
+        .catch(() => undefined);
+      const line = info.mock.calls
+        .map((call) => String(call[0]))
+        .find((text) => text.startsWith("import_url "));
+      info.mockRestore();
+      expect(line).toMatch(/^import_url url=example.com\/recipe /);
+      expect(line).not.toMatch(/[?#]|token=secret|\n|\r/);
     });
   });
 });

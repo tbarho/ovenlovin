@@ -202,7 +202,7 @@ GET /api/v1/recipes
 }
 ```
 
-`hiddenCount` / `hidden` are present when `forAttendees` is set. Warn / prefer-avoid findings stay on visible recipes; only blocks hide a recipe.
+`hiddenCount` / `hidden` are present when `forAttendees` is set. Warn / prefer_avoid findings stay on visible recipes; only blocks hide a recipe.
 
 #### Get Recipe
 

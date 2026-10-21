@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
+import { IMPORT_NOT_A_RECIPE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import {
-  BLOCKED_IMPORT_COPY,
+  displayImportFailure,
   importGuessedNotice,
   importInputError,
-  isBlockedImportError,
+  NOT_A_RECIPE_COPY,
 } from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
@@ -24,8 +24,14 @@ import {
   type PhotoImportJobSnapshot,
 } from "@/lib/photo-import-job";
 import { isImageFile } from "@/lib/photo-import-review";
-import { PhotoImportDialog } from "./PhotoImportDialog";
+import { ImportReviewForm, PhotoImportDialog, PhotoImportProgress } from "./PhotoImportDialog";
 import { ImportFromDevice } from "./ImportFromDevice";
+import { BottomSheet } from "./BottomSheet";
+import {
+  recipeCreateBodyFromReview,
+  reviewDraftFromImportPreview,
+  type PhotoReviewDraft,
+} from "@/lib/photo-import-review";
 
 function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -171,9 +177,14 @@ export function ImportRecipeForm({
     notice: string;
   } | null>(null);
   const [retryable, setRetryable] = useState(false);
+  const [review, setReview] = useState<PhotoReviewDraft | null>(null);
+  const [reviewPreview, setReviewPreview] = useState<unknown>(null);
   const importKeyRef = useRef("");
+  const previewAbortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     importKeyRef.current = "";
+    setReview(null);
+    setReviewPreview(null);
   }, [source, url, paste]);
   const fieldValue = source === "paste" ? paste : url;
   const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(fieldValue.trim());
@@ -223,9 +234,51 @@ export function ImportRecipeForm({
       setError(inputError);
       return;
     }
+    previewAbortRef.current?.abort();
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
     setPending(true);
     setError(null);
     setRetryable(false);
+    setExistingRecipeUrl(null);
+    try {
+      const preview = await api<Parameters<typeof reviewDraftFromImportPreview>[0]>(
+        "/api/v1/recipes/import",
+        {
+          method: "POST",
+          keepalive: false,
+          signal: controller.signal,
+          body: JSON.stringify({ source, content: fieldValue }),
+        }
+      );
+      setReviewPreview(preview);
+      setReview(reviewDraftFromImportPreview(preview));
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      const message = err instanceof Error ? err.message : "Could not import recipe";
+      setError(message);
+      setExistingRecipeUrl(apiErrorRecipeUrl(err));
+      setRetryable(
+        displayImportFailure(message) !== NOT_A_RECIPE_COPY &&
+          message !== IMPORT_NOT_A_RECIPE_MESSAGE
+      );
+    } finally {
+      if (previewAbortRef.current === controller) previewAbortRef.current = null;
+      setPending(false);
+    }
+  }
+
+  function cancelPreview() {
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = null;
+    setPending(false);
+  }
+
+  async function saveReview(event: React.FormEvent) {
+    event.preventDefault();
+    if (!review) return;
+    setPending(true);
+    setError(null);
     setExistingRecipeUrl(null);
     try {
       if (!importKeyRef.current) importKeyRef.current = crypto.randomUUID();
@@ -233,23 +286,32 @@ export function ImportRecipeForm({
         method: "POST",
         keepalive: false,
         headers: { "Idempotency-Key": importKeyRef.current },
-        body: JSON.stringify({ source, content: fieldValue, save: true }),
+        body: JSON.stringify({
+          source,
+          content: fieldValue,
+          save: true,
+          draft: {
+            ...(typeof reviewPreview === "object" && reviewPreview ? reviewPreview : {}),
+            ...recipeCreateBodyFromReview(review),
+          },
+        }),
       });
       importKeyRef.current = "";
+      setReview(null);
+      setReviewPreview(null);
       setImported({
         id: recipe.id,
         notice: importGuessedNotice(recipe.title, recipe.servings ?? null),
       });
       window.sessionStorage.setItem(
         "ovenlovin.import-toast",
-        JSON.stringify({ title: recipe.title, servings: recipe.servings ?? 4 })
+        JSON.stringify({ title: recipe.title, servings: recipe.servings ?? null })
       );
       router.push(`/recipes/${recipe.id}`);
-      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not import recipe");
+      setError(err instanceof Error ? err.message : "Could not save recipe");
       setExistingRecipeUrl(apiErrorRecipeUrl(err));
-      setRetryable(err instanceof Error && err.message === IMPORT_AI_UNAVAILABLE_MESSAGE);
+      setRetryable(true);
     } finally {
       setPending(false);
     }
@@ -271,7 +333,10 @@ export function ImportRecipeForm({
               role="tab"
               className="tab"
               aria-selected={source === "url"}
-              onClick={() => setSource("url")}
+              onClick={() => {
+                setSource("url");
+                setError(null);
+              }}
             >
               URL
             </button>
@@ -280,7 +345,10 @@ export function ImportRecipeForm({
               role="tab"
               className="tab"
               aria-selected={source === "paste"}
-              onClick={() => setSource("paste")}
+              onClick={() => {
+                setSource("paste");
+                setError(null);
+              }}
             >
               Paste
             </button>
@@ -289,7 +357,10 @@ export function ImportRecipeForm({
               role="tab"
               className="tab"
               aria-selected={source === "photo"}
-              onClick={() => setSource("photo")}
+              onClick={() => {
+                setSource("photo");
+                setError(null);
+              }}
             >
               Photo
             </button>
@@ -355,45 +426,26 @@ export function ImportRecipeForm({
                 />
               )}
             </div>
-            <button
-              className="btn primary import-submit"
-              type="submit"
-              disabled={pending || !canSubmit}
-            >
-              {pending ? "Importing…" : "Import"}
-            </button>
+            {pending ? (
+              <div data-testid="import-progress">
+                <PhotoImportProgress phase="reading" percent={100} previewUrl={null} />
+                <div className="sheet-actions">
+                  <button type="button" className="btn compact" onClick={cancelPreview}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button className="btn primary import-submit" type="submit" disabled={!canSubmit}>
+                Import
+              </button>
+            )}
           </div>
         )}
-        {error && isBlockedImportError(error) ? (
+        {error ? (
           <div className="import-blocked" role="status">
-            <p className="muted import-error">{BLOCKED_IMPORT_COPY}</p>
-            <div className="import-blocked-actions">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setSource("paste");
-                  setError(null);
-                }}
-              >
-                Paste the recipe text
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setSource("photo");
-                  setError(null);
-                }}
-              >
-                Add a photo
-              </button>
-            </div>
-          </div>
-        ) : error ? (
-          <div role="status">
             <p className="muted import-error">
-              {error}
+              {displayImportFailure(error)}
               {existingRecipeUrl ? (
                 <>
                   {" "}
@@ -401,11 +453,37 @@ export function ImportRecipeForm({
                 </>
               ) : null}
             </p>
-            {retryable ? (
+            {!existingRecipeUrl ? (
               <div className="import-blocked-actions">
-                <button type="submit" className="btn" disabled={pending || !canSubmit}>
-                  Try again
-                </button>
+                {retryable ? (
+                  <button type="submit" className="btn" disabled={pending || !canSubmit}>
+                    Try again
+                  </button>
+                ) : null}
+                {source !== "paste" ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      setSource("paste");
+                      setError(null);
+                    }}
+                  >
+                    Paste the recipe text
+                  </button>
+                ) : null}
+                {source !== "photo" ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      setSource("photo");
+                      setError(null);
+                    }}
+                  >
+                    Add a photo
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -416,6 +494,30 @@ export function ImportRecipeForm({
           </p>
         ) : null}
       </form>
+      <BottomSheet
+        open={Boolean(review)}
+        title="Review import"
+        onClose={() => {
+          setReview(null);
+          setReviewPreview(null);
+        }}
+      >
+        {review ? (
+          <ImportReviewForm
+            draft={review}
+            heroSrc={null}
+            pending={pending}
+            error={error}
+            existingRecipeUrl={existingRecipeUrl}
+            possibleDuplicate={null}
+            savedRecipeId={imported?.id ?? null}
+            showPhotoChrome={false}
+            onOpenSaved={() => imported && router.push(`/recipes/${imported.id}`)}
+            onChange={setReview}
+            onSave={saveReview}
+          />
+        ) : null}
+      </BottomSheet>
       <PhotoImportDialog open={photoOpen} onClose={closePhoto} onTypeOrPaste={typeOrPaste} />
       <ImportFromDevice />
     </>

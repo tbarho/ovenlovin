@@ -34,8 +34,6 @@ export function importSummaryReporter(): EvalReporter {
             result.assertions.find((item) => item.key === "ingredient-precision")?.score ?? 0,
           stepCompleteness:
             result.assertions.find((item) => item.key === "step-completeness")?.score ?? 0,
-          validStructured:
-            result.assertions.find((item) => item.key === "valid-structured")?.score ?? 0,
           score: scored?.score ?? 0,
         },
         latencyMs: numberMeta(scoredMeta.latencyMs) ?? 0,

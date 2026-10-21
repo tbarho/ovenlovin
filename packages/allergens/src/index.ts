@@ -78,6 +78,7 @@ export {
   searchCatalog,
   resolveCatalogTarget,
   canonicalizePersonRuleTarget,
+  supportedRuleTargetCodes,
   unknownRuleTargetMessage,
   ambiguousRuleTargetMessage,
   catalogGroupForRuleKind,

@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
-import { CookbookService, fingerprintImageBlob, RecipeService } from "@ovenlovin/core";
+import {
+  CookbookService,
+  draftFromSavedPreview,
+  fingerprintImageBlob,
+  RecipeService,
+} from "@ovenlovin/core";
 import { perceptualHashFromImageBlob } from "@ovenlovin/core/photo-hash";
 import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
@@ -76,26 +81,39 @@ export async function POST(request: NextRequest) {
       throw nearPhotoDuplicateConflict(near);
     }
 
-    const preview = await extractPhotoPreview(input.images, {
-      householdId,
-      isHandwritten: input.isHandwritten,
-      put: createVercelImagePut(),
-      abortSignal: request.signal,
-    });
-    const failure = classifyPhotoImportPreview(preview);
-    if (failure === "blurry") {
-      throw new BadRequestError(
-        "This photo is too blurry to read. Try a sharper shot, or type or paste it.",
-        { code: "PHOTO_BLURRY" }
-      );
+    const savedDraft =
+      input.save && input.draft != null ? draftFromSavedPreview(input.draft) : null;
+    if (input.save && input.draft != null && !savedDraft) {
+      throw new BadRequestError("That previewed draft is not a recipe");
     }
-    if (failure === "not_recipe") {
-      throw new BadRequestError("That does not look like a recipe. Type or paste it instead.", {
-        code: "PHOTO_NOT_RECIPE",
-      });
+
+    const preview = savedDraft
+      ? null
+      : await extractPhotoPreview(input.images, {
+          householdId,
+          isHandwritten: input.isHandwritten,
+          put: createVercelImagePut(),
+          abortSignal: request.signal,
+        });
+    if (preview) {
+      const failure = classifyPhotoImportPreview(preview);
+      if (failure === "blurry") {
+        throw new BadRequestError(
+          "This photo is too blurry to read. Try a sharper shot, or type or paste it.",
+          { code: "PHOTO_BLURRY" }
+        );
+      }
+      if (failure === "not_recipe") {
+        throw new BadRequestError("That does not look like a recipe. Type or paste it instead.", {
+          code: "PHOTO_NOT_RECIPE",
+        });
+      }
     }
 
     if (!input.save) {
+      if (!preview) {
+        throw new BadRequestError("Provide one or more recipe photos (file or imageUrl)");
+      }
       return jsonResponse({
         ...presentPhotoImportPreview(preview),
         saved: false,
@@ -104,7 +122,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { result, quota } = await saveImportedRecipe(draftFromPhotoPreview(preview), {
+    const persistDraft = savedDraft ?? draftFromPhotoPreview(preview!);
+    const { result, quota } = await saveImportedRecipe(persistDraft, {
       householdId,
       createdBy: createdBy as string,
       idempotencyKey: getIdempotencyKey(request),
@@ -124,13 +143,19 @@ export async function POST(request: NextRequest) {
 
     const presented = presentRecipeDetailsForApi(recipe, requestApiOrigin(request));
     const body = withDemoImportQuota(
-      {
-        ...presentPhotoImportPreview(preview),
-        images: presented.images,
-        recipe: presented,
-        reviewReasons: presented.reviewReasons,
-        uncertainFields: presented.uncertainFields,
-      },
+      preview
+        ? {
+            ...presentPhotoImportPreview(preview),
+            images: presented.images,
+            recipe: presented,
+            reviewReasons: presented.reviewReasons,
+            uncertainFields: presented.uncertainFields,
+          }
+        : {
+            ...presented,
+            reviewReasons: presented.reviewReasons,
+            uncertainFields: presented.uncertainFields,
+          },
       quota
     );
     if (isIdempotentReplay(result)) {

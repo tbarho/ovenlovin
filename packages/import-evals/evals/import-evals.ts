@@ -47,7 +47,6 @@ export function defineImportJobEvals(cases: EvalCase[]) {
           t.score(result.scores.ingredientRecall).label("ingredient-recall");
           t.score(result.scores.ingredientPrecision).label("ingredient-precision");
           t.score(result.scores.stepCompleteness).label("step-completeness");
-          t.score(result.scores.validStructured).label("valid-structured");
           t.score({
             score: result.scores.score,
             metadata: {

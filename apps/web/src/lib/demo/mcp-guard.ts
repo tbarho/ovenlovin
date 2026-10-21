@@ -18,15 +18,43 @@ const WRITE_TOOLS = new Set([
   "manage_household_settings",
 ]);
 
+const READ_ACTIONS = new Set(["get", "list"]);
+const DEFAULT_READ_ACTION: Record<string, string> = {
+  manage_household_settings: "get",
+  manage_household_schedule: "get",
+};
+
+export function isDemoMcpWriteCall(body: unknown): boolean {
+  const message = body as {
+    method?: string;
+    params?: { name?: string; arguments?: { action?: unknown; save?: unknown } };
+  };
+  if (message.method !== "tools/call") return false;
+  const name = message.params?.name ?? "";
+  if (!WRITE_TOOLS.has(name)) return false;
+  const args = message.params?.arguments ?? {};
+  if ((name === "import_recipe" || name === "import_recipe_from_image") && args.save === false) {
+    return false;
+  }
+  const action = typeof args.action === "string" ? args.action : (DEFAULT_READ_ACTION[name] ?? "");
+  return !READ_ACTIONS.has(action);
+}
+
 export async function enforceDemoMcpGuards(
   request: NextRequest,
   householdId: string,
   body: unknown
 ): Promise<void> {
-  const message = body as { method?: string; params?: { name?: string } };
+  const message = body as {
+    method?: string;
+    params?: { name?: string; arguments?: { save?: unknown } };
+  };
   if (message.method !== "tools/call") return;
   const name = message.params?.name ?? "";
-  if (!WRITE_TOOLS.has(name)) return;
+  const preview =
+    (name === "import_recipe" || name === "import_recipe_from_image") &&
+    message.params?.arguments?.save === false;
+  if (!isDemoMcpWriteCall(body) && !preview) return;
 
   const url = new URL(request.url);
   url.pathname =
@@ -35,7 +63,7 @@ export async function enforceDemoMcpGuards(
       : `/mcp/${name}`;
   const synthetic = new NextRequest(url, { method: "POST", headers: request.headers });
   const context: RequestContext = { householdId, isBot: true };
-  await enforceDemoRequestGuards(synthetic, context);
+  await enforceDemoRequestGuards(synthetic, context, preview ? { preview: true } : undefined);
 }
 
 export function isSuccessfulImportRecipeCall(
@@ -51,6 +79,8 @@ export function isSuccessfulImportRecipeCall(
   ) {
     return false;
   }
+  const save = (body as { params?: { arguments?: { save?: unknown } } }).params?.arguments?.save;
+  if (save === false) return false;
   if (!resultBody) return false;
   try {
     const parsed = JSON.parse(resultBody) as {

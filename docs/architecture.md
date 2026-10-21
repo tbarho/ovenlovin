@@ -222,7 +222,7 @@ export const personRules = pgTable('person_rules', {
   
   kind: text('kind').notNull(), // 'allergen' | 'ingredient' | 'dietary' | 'nutrition'
   target: text('target').notNull(), // 'peanut' | 'vegetarian' | etc.
-  severity: text('severity').notNull(), // 'block' | 'warn' | 'prefer-avoid'
+  severity: text('severity').notNull(), // 'block' | 'warn' | 'prefer_avoid'
   notes: text('notes'),
   
   createdAt: timestamp('created_at').notNull().defaultNow(),

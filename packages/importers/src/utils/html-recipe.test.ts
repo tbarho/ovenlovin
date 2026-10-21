@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { extractHtmlRecipe, htmlLooksLikeRecipe } from "./html-recipe";
+import { extractHtmlRecipe, htmlLooksLikeRecipe, parseHtmlRecipeServings } from "./html-recipe";
 import { createUrlImporter } from "../importers/url";
 import { isUsableRecipeHtml } from "./fetch-html";
 
@@ -49,6 +49,35 @@ describe("extractHtmlRecipe", () => {
     expect(recipe?.name).toBe("Pancake");
     expect(recipe?.recipeIngredient).toEqual(expect.arrayContaining(["1 cup flour", "1 egg"]));
     expect(recipe?.recipeInstructions).toHaveLength(2);
+  });
+
+  it("reads a WPRM card with split spans, servings, and cost notes", () => {
+    const html = `<html><body>
+      <div class="wprm-recipe-container">
+        <h2 class="wprm-recipe-name">Beef Stroganoff</h2>
+        <span class="wprm-recipe-servings">4</span>
+        <li class="wprm-recipe-ingredient">
+          <span class="wprm-recipe-ingredient-amount">1</span><span class="wprm-recipe-ingredient-unit">lb.</span><span class="wprm-recipe-ingredient-name">ground beef</span><span class="wprm-recipe-ingredient-notes">($2.50*)</span>
+        </li>
+        <li class="wprm-recipe-ingredient">
+          <span class="wprm-recipe-ingredient-amount">1</span><span class="wprm-recipe-ingredient-unit">cup</span><span class="wprm-recipe-ingredient-name">sour cream</span>
+        </li>
+        <li class="wprm-recipe-ingredient">
+          <span class="wprm-recipe-ingredient-amount">8</span><span class="wprm-recipe-ingredient-unit">oz.</span><span class="wprm-recipe-ingredient-name">mushrooms</span>
+        </li>
+        <div class="wprm-recipe-instruction-text">Brown the beef.</div>
+        <div class="wprm-recipe-instruction-text">Stir in the sour cream.</div>
+      </div>
+    </body></html>`;
+    const recipe = extractHtmlRecipe(html);
+    expect(recipe?.name).toMatch(/stroganoff/i);
+    expect(recipe?.recipeYield).toBe(4);
+    expect(recipe?.recipeIngredient).toEqual([
+      "1 lb. ground beef",
+      "1 cup sour cream",
+      "8 oz. mushrooms",
+    ]);
+    expect(parseHtmlRecipeServings(html)).toBe(4);
   });
 
   it("reads a Jina markdown recipe card", () => {

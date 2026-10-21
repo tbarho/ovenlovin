@@ -2,6 +2,10 @@ import {
   HouseholdAccessError,
   IMPORT_AI_UNAVAILABLE_CODE,
   IMPORT_AI_UNAVAILABLE_MESSAGE,
+  classifyImportFailure,
+  INVALID_IMAGE_URL_CODE,
+  INVALID_IMAGE_URL_MESSAGE,
+  InvalidImageUrlError,
   importAiUnavailableMeta,
   isImportAiUnavailable,
 } from "@ovenlovin/core";
@@ -62,11 +66,16 @@ export class ApiError extends Error {
   }
 
   toResponse(instance?: string): NextResponse {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/problem+json",
+    };
+    const retryAfter = this.extensions?.retryAfter;
+    if (typeof retryAfter === "number" && Number.isFinite(retryAfter)) {
+      headers["Retry-After"] = String(Math.max(0, Math.ceil(retryAfter)));
+    }
     return NextResponse.json(this.toProblemDetail(instance), {
       status: this.status,
-      headers: {
-        "Content-Type": "application/problem+json",
-      },
+      headers,
     });
   }
 }
@@ -229,10 +238,30 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
     return ValidationError.fromZodError(error).toResponse(instance);
   }
 
+  if (error instanceof SyntaxError) {
+    return new BadRequestError("Request body must be JSON").toResponse(instance);
+  }
+
+  if (error instanceof InvalidImageUrlError) {
+    return new BadRequestError(error.message, { code: error.code }).toResponse(instance);
+  }
+  if (error instanceof Error && error.message === "blocked image url") {
+    return new BadRequestError(INVALID_IMAGE_URL_MESSAGE, {
+      code: INVALID_IMAGE_URL_CODE,
+    }).toResponse(instance);
+  }
+
   // Demo HTML routes redirect to /api/demo/enter. If that throw leaks into a
   // REST handler, return problem+json 401 instead of a 500.
   if (isNextRedirectError(error)) {
     return new UnauthorizedError("Authentication required").toResponse(instance);
+  }
+
+  const importFailure = classifyImportFailure(error);
+  if (importFailure) {
+    return new BadRequestError(importFailure.message, {
+      code: importFailure.code,
+    }).toResponse(instance);
   }
 
   if (isImportAiUnavailable(error)) {

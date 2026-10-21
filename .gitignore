@@ -9,6 +9,7 @@ e2e-artifacts
 playwright-report
 test-results
 .eve
+packages/importers/src/eval/fixtures/photo/.fonts
 
 # Next.js
 .next/

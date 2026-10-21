@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import type {
   Importer,
   ImporterConfig,
@@ -7,7 +8,7 @@ import type {
   ParsedIngredient,
   ParsedStep,
 } from "../types/importer";
-import { parseIngredientLine } from "@ovenlovin/core";
+import { classifyImportFailure, parseIngredientLine } from "@ovenlovin/core";
 import {
   fetchHtml,
   extractJsonLd,
@@ -16,11 +17,19 @@ import {
   extractPageImages,
   pickImportRecipeImage,
   RecipeNotFoundError,
+  RecipeImportFetchError,
+  RecipePageGoneError,
+  RecipeUnsupportedSiteError,
+  isUnsupportedImportUrl,
+  looksLikeBotChallenge,
+  looksLikeGonePage,
+  looksLikeSoftBlock,
 } from "../utils/url";
-import { extractHtmlRecipe } from "../utils/html-recipe";
+import { extractHtmlRecipe, parseHtmlRecipeServings } from "../utils/html-recipe";
 import { extractRecipeWithLlm } from "../utils/llm-recipe";
 import { pageTextFromHtml } from "../utils/page-text";
 import {
+  cleanImportedIngredientLine,
   cleanImportedTitle,
   parseRecipeNotes,
   parseRecipeNutrition,
@@ -39,7 +48,6 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
 
     canHandle(input: UrlImportInput): boolean {
       try {
-        // eslint-disable-next-line no-undef
         const url = new URL(input.url);
         return url.protocol === "http:" || url.protocol === "https:";
       } catch {
@@ -48,47 +56,104 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
     },
 
     async extract(input: UrlImportInput): Promise<RawExtraction> {
-      const captured = Boolean(input.html?.trim() || input.jsonLd);
-      const { html, finalUrl, layersTried } = captured
-        ? { html: input.html ?? "", finalUrl: input.url, layersTried: ["device"] }
-        : await fetchHtml(input.url);
-      const jsonLd =
-        (input.jsonLd
-          ? extractJsonLd(
-              `<script type="application/ld+json">${JSON.stringify(input.jsonLd)}</script>`
-            )
-          : null) ?? extractJsonLd(html);
-      const htmlRecipe = jsonLd ? null : extractHtmlRecipe(html);
-      const structured =
-        jsonLd ??
-        htmlRecipe ??
-        (await (config.extractWithLlm
-          ? config.extractWithLlm(pageTextFromHtml(html))
-          : extractRecipeWithLlm(pageTextFromHtml(html), { modelId: config.modelId })));
-
-      if (!structured) {
-        throw new RecipeNotFoundError(finalUrl, layersTried);
+      if (isUnsupportedImportUrl(input.url)) {
+        throw new RecipeUnsupportedSiteError(input.url);
       }
+      const startedAt = Date.now();
+      const captured = Boolean(input.html?.trim() || input.jsonLd);
+      let html = "";
+      let finalUrl = input.url;
+      let layersTried: string[] = captured ? ["device"] : [];
+      let via = captured ? "device" : "direct";
+      let directStatus: number | undefined;
+      let directBlocked = false;
 
-      return {
-        sourceType: "url",
-        sourceUrl: finalUrl,
-        pageImages: extractPageImages(html),
-        author: decodeOptionalText(extractAuthor(structured)),
-        attribution: structured.publisher
-          ? typeof structured.publisher === "string"
-            ? decodeHtmlEntities(structured.publisher)
-            : typeof structured.publisher === "object" &&
-                structured.publisher !== null &&
-                "name" in structured.publisher
-              ? decodeHtmlEntities(String((structured.publisher as { name: unknown }).name))
-              : undefined
-          : undefined,
-        rawData: structured,
-        extractedAt: new Date(),
-        extractorVersion: IMPORTER_VERSION,
-        modelUsed: jsonLd || htmlRecipe ? undefined : config.modelId,
-      };
+      try {
+        if (!captured) {
+          const fetched = await fetchHtml(input.url, { startedAt });
+          html = fetched.html;
+          finalUrl = fetched.finalUrl;
+          layersTried = fetched.layersTried;
+          via = fetched.via;
+          directStatus = fetched.directStatus;
+          directBlocked = fetched.directBlocked;
+        } else {
+          html = input.html ?? "";
+        }
+        if (looksLikeBotChallenge(html) || looksLikeSoftBlock(html)) {
+          throw new RecipeImportFetchError(finalUrl, 403, "Forbidden", layersTried);
+        }
+        if (looksLikeGonePage(html)) {
+          throw new RecipePageGoneError(finalUrl);
+        }
+        const jsonLd =
+          (input.jsonLd
+            ? extractJsonLd(
+                `<script type="application/ld+json">${JSON.stringify(input.jsonLd)}</script>`
+              )
+            : null) ?? extractJsonLd(html);
+        const htmlRecipe = jsonLd ? null : extractHtmlRecipe(html);
+        let structured =
+          jsonLd ??
+          htmlRecipe ??
+          (await (config.extractWithLlm
+            ? config.extractWithLlm(pageTextFromHtml(html))
+            : extractRecipeWithLlm(pageTextFromHtml(html), {
+                modelId: config.modelId,
+                startedAt,
+              })));
+
+        if (!structured) {
+          throw new RecipeNotFoundError(finalUrl, layersTried, directBlocked);
+        }
+
+        if (parseRecipeServings(structured) == null) {
+          const htmlServings = parseHtmlRecipeServings(html);
+          if (htmlServings != null) {
+            structured = { ...structured, recipeYield: htmlServings };
+          }
+        }
+
+        console.info(
+          `import_url url=${importLogUrl(input.url)} directStatus=${directStatus ?? "-"} via=${via} reason=imported`
+        );
+        return {
+          sourceType: "url",
+          sourceUrl: finalUrl,
+          pageImages: extractPageImages(html),
+          author: decodeOptionalText(extractAuthor(structured)),
+          attribution: structured.publisher
+            ? typeof structured.publisher === "string"
+              ? decodeHtmlEntities(structured.publisher)
+              : typeof structured.publisher === "object" &&
+                  structured.publisher !== null &&
+                  "name" in structured.publisher
+                ? decodeHtmlEntities(String((structured.publisher as { name: unknown }).name))
+                : undefined
+            : undefined,
+          rawData: structured,
+          extractedAt: new Date(),
+          extractorVersion: IMPORTER_VERSION,
+          modelUsed: jsonLd || htmlRecipe ? undefined : config.modelId,
+        };
+      } catch (error) {
+        if (directBlocked && error && typeof error === "object") {
+          Object.assign(error, { directBlocked: true, directStatus });
+        }
+        const status =
+          directStatus ??
+          (error &&
+          typeof error === "object" &&
+          typeof (error as { status?: unknown }).status === "number"
+            ? (error as { status: number }).status
+            : undefined);
+        const reason =
+          classifyImportFailure(error)?.code ?? (error instanceof Error ? error.name : "error");
+        console.info(
+          `import_url url=${importLogUrl(input.url)} directStatus=${status ?? "-"} via=${via} reason=${reason}`
+        );
+        throw error;
+      }
     },
 
     async toDraft(raw: RawExtraction): Promise<RecipeDraft> {
@@ -169,6 +234,15 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
   };
 }
 
+function importLogUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.host}${parsed.pathname}`;
+  } catch {
+    return "-";
+  }
+}
+
 function decodeOptionalText(value: string | undefined): string | undefined {
   return value == null ? value : decodeHtmlEntities(value);
 }
@@ -191,7 +265,7 @@ function parseIngredients(recipeIngredient: unknown): ParsedIngredient[] {
   }
 
   return ingredientStrings.map((line) => {
-    const rawText = decodeHtmlEntities(line);
+    const rawText = cleanImportedIngredientLine(decodeHtmlEntities(line));
     const parsed = parseIngredientLine(rawText);
     return {
       rawText,

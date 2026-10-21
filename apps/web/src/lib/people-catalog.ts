@@ -1,6 +1,7 @@
 import {
   findCatalogEntry,
   searchCatalog,
+  supportedRuleTargetCodes,
   type CatalogEntry,
   type CatalogGroup,
   type RuleIntent,
@@ -35,15 +36,6 @@ export function catalogGroupForKind(kind: string): CatalogGroup {
   return "ingredient";
 }
 
-function featuredForMode(mode: PeoplePickerMode): CatalogEntry[] {
-  if (mode === "doesnt_like") return searchCatalog("", { intent: "dislike", limit: 12 });
-  if (mode === "loves") return searchCatalog("", { intent: "love", limit: 16 });
-  return [
-    ...searchCatalog("", { intent: "allergy", limit: 12 }),
-    ...searchCatalog("", { intent: "diet", limit: 8 }),
-  ];
-}
-
 function searchIntentsForMode(mode: PeoplePickerMode): RuleIntent[] {
   if (mode === "doesnt_like") return ["dislike", "allergy", "diet"];
   if (mode === "loves") return ["love", "dislike", "diet"];
@@ -57,7 +49,7 @@ export function searchPeopleCatalog(
   const mode = options.mode ?? "cant_eat";
   const limit = options.limit ?? 24;
   const q = query.trim();
-  if (!q) return featuredForMode(mode).slice(0, limit);
+  if (!q) return [];
 
   const merged = searchIntentsForMode(mode).flatMap((intent) =>
     searchCatalog(q, { intent, limit: 12 })
@@ -89,7 +81,8 @@ export function unknownAllergenWarning(query: string, suggestion: CatalogEntry |
   if (suggestion) {
     return `We can't check '${typed}' against recipes; did you mean ${suggestion.name}?`;
   }
-  return `We can't check '${typed}' against recipes. Save it only if you meant this exact food.`;
+  const supported = supportedRuleTargetCodes().join(", ");
+  return `We can't check '${typed}' against recipes. Supported targets: ${supported}. Save it only if you meant this exact food.`;
 }
 
 export type FoodAddResolution =
@@ -104,20 +97,22 @@ export function resolveFoodAdd(
   if (!q) return null;
   const suggestion = topCatalogMatch(q, options);
   const custom = customCatalogOffer(q);
-  if (suggestion) return { kind: "canonical", entry: suggestion };
-  if (!custom) return null;
-  return { kind: "unknown", entry: custom, suggestion };
+  if (!custom && suggestion) return { kind: "canonical", entry: suggestion };
+  if (custom) return { kind: "unknown", entry: custom, suggestion };
+  return null;
 }
 
 export function customCatalogOffer(query: string): CatalogEntry | null {
   const q = query.trim();
   if (!q) return null;
   const matches = searchPeopleCatalog(q, { limit: 40 });
+  const needle = q.toLowerCase();
   const exact = matches.some(
     (entry) =>
       entry.code === slugTarget(q) ||
-      entry.name.toLowerCase() === q.toLowerCase() ||
-      entry.phraseName.toLowerCase() === q.toLowerCase()
+      entry.name.toLowerCase() === needle ||
+      entry.phraseName.toLowerCase() === needle ||
+      entry.aliases.some((alias) => alias.toLowerCase() === needle)
   );
   if (exact) return null;
   return customIngredientEntry(q);

@@ -2,8 +2,17 @@
  * Unit tests for MCP tool schemas
  */
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { HouseholdAccessError, HouseholdService, RecipeService } from "@ovenlovin/core";
+import {
+  HouseholdAccessError,
+  HouseholdService,
+  IMPORT_BLOCKED_CODE,
+  IMPORT_BLOCKED_MESSAGE,
+  RecipeService,
+} from "@ovenlovin/core";
 import * as db from "@ovenlovin/db";
 import * as importers from "@ovenlovin/importers";
 import {
@@ -35,6 +44,12 @@ import {
   manageKitchenMembersTool,
   canonicalizePersonRuleTarget,
 } from "./index.js";
+import { jsonRpcFromThrown } from "./json-rpc";
+
+const urlFixtures = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../importers/src/__tests__/fixtures/url"
+);
 
 describe("MCP Tool Schemas", () => {
   describe("search_recipes", () => {
@@ -305,6 +320,19 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(true);
     });
 
+    it("accepts a previewed draft", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "paste",
+        draft: {
+          title: "Weeknight Tomato Pasta",
+          ingredients: [{ rawText: "12 oz pasta" }],
+          steps: [{ text: "Boil the pasta." }],
+          source: { type: "paste", importerName: "paste-importer", importerVersion: "0.1.0" },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
     it("defaults includeSource to true", () => {
       const result = getRecipeTool.inputSchema.safeParse({
         id: "550e8400-e29b-41d4-a716-446655440000",
@@ -393,6 +421,24 @@ describe("MCP Tool Schemas", () => {
         }).success
       ).toBe(true);
       expect(createRecipeTool.inputSchema.safeParse({ title: "" }).success).toBe(false);
+      expect(
+        createRecipeTool.inputSchema.safeParse({
+          title: "Toast",
+          images: ["https://images.unsplash.com/photo-abc"],
+        }).success
+      ).toBe(true);
+      expect(
+        createRecipeTool.inputSchema.safeParse({
+          title: "Toast",
+          images: ["http://169.254.169.254/latest/meta-data/x.png"],
+        }).success
+      ).toBe(false);
+      expect(
+        createRecipeTool.inputSchema.safeParse({
+          title: "Toast",
+          images: [{ url: "https://example.com/a.png" }],
+        }).success
+      ).toBe(false);
     });
 
     it("validates delete tools", () => {
@@ -594,6 +640,8 @@ describe("MCP Tool Schemas", () => {
     });
 
     it("validates manage_people and manage_person_rules", () => {
+      expect(managePersonRulesTool.description).toMatch(/target=spicy/);
+      expect(managePersonRulesTool.description).toMatch(/prefer_avoid/);
       expect(managePeopleTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
       expect(managePeopleTool.inputSchema.safeParse({ action: "create" }).success).toBe(false);
       expect(
@@ -658,7 +706,65 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.skipReview).toBe(false);
+        expect(result.data.save).toBeUndefined();
       }
+    });
+
+    it("accepts preview, idempotency, and allowDuplicate fields", () => {
+      const result = importRecipeTool.inputSchema.safeParse({
+        source: "paste",
+        content: "Soup\nServes 2",
+        save: false,
+        idempotencyKey: "olive-preview-1",
+        allowDuplicate: true,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("returns a preview without persisting when save is false", async () => {
+      const persist = vi
+        .spyOn(RecipeService.prototype, "persistImportedDraft")
+        .mockResolvedValue({} as never);
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+
+      const result = await importRecipeTool.handler(
+        {
+          source: "paste",
+          save: false,
+          skipReview: false,
+          draft: {
+            title: "Weeknight Tomato Pasta",
+            ingredients: [{ rawText: "12 oz pasta" }],
+            steps: [{ text: "Boil the pasta." }],
+            source: {
+              type: "paste",
+              importerName: "paste-importer",
+              importerVersion: "1",
+              rawExtractionJson: {},
+            },
+          },
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          scopes: [],
+        }
+      );
+
+      expect(result).toMatchObject({
+        saved: false,
+        preview: true,
+        title: "Weeknight Tomato Pasta",
+      });
+      expect(result.ingredients).toEqual([{ rawText: "12 oz pasta" }]);
+      expect(result.steps).toEqual([{ text: "Boil the pasta." }]);
+      expect(result.draft).toMatchObject({
+        title: "Weeknight Tomato Pasta",
+        ingredients: [{ rawText: "12 oz pasta" }],
+        steps: [{ text: "Boil the pasta." }],
+      });
+      expect(result.recipeId).toBeUndefined();
+      expect(persist).not.toHaveBeenCalled();
     });
 
     it("reports an already-saved URL as a duplicate without fetching", async () => {
@@ -699,10 +805,69 @@ describe("MCP Tool Schemas", () => {
       expect(result.title).toBe("Weeknight Chili");
       expect(extract).not.toHaveBeenCalled();
     });
+
+    it("returns import_blocked for a Food52 429 plus nav-chrome fallback", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "findUrlImportCollision").mockResolvedValue(null);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (requested: string) => {
+          const url = String(requested);
+          if (url.includes("jina") || url.includes("translate")) {
+            return {
+              ok: true,
+              status: 200,
+              statusText: "OK",
+              url,
+              text: async () => readFileSync(join(urlFixtures, "food52-nav-chrome.html"), "utf8"),
+            };
+          }
+          return {
+            ok: false,
+            status: 429,
+            statusText: "Too Many Requests",
+            url,
+            headers: {
+              get: (name: string) =>
+                name.toLowerCase() === "x-vercel-mitigated" ? "challenge" : null,
+            },
+            text: async () =>
+              readFileSync(join(urlFixtures, "vercel-security-checkpoint.html"), "utf8"),
+          };
+        })
+      );
+
+      try {
+        await importRecipeTool.handler(
+          {
+            source: "url",
+            content: "https://food52.com/recipes/chili",
+            skipReview: false,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        );
+        throw new Error("expected import to fail");
+      } catch (error) {
+        const rpc = jsonRpcFromThrown(1, error);
+        expect(rpc.error.message).toBe(IMPORT_BLOCKED_MESSAGE);
+        expect(rpc.error.data).toEqual({ code: IMPORT_BLOCKED_CODE });
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
   });
 
   describe("import_recipe_from_image", () => {
     it("accepts an image URL", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          imageUrl: "https://images.unsplash.com/photo-abc",
+        }).success
+      ).toBe(true);
       const result = importRecipeFromImageTool.inputSchema.safeParse({
         imageUrl: "https://blob.vercel-storage.com/card.jpg",
       });
@@ -726,8 +891,80 @@ describe("MCP Tool Schemas", () => {
       ).toBe(true);
     });
 
+    it("rejects a private or file image URL", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          imageUrl: "http://169.254.169.254/latest/meta-data/",
+        }).success
+      ).toBe(false);
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          imageUrl: "file:///etc/passwd",
+        }).success
+      ).toBe(false);
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          images: [{ url: "http://localhost:3000/api/v1/status" }],
+        }).success
+      ).toBe(false);
+    });
+
+    it("returns a duplicate photo as a result, not invalid-params", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "findPhotoImportDuplicate").mockResolvedValue({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        title: "Weeknight Tomato Pasta",
+        status: "published",
+        notes: null,
+        servings: 4,
+        images: [],
+      } as never);
+      const extract = vi.fn();
+      vi.spyOn(importers, "runPhotoImport").mockImplementation(extract);
+
+      const previous = process.env.AI_GATEWAY_API_KEY;
+      process.env.AI_GATEWAY_API_KEY = "test-key";
+      try {
+        const result = await importRecipeFromImageTool.handler(
+          {
+            imageUrl: "https://blob.vercel-storage.com/card.jpg",
+            skipReview: false,
+            save: true,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        );
+        expect(result).toMatchObject({
+          recipeId: "550e8400-e29b-41d4-a716-446655440000",
+          created: false,
+          duplicate: true,
+          title: "Weeknight Tomato Pasta",
+        });
+        expect(extract).not.toHaveBeenCalled();
+      } finally {
+        if (previous === undefined) delete process.env.AI_GATEWAY_API_KEY;
+        else process.env.AI_GATEWAY_API_KEY = previous;
+      }
+    });
+
     it("rejects a call with no image", () => {
       expect(importRecipeFromImageTool.inputSchema.safeParse({}).success).toBe(false);
+    });
+
+    it("accepts a previewed draft without an image", () => {
+      expect(
+        importRecipeFromImageTool.inputSchema.safeParse({
+          draft: {
+            title: "Weeknight Tomato Pasta",
+            ingredients: [{ rawText: "12 oz pasta" }],
+            steps: [{ text: "Boil the pasta." }],
+            source: { type: "photo", importerName: "photo-importer", importerVersion: "0.1.0" },
+          },
+        }).success
+      ).toBe(true);
     });
   });
 

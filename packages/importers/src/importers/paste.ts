@@ -1,6 +1,5 @@
 /* eslint-disable no-undef */
 import { generateObject } from "ai";
-import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
 import type {
   Importer,
@@ -11,35 +10,41 @@ import type {
   ParsedStep,
   ImporterConfig,
 } from "../types/importer";
+import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
 import { calculateOverallConfidence, detectMethodTags, extractTimers } from "../utils/confidence";
-import { importGenerateOptions, resolveDefaultModelId } from "../utils/models";
+import { optionalField } from "../utils/llm-schema";
+import {
+  IMPORT_GENERATE_TIMEOUT_MS,
+  generateImportObject,
+  resolveDefaultModelId,
+} from "../utils/models";
 
 const IMPORTER_VERSION = "0.1.0";
 
 const recipeSchema = z.object({
   title: z.string().describe("Recipe title"),
-  description: z.string().optional().describe("Brief description of the recipe"),
-  servings: z.number().int().positive().optional().describe("Number of servings"),
-  prepTimeMinutes: z.number().int().nonnegative().optional().describe("Prep time in minutes"),
-  cookTimeMinutes: z.number().int().nonnegative().optional().describe("Cook time in minutes"),
-  totalTimeMinutes: z.number().int().nonnegative().optional().describe("Total time in minutes"),
-  notes: z.string().optional().describe("Cook notes, tips, or make-ahead instructions"),
-  cuisine: z.string().optional().describe("Cuisine type (e.g., Italian, Mexican)"),
-  course: z.string().optional().describe("Course type (e.g., Dessert, Main Course)"),
+  description: optionalField(z.string()).describe("Brief description of the recipe"),
+  servings: optionalField(z.number().positive()).describe("Number of servings"),
+  prepTimeMinutes: optionalField(z.number().nonnegative()).describe("Prep time in minutes"),
+  cookTimeMinutes: optionalField(z.number().nonnegative()).describe("Cook time in minutes"),
+  totalTimeMinutes: optionalField(z.number().nonnegative()).describe("Total time in minutes"),
+  notes: optionalField(z.string()).describe("Cook notes, tips, or make-ahead instructions"),
+  cuisine: optionalField(z.string()).describe("Cuisine type (e.g., Italian, Mexican)"),
+  course: optionalField(z.string()).describe("Course type (e.g., Dessert, Main Course)"),
   ingredients: z
     .array(
       z.object({
         text: z.string().describe("Full ingredient line as written"),
-        quantity: z.string().optional().describe("Quantity (e.g., '2', '1/4', '2-3')"),
-        unit: z.string().optional().describe("Unit of measurement"),
-        ingredient: z.string().optional().describe("Ingredient name"),
-        preparation: z
-          .string()
-          .optional()
-          .describe("Preparation notes (e.g., 'diced', 'softened')"),
+        quantity: optionalField(z.string()).describe("Quantity (e.g., '2', '1/4', '2-3')"),
+        unit: optionalField(z.string()).describe("Unit of measurement"),
+        ingredient: optionalField(z.string()).describe("Ingredient name"),
+        preparation: optionalField(z.string()).describe(
+          "Preparation notes (e.g., 'diced', 'softened')"
+        ),
         optional: z.boolean().optional().describe("Is this ingredient optional?"),
       })
     )
+    .optional()
     .describe("List of ingredients"),
   steps: z
     .array(
@@ -47,6 +52,7 @@ const recipeSchema = z.object({
         text: z.string().describe("Step instruction text"),
       })
     )
+    .optional()
     .describe("Cooking steps in order"),
 });
 
@@ -64,17 +70,19 @@ export function createPasteImporter(config: ImporterConfig = {}): Importer<Paste
     },
 
     async extract(input: PasteImportInput): Promise<RawExtraction> {
-      const result = await generate({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // gateway() uses AI_GATEWAY_API_KEY, then VERCEL_OIDC_TOKEN / OIDC on Vercel.
-        model: gateway(modelId) as any,
-        schema: recipeSchema,
-        ...importGenerateOptions(modelId),
-        prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.
+      let result;
+      try {
+        result = await generateImportObject(generate, modelId, {
+          schema: recipeSchema,
+          abortSignal: AbortSignal.timeout(IMPORT_GENERATE_TIMEOUT_MS),
+          prompt: `Extract recipe data from this text. Preserve exact ingredient text. If information is unclear or missing, omit it rather than guessing.
 
 Text:
 ${input.text}`,
-      });
+        });
+      } catch (error) {
+        throw tagImportAiTimeout(error);
+      }
 
       return {
         sourceType: "paste",

@@ -17,10 +17,16 @@ export type DemoLimitDecision =
       remainingImports?: number;
       importLimit?: number;
       importCount?: number;
+      resetAt?: string;
+      retryAfter?: number;
     };
 
 export function remainingImportsFromCount(importCount: number): number {
   return Math.max(0, DEMO_IMPORT_LIMIT - importCount);
+}
+
+export function demoSandboxImportsSpent(importCount: number): boolean {
+  return remainingImportsFromCount(importCount) <= 0;
 }
 
 /** Demo write quota: POST/PUT/PATCH only. Deletes stay free so testers can clean up. */
@@ -49,11 +55,23 @@ export function rollWriteWindow(counters: DemoLimitCounters, now = new Date()): 
   return counters;
 }
 
+export function writeWindowReset(
+  counters: DemoLimitCounters,
+  now = new Date()
+): { resetAt: string; retryAfter: number } {
+  const resetAt = new Date(counters.windowStartedAt.getTime() + DEMO_WRITE_WINDOW_MS);
+  return {
+    resetAt: resetAt.toISOString(),
+    retryAfter: Math.max(1, Math.ceil((resetAt.getTime() - now.getTime()) / 1000)),
+  };
+}
+
 export function decideDemoWrite(input: {
   pathname: string;
   method: string;
   counters: DemoLimitCounters;
   now?: Date;
+  preview?: boolean;
 }): DemoLimitDecision {
   if (!isMutatingMethod(input.method)) {
     return {
@@ -73,7 +91,7 @@ export function decideDemoWrite(input: {
   const now = input.now ?? new Date();
   let next = rollWriteWindow(input.counters, now);
 
-  if (isDemoImportPath(input.pathname)) {
+  if (!input.preview && isDemoImportPath(input.pathname)) {
     if (next.importCount >= DEMO_IMPORT_LIMIT) {
       return {
         ok: false,
@@ -92,6 +110,7 @@ export function decideDemoWrite(input: {
       ok: false,
       code: "write_rate",
       reason: `This demo sandbox allows ${DEMO_WRITE_LIMIT_PER_HOUR} writes per hour.`,
+      ...writeWindowReset(next, now),
     };
   }
 

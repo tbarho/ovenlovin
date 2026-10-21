@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { BadRequestError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { getRequestContext, requireHouseholdId, requireAdminRole } from "@/lib/api/middleware";
-import { PeopleService, resolveWriteActor } from "@ovenlovin/core";
+import { PeopleService, resolveWriteActor, updatePersonRuleBodySchema } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import {
   ambiguousRuleTargetMessage,
   canonicalizePersonRuleTarget,
@@ -53,7 +54,7 @@ export async function PATCH(
     const householdId = requireHouseholdId(context);
 
     const { id: personId, ruleId } = await params;
-    const body = await request.json();
+    const body = await readJsonBody(request, updatePersonRuleBodySchema);
 
     const db = getDatabase();
     const service = new PeopleService(db);
@@ -83,8 +84,9 @@ export async function PATCH(
     if (canonical.ambiguous?.length) {
       throw new BadRequestError(ambiguousRuleTargetMessage(nextTarget, canonical.ambiguous));
     }
-    if (nextKind === "allergen" && !canonical.resolved && !confirmUnknown) {
-      throw new BadRequestError(unknownRuleTargetMessage(nextTarget));
+    const identityChanged = nextKind !== existingRule.kind || nextTarget !== existingRule.target;
+    if (identityChanged && !canonical.resolved && !confirmUnknown) {
+      throw new BadRequestError(unknownRuleTargetMessage(nextTarget, nextKind));
     }
     const rest = { ...body };
     delete rest.confirmUnknown;

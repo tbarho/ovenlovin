@@ -19,9 +19,14 @@ describe("import eval fixtures", () => {
     expect(PASTE_CASES).toHaveLength(8);
     expect(PHOTO_CASES).toHaveLength(8);
     expect(URL_CASES).toHaveLength(8);
-    expect(URL_CASES.some((item) => item.id === "smitten-kitchen-slow-roasted-tomatoes")).toBe(
-      true
-    );
+  });
+
+  it("uses real saved recipe HTML without JSON-LD", () => {
+    for (const item of URL_CASES) {
+      expect(item.html && item.html.length, item.id).toBeGreaterThan(20_000);
+      expect(item.html, item.id).not.toMatch(/application\/ld\+json/i);
+      expect(item.html, item.id).toMatch(/<nav\b|main menu|skip to|comment|mw-/i);
+    }
   });
 
   it("has real JPEG photo files on disk", () => {

@@ -61,8 +61,8 @@ describe("servingsScale", () => {
     expect(servingsScale(6, 6, 1)).toBe(1);
   });
 
-  it("uses a 4-serving default when the recipe card has no yield", () => {
-    expect(servingsScale(6, null, 1)).toBe(1.5);
+  it("does not guess a 4-serving card when the recipe has no yield", () => {
+    expect(servingsScale(6, null, 1)).toBe(1);
     expect(servingsScale(4, null, 1)).toBe(1);
   });
 
@@ -201,7 +201,7 @@ describe("ShoppingListService", () => {
     });
   });
 
-  it("scales REST servings when the recipe card has no servings", () => {
+  it("leaves amounts alone when the recipe card has no servings", () => {
     const list = build([
       {
         entry: entry({ recipeId: "imported", servings: 8, scaleFactor: 1 }),
@@ -211,7 +211,7 @@ describe("ShoppingListService", () => {
       },
     ]);
 
-    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 24, unit: "oz" });
+    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 12, unit: "oz" });
   });
 
   it("merges convertible units (tsp + tbsp)", () => {
@@ -554,8 +554,45 @@ describe("ShoppingListService", () => {
     });
     expect(list.scaledFor).toBe(5);
     expect(list.scaledForMixed).toBe(true);
-    expect(service.exportAsMarkdown(list)).toContain("For 5 people (some recipes at full yield)");
+    expect(service.exportAsMarkdown(list)).toContain(
+      "For 5 people (some recipes scaled differently)"
+    );
     expect(service.exportAsMarkdown(list)).toContain("2 lbs ground beef");
+  });
+
+  it("names the heading from the plan's actual scale, not the household default", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "roast", servings: 7 }),
+          recipeTitle: "Sunday roast",
+          recipeServings: 4,
+          ingredients: [{ rawText: "1 lb chicken" }],
+        },
+      ],
+      { defaultCookFor: 4 }
+    );
+    expect(list.scaledFor).toBe(7);
+    expect(list.scaledForMixed).toBe(false);
+    expect(service.exportAsMarkdown(list)).toContain("For 7 people");
+    expect(service.exportAsMarkdown(list)).not.toContain("For 4 people");
+  });
+
+  it("does not print 0 tsp when a 48-serving pinch of salt is cooked for 5", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "batch", servings: 5 }),
+          recipeTitle: "Big batch soup",
+          recipeServings: 48,
+          ingredients: [{ rawText: "1/2 tsp salt" }],
+        },
+      ],
+      { includeStaples: true }
+    );
+    const text = service.exportAsMarkdown(list);
+    expect(text).not.toMatch(/0 tsp/);
+    expect(text).toContain("a pinch");
   });
 
   it("does not show 3/4 lb when 1 lb is scaled from 24 to 23 servings", () => {

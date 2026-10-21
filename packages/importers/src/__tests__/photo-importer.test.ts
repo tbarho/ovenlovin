@@ -75,7 +75,7 @@ describe("Photo Importer", () => {
           schema: expect.any(Object),
           maxRetries: 2,
           providerOptions: {
-            gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
+            gateway: { models: ["openai/gpt-6-luna"] },
           },
         })
       );
@@ -124,6 +124,17 @@ describe("Photo Importer", () => {
           abortSignal: expect.any(AbortSignal),
         })
       );
+    });
+
+    it("tags a generateObject timeout as import AI unavailable", async () => {
+      const { generateObject } = await import("ai");
+      const { isImportAiUnavailable } = await import("@ovenlovin/core/import-ai-unavailable");
+      const error = Object.assign(new Error("aborted"), { name: "TimeoutError" });
+      (generateObject as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
+      await expect(
+        importer.extract({ images: [{ blob: imageDataUrl("printed-tomato-pasta.png") }] })
+      ).rejects.toBe(error);
+      expect(isImportAiUnavailable(error)).toBe(true);
     });
   });
 

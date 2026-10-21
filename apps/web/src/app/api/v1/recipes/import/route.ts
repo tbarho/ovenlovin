@@ -1,16 +1,14 @@
 import { NextRequest } from "next/server";
-import {
-  createPasteImporter,
-  createUrlImporter,
-  RecipeImportFetchError,
-  RecipeNotFoundError,
-} from "@ovenlovin/importers";
+import { createPasteImporter, createUrlImporter } from "@ovenlovin/importers";
 import {
   copyRemoteImages,
+  draftFromSavedPreview,
+  importRecipeBodySchema,
   keepMainRecipeImages,
   prepareImportDraft,
   RecipeService,
 } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { BadRequestError, handleApiError } from "@/lib/api/errors";
@@ -49,23 +47,23 @@ export async function POST(request: NextRequest) {
       requireUserId(context);
     }
 
-    const body = (await request.json()) as {
-      source?: string;
-      content?: string;
-      save?: boolean | string;
-    };
-    if (!body.content?.trim() || (body.source !== "url" && body.source !== "paste")) {
-      throw new BadRequestError("Provide source (url or paste) and content");
-    }
+    const body = await readJsonBody(request, importRecipeBodySchema);
 
     const idempotencyKey = getIdempotencyKey(request);
-    if (body.source === "url") {
-      if (!looksLikeHttpUrl(body.content)) {
+    const savedDraft =
+      wantsPersist(body.save) && body.draft != null ? draftFromSavedPreview(body.draft) : null;
+    if (body.draft != null && wantsPersist(body.save) && !savedDraft) {
+      throw new BadRequestError("That previewed draft is not a recipe");
+    }
+
+    if (body.source === "url" && !savedDraft) {
+      const content = body.content?.trim() ?? "";
+      if (!looksLikeHttpUrl(content)) {
         throw new BadRequestError("That doesn't look like a web address");
       }
       const collision = await new RecipeService(getDatabase()).findUrlImportCollision(
         householdId,
-        body.content.trim(),
+        content,
         idempotencyKey
       );
       if (collision) {
@@ -87,19 +85,25 @@ export async function POST(request: NextRequest) {
     }
 
     let draft;
-    if (body.source === "url") {
-      const importer = createUrlImporter();
-      const raw = await importer.extract({ url: body.content.trim() });
-      draft = await importer.toDraft(raw);
-    } else if (isAiGatewayConfigured(process.env)) {
-      const importer = createPasteImporter();
-      const raw = await importer.extract({ text: body.content });
-      draft = await importer.toDraft(raw);
+    if (savedDraft) {
+      draft = savedDraft;
     } else {
-      draft = draftFromPlainText(body.content);
+      if (!body.content?.trim()) {
+        throw new BadRequestError("Provide source (url or paste) and content");
+      }
+      if (body.source === "url") {
+        const importer = createUrlImporter();
+        const raw = await importer.extract({ url: body.content.trim() });
+        draft = await importer.toDraft(raw);
+      } else if (isAiGatewayConfigured(process.env)) {
+        const importer = createPasteImporter();
+        const raw = await importer.extract({ text: body.content });
+        draft = await importer.toDraft(raw);
+      } else {
+        draft = draftFromPlainText(body.content);
+      }
+      draft = prepareImportDraft(draft);
     }
-
-    draft = prepareImportDraft(draft);
 
     if (!wantsPersist(body.save)) {
       return jsonResponse(presentImportPreview(draft));
@@ -135,9 +139,6 @@ export async function POST(request: NextRequest) {
     }
     return createdResponse(presented, `/api/v1/recipes/${recipe.id}`);
   } catch (error) {
-    if (error instanceof RecipeImportFetchError || error instanceof RecipeNotFoundError) {
-      return handleApiError(new BadRequestError(error.message), request.url);
-    }
     return handleApiError(error, request.url);
   }
 }

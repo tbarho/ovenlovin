@@ -15,6 +15,12 @@ export const recipeMethodTagSchema = z.enum([
   "make_ahead",
 ]);
 
+export const recipeImagesSchema = z.array(z.string());
+
+export function parseRecipeImages(value: unknown): string[] {
+  return recipeImagesSchema.parse(value ?? []);
+}
+
 export const recipeSchema = baseEntitySchema.merge(createdBySchema).extend({
   householdId: uuidSchema,
   title: z.string().min(1).max(500),
@@ -33,7 +39,7 @@ export const recipeSchema = baseEntitySchema.merge(createdBySchema).extend({
   course: z.string().max(100).nullable().optional(),
   difficulty: z.string().max(50).nullable().optional(),
   equipment: z.array(z.string()).default([]),
-  images: z.array(z.string()).default([]),
+  images: recipeImagesSchema.default([]),
   status: recipeStatusSchema.default("draft"),
   visibility: recipeVisibilitySchema.default("private"),
   version: z.number().int().positive().default(1),
@@ -122,6 +128,96 @@ export const recipeSourceSchema = baseEntitySchema.extend({
   modelUsed: z.string().max(100).nullable().optional(),
   rawExtractionJson: z.record(z.string(), z.unknown()).nullable().optional(),
   licenseNote: z.string().nullable().optional(),
+});
+
+export const createRecipeBodySchema = z.object({
+  title: z.string().trim().min(1).max(500),
+  description: z.string().max(20_000).optional(),
+  notes: z.string().max(20_000).optional(),
+  servings: z.number().int().positive().optional(),
+  prepTimeMinutes: z.number().int().nonnegative().optional(),
+  cookTimeMinutes: z.number().int().nonnegative().optional(),
+  totalTimeMinutes: z.number().int().nonnegative().optional(),
+  cuisine: z.string().max(100).optional(),
+  course: z.string().max(100).optional(),
+  images: recipeImagesSchema.max(20).optional(),
+  ingredients: z
+    .array(z.object({ rawText: z.string().trim().min(1).max(2000) }))
+    .max(200)
+    .optional(),
+  steps: z
+    .array(z.object({ text: z.string().trim().min(1).max(10_000) }))
+    .max(200)
+    .optional(),
+  cookbookId: uuidSchema.optional(),
+  sourceUrl: z.string().max(2048).optional(),
+  status: recipeStatusSchema.optional(),
+  source: z
+    .object({
+      type: recipeSourceTypeSchema.optional(),
+      url: z.string().max(2048).optional(),
+      canonicalUrl: z.string().max(2048).optional(),
+      author: z.string().max(255).optional(),
+      importerName: z.string().max(100).optional(),
+      importerVersion: z.string().max(50).optional(),
+      rawExtractionJson: z.record(z.string(), z.unknown()).optional(),
+    })
+    .optional(),
+  reviewReasons: z.array(z.string().max(500)).max(50).optional(),
+  uncertainFields: z.array(z.string().max(200)).max(50).optional(),
+});
+
+export const updateRecipeBodySchema = z
+  .object({
+    title: z.string().trim().min(1).max(500).optional(),
+    description: z.string().max(20_000).nullable().optional(),
+    notes: z.string().max(20_000).nullable().optional(),
+    servings: z.number().int().positive().nullable().optional(),
+    cuisine: z.string().max(100).nullable().optional(),
+    prepTimeMinutes: z.number().int().nonnegative().nullable().optional(),
+    cookTimeMinutes: z.number().int().nonnegative().nullable().optional(),
+    totalTimeMinutes: z.number().int().nonnegative().nullable().optional(),
+    images: recipeImagesSchema.max(20).optional(),
+    cookbookIds: z.array(uuidSchema).max(50).optional(),
+    ingredients: z
+      .array(
+        z.object({
+          rawText: z.string().trim().min(1).max(2000),
+          quantityMin: z.number().nonnegative().nullable().optional(),
+          quantityMax: z.number().positive().nullable().optional(),
+          unit: z.string().max(100).nullable().optional(),
+          preparation: z.string().max(255).nullable().optional(),
+          isOptional: z.boolean().optional(),
+        })
+      )
+      .max(200)
+      .optional(),
+    steps: z
+      .array(
+        z.object({
+          text: z.string().trim().min(1).max(10_000),
+          timers: z
+            .array(
+              z.object({
+                duration: z.number().int().positive(),
+                label: z.string().max(255).optional(),
+              })
+            )
+            .max(20)
+            .optional(),
+        })
+      )
+      .max(200)
+      .optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, { message: "Request body cannot be empty" });
+
+export const importRecipeBodySchema = z.object({
+  source: z.enum(["url", "paste"]),
+  content: z.string().max(200_000).optional(),
+  save: z.union([z.boolean(), z.string()]).optional(),
+  draft: z.unknown().optional(),
+  allowDuplicate: z.boolean().optional(),
 });
 
 export type RecipeStatus = z.infer<typeof recipeStatusSchema>;

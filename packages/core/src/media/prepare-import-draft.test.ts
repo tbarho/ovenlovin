@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  draftFromSavedPreview,
   importDedupeKeys,
   preferCompletedImport,
   prepareImportDraft,
 } from "./prepare-import-draft";
-import type { RecipeImportDraft } from "../schemas/recipes";
+import { recipeSchema, type RecipeImportDraft } from "../schemas/recipes";
 
 function draft(overrides: Partial<RecipeImportDraft> = {}): RecipeImportDraft {
   return {
@@ -71,6 +72,78 @@ describe("prepareImportDraft", () => {
     expect(importDedupeKeys(prepared)).toEqual([]);
   });
 
+  it("rounds a 2.5-serving paste so the integer columns save cleanly", () => {
+    const prepared = prepareImportDraft(
+      draft({
+        servings: 2.5,
+        prepTimeMinutes: 7.5,
+        cookTimeMinutes: 0.4,
+        source: {
+          type: "paste",
+          importerName: "paste-importer",
+          importerVersion: "0.1.0",
+          rawExtractionJson: {},
+        },
+      })
+    );
+    expect(prepared.servings).toBe(3);
+    expect(prepared.prepTimeMinutes).toBe(8);
+    expect(prepared.cookTimeMinutes).toBe(0);
+    expect(
+      recipeSchema
+        .pick({ servings: true, prepTimeMinutes: true, cookTimeMinutes: true })
+        .safeParse({
+          servings: prepared.servings,
+          prepTimeMinutes: prepared.prepTimeMinutes,
+          cookTimeMinutes: prepared.cookTimeMinutes,
+        }).success
+    ).toBe(true);
+  });
+
+  it("rebuilds a recipe draft from a preview payload", () => {
+    const preview = presentablePreview();
+    const rebuilt = draftFromSavedPreview(preview);
+    expect(rebuilt?.title).toBe("Weeknight Tomato Pasta");
+    expect(rebuilt?.ingredients).toHaveLength(1);
+    expect(rebuilt?.steps).toHaveLength(1);
+    expect(rebuilt?.source.importerName).toBe("paste-importer");
+    expect(draftFromSavedPreview({ title: "Nope" })).toBeNull();
+  });
+
+  it("keeps only typed ingredient fields from a client-sent preview", () => {
+    const rebuilt = draftFromSavedPreview({
+      ...presentablePreview(),
+      ingredients: [
+        {
+          rawText: "  12 oz pasta  ",
+          unit: "oz".repeat(60),
+          preparation: "diced".repeat(60),
+          quantity: { min: 12, max: 14 },
+          confidence: 0.8,
+          extra: "drop-me",
+        },
+      ],
+    });
+    expect(rebuilt?.ingredients[0]?.rawText).toBe("12 oz pasta");
+    expect(rebuilt?.ingredients[0]?.quantity).toEqual({ min: 12, max: 14 });
+    expect(rebuilt?.ingredients[0]?.unit).toHaveLength(100);
+    expect(rebuilt?.ingredients[0]?.preparation).toHaveLength(255);
+    expect(rebuilt?.ingredients[0]?.confidence).toBe(0.8);
+    expect(rebuilt?.ingredients[0]).not.toHaveProperty("extra");
+  });
+
+  it("drops private image URLs from a client-sent preview", () => {
+    const rebuilt = draftFromSavedPreview({
+      ...presentablePreview(),
+      images: [
+        "https://cdn.example/tomato.jpg",
+        "http://127.0.0.1/secret.jpg",
+        "http://169.254.169.254/latest/meta-data",
+      ],
+    });
+    expect(rebuilt?.images).toEqual(["https://cdn.example/tomato.jpg"]);
+  });
+
   it("replays a completed Idempotency-Key instead of a source_url duplicate", () => {
     const replay = { id: "recipe-replay" };
     const duplicate = { recipe: { id: "recipe-url" }, match: "source_url" as const };
@@ -82,3 +155,19 @@ describe("prepareImportDraft", () => {
     expect(preferCompletedImport({ idempotency: null, duplicate: null })).toBeNull();
   });
 });
+
+function presentablePreview() {
+  return {
+    saved: false,
+    preview: true,
+    title: "Weeknight Tomato Pasta",
+    ingredients: [{ rawText: "12 oz pasta" }],
+    steps: [{ text: "Boil the pasta." }],
+    source: {
+      type: "paste",
+      importerName: "paste-importer",
+      importerVersion: "0.1.0",
+      rawExtractionJson: { via: "preview" },
+    },
+  };
+}

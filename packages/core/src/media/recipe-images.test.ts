@@ -1,4 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { lookup } from "dns/promises";
+
+vi.mock("dns/promises", () => ({
+  lookup: vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]),
+}));
 import {
   appOriginFromEnv,
   backfillInlineImageList,
@@ -7,8 +12,13 @@ import {
   imageExtensionFromUrl,
   isBlobStoreConfigured,
   isInlineImageDataUrl,
+  isAllowedRecipeImageUrl,
+  isFetchableRecipeImageUrl,
+  InvalidImageUrlError,
+  assertAllowedRecipeImageUrls,
   isStoredBlobUrl,
   keepMainRecipeImages,
+  normalizeStoredRecipeImages,
   omitInlineImagePayloads,
   parseImageDataUrl,
   presentPhotoImportImages,
@@ -33,9 +43,48 @@ describe("recipe images", () => {
     expect(keepMainRecipeImages([])).toEqual([]);
   });
 
+  it("tolerates object-shaped images already stored on a row", () => {
+    const stored = [{ url: "https://example.com/a.png" }, "https://example.com/ok.jpg"];
+    expect(normalizeStoredRecipeImages(stored)).toEqual(["https://example.com/ok.jpg"]);
+    expect(recipeMainImage(stored)).toBe("https://example.com/ok.jpg");
+    expect(() => presentRecipeImages({ id: "recipe-1", images: stored as string[] })).not.toThrow();
+  });
+
   it("recognizes Vercel Blob URLs", () => {
     expect(isStoredBlobUrl("https://abc.public.blob.vercel-storage.com/cookies.jpg")).toBe(true);
     expect(isStoredBlobUrl("https://example.com/cookies.jpg")).toBe(false);
+  });
+
+  it("refuses to fetch localhost or link-local image URLs", () => {
+    expect(isFetchableRecipeImageUrl("https://cdn.example/tomato.jpg")).toBe(true);
+    expect(isFetchableRecipeImageUrl("http://127.0.0.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://169.254.169.254/latest/meta-data")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[fc00::1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[fe80::1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::ffff:127.0.0.1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::ffff:10.1.2.3]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://100.64.0.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://198.18.1.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://224.0.0.1/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[::]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[64:ff9b::0a00:1]/secret.jpg")).toBe(false);
+    expect(isFetchableRecipeImageUrl("http://[ff02::1]/secret.jpg")).toBe(false);
+  });
+
+  it("rejects private and file URLs before store or fetch", () => {
+    expect(isAllowedRecipeImageUrl("https://cdn.example/tomato.jpg")).toBe(true);
+    expect(isAllowedRecipeImageUrl("https://images.unsplash.com/photo-abc")).toBe(true);
+    expect(isAllowedRecipeImageUrl("https://example.com/")).toBe(true);
+    expect(isAllowedRecipeImageUrl("https://abc.public.blob.vercel-storage.com/card")).toBe(true);
+    expect(isAllowedRecipeImageUrl(dataUrl)).toBe(true);
+    expect(isAllowedRecipeImageUrl("http://169.254.169.254/latest/meta-data/x.png")).toBe(false);
+    expect(isAllowedRecipeImageUrl("http://127.0.0.1/x.png")).toBe(false);
+    expect(isAllowedRecipeImageUrl("http://localhost:3000/api/v1/status")).toBe(false);
+    expect(isAllowedRecipeImageUrl("file:///etc/passwd")).toBe(false);
+    expect(() => assertAllowedRecipeImageUrls(["http://127.0.0.1/card.png"])).toThrow(
+      InvalidImageUrlError
+    );
   });
 
   it("guesses an extension from the URL or content type", () => {
@@ -71,9 +120,81 @@ describe("recipe images", () => {
     expect(result[1]).toBe("https://cdn.example/fail.jpg");
     expect(result[2]).toBe("https://abc.public.blob.vercel-storage.com/already.jpg");
     expect(fetchMock).toHaveBeenCalled();
+    const blocked = await copyRemoteImages(["http://127.0.0.1/secret.jpg"], put, "recipes/hh");
+    expect(blocked).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalledWith("http://127.0.0.1/secret.jpg", expect.anything());
     const firstHeaders = fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> };
     expect(firstHeaders.headers?.["User-Agent"]).toMatch(/Mozilla\/5.0/);
     expect(firstHeaders.headers?.Referer).toBe("https://cdn.example/");
+    expect(firstHeaders.redirect).toBe("manual");
+    vi.unstubAllGlobals();
+  });
+
+  it("does not fetch a public hostname that resolves to loopback", async () => {
+    vi.mocked(lookup).mockResolvedValueOnce([{ address: "127.0.0.1", family: 4 }] as never);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const dropped = await copyRemoteImages(
+      ["https://loopback.example/photo.jpg"],
+      vi.fn(),
+      "recipes/hh"
+    );
+    expect(dropped).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("does not follow an image redirect onto a private address", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("cdn.example")) {
+        return {
+          ok: false,
+          status: 302,
+          headers: {
+            get: (name: string) => (name === "location" ? "http://127.0.0.1/secret.jpg" : null),
+          },
+        } as unknown as Response;
+      }
+      return { ok: true, status: 200, headers: { get: () => "image/jpeg" } } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const dropped = await copyRemoteImages(
+      ["https://cdn.example/photo.jpg"],
+      vi.fn(),
+      "recipes/hh"
+    );
+    expect(dropped).toEqual([]);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(["https://cdn.example/photo.jpg"]);
+    vi.unstubAllGlobals();
+  });
+
+  it("drops a URL when the image fetch is refused", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      })
+    );
+    const dropped = await copyRemoteImages(
+      ["https://cdn.example/photo.jpg"],
+      vi.fn(),
+      "recipes/hh"
+    );
+    expect(dropped).toEqual([]);
+    vi.unstubAllGlobals();
+  });
+
+  it("drops a public URL that is not an image", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        headers: { get: () => "text/html" },
+        arrayBuffer: async () => new Uint8Array([1]).buffer,
+      }))
+    );
+    const dropped = await copyRemoteImages(["https://example.com/"], vi.fn(), "recipes/hh");
+    expect(dropped).toEqual([]);
     vi.unstubAllGlobals();
   });
 

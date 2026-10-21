@@ -8,6 +8,7 @@ import {
   persistMainPhoto,
   presentPhotoImportPreview,
   previewFromDraft,
+  recipeHeroFromPhotoDraft,
 } from "./photo-import";
 import type { RecipeDraft } from "@ovenlovin/importers";
 
@@ -171,6 +172,18 @@ describe("classifyPhotoImportPreview", () => {
   });
 });
 
+describe("recipeHeroFromPhotoDraft", () => {
+  it("keeps extracted food photos and drops the photographed card", () => {
+    expect(
+      recipeHeroFromPhotoDraft(["https://blob.example/food.jpg"], ["data:image/jpeg;base64,aa"])
+    ).toEqual(["https://blob.example/food.jpg"]);
+    expect(
+      recipeHeroFromPhotoDraft(["data:image/jpeg;base64,aa"], ["data:image/jpeg;base64,aa"])
+    ).toEqual([]);
+    expect(recipeHeroFromPhotoDraft(undefined)).toEqual([]);
+  });
+});
+
 describe("persistMainPhoto", () => {
   it("uploads a data URL through the blob put and keeps only the main image", async () => {
     const put = vi.fn().mockResolvedValue("https://blob.vercel-storage.com/stored.png");
@@ -190,5 +203,18 @@ describe("persistMainPhoto", () => {
       undefined
     );
     expect(stored[0]).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it("drops a public photo that fails to download instead of rejecting the URL", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      })
+    );
+    await expect(
+      persistMainPhoto([{ blob: "https://images.unsplash.com/photo-abc" }], "household-1", vi.fn())
+    ).resolves.toEqual([]);
+    vi.unstubAllGlobals();
   });
 });

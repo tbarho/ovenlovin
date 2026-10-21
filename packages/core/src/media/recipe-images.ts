@@ -3,12 +3,20 @@ import { createHash } from "crypto";
 
 const BLOB_HOST_HINTS = ["public.blob.vercel-storage.com", "blob.vercel-storage.com"];
 
-export function recipeMainImage(images: string[] | null | undefined): string | null {
-  return images?.find((image) => image.trim().length > 0) ?? null;
+/** Stored jsonb may contain objects from a bad write. Only keep string URLs. */
+export function normalizeStoredRecipeImages(images: unknown): string[] {
+  if (!Array.isArray(images)) return [];
+  return images.filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0
+  );
 }
 
-export function recipeGalleryImages(images: string[] | null | undefined): string[] {
-  return (images ?? []).filter((image) => image.trim().length > 0);
+export function recipeMainImage(images: unknown): string | null {
+  return normalizeStoredRecipeImages(images)[0] ?? null;
+}
+
+export function recipeGalleryImages(images: unknown): string[] {
+  return normalizeStoredRecipeImages(images);
 }
 
 /** Import and recipe-detail persist only the main photo. Cookbook mosaics still use one image per recipe. */
@@ -23,6 +31,122 @@ export function isStoredBlobUrl(url: string): boolean {
     return BLOB_HOST_HINTS.some((hint) => host.endsWith(hint));
   } catch {
     return false;
+  }
+}
+
+const PRIVATE_IMAGE_HOST = /^(localhost|0\.0\.0\.0)$|(\.localhost|\.local|\.internal)$/i;
+const IPV4_LITERAL = /^(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+
+function isIpv4Literal(host: string): boolean {
+  return IPV4_LITERAL.test(host);
+}
+
+function isIpLiteral(host: string): boolean {
+  return host.includes(":") || isIpv4Literal(host);
+}
+
+function ipv4FromMapped(host: string): string | null {
+  if (!host.startsWith("::ffff:")) return null;
+  const rest = host.slice(7);
+  if (isIpv4Literal(rest)) return rest;
+  const parts = rest.split(":");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const hi = Number.parseInt(parts[0], 16);
+  const lo = Number.parseInt(parts[1], 16);
+  if (!Number.isInteger(hi) || !Number.isInteger(lo)) return null;
+  return `${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`;
+}
+
+function isPrivateRecipeImageIp(address: string): boolean {
+  const host = address.toLowerCase().replace(/^\[|\]$/g, "");
+  const mapped = ipv4FromMapped(host);
+  if (mapped) return isPrivateRecipeImageIp(mapped);
+  if (isIpv4Literal(host)) {
+    const [a, b] = host.split(".").map(Number);
+    if (a === 0 || a === 10 || a === 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b != null && b >= 16 && b <= 31) return true;
+    if (a === 100 && b != null && b >= 64 && b <= 127) return true;
+    if (a === 198 && (b === 18 || b === 19)) return true;
+    if (a != null && a >= 224 && a <= 239) return true;
+    return false;
+  }
+  if (!host.includes(":")) return false;
+  if (host === "::1" || host === "::") return true;
+  if (host.startsWith("64:ff9b::") || /^64:ff9b:(?:0+:){4}/.test(host)) return true;
+  const first = host.split(":")[0] ?? "";
+  return (
+    /^f[cd][0-9a-f]{2}$/.test(first) ||
+    /^fe[89ab][0-9a-f]$/.test(first) ||
+    /^ff[0-9a-f]{2}$/.test(first)
+  );
+}
+
+function imageHostName(url: string): string | null {
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  } catch {
+    return null;
+  }
+}
+
+/** Hostname or literal IP we must never fetch. DNS-to-private is checked at fetch time. */
+function isBlockedRecipeImageHost(host: string): boolean {
+  const name = host.toLowerCase().replace(/^\[|\]$/g, "");
+  return PRIVATE_IMAGE_HOST.test(name) || isPrivateRecipeImageIp(name);
+}
+
+/** Only fetch images we would also request on a first import, never localhost or link-local. */
+export function isFetchableRecipeImageUrl(url: string): boolean {
+  if (isStoredBlobUrl(url)) return true;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    return !isBlockedRecipeImageHost(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export const INVALID_IMAGE_URL_CODE = "invalid_image_url";
+export const INVALID_IMAGE_URL_MESSAGE =
+  "Use a public http(s) image URL, a stored blob URL, or an inline image.";
+
+/** User-supplied image refs we may store, fetch, or send to a model. */
+export function isAllowedRecipeImageUrl(url: string): boolean {
+  return isInlineImageDataUrl(url) || isFetchableRecipeImageUrl(url);
+}
+
+export class InvalidImageUrlError extends Error {
+  readonly code = INVALID_IMAGE_URL_CODE;
+
+  constructor() {
+    super(INVALID_IMAGE_URL_MESSAGE);
+    this.name = "InvalidImageUrlError";
+  }
+}
+
+export function assertAllowedRecipeImageUrls(urls: readonly unknown[]): void {
+  for (const url of urls) {
+    if (typeof url !== "string" || !url.trim()) continue;
+    if (!isAllowedRecipeImageUrl(url)) throw new InvalidImageUrlError();
+  }
+}
+
+async function assertPublicImageUrl(url: string): Promise<void> {
+  if (!isFetchableRecipeImageUrl(url)) throw new Error("blocked image url");
+  const host = imageHostName(url);
+  if (!host || isStoredBlobUrl(url) || isIpLiteral(host)) return;
+  try {
+    // Client bundles import this file for URL helpers; only the server fetch path loads dns.
+    const { lookup } = await import(/* webpackIgnore: true */ "dns/promises");
+    const answers = await lookup(host, { all: true });
+    if (answers.some((entry) => isPrivateRecipeImageIp(entry.address))) {
+      throw new Error("blocked image url");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === "blocked image url") throw error;
   }
 }
 
@@ -121,8 +245,8 @@ export function appOriginFromEnv(
 }
 
 /** Drop inline data URLs so list/search payloads stay small. */
-export function omitInlineImagePayloads(values: string[] | null | undefined): string[] {
-  return (values ?? []).filter((value) => value.trim().length > 0 && !isInlineImageDataUrl(value));
+export function omitInlineImagePayloads(values: unknown): string[] {
+  return normalizeStoredRecipeImages(values).filter((value) => !isInlineImageDataUrl(value));
 }
 
 /** Stable id for a photo import: URL as-is, or sha256 of inline bytes. */
@@ -209,13 +333,32 @@ export async function backfillInlineImageList(
   return { images: keepMainRecipeImages(next), changed };
 }
 
+function isRedirectResponse(response: Response): boolean {
+  return (
+    response.status >= 300 && response.status < 400 && Boolean(response.headers.get("location"))
+  );
+}
+
+async function fetchImageHop(url: string, headers: Record<string, string>): Promise<Response> {
+  return fetch(url, { redirect: "manual", headers });
+}
+
 async function fetchRemoteImage(url: string): Promise<Response> {
-  const headers = headersForRemoteImage(url);
-  let response = await fetch(url, { redirect: "follow", headers });
+  let current = url;
+  await assertPublicImageUrl(current);
+  let response = await fetchImageHop(current, headersForRemoteImage(current));
+  // shortcut: 5 hops, upgrade if a recipe CDN needs a longer chain
+  for (let hops = 0; hops < 5 && isRedirectResponse(response); hops += 1) {
+    const location = response.headers.get("location");
+    if (!location) break;
+    current = new URL(location, current).href;
+    await assertPublicImageUrl(current);
+    response = await fetchImageHop(current, headersForRemoteImage(current));
+  }
   if (!response.ok && BLOCKED_IMAGE_STATUSES.has(response.status)) {
-    response = await fetch(url, {
-      redirect: "follow",
-      headers: { ...headers, "Cache-Control": "no-cache" },
+    response = await fetchImageHop(current, {
+      ...headersForRemoteImage(current),
+      "Cache-Control": "no-cache",
     });
   }
   return response;
@@ -226,7 +369,7 @@ export async function copyRemoteImages(
   put: StoredImagePut | undefined,
   prefix: string
 ): Promise<string[]> {
-  const unique = [...new Set(urls.filter((url) => url.trim().length > 0))];
+  const unique = [...new Set(urls.filter((url) => isFetchableRecipeImageUrl(url)))];
   if (unique.length === 0) return [];
   if (!put) return unique;
 
@@ -246,7 +389,6 @@ export async function copyRemoteImages(
 
       const contentType = response.headers.get("content-type") ?? "image/jpeg";
       if (!contentType.startsWith("image/")) {
-        copied.push(url);
         continue;
       }
 
@@ -263,7 +405,7 @@ export async function copyRemoteImages(
       });
       copied.push(stored ?? url);
     } catch {
-      copied.push(url);
+      // blocked or refused: never keep a private or unfetched URL
     }
   }
 

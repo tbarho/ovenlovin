@@ -1,4 +1,13 @@
 import { describe, expect, it } from "vitest";
+import {
+  IMPORT_BLOCKED_CODE,
+  IMPORT_BLOCKED_MESSAGE,
+  IMPORT_NOT_A_RECIPE_CODE,
+  IMPORT_NOT_A_RECIPE_MESSAGE,
+  IMPORT_PAGE_GONE_CODE,
+  IMPORT_PAGE_GONE_MESSAGE,
+  InvalidImageUrlError,
+} from "@ovenlovin/core";
 import { JsonRpcErrorCode, McpInvalidParamsError, jsonRpcFromThrown } from "./json-rpc";
 
 describe("jsonRpcFromThrown", () => {
@@ -36,8 +45,72 @@ describe("jsonRpcFromThrown", () => {
     expect(duplicate.error.message).toMatch(/already imported/i);
   });
 
+  it("maps a blocked image URL to invalid params, not internal error", () => {
+    const response = jsonRpcFromThrown(5, new InvalidImageUrlError());
+    expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(response.error.data).toEqual({ code: "invalid_image_url" });
+  });
+
+  it("keeps quota, auth, and validation as distinct codes", () => {
+    expect(JsonRpcErrorCode.quota).toBe(-32004);
+    expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.forbidden);
+    expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.unauthorized);
+    expect(JsonRpcErrorCode.quota).not.toBe(JsonRpcErrorCode.invalidParams);
+  });
+
+  it("maps not-found to invalid params with a data.code", () => {
+    const response = jsonRpcFromThrown(
+      6,
+      new Error("Person not found: 550e8400-e29b-41d4-a716-446655440000")
+    );
+    expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(response.error.data).toEqual({ code: "not_found" });
+    expect(response.error.message).toMatch(/Person not found/);
+  });
+
   it("keeps unexpected failures as internal error", () => {
     const response = jsonRpcFromThrown(4, new Error("connection refused"));
     expect(response.error.code).toBe(JsonRpcErrorCode.internal);
+  });
+
+  it("maps a schema-miss to not-a-recipe, not busy", () => {
+    const response = jsonRpcFromThrown(
+      5,
+      Object.assign(new Error("No object generated: response did not match schema."), {
+        name: "AI_NoObjectGeneratedError",
+      })
+    );
+    expect(response.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(response.error.message).toBe(IMPORT_NOT_A_RECIPE_MESSAGE);
+    expect(response.error.data).toEqual({ code: IMPORT_NOT_A_RECIPE_CODE });
+  });
+
+  it("maps checkpoint, 404, and not-a-recipe to data.code, not -32603", () => {
+    const blocked = jsonRpcFromThrown(
+      6,
+      Object.assign(new Error("This site blocked the importer."), {
+        name: "RecipeImportFetchError",
+      })
+    );
+    expect(blocked.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(blocked.error.code).not.toBe(JsonRpcErrorCode.internal);
+    expect(blocked.error.message).toBe(IMPORT_BLOCKED_MESSAGE);
+    expect(blocked.error.data).toEqual({ code: IMPORT_BLOCKED_CODE });
+
+    const gone = jsonRpcFromThrown(
+      7,
+      Object.assign(new Error("That page is gone."), { name: "RecipePageGoneError" })
+    );
+    expect(gone.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(gone.error.message).toBe(IMPORT_PAGE_GONE_MESSAGE);
+    expect(gone.error.data).toEqual({ code: IMPORT_PAGE_GONE_CODE });
+
+    const notRecipe = jsonRpcFromThrown(
+      8,
+      Object.assign(new Error("This is not a recipe page."), { name: "RecipeNotFoundError" })
+    );
+    expect(notRecipe.error.code).toBe(JsonRpcErrorCode.invalidParams);
+    expect(notRecipe.error.message).toBe(IMPORT_NOT_A_RECIPE_MESSAGE);
+    expect(notRecipe.error.data).toEqual({ code: IMPORT_NOT_A_RECIPE_CODE });
   });
 });

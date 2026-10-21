@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { extractRecipeWithLlm, llmRecipeToJsonLd } from "./llm-recipe";
+
+vi.mock("@ai-sdk/gateway", () => ({
+  gateway: (id: string) => id,
+}));
+
+import { isImportAiUnavailable } from "@ovenlovin/core/import-ai-unavailable";
+import { extractRecipeWithLlm, llmRecipeSchema, llmRecipeToJsonLd } from "./llm-recipe";
 
 describe("llmRecipeToJsonLd", () => {
   it("returns null when the model says the page is not a recipe", () => {
@@ -24,6 +30,31 @@ describe("llmRecipeToJsonLd", () => {
     expect(recipe?.recipeInstructions).toEqual([
       { "@type": "HowToStep", text: "Boil the pasta and warm the tomatoes." },
     ]);
+  });
+});
+
+describe("llmRecipeSchema", () => {
+  it("treats strict-output 0 / empty / null as unknown", () => {
+    const parsed = llmRecipeSchema.parse({
+      isRecipe: true,
+      title: "slow-roasted tomatoes",
+      description: "",
+      servings: 0,
+      prepTimeMinutes: 0,
+      cookTimeMinutes: "",
+      totalTimeMinutes: null,
+      notes: 0,
+      cuisine: "",
+      course: null,
+    });
+    expect(parsed.servings).toBeUndefined();
+    expect(parsed.description).toBeUndefined();
+    expect(parsed.prepTimeMinutes).toBeUndefined();
+    expect(parsed.cookTimeMinutes).toBeUndefined();
+    expect(parsed.totalTimeMinutes).toBeUndefined();
+    expect(parsed.notes).toBeUndefined();
+    expect(parsed.cuisine).toBeUndefined();
+    expect(parsed.course).toBeUndefined();
   });
 });
 
@@ -53,8 +84,9 @@ describe("extractRecipeWithLlm", () => {
     expect(generate).toHaveBeenCalledWith(
       expect.objectContaining({
         maxRetries: 2,
+        abortSignal: expect.any(AbortSignal),
         providerOptions: {
-          gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
+          gateway: { models: ["openai/gpt-6-luna"] },
         },
       })
     );
@@ -70,6 +102,7 @@ describe("extractRecipeWithLlm", () => {
       extractRecipeWithLlm("Ingredients\n- pasta", {
         env: { AI_GATEWAY_API_KEY: "test-key" },
         generate,
+        modelId: "openai/gpt-6-luna",
       })
     ).rejects.toBe(error);
   });
@@ -83,14 +116,10 @@ describe("extractRecipeWithLlm", () => {
     });
     expect(generate).toHaveBeenCalledWith(
       expect.objectContaining({
-        providerOptions: {
-          gateway: {
-            models: ["openai/gpt-6-luna", "spacexai/grok-4.7"],
-            only: ["deepseek"],
-          },
-        },
+        providerOptions: { gateway: { only: ["deepseek"] } },
       })
     );
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway.models).toBeUndefined();
   });
 
   it("rethrows a schema miss from the model", async () => {
@@ -104,6 +133,42 @@ describe("extractRecipeWithLlm", () => {
         generate,
       })
     ).rejects.toThrow(/No object generated/);
+  });
+
+  it("rethrows a hung-model timeout as AI unavailable", async () => {
+    const error = Object.assign(new Error("aborted"), { name: "TimeoutError" });
+    const generate = vi.fn().mockRejectedValue(error);
+    await expect(
+      extractRecipeWithLlm("Ingredients\n- pasta", {
+        env: { AI_GATEWAY_API_KEY: "test-key" },
+        generate,
+      })
+    ).rejects.toBe(error);
+    expect(isImportAiUnavailable(error)).toBe(true);
+  });
+
+  it("throws when the request budget is already gone before generateObject", async () => {
+    const generate = vi.fn();
+    await expect(
+      extractRecipeWithLlm("Ingredients\n- pasta", {
+        env: { AI_GATEWAY_API_KEY: "test-key" },
+        generate,
+        startedAt: Date.now() - 50_000,
+      })
+    ).rejects.toSatisfy((error) => isImportAiUnavailable(error));
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it("passes the remaining request budget to generateObject", async () => {
+    const generate = vi.fn().mockResolvedValue({ object: { isRecipe: false } });
+    await extractRecipeWithLlm("Ingredients\n- pasta", {
+      env: { AI_GATEWAY_API_KEY: "test-key" },
+      generate,
+      startedAt: Date.now() - 40_000,
+    });
+    const abortSignal = generate.mock.calls[0]?.[0]?.abortSignal as AbortSignal;
+    expect(abortSignal).toBeInstanceOf(AbortSignal);
+    expect(abortSignal.aborted).toBe(false);
   });
 
   it("returns null when the model marks the page as not a recipe", async () => {

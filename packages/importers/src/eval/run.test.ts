@@ -4,6 +4,7 @@ import { PASTE_CASES, PHOTO_CASES } from "./cases";
 import { formatSummaryTable, runImportCase, summarizeResults, type CaseResult } from "./run";
 
 vi.mock("ai", () => ({ generateObject: vi.fn() }));
+vi.mock("@ai-sdk/gateway", () => ({ gateway: (id: string) => id }));
 
 function result(partial: Partial<CaseResult>): CaseResult {
   return {
@@ -16,7 +17,6 @@ function result(partial: Partial<CaseResult>): CaseResult {
       ingredientRecall: 1,
       ingredientPrecision: 1,
       stepCompleteness: 1,
-      validStructured: 1,
       score: 1,
     },
     latencyMs: 100,
@@ -81,10 +81,7 @@ describe("runImportCase", () => {
     expect(generateObject).toHaveBeenCalledWith(
       expect.objectContaining({
         providerOptions: {
-          gateway: {
-            models: ["openai/gpt-6-luna", "spacexai/grok-4.7"],
-            only: ["deepseek"],
-          },
+          gateway: { only: ["deepseek"] },
         },
       })
     );

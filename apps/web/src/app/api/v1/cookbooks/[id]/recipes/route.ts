@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { addCookbookRecipeBodySchema, CookbookService, RecipeService } from "@ovenlovin/core";
+import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
@@ -25,8 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     await loadOwnedCookbook(id, householdId);
-    const body = (await request.json()) as { recipeId?: string };
-    if (!body.recipeId) throw new BadRequestError("recipeId is required");
+    const body = await readJsonBody(request, addCookbookRecipeBodySchema);
 
     const db = getDatabase();
     const recipe = await new RecipeService(db).getRecipe(body.recipeId);

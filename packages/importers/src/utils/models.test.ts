@@ -1,10 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@ai-sdk/gateway", () => ({
+  gateway: (id: string) => id,
+}));
+
 import {
   DEFAULT_EXTRACT_MODEL,
   DEFAULT_VISION_MODEL,
   IMPORT_GATEWAY_FALLBACK_MODELS,
   IMPORT_GENERATE_MAX_RETRIES,
+  IMPORT_GENERATE_TIMEOUT_MS,
+  generateImportObject,
   importGenerateOptions,
+  remainingImportBudgetMs,
   resolveDefaultModelId,
   resolveExtractModelId,
   resolveVisionModelId,
@@ -82,26 +90,64 @@ function aiSdkRetryWaitMs(maxRetries: number): number {
 }
 
 describe("importGenerateOptions", () => {
-  it("keeps the retry wait inside the 60s import route limit", () => {
+  it("pins DeepSeek without listing Luna/grok on that request", () => {
     expect(aiSdkRetryWaitMs(5)).toBeGreaterThan(60_000);
     expect(aiSdkRetryWaitMs(IMPORT_GENERATE_MAX_RETRIES)).toBeLessThan(60_000);
     expect(IMPORT_GENERATE_MAX_RETRIES).toBeLessThanOrEqual(3);
+    expect(IMPORT_GENERATE_TIMEOUT_MS).toBe(50_000);
     expect(importGenerateOptions()).toEqual({
       maxRetries: IMPORT_GENERATE_MAX_RETRIES,
-      providerOptions: {
-        gateway: {
-          models: ["openai/gpt-6-luna", "spacexai/grok-4.7"],
-          only: ["deepseek"],
-        },
-      },
+      providerOptions: { gateway: { only: ["deepseek"] } },
     });
     expect(importGenerateOptions("deepseek/deepseek-v4.1-flash")).toEqual(importGenerateOptions());
+    expect(importGenerateOptions().providerOptions.gateway).not.toHaveProperty("models");
+    expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual(["openai/gpt-6-luna", "spacexai/grok-4.7"]);
+  });
+
+  it("leaves Luna/grok reachable without the DeepSeek only filter", () => {
     expect(importGenerateOptions("openai/gpt-6-luna")).toEqual({
       maxRetries: IMPORT_GENERATE_MAX_RETRIES,
-      providerOptions: {
-        gateway: { models: ["openai/gpt-6-luna", "spacexai/grok-4.7"] },
-      },
+      providerOptions: { gateway: { models: ["spacexai/grok-4.7"] } },
     });
-    expect(IMPORT_GATEWAY_FALLBACK_MODELS).toEqual(["openai/gpt-6-luna", "spacexai/grok-4.7"]);
+    expect(importGenerateOptions("spacexai/grok-4.7")).toEqual({
+      maxRetries: IMPORT_GENERATE_MAX_RETRIES,
+      providerOptions: { gateway: { models: ["openai/gpt-6-luna"] } },
+    });
+  });
+});
+
+describe("generateImportObject", () => {
+  it("retries Luna/grok without the DeepSeek only filter when DeepSeek is down", async () => {
+    const generate = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" }))
+      .mockResolvedValueOnce({ object: { isRecipe: false } });
+    await generateImportObject(generate, "deepseek/deepseek-v4.1-flash", { prompt: "x" });
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway).toEqual({ only: ["deepseek"] });
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway.models).toBeUndefined();
+    expect(generate.mock.calls[1]?.[0].providerOptions.gateway).toEqual({
+      models: ["spacexai/grok-4.7"],
+    });
+    expect(generate.mock.calls[1]?.[0].providerOptions.gateway.only).toBeUndefined();
+  });
+
+  it("does not pin fallbacks when Luna is the primary", async () => {
+    const generate = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error("Failed after 3 attempts"), { name: "AI_RetryError" }));
+    await expect(
+      generateImportObject(generate, "openai/gpt-6-luna", { prompt: "x" })
+    ).rejects.toMatchObject({ name: "AI_RetryError" });
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway.only).toBeUndefined();
+  });
+});
+
+describe("remainingImportBudgetMs", () => {
+  it("shrinks from the request start so page fetch plus AI stay under 50s", () => {
+    expect(remainingImportBudgetMs(1_000, 1_000)).toBe(IMPORT_GENERATE_TIMEOUT_MS);
+    expect(remainingImportBudgetMs(1_000, 41_000)).toBe(10_000);
+    expect(remainingImportBudgetMs(1_000, 51_000)).toBe(0);
+    expect(remainingImportBudgetMs(1_000, 41_000) + 40_000).toBeLessThan(60_000);
   });
 });

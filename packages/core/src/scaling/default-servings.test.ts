@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cookForPeopleLabel,
+  planListScale,
   cookForServingsLabel,
   defaultDisplayedServings,
   effectivePlanServings,
@@ -124,7 +125,12 @@ describe("notes and settings", () => {
     expect(cookForServingsLabel({ cookFor: 5 })).toBe("5 servings");
     expect(cookForPeopleLabel(6)).toBe("For 6 people");
     expect(cookForPeopleLabel(1)).toBe("For 1 person");
-    expect(cookForPeopleLabel(5, true)).toBe("For 5 people (some recipes at full yield)");
+    expect(cookForPeopleLabel(5, true)).toBe("For 5 people (some recipes scaled differently)");
+    expect(planListScale([7, 7, 7], 4)).toEqual({ scaledFor: 7, mixed: false });
+    expect(planListScale([6, 5], 5)).toEqual({ scaledFor: 5, mixed: true });
+    expect(planListScale([7, 12], 4)).toEqual({ scaledFor: 4, mixed: true });
+    expect(planListScale([6, 4, 5, 4], 5)).toEqual({ scaledFor: 5, mixed: true });
+    expect(planListScale([], 4)).toEqual({ scaledFor: 4, mixed: false });
   });
 
   it("names the family scale and can reset copy", () => {
@@ -220,5 +226,22 @@ describe("notes and settings", () => {
     });
     expect(overridden.displayServings).toBe(6);
     expect(overridden.ingredients[0]?.displayText).toBe("1 1/2 lbs ground beef");
+  });
+
+  it("does not scale amounts when the recipe yield is unknown", () => {
+    const recipe = {
+      servings: null,
+      ingredients: [
+        {
+          rawText: "1 lb ground beef",
+          quantityMin: 1,
+          unit: "lb",
+        },
+      ],
+    } as RecipeDetails;
+
+    const family = presentDisplayedRecipe(recipe, { familySize: 8, mode: "family" });
+    expect(family.displayServings).toBe(8);
+    expect(family.ingredients[0]?.displayText).toBe("1 lb ground beef");
   });
 });

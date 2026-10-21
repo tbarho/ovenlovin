@@ -1,4 +1,7 @@
+import { z } from "zod";
+import { assertAllowedRecipeImageUrls } from "@ovenlovin/core";
 import { BadRequestError } from "@/lib/api/errors";
+import { readJsonBody } from "@/lib/api/read-json";
 import {
   collectPhotoImages,
   fileToImageInput,
@@ -12,6 +15,7 @@ export type PhotoImportRequest = {
   save: boolean;
   allowDuplicate: boolean;
   cookbookId?: string;
+  draft?: unknown;
 };
 
 function asBoolean(value: unknown): boolean {
@@ -44,7 +48,19 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
       images.push({ blob: imageUrl.trim() });
     }
 
-    if (images.length === 0) {
+    const draftRaw = form.get("draft");
+    let draft: unknown;
+    if (typeof draftRaw === "string" && draftRaw.trim()) {
+      try {
+        draft = JSON.parse(draftRaw) as unknown;
+      } catch {
+        throw new BadRequestError("That previewed draft is not a recipe");
+      }
+    }
+
+    assertAllowedRecipeImageUrls(images.map((image) => image.blob));
+
+    if (images.length === 0 && draft == null) {
       throw new BadRequestError("Provide one or more recipe photos (file or imageUrl)");
     }
 
@@ -56,23 +72,45 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
       allowDuplicate: asBoolean(form.get("allowDuplicate")),
       cookbookId:
         typeof cookbookId === "string" && cookbookId.trim() ? cookbookId.trim() : undefined,
+      draft,
     };
   }
 
-  const body = (await request.json()) as {
-    imageUrl?: string;
-    imageUrls?: string[];
-    imageBase64?: string;
-    mimeType?: string;
-    images?: Array<{ url?: string; base64?: string; mimeType?: string }>;
-    isHandwritten?: boolean;
-    save?: boolean;
-    allowDuplicate?: boolean;
-    cookbookId?: string;
-  };
+  const body = await readJsonBody(
+    request,
+    z.object({
+      imageUrl: z.string().max(2048).optional(),
+      imageUrls: z.array(z.string().max(2048)).max(20).optional(),
+      imageBase64: z
+        .string()
+        .max(16 * 1024 * 1024)
+        .optional(),
+      mimeType: z.string().max(100).optional(),
+      images: z
+        .array(
+          z.object({
+            url: z.string().max(2048).optional(),
+            base64: z
+              .string()
+              .max(16 * 1024 * 1024)
+              .optional(),
+            mimeType: z.string().max(100).optional(),
+            filename: z.string().max(255).optional(),
+          })
+        )
+        .max(20)
+        .optional(),
+      isHandwritten: z.boolean().optional(),
+      save: z.union([z.boolean(), z.string()]).optional(),
+      allowDuplicate: z.union([z.boolean(), z.string()]).optional(),
+      cookbookId: z.string().uuid().optional(),
+      draft: z.unknown().optional(),
+    })
+  );
 
   const images = collectPhotoImages(body);
-  if (images.length === 0) {
+  assertAllowedRecipeImageUrls(images.map((image) => image.blob));
+  if (images.length === 0 && body.draft == null) {
     throw new BadRequestError(
       "Provide an imageUrl, imageBase64, or images[] (URL or base64) for photo import"
     );
@@ -84,5 +122,6 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
     save: Boolean(body.save),
     allowDuplicate: Boolean(body.allowDuplicate),
     cookbookId: body.cookbookId,
+    draft: body.draft,
   };
 }
