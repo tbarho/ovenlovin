@@ -135,7 +135,8 @@ export function classifyImportFailure(error: unknown): ImportFailure | null {
   if (
     error &&
     typeof error === "object" &&
-    (error as { directBlocked?: unknown }).directBlocked === true
+    (error as { directBlocked?: unknown }).directBlocked === true &&
+    !isImportAiUnavailable(error)
   ) {
     return { code: IMPORT_BLOCKED_CODE, message: IMPORT_BLOCKED_MESSAGE };
   }

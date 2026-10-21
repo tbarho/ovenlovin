@@ -115,7 +115,7 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
         }
 
         console.info(
-          `import_url url=${input.url} directStatus=${directStatus ?? "-"} via=${via} reason=imported`
+          `import_url url=${importLogUrl(input.url)} directStatus=${directStatus ?? "-"} via=${via} reason=imported`
         );
         return {
           sourceType: "url",
@@ -150,7 +150,7 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
         const reason =
           classifyImportFailure(error)?.code ?? (error instanceof Error ? error.name : "error");
         console.info(
-          `import_url url=${input.url} directStatus=${status ?? "-"} via=${via} reason=${reason}`
+          `import_url url=${importLogUrl(input.url)} directStatus=${status ?? "-"} via=${via} reason=${reason}`
         );
         throw error;
       }
@@ -232,6 +232,15 @@ export function createUrlImporter(config: ImporterConfig = {}): Importer<UrlImpo
       };
     },
   };
+}
+
+function importLogUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.host}${parsed.pathname}`;
+  } catch {
+    return "-";
+  }
 }
 
 function decodeOptionalText(value: string | undefined): string | undefined {

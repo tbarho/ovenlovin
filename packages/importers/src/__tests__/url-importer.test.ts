@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { classifyImportFailure, IMPORT_BLOCKED_CODE } from "@ovenlovin/core";
+import {
+  classifyImportFailure,
+  IMPORT_AI_UNAVAILABLE_CODE,
+  IMPORT_BLOCKED_CODE,
+  isImportAiUnavailable,
+} from "@ovenlovin/core";
 import { createUrlImporter } from "../importers/url";
 import { extractJsonLd, RecipeNotFoundError } from "../utils/url";
 import * as llmRecipe from "../utils/llm-recipe";
@@ -610,6 +615,40 @@ describe("URL Importer", () => {
         .catch((err: unknown) => err);
       expect(error).toMatchObject({ message: "parse failed", directBlocked: true });
       expect(classifyImportFailure(error)?.code).toBe(IMPORT_BLOCKED_CODE);
+    });
+
+    it("keeps AI-unavailable when a 403 challenge fallback hits an AI outage", async () => {
+      vi.stubGlobal("fetch", fetchChallengeThen(microdataFallback));
+      const error = await createUrlImporter({
+        extractWithLlm: async () => {
+          throw Object.assign(new Error("aborted"), {
+            name: "TimeoutError",
+            importAiTimeout: true,
+          });
+        },
+      })
+        .extract({ url: "https://cookieandkate.com/best-lentil-soup-recipe/" })
+        .catch((err: unknown) => err);
+      expect(
+        classifyImportFailure(error)?.code ??
+          (isImportAiUnavailable(error) ? IMPORT_AI_UNAVAILABLE_CODE : null)
+      ).toBe(IMPORT_AI_UNAVAILABLE_CODE);
+    });
+
+    it("logs host and path without query, fragment, or newline", async () => {
+      const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+      await createUrlImporter({ extractWithLlm: async () => null })
+        .extract({
+          url: "https://example.com/recipe?token=secret#frag\ninjected",
+          html: "<!doctype html><html><body><p>Example Domain</p></body></html>",
+        })
+        .catch(() => undefined);
+      const line = info.mock.calls
+        .map((call) => String(call[0]))
+        .find((text) => text.startsWith("import_url "));
+      info.mockRestore();
+      expect(line).toMatch(/^import_url url=example.com\/recipe /);
+      expect(line).not.toMatch(/[?#]|token=secret|\n|\r/);
     });
   });
 });

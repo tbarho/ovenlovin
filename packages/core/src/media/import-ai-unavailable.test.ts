@@ -114,15 +114,13 @@ describe("importAiUnavailableMeta", () => {
         })
       )?.code
     ).toBe(IMPORT_BLOCKED_CODE);
-    expect(
-      classifyImportFailure(
-        Object.assign(new Error("aborted"), {
-          name: "TimeoutError",
-          importAiTimeout: true,
-          directBlocked: true,
-        })
-      )?.code
-    ).toBe(IMPORT_BLOCKED_CODE);
+    const aiBusy = Object.assign(new Error("aborted"), {
+      name: "TimeoutError",
+      importAiTimeout: true,
+      directBlocked: true,
+    });
+    expect(classifyImportFailure(aiBusy)).toBeNull();
+    expect(isImportAiUnavailable(aiBusy)).toBe(true);
   });
 
   it("tags a timeout nested under an AI call error", () => {
