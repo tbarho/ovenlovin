@@ -3,6 +3,7 @@ import { generateOpenApiDocument } from "./api/openapi";
 
 const PITCH = "The family recipe box your AI can actually use, and it knows who can't eat what.";
 
+const YOUR_APP = "https://<your-app>.vercel.app";
 const DEMO_HOST = "https://ovenlovin-demo.vercel.app";
 
 function restLines(origin: string): string[] {
@@ -24,7 +25,7 @@ function mcpLines(): string[] {
 }
 
 export function buildLlmsTxt(origin: string): string {
-  const base = origin.replace(/\/$/, "") || "https://ovenlovin.vercel.app";
+  const base = origin.replace(/\/$/, "") || YOUR_APP;
   return [
     `# OvenLovin`,
     ``,
@@ -33,6 +34,10 @@ export function buildLlmsTxt(origin: string): string {
     `Open-source recipe box and meal planner for families and their AI agents.`,
     `Per-person allergen checks (US Big 9 + EU 14). MIT license.`,
     `Not medical advice. Always check ingredient labels before serving.`,
+    ``,
+    `Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key, and copy the \`plaintext\` value (shown once). Call \`${YOUR_APP}/api/v1\` with \`Authorization: ApiKey rkapi_...\` and connect MCP at \`${YOUR_APP}/mcp\`.`,
+    ``,
+    `Just looking? The public demo at ${DEMO_HOST} issues a 24h sandbox key at /api/demo/enter?format=json.`,
     ``,
     `## This instance`,
     ``,
@@ -54,17 +59,14 @@ export function buildLlmsTxt(origin: string): string {
     `- \`Authorization: Bearer rkapi_...\``,
     `- \`Authorization: Bearer <Clerk JWT>\``,
     ``,
-    `Create a key in Settings, or copy the sandbox key on the public demo. Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is \`403\`.`,
+    `Clerk JWT MCP uses a kitchen you already belong to (open the app in the browser once). On MCP with a Clerk JWT, optional \`X-Kitchen-Id\` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched \`X-Kitchen-Id\` is \`403\`.`,
     `A request outside the key's scopes returns 403.`,
     `Unauthenticated REST returns problem+json 401.`,
     `Unauthenticated MCP POST returns a JSON-RPC error envelope (HTTP 401).`,
     ``,
-    `No account? \`curl '${DEMO_HOST}/api/demo/enter?format=json'\` returns a sandbox \`apiKey\` (valid 24h; each call creates a new sandbox). Use it with ${DEMO_HOST}/api/v1 and ${DEMO_HOST}/mcp.`,
-    `GET /api/demo/reset and GET /api/cron/demo-cleanup are internal.`,
-    ``,
     `## Example`,
     ``,
-    `curl -H 'Authorization: ApiKey $KEY' ${base}/api/v1/recipes?limit=5`,
+    `curl -H 'Authorization: ApiKey $KEY' ${YOUR_APP}/api/v1/recipes?limit=5`,
     ``,
     `## MCP tools`,
     ``,

@@ -8,14 +8,16 @@ OvenLovin provides multiple interfaces for AI agents:
 - **MCP Server** - Model Context Protocol for structured tool access
 - **REST API** - OpenAPI-compliant HTTP endpoints
 
-No account? `curl 'https://ovenlovin-demo.vercel.app/api/demo/enter?format=json'` returns a sandbox `apiKey` (valid 24h; each call creates a new sandbox). Use it with https://ovenlovin-demo.vercel.app/api/v1 and https://ovenlovin-demo.vercel.app/mcp.
+Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key, and copy the `plaintext` value (shown once). Call `https://<your-app>.vercel.app/api/v1` with `Authorization: ApiKey rkapi_...` and connect MCP at `https://<your-app>.vercel.app/mcp`.
+
+Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key at /api/demo/enter?format=json.
 
 ## Prerequisites
 
 Before connecting an agent, you'll need:
 
 - OvenLovin deployed to Vercel or running locally
-- An API key from your OvenLovin dashboard (Settings → API Keys)
+- An API key from your OvenLovin dashboard (Settings → API keys)
 - For MCP: Node.js 20 or later
 
 ## Grok Bot (xAI)
@@ -41,6 +43,7 @@ In your Grok Bot MCP settings:
 ```
 
 Replace:
+
 - `your-app.vercel.app` with your deployment URL
 - `YOUR_API_KEY` with your OvenLovin API key
 
@@ -96,6 +99,7 @@ Can search recipes, check allergen rules, create meal plans, and generate shoppi
 In the "Actions" section:
 
 1. **Schema**: Import from URL
+
    ```
    https://your-app.vercel.app/api/v1/openapi.json
    ```
@@ -151,14 +155,11 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 #### TypeScript
 
 ```typescript
-const response = await fetch(
-  'https://your-app.vercel.app/api/v1/recipes',
-  {
-    headers: {
-      'Authorization': `Bearer ${API_KEY}`,
-    },
-  }
-);
+const response = await fetch("https://your-app.vercel.app/api/v1/recipes", {
+  headers: {
+    Authorization: `Bearer ${API_KEY}`,
+  },
+});
 const data = await response.json();
 ```
 
@@ -238,6 +239,7 @@ curl https://your-app.vercel.app/mcp
 ```
 
 Should return MCP server metadata. If not, check:
+
 - Deployment is live on Vercel
 - Environment variables are set correctly
 - API key is valid
@@ -245,6 +247,7 @@ Should return MCP server metadata. If not, check:
 ### Authentication Errors (401)
 
 Verify:
+
 - API key format: `Authorization: ApiKey rkapi_...` or `Bearer rkapi_...`
 - Key is still listed under Settings
 - Key has required scopes for the operation
