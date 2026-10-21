@@ -529,6 +529,46 @@ describe("checkIngredientsAgainstRules", () => {
     expect(result.findings.prefer_avoid).toHaveLength(0);
   });
 
+  it("flags kung pao dried chiles for a spicy-averse person", () => {
+    const rule = createRule({
+      kind: "tag",
+      target: "spicy",
+      severity: "prefer_avoid",
+    });
+    const findings = checkIngredientAgainstRule(
+      { name: "4 dried chiles" },
+      createContext("Test Adult 7", rule)
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.severity).toBe("prefer_avoid");
+    expect(findings[0]?.allergenCode).toBe("spicy");
+    expect(findings[0]?.ingredientName).toBe("4 dried chiles");
+    expect(
+      checkIngredientAgainstRule({ name: "1 tsp cayenne" }, createContext("Test Adult 7", rule))
+    ).toHaveLength(1);
+    expect(
+      checkIngredientAgainstRule({ name: "1 tsp chipotle" }, createContext("Test Adult 7", rule))
+    ).toHaveLength(1);
+    expect(
+      checkIngredientAgainstRule({ name: "hot water" }, createContext("Test Adult 7", rule))
+    ).toHaveLength(0);
+    expect(
+      checkIngredientAgainstRule({ name: "hot dog buns" }, createContext("Test Adult 7", rule))
+    ).toHaveLength(0);
+    expect(
+      checkIngredientAgainstRule(
+        { name: "1 tsp pumpkin pie spice" },
+        createContext("Test Adult 7", rule)
+      )
+    ).toHaveLength(0);
+    expect(
+      checkIngredientAgainstRule(
+        { name: "2 tbsp sweet chili sauce" },
+        createContext("Test Adult 7", rule)
+      )
+    ).toHaveLength(0);
+  });
+
   describe("deterministic behavior", () => {
     it("returns same results for same inputs", () => {
       const rule = createRule({ target: "peanut", severity: "block" });

@@ -625,6 +625,8 @@ describe("MCP Tool Schemas", () => {
     });
 
     it("validates manage_people and manage_person_rules", () => {
+      expect(managePersonRulesTool.description).toMatch(/target=spicy/);
+      expect(managePersonRulesTool.description).toMatch(/prefer_avoid/);
       expect(managePeopleTool.inputSchema.safeParse({ action: "list" }).success).toBe(true);
       expect(managePeopleTool.inputSchema.safeParse({ action: "create" }).success).toBe(false);
       expect(

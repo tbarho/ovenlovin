@@ -65,6 +65,7 @@ describe("people catalog search", () => {
       suggestion: null,
     });
     expect(unknownAllergenWarning("xyzzy", null)).toMatch(/can't check 'xyzzy'/i);
+    expect(unknownAllergenWarning("xyzzy", null)).toContain("spicy");
   });
 
   it("maps catalog codes onto food icons", () => {

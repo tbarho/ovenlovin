@@ -35,7 +35,9 @@ export const managePersonRulesSchema = z
     confirmUnknown: z
       .boolean()
       .optional()
-      .describe("Required to save a target that is not in the allergen catalog, such as xyzzy."),
+      .describe(
+        "Required to save a target that is not in the catalog. The error lists supported targets."
+      ),
   })
   .superRefine((value, ctx) => {
     if (value.action === "add") {
@@ -113,8 +115,8 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
         ambiguousRuleTargetMessage(input.target, canonical.ambiguous)
       );
     }
-    if (input.kind === "allergen" && !canonical.resolved && !input.confirmUnknown) {
-      throw new McpInvalidParamsError(unknownRuleTargetMessage(input.target));
+    if (!canonical.resolved && !input.confirmUnknown) {
+      throw new McpInvalidParamsError(unknownRuleTargetMessage(input.target, input.kind));
     }
     const { rule, created } = await people.createRule({
       personId: person.id,
@@ -158,7 +160,7 @@ async function handler(input: z.infer<typeof managePersonRulesSchema>, context: 
 export const managePersonRulesTool = {
   name: "manage_person_rules",
   description:
-    "List, add, or remove Can't eat / Doesn't like rules for a person. Allergen typos (pean → peanut) are canonicalized the same way as the People UI. Not medical advice - always check ingredient labels before serving.",
+    "List, add, or remove Can't eat / Doesn't like rules for a person. Dislikes spicy food: kind=ingredient or tag, target=spicy, severity=prefer_avoid (matches cayenne, chiles/chilies, chili powder, jalapeno, serrano, habanero, sriracha, gochujang, hot sauce, and similar heat). Other taste dislikes: cilantro, olives, mushrooms, onions, garlic (kind=ingredient, severity=prefer_avoid). Diets: kind=diet, target=vegetarian|vegan|pescatarian|gluten_free|dairy_free. Allergens: kind=allergen, target=peanut|tree_nut|milk|.... Unknown targets are rejected unless confirmUnknown=true; the error lists supported targets. Allergen typos (pean → peanut) are canonicalized the same way as the People UI. Not medical advice - always check ingredient labels before serving.",
   inputSchema: managePersonRulesSchema,
   handler,
 } as const;

@@ -28,7 +28,7 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 - `manage_kitchen_invites` - create, list, or revoke shareable kitchen invite links (owner or admin; default role member)
 - `manage_kitchen_members` - list signed-in kitchen members, change roles, remove a member, or leave
 - `get_person_rules` - Can't eat / Doesn't like rules plus Loves
-- `manage_person_rules` - list / add / remove rules. Tree-nut rules accept `treatCoconutAsTreeNut` (default `false`; coconut is not a tree nut unless set)
+- `manage_person_rules` - list / add / remove rules. Dislikes spicy: `kind=ingredient` or `tag`, `target=spicy`, `severity=prefer_avoid` (matches cayenne, chiles, chili powder, hot sauce, and similar heat). Other taste dislikes: cilantro, olives, mushrooms, onions, garlic. Unknown targets need `confirmUnknown=true`. Tree-nut rules accept `treatCoconutAsTreeNut` (default `false`; coconut is not a tree nut unless set)
 - `reorder_people` - persist household people order (`personIds` must list everyone once)
 - `manage_person_loves` - `list`, `add`, `remove` a food, cuisine, or style someone loves
 - `search_recipes` - attendee warnings plus love boosts and “Name loves this” tags

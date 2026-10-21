@@ -83,6 +83,8 @@ export const defaultCompoundFoodExclusions: CompoundFoodExclusion[] = [
     phrase: "pesto",
     compounds: ["sunflower seed pesto", "pumpkin seed pesto", "seed pesto", "nut free pesto"],
   },
+  // shortcut: US spelling only, add chilli when a kitchen hits it
+  { phrase: "chili", compounds: ["sweet chili sauce"] },
 ];
 
 export const falseFriendCompounds: FalseFriendCompound[] = [
