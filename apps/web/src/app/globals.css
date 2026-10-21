@@ -881,14 +881,20 @@ select {
 .docs-page .hero-ctas,
 .docs-page .agent,
 .docs-page .copy-pre,
+.docs-page .copy-scroll,
 .docs-page ol {
   margin-top: 16px;
 }
 
 .docs-page h2 + .intro,
 .docs-page h2 + .copy-pre,
+.docs-page h2 + .copy-scroll,
 .docs-page h2 + ol {
   margin-top: 0;
+}
+
+.docs-page .hero-ctas {
+  justify-content: flex-start;
 }
 
 .docs-page .lead {
@@ -910,9 +916,13 @@ select {
 .docs-page .yours-row li {
   min-width: 0;
   width: 100%;
+  overflow-wrap: anywhere;
 }
 
+.docs-page .yours-row b,
 .docs-page .yours-row code {
+  min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
 }
 
@@ -929,6 +939,8 @@ select {
 
 .docs-page .copy-pre {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
   padding: 16px 18px;
   overflow-x: auto;
   border: 1px solid var(--line);
@@ -941,14 +953,14 @@ select {
   white-space: pre;
 }
 
-.docs-page .copy-pre::after,
 .copy-scroll::after {
   content: "";
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 28px;
+  width: 24px;
+  z-index: 1;
   pointer-events: none;
   background: linear-gradient(to right, transparent, var(--code));
 }
@@ -1105,6 +1117,8 @@ select {
 .copy-scroll {
   position: relative;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .copy-box pre {
@@ -1173,6 +1187,20 @@ select {
   align-content: center;
   min-height: 100dvh;
   padding: 48px 0 80px;
+  text-align: center;
+}
+
+.auth-screen h1 {
+  margin: 16px 0 0;
+  font-size: 40px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  text-align: center;
+}
+
+.auth-screen .empty-note {
+  max-width: 36ch;
+  text-align: center;
 }
 
 .not-found {
@@ -2212,11 +2240,13 @@ select {
     padding: 64px 0 48px;
   }
 
+  .hero-ctas,
   .docs-page .hero-ctas {
     flex-direction: column;
     align-items: stretch;
   }
 
+  .hero-ctas .btn,
   .docs-page .hero-ctas .btn {
     width: 100%;
   }

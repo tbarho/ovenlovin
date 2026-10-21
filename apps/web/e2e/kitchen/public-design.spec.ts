@@ -103,19 +103,78 @@ test.describe("public design sign-off", () => {
           expect(step, "step number").toBeGreaterThanOrEqual(4.5);
           expect(footer, "footer").toBeGreaterThanOrEqual(4.5);
           await expect(page.locator(".hero .lead .nowrap")).toHaveText("Per-person");
+          await expect(page.locator(".hero .lead")).toContainText("Always read the label.");
+          const heroBtns = page.locator(".hero-ctas .btn");
+          await expect(heroBtns).toHaveCount(2);
+          if (width === 390) {
+            const wrapBox = await page.locator(".hero .wrap").boundingBox();
+            const first = await heroBtns.first().boundingBox();
+            const second = await heroBtns.last().boundingBox();
+            expect(wrapBox && first && second).toBeTruthy();
+            if (wrapBox && first && second) {
+              expect(first.width).toBeGreaterThanOrEqual(wrapBox.width - 8);
+              expect(second.width).toBeGreaterThanOrEqual(wrapBox.width - 8);
+              expect(second.y).toBeGreaterThan(first.y + first.height - 2);
+            }
+          }
         }
         if (item.name === "docs") {
           const label = await contrastRatio(page, ".docs-page .yours-row span");
           expect(label, "endpoint label").toBeGreaterThanOrEqual(4.5);
+          await expect(page.locator(".docs-page .intro .nowrap")).toHaveText("per-person");
           const card = page.locator(".docs-page .yours-row li").last();
           const wrap = page.locator(".docs-page");
+          const url = card.locator("code");
           const cardBox = await card.boundingBox();
           const wrapBox = await wrap.boundingBox();
-          expect(cardBox && wrapBox).toBeTruthy();
-          if (cardBox && wrapBox) {
+          const urlBox = await url.boundingBox();
+          expect(cardBox && wrapBox && urlBox).toBeTruthy();
+          if (cardBox && wrapBox && urlBox) {
             expect(cardBox.x).toBeLessThanOrEqual(wrapBox.x + 2);
             expect(cardBox.width).toBeGreaterThanOrEqual(wrapBox.width - 4);
+            expect(urlBox.x + urlBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width + 1);
           }
+          if (width === 1440) {
+            const heading = await page.locator(".docs-page h1").boundingBox();
+            const cta = await page.locator(".docs-page .hero-ctas .btn").first().boundingBox();
+            expect(heading && cta).toBeTruthy();
+            if (heading && cta) {
+              expect(cta.x).toBeLessThanOrEqual(heading.x + 2);
+            }
+          }
+        }
+        if (item.name === "sign-in") {
+          const screenBox = await page.locator(".auth-screen").boundingBox();
+          const brandBox = await page.locator(".auth-screen .brand").boundingBox();
+          const heading = page.locator(".auth-screen h1");
+          const headingBox = await heading.boundingBox();
+          const btnBox = await page.locator(".auth-screen .btn").first().boundingBox();
+          expect(screenBox && brandBox && headingBox && btnBox).toBeTruthy();
+          if (screenBox && brandBox && headingBox && btnBox) {
+            const mid = (box: { x: number; width: number }) => box.x + box.width / 2;
+            const center = mid(screenBox);
+            expect(Math.abs(mid(brandBox) - center)).toBeLessThan(8);
+            expect(Math.abs(mid(headingBox) - center)).toBeLessThan(8);
+            expect(Math.abs(mid(btnBox) - center)).toBeLessThan(8);
+          }
+          const type = await heading.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return {
+              fontSize: parseFloat(style.fontSize),
+              lineHeight: parseFloat(style.lineHeight),
+            };
+          });
+          expect(type.fontSize).toBeCloseTo(40, 0);
+          expect(type.lineHeight / type.fontSize).toBeCloseTo(1.1, 1);
+        }
+        const fade = page.locator(".copy-scroll").first();
+        if (await fade.count()) {
+          const overlay = await fade.evaluate((el) => {
+            const style = getComputedStyle(el, "::after");
+            return { width: parseFloat(style.width), image: style.backgroundImage };
+          });
+          expect(overlay.width, `${item.name} fade`).toBeGreaterThanOrEqual(24);
+          expect(overlay.image).toMatch(/linear-gradient/i);
         }
 
         const authNoise = errors.filter(

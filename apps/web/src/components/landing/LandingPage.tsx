@@ -71,8 +71,8 @@ export function LandingPage({
               ) : (
                 <>
                   Open-source recipe box for families and their agents.{" "}
-                  <span className="nowrap">Per-person</span> allergen checks. Not medical advice -
-                  always read the label.
+                  <span className="nowrap">Per-person</span> allergen checks. Not medical advice.
+                  Always read the label.
                 </>
               )}
             </p>
@@ -114,21 +114,16 @@ export function LandingPage({
                 <Link className="btn" href="/sign-in">
                   Sign in
                 </Link>
-              ) : null}
-              <a
-                className="btn"
-                href="https://tbarho.github.io/ovenlovin/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Read the docs
-              </a>
-              <a className="btn ghost" href="#connect">
-                Connect your agent
-              </a>
-              <a className="btn ghost" href="#migrate">
-                Migrate from ReciMe
-              </a>
+              ) : (
+                <a
+                  className="btn"
+                  href="https://tbarho.github.io/ovenlovin/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Read the docs
+                </a>
+              )}
             </div>
             {signedIn ? <VercelBand deploy={deploy} /> : null}
           </div>

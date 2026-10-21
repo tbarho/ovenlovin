@@ -29,10 +29,12 @@ export default async function ConnectYourAgentPage() {
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>
       <p className="intro">Remote HTTP is the supported path. After you have a key:</p>
-      <pre className="copy-pre">
-        {`claude mcp add --transport http ovenlovin ${origin}/mcp \\
+      <div className="copy-scroll">
+        <pre className="copy-pre">
+          {`claude mcp add --transport http ovenlovin ${origin}/mcp \\
   --header "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY"`}
-      </pre>
+        </pre>
+      </div>
       <h2>Safety</h2>
       <p className="intro">
         Call <code>check_meal_plan</code> before <code>save_meal_plan</code>. If checking cannot
