@@ -1,10 +1,18 @@
-import { SignedIn, SignedOut } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
 
-export default function NotFound() {
+export default async function NotFound() {
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  let signedIn = false;
+  if (clerkEnabled) {
+    try {
+      const { currentUser } = await import("@clerk/nextjs/server");
+      signedIn = Boolean(await currentUser());
+    } catch {
+      signedIn = false;
+    }
+  }
 
   return (
     <div className="shell">
@@ -19,18 +27,15 @@ export default function NotFound() {
               Docs
             </Link>
             {clerkEnabled ? (
-              <>
-                <SignedOut>
-                  <Link className="btn" href="/sign-in">
-                    Sign in
-                  </Link>
-                </SignedOut>
-                <SignedIn>
-                  <Link className="btn" href="/recipes">
-                    Open kitchen
-                  </Link>
-                </SignedIn>
-              </>
+              signedIn ? (
+                <Link className="btn" href="/recipes">
+                  Open kitchen
+                </Link>
+              ) : (
+                <Link className="btn" href="/sign-in">
+                  Sign in
+                </Link>
+              )
             ) : null}
           </div>
         </div>
