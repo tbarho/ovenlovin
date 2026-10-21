@@ -55,6 +55,21 @@ describe("assignAisle", () => {
       category: "frozen",
     });
     expect(assignAisle("all-purpose flour")).toMatchObject({ aisle: "Baking", category: "pantry" });
+    expect(assignAisle("bread flour")).toMatchObject({ aisle: "Baking", category: "pantry" });
+  });
+
+  it("keeps stock and greens out of Meat and Oils", () => {
+    expect(assignAisle("chicken stock")).toMatchObject({ aisle: "Pantry", category: "pantry" });
+    expect(assignAisle("vegetable stock")).toMatchObject({ aisle: "Pantry", category: "pantry" });
+    expect(assignAisle("arugula")).toMatchObject({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("yellow onion")).toMatchObject({
+      aisle: "Produce",
+      canonicalName: "onion",
+    });
+    expect(assignAisle("minced garlic")).toMatchObject({
+      aisle: "Produce",
+      canonicalName: "garlic",
+    });
   });
 });
 
@@ -70,6 +85,8 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("lemon")).toBe("lemon");
     expect(canonicalShopName("lemons")).toBe("lemon");
     expect(canonicalShopName("eggs")).toBe("egg");
+    expect(canonicalShopName("yellow onion")).toBe("onion");
+    expect(canonicalShopName("salmon fillets")).toBe("salmon");
   });
 });
 
@@ -80,6 +97,7 @@ describe("isPantryStaple", () => {
     expect(isPantryStaple("olive oil")).toBe(true);
     expect(isPantryStaple("sesame oil")).toBe(true);
     expect(isPantryStaple("yellow onion")).toBe(false);
+    expect(isPantryStaple("bell peppers")).toBe(false);
     expect(isPantryStaple("soy sauce")).toBe(false);
   });
 });

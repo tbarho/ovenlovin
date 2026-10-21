@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   backfillParsedIngredient,
+  isShopJunkName,
   normalizeIngredientName,
   parseIngredientLine,
   splitLeadingUnit,
@@ -113,6 +114,48 @@ describe("parseIngredientLine", () => {
       quantityMax: 2,
       unit: "tbsp",
     });
+  });
+
+  it("cleans Olive UAT lines: prep tails, trailing cups, dual units, notes", () => {
+    expect(
+      parseIngredientLine("Bell peppers, stems and seeds removed, very thinly sliced")
+    ).toMatchObject({
+      quantityMin: null,
+      unit: null,
+      name: "Bell peppers",
+    });
+    expect(parseIngredientLine("(490 g) bread flour 6 1/4 cups")).toMatchObject({
+      quantityMin: 6.25,
+      unit: "cup",
+      name: "bread flour",
+    });
+    expect(parseIngredientLine("1 kg / 1 lb chicken breast")).toMatchObject({
+      quantityMin: 1,
+      unit: "kg",
+      name: "chicken breast",
+    });
+    expect(parseIngredientLine("2 lbs / 360g beef fillet")).toMatchObject({
+      quantityMin: 2,
+      unit: "lb",
+      name: "beef fillet",
+    });
+    expect(parseIngredientLine("chopped fresh parsley, or")).toMatchObject({
+      name: "parsley",
+    });
+    expect(
+      parseIngredientLine("Optional: Shredded cheddar cheese, taco sauce, salsa…")
+    ).toMatchObject({
+      name: "cheddar cheese",
+    });
+    expect(parseIngredientLine("((Note 1))")).toMatchObject({ name: "" });
+    expect(parseIngredientLine("2 cups arugula, tossed with olive oil")).toMatchObject({
+      quantityMin: 2,
+      unit: "cup",
+      name: "arugula",
+    });
+    expect(isShopJunkName("")).toBe(true);
+    expect(isShopJunkName("Note 1")).toBe(true);
+    expect(isShopJunkName("parsley")).toBe(false);
   });
 });
 

@@ -1,4 +1,8 @@
-import { backfillParsedIngredient, normalizeIngredientName } from "../parsing/ingredient-line";
+import {
+  backfillParsedIngredient,
+  isShopJunkName,
+  normalizeIngredientName,
+} from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
@@ -185,11 +189,8 @@ function addQuantities(
   return { quantity: base / UNIT_TO_BASE[smaller]!.toBase, unit: smaller };
 }
 
-function mergeKey(name: string, unit: string | undefined, recipeKey: string): string {
-  const normalized = normalizeIngredientName(name);
-  const meta = unit ? UNIT_TO_BASE[unit] : undefined;
-  const unitGroup = meta ? meta.dimension : (unit ?? "count");
-  return `${recipeKey}|${normalized}|${unitGroup}`;
+function mergeKey(name: string, recipeKey: string): string {
+  return `${recipeKey}|${normalizeIngredientName(name)}`;
 }
 
 function sectionForItem(
@@ -288,25 +289,55 @@ export class ShoppingListService {
           quantityMin: line.quantityMin ?? line.quantity ?? null,
           unit: line.unit ?? null,
         });
-        if (!parsed.name) continue;
+        const each = parsed.name.match(/^each(?:\s+of)?\s+(.+)/i);
+        const parts = each?.[1]
+          ? each[1]
+              .split(/,|\band\b/i)
+              .map((part) => part.trim())
+              .filter(Boolean)
+          : [parsed.name];
 
-        const placement = assignAisle(parsed.name);
-        const itemName = placement.canonicalName;
-        const scaledQuantity = parsed.quantityMin != null ? parsed.quantityMin * scale : undefined;
-        const unit = parsed.unit ?? undefined;
-        const key = mergeKey(itemName, unit, recipeKey);
-        const pantry = isPantryStaple(parsed.name);
+        for (const partName of parts) {
+          if (!partName || isShopJunkName(partName)) continue;
 
-        const recipeRef: ShoppingListRecipeRef = {
-          recipeId,
-          recipeTitle,
-          quantity: scaledQuantity,
-          unit,
-        };
+          const placement = assignAisle(partName);
+          const itemName = placement.canonicalName;
+          const scaledQuantity =
+            parsed.quantityMin != null ? parsed.quantityMin * scale : undefined;
+          const unit = parsed.unit ?? undefined;
+          const key = mergeKey(itemName, recipeKey);
+          const pantry = isPantryStaple(partName);
 
-        const existing = ingredientMap.get(key);
-        if (!existing) {
-          ingredientMap.set(key, {
+          const recipeRef: ShoppingListRecipeRef = {
+            recipeId,
+            recipeTitle,
+            quantity: scaledQuantity,
+            unit,
+          };
+
+          let mapKey = key;
+          let existing = ingredientMap.get(mapKey);
+          if (existing && scaledQuantity != null) {
+            const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
+            if (merged) {
+              existing.recipes.push(recipeRef);
+              existing.quantity = merged.quantity;
+              existing.unit = merged.unit;
+              continue;
+            }
+            mapKey = `${key}|${unit ?? ""}`;
+            existing = ingredientMap.get(mapKey);
+          }
+          if (existing) {
+            existing.recipes.push(recipeRef);
+            if (scaledQuantity != null && existing.quantity == null) {
+              existing.quantity = scaledQuantity;
+              existing.unit = unit;
+            }
+            continue;
+          }
+
+          ingredientMap.set(mapKey, {
             key: shopItemKey(itemName, unit),
             name: itemName,
             quantity: scaledQuantity,
@@ -317,16 +348,6 @@ export class ShoppingListService {
             isPantryItem: pantry,
             recipes: [recipeRef],
           });
-          continue;
-        }
-
-        existing.recipes.push(recipeRef);
-        if (scaledQuantity != null) {
-          const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
-          if (merged) {
-            existing.quantity = merged.quantity;
-            existing.unit = merged.unit;
-          }
         }
       }
     }
@@ -339,12 +360,15 @@ export class ShoppingListService {
           rawQuantity != null && isCountableShopItem(item.unit)
             ? wholeShopQuantity(rawQuantity)
             : rawQuantity;
-        const display = quantity != null ? toFriendlyMeasure(quantity, item.unit, true) : undefined;
-        const displayQuantity = display?.displayQuantity;
+        const display =
+          quantity != null
+            ? toFriendlyMeasure(quantity, item.unit, true)
+            : { displayQuantity: "as needed" };
+        const displayQuantity = display.displayQuantity;
         const displayUnit =
-          displayQuantity && display.displayUnit
+          displayQuantity && displayQuantity !== "as needed" && display.displayUnit
             ? inflectedUnit(displayQuantity, display.displayUnit)
-            : display?.displayUnit;
+            : display.displayUnit;
         return {
           ...item,
           key: shopItemKey(item.name, item.unit),
@@ -616,7 +640,11 @@ function shopItemName(ing: ShoppingListIngredient): string {
 
 function formatItemLine(ing: ShoppingListIngredient, includeRecipes = true): string {
   const quantityPart =
-    ing.quantity != null ? `${formatMeasureText(ing.quantity, ing.unit, true)} ` : "";
+    ing.quantity != null
+      ? `${formatMeasureText(ing.quantity, ing.unit, true)} `
+      : ing.recipes.length > 0
+        ? "as needed "
+        : "";
   const recipes = includeRecipes
     ? ` (${ing.recipes
         .map((r) => r.recipeTitle)

@@ -9,14 +9,15 @@ import { effectivePlanServings } from "./default-servings";
 export { SERVINGS_HARD_MAX };
 
 /**
- * Recipe cards often omit yield. Display and plan cook-for still use 4 as a
- * fallback count; scaling amounts must not guess a 4-serving card.
+ * Recipe cards often omit yield. Display, plan cook-for, and list scaling
+ * use 4 as the fallback card size when servings are missing.
  */
 export const DEFAULT_RECIPE_SERVINGS = 4;
 
 /**
  * Persistable scale for a meal-plan entry: entry servings / recipe servings.
  * Matches shopping-list scaling so the stored value and the list agree.
+ * Missing recipe yield uses the 4-serving card default so cook-for still scales.
  */
 export function scaleFactorForPlanEntry(
   entryServings?: number | null,
@@ -26,6 +27,13 @@ export function scaleFactorForPlanEntry(
   mode?: DefaultServingsMode
 ): number {
   if (!(recipeServings && recipeServings > 0)) {
+    const target =
+      entryServings && entryServings > 0
+        ? entryServings
+        : defaultCookFor && defaultCookFor > 0
+          ? defaultCookFor
+          : null;
+    if (target) return roundScaleFactor(target / DEFAULT_RECIPE_SERVINGS);
     return scaleFactor && scaleFactor > 0 ? roundScaleFactor(scaleFactor) : 1;
   }
   const base = recipeServings;

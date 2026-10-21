@@ -137,6 +137,7 @@ const AISLE_RULES: AisleRule[] = [
     aliases: [
       "all-purpose flour",
       "all purpose flour",
+      "bread flour",
       "brown sugar",
       "powdered sugar",
       "baking soda",
@@ -369,6 +370,9 @@ const AISLE_RULES: AisleRule[] = [
       "vegetable broth",
       "chicken broth",
       "beef broth",
+      "vegetable stock",
+      "chicken stock",
+      "beef stock",
       "coconut milk",
       "maple syrup",
       "peanut",
@@ -437,6 +441,7 @@ function findRule(name: string): CompiledAlias | undefined {
 
 export function isPantryStaple(name: string): boolean {
   const normalized = normalizeIngredientName(name);
+  if (/\bbell peppers?\b/.test(normalized)) return false;
   if (PANTRY_STAPLE_ALIASES.has(normalized)) return true;
   return [...PANTRY_STAPLE_ALIASES].some((alias) => {
     const pattern = new RegExp(`(?:^| )${escapeRegExp(alias)}s?(?: |$)`);
@@ -444,11 +449,8 @@ export function isPantryStaple(name: string): boolean {
   });
 }
 
-function canonicalNameFor(name: string, match: CompiledAlias): string {
-  if (match.canonical) return match.canonical;
-  const normalized = normalizeIngredientName(name);
-  if (normalized === match.alias || normalized === `${match.alias}s`) return match.alias;
-  return name;
+function canonicalNameFor(_name: string, match: CompiledAlias): string {
+  return match.canonical ?? match.alias;
 }
 
 export function assignAisle(name: string): AisleAssignment {

@@ -83,7 +83,10 @@ export type ParsedIngredientLine = {
 
 /** Trailing notes that are prep, not the grocery item. */
 const PREP_NOTES =
-  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+
+const LEADING_PREP =
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+)/i;
 
 export type BackfillableIngredient = {
   rawText: string;
@@ -258,29 +261,106 @@ function cleanItemName(rest: string): string {
   let name = rest
     .replace(/^of\s+/i, "")
     .replace(/^,\s*/, "")
-    .replace(/\s*\([^)]*\)\s*$/g, "")
+    .replace(/^optional:\s*/i, "")
+    .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
+    .replace(/\(\s*note\s*\d+\s*\)/gi, "")
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/,?\s+or$/i, "")
     .replace(/\s+to taste$/i, "")
+    .replace(/,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i, "")
+    .replace(/[.…]+$/g, "")
     .trim();
 
-  const comma = name.lastIndexOf(",");
-  if (comma > 0) {
+  while (true) {
+    const comma = name.lastIndexOf(",");
+    if (comma <= 0) break;
     const tail = name.slice(comma + 1).trim();
-    if (PREP_NOTES.test(tail)) {
+    if (PREP_NOTES.test(tail) || /^(or|and)$/i.test(tail)) {
       name = name.slice(0, comma).trim();
+      continue;
     }
+    break;
+  }
+
+  // leftover topping lists: "cheddar cheese, taco sauce, salsa"
+  if (!/^each\b/i.test(name) && (name.match(/,/g) ?? []).length >= 2) {
+    name = name.slice(0, name.indexOf(",")).trim();
+  }
+
+  while (LEADING_PREP.test(name)) {
+    name = name.replace(LEADING_PREP, "").trim();
   }
 
   return name;
 }
 
+function consumeTrailingMeasure(text: string): {
+  min: number | null;
+  max: number | null;
+  unit: string;
+  rest: string;
+} | null {
+  const aliases = UNIT_ALIASES_BY_LENGTH.map((alias) => escapeRegExp(alias.match)).join("|");
+  const match = text
+    .trim()
+    .match(
+      new RegExp(
+        `^(.*?)\\s+(\\d+\\s+\\d+/\\d+|\\d+/\\d+|\\d+(?:\\.\\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])\\s+(${aliases})\\.?$`,
+        "i"
+      )
+    );
+  if (!match?.[1] || !match[2] || !match[3]) return null;
+  const rest = match[1].trim();
+  if (!rest) return null;
+  const min = parseNumberToken(match[2]);
+  if (min == null) return null;
+  const unit = splitLeadingUnit(match[3]).unit;
+  if (!unit) return null;
+  return { min, max: null, unit, rest };
+}
+
+function stripLeadingAlternateMeasure(text: string): string {
+  return text.replace(/^\([^)]+\)\s*/, "").trim();
+}
+
+function stripAlternateSlashMeasure(text: string): string {
+  const slash = text.match(/^\/\s*/);
+  if (!slash) return text;
+  const qty = consumeLeadingQuantity(text.slice(slash[0].length));
+  if (qty.min == null) return text;
+  const unit = consumeUnit(qty.rest);
+  return unit.unit ? unit.rest : text;
+}
+
+/** Note leftovers and empty names are not grocery items. */
+export function isShopJunkName(name: string): boolean {
+  const normalized = normalizeIngredientName(name);
+  return !normalized || /^note\s*\d+$/.test(normalized);
+}
+
 export function parseIngredientLine(rawText: string): ParsedIngredientLine {
-  const trimmed = rawText.trim();
-  const quantity = consumeLeadingQuantity(trimmed);
-  const afterQty = quantity.rest.replace(/^\([^)]*\)\s*/, "");
-  const unit = quantity.min == null ? { unit: null, rest: afterQty } : consumeUnit(afterQty);
+  const original = rawText.trim();
+  const trimmed = original
+    .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
+    .replace(/\(\s*note\s*\d+\s*\)/gi, "")
+    .trim();
+  const withoutLeadParen = stripLeadingAlternateMeasure(trimmed);
+  let quantity = consumeLeadingQuantity(withoutLeadParen);
+  const afterQty = stripLeadingAlternateMeasure(quantity.rest);
+  let unit = quantity.min == null ? { unit: null, rest: afterQty } : consumeUnit(afterQty);
+  if (unit.unit) {
+    unit = { unit: unit.unit, rest: stripAlternateSlashMeasure(unit.rest) };
+  }
+  if (quantity.min == null) {
+    const trailing = consumeTrailingMeasure(unit.rest);
+    if (trailing) {
+      quantity = { min: trailing.min, max: trailing.max, rest: trailing.rest };
+      unit = { unit: trailing.unit, rest: trailing.rest };
+    }
+  }
 
   return {
-    rawText: trimmed,
+    rawText: original,
     quantityMin: quantity.min,
     quantityMax: quantity.max,
     unit: unit.unit,
@@ -305,9 +385,10 @@ export function normalizeIngredientName(name: string): string {
 export function backfillParsedIngredient(input: BackfillableIngredient): BackfilledIngredient {
   const parsed = parseIngredientLine(input.rawText);
   const storedName = input.name?.trim();
-  const name = storedName && storedName !== input.rawText.trim() ? storedName : parsed.name;
+  const cleanedStored =
+    storedName && storedName !== input.rawText.trim() ? cleanItemName(storedName) : "";
   return {
-    name,
+    name: cleanedStored || parsed.name,
     quantityMin: input.quantityMin ?? parsed.quantityMin,
     quantityMax: input.quantityMax ?? parsed.quantityMax,
     unit: input.unit ?? parsed.unit,

@@ -61,9 +61,10 @@ describe("servingsScale", () => {
     expect(servingsScale(6, 6, 1)).toBe(1);
   });
 
-  it("does not guess a 4-serving card when the recipe has no yield", () => {
-    expect(servingsScale(6, null, 1)).toBe(1);
+  it("treats a missing recipe yield as a 4-serving card", () => {
+    expect(servingsScale(6, null, 1)).toBe(1.5);
     expect(servingsScale(4, null, 1)).toBe(1);
+    expect(servingsScale(8, null, 1, 8)).toBe(2);
   });
 
   it("falls back to scaleFactor only when the entry has no servings", () => {
@@ -194,7 +195,7 @@ describe("ShoppingListService", () => {
     );
 
     expect(list.ingredients[0]).toMatchObject({
-      name: "broccoli florets",
+      name: "broccoli",
       quantity: 2,
       unit: "lb",
     });
@@ -214,13 +215,13 @@ describe("ShoppingListService", () => {
     );
 
     expect(list.ingredients[0]).toMatchObject({
-      name: "broccoli florets",
+      name: "broccoli",
       quantity: 2,
       unit: "lb",
     });
   });
 
-  it("leaves amounts alone when the recipe card has no servings", () => {
+  it("scales a null-yield recipe as a 4-serving card", () => {
     const list = build([
       {
         entry: entry({ recipeId: "imported", servings: 8, scaleFactor: 1 }),
@@ -230,7 +231,7 @@ describe("ShoppingListService", () => {
       },
     ]);
 
-    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 12, unit: "oz" });
+    expect(list.ingredients[0]).toMatchObject({ name: "pasta", quantity: 24, unit: "oz" });
   });
 
   it("merges convertible units (tsp + tbsp)", () => {
@@ -286,7 +287,7 @@ describe("ShoppingListService", () => {
     ]);
     expect(
       byAisle.sections.find((section) => section.name === "Produce")?.items.map((item) => item.name)
-    ).toEqual(["carrot", "yellow onion"]);
+    ).toEqual(["carrot", "onion"]);
 
     const byCategory = build(entries, { groupBy: "category" });
     expect(byCategory.sections.map((section) => section.name).sort()).toEqual([
@@ -298,7 +299,7 @@ describe("ShoppingListService", () => {
       byCategory.sections
         .find((section) => section.name === "Protein")
         ?.items.map((item) => item.name)
-    ).toEqual(["chicken thigh", "salmon fillets"]);
+    ).toEqual(["chicken thigh", "salmon"]);
   });
 
   it("merges kosher salt, sea salt, and salt under salt", () => {
@@ -453,7 +454,7 @@ describe("ShoppingListService", () => {
     expect(withoutStaples.includePantryItems).toBe(false);
     expect(withoutStaples.ingredients[0]?.isStaple).toBe(false);
     expect(withoutStaples.ingredients[0]?.isPantryItem).toBe(false);
-    expect(withoutStaples.ingredients.map((item) => item.name)).toEqual(["yellow onion"]);
+    expect(withoutStaples.ingredients.map((item) => item.name)).toEqual(["onion"]);
     expect(withoutStaples.itemCount).toBe(1);
 
     const withStaples = build(entries, { includeStaples: true });
@@ -528,7 +529,7 @@ describe("ShoppingListService", () => {
     ]);
     const markdown = service.exportAsMarkdown(list);
     expect(markdown).toContain("## Produce");
-    expect(markdown).toContain("1 yellow onion");
+    expect(markdown).toContain("1 onion");
     expect(markdown).toContain("- [ ]");
     expect(markdown).not.toContain("## Ingredients");
   });
@@ -670,7 +671,7 @@ describe("ShoppingListService", () => {
       quantity: 3,
       displayQuantity: "3",
     });
-    expect(list.ingredients.find((item) => item.name === "whole chicken")).toMatchObject({
+    expect(list.ingredients.find((item) => item.name === "chicken")).toMatchObject({
       quantity: 1,
       displayQuantity: "1",
     });
@@ -796,6 +797,104 @@ describe("ShoppingListService", () => {
       /\*\*Generated:\*\*.*(CDT|CST)/
     );
     expect(service.exportAsText(list, { timeZone: "UTC" })).toMatch(/Generated: .*UTC/);
+  });
+
+  it("Olive W-2 / I-5: one shoppable line per food for a week at 8", () => {
+    const list = build(
+      [
+        {
+          entry: entry({ recipeId: "pizza", servings: 8 }),
+          recipeTitle: "Sheet-pan pizza",
+          recipeServings: 4,
+          ingredients: [
+            { rawText: "Bell peppers, stems and seeds removed, very thinly sliced" },
+            { rawText: "(490 g) bread flour 6 1/4 cups" },
+            { rawText: "1 kg / 1 lb chicken breast" },
+            { rawText: "2 tbsp olive oil" },
+            { rawText: "1/2 cup grated parmesan" },
+            { rawText: "1/4 cup parmesan cheese" },
+            { rawText: "2 tbsp freshly grated parmesan" },
+            { rawText: "parmesan, for serving" },
+            { rawText: "3 cloves garlic, minced" },
+            { rawText: "2 cloves garlic" },
+            { rawText: "minced garlic" },
+            { rawText: "1 yellow onion" },
+            { rawText: "1 large onion" },
+            { rawText: "2 onions" },
+            { rawText: "1/2 onion" },
+            { rawText: "shrimp" },
+            { rawText: "2 lbs shrimp" },
+            { rawText: "((Note 1))" },
+            { rawText: "chopped fresh parsley, or" },
+            { rawText: "Optional: Shredded cheddar cheese, taco sauce, salsa…" },
+            { rawText: "1 tbsp EACH cumin, paprika, oregano" },
+            { rawText: "2 cups arugula, tossed with olive oil" },
+            { rawText: "2 cups chicken stock" },
+            { rawText: "1/2 cup butter" },
+          ],
+        },
+        {
+          entry: entry({ id: "entry-2", recipeId: "charro", servings: 8, scaleFactor: 1 }),
+          recipeTitle: "Charro Beans",
+          recipeServings: null,
+          ingredients: [
+            { rawText: "2 cups butter" },
+            { rawText: "2 tbsp olive oil" },
+            { rawText: "2 lbs / 360g beef fillet" },
+            { rawText: "1/4 cup soy sauce" },
+            { rawText: "2 tbsp low-sodium soy sauce" },
+            { rawText: "1 tbsp soy sauce" },
+          ],
+        },
+      ],
+      { includeStaples: true, defaultCookFor: 8 }
+    );
+    const markdown = service.exportAsMarkdown(list);
+    const byName = Object.fromEntries(list.ingredients.map((item) => [item.name, item]));
+
+    expect(byName["bell pepper"]).toMatchObject({
+      displayQuantity: "as needed",
+      aisle: "Produce",
+      isStaple: false,
+    });
+    expect(
+      list.sections.find((section) => section.name === "Produce")?.items.map((item) => item.name)
+    ).toEqual(expect.arrayContaining(["bell pepper", "arugula"]));
+    expect(markdown).toContain("as needed bell pepper");
+    expect(byName["bread flour"]).toMatchObject({
+      quantity: 12.5,
+      unit: "cup",
+      aisle: "Baking",
+    });
+    expect(byName["chicken breast"]).toMatchObject({
+      quantity: 2,
+      unit: "kg",
+      aisle: "Meat",
+    });
+    expect(markdown).toContain("chicken breast");
+    expect(markdown).not.toMatch(/1 kg \/ 1 lb/);
+    expect(byName["beef"]).toMatchObject({ quantity: 4, unit: "lb" });
+    expect(byName["olive oil"]?.recipes).toHaveLength(2);
+    expect(byName.parmesan?.recipes.length).toBeGreaterThanOrEqual(3);
+    expect(list.ingredients.filter((item) => item.name === "parmesan")).toHaveLength(1);
+    expect(list.ingredients.filter((item) => item.name === "garlic")).toHaveLength(1);
+    expect(byName.garlic).toMatchObject({ quantity: 10, unit: "clove" });
+    expect(byName.onion).toMatchObject({ quantity: 9 });
+    expect(list.ingredients.filter((item) => item.name === "shrimp")).toHaveLength(1);
+    expect(byName.shrimp).toMatchObject({ quantity: 4, unit: "lb" });
+    expect(list.ingredients.find((item) => /note/i.test(item.name))).toBeUndefined();
+    expect(byName.parsley).toBeTruthy();
+    expect(byName.cheddar).toBeTruthy();
+    expect(byName.cumin).toMatchObject({ quantity: 2, unit: "tbsp" });
+    expect(byName.paprika).toMatchObject({ quantity: 2, unit: "tbsp" });
+    expect(byName.oregano).toMatchObject({ quantity: 2, unit: "tbsp" });
+    expect(byName.arugula).toMatchObject({ aisle: "Produce", quantity: 4, unit: "cup" });
+    expect(byName["chicken stock"]).toMatchObject({ aisle: "Pantry", quantity: 4, unit: "cup" });
+    expect(byName.butter).toMatchObject({ quantity: 5, unit: "cup" });
+    expect(markdown).not.toContain("2 1/2 cups butter");
+    expect(list.ingredients.filter((item) => item.name === "soy sauce")).toHaveLength(1);
+    expect(markdown).not.toContain("((Note");
+    expect(markdown).not.toContain("taco sauce");
   });
 
   it("keeps tofu and kalamata olives out of Produce", () => {
