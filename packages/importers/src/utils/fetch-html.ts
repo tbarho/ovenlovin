@@ -121,7 +121,7 @@ export function formatLayersTried(layersTried: string[]): string {
 }
 
 export function importBlockedMessage(
-  layersTried: string[] | number = [],
+  _layersTried: string[] | number = [],
   _status?: number,
   _statusText?: string
 ): string {
