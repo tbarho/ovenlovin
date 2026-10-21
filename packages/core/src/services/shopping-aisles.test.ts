@@ -119,9 +119,14 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("cream cheese")).toBe("cream cheese");
     expect(canonicalShopName("cream")).toBe("cream");
     expect(canonicalShopName("lemon extract")).toBe("lemon extract");
+    expect(assignAisle("lemon extract").aisle).toBe("Baking");
     expect(canonicalShopName("lemon")).toBe("lemon");
     expect(canonicalShopName("mint extract")).toBe("mint extract");
+    expect(assignAisle("mint extract").aisle).toBe("Baking");
     expect(canonicalShopName("fresh mint")).toBe("fresh mint");
+    expect(canonicalShopName("whole chicken")).toBe("whole chicken");
+    expect(canonicalShopName("salted peanuts")).toBe("salted peanuts");
+    expect(canonicalShopName("unsalted peanuts")).toBe("unsalted peanuts");
     expect(canonicalShopName("fresh thyme")).toBe("fresh thyme");
     expect(canonicalShopName("dried thyme")).toBe("dried thyme");
     expect(assignAisle("fresh thyme").aisle).toBe("Produce");
@@ -137,6 +142,7 @@ describe("canned and plant-milk aisles", () => {
     });
     expect(assignAisle("tomatoes", "can")).toMatchObject({ aisle: "Canned goods" });
     expect(assignAisle("canned beans")).toMatchObject({ aisle: "Canned goods" });
+    expect(assignAisle("canned tomatoes")).toMatchObject({ aisle: "Canned goods" });
     expect(assignAisle("tomato")).toMatchObject({ aisle: "Produce" });
     expect(assignAisle("red pepper flakes").aisle).not.toBe("Canned goods");
     expect(assignAisle("graham crackers").aisle).not.toBe("Canned goods");

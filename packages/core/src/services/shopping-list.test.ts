@@ -984,48 +984,60 @@ describe("ShoppingListService", () => {
       lines: ["1 lemon, juiced"],
       expectName: /^lemon$/i,
       reject: /juiced|zested/i,
+      rows: 1,
     },
     {
       name: "lemons zested and juiced",
       lines: ["2 lemons, zested and juiced"],
       expectName: /^lemon$/i,
       reject: /juiced|zested/i,
+      rows: 1,
     },
     {
       name: "unbalanced butter paren",
       lines: ["1 cup unsalted butter)"],
       expectName: /^butter$/i,
       reject: /[()]|unsalted/i,
+      rows: 1,
     },
     {
       name: "unbalanced eggs paren",
       lines: ["6 eggs (room temperature))"],
       expectName: /^egg$/i,
       reject: /room temperature|[()]/i,
+      rows: 1,
     },
     {
       name: "flour slash",
       lines: ["1 1/8 cups plain / all purpose flour"],
       expectName: /^all purpose flour$/i,
       reject: /^plain$/i,
+      rows: 1,
     },
     {
       name: "butter variants",
       lines: ["1 cup butter", "1/2 cup unsalted butter", "2 tbsp salted butter"],
       expectName: /^butter$/i,
       reject: /unsalted|salted/i,
+      rows: 1,
+      quantity: 1.625,
+      unit: "cup",
     },
     {
       name: "parmesan variants",
       lines: ["1/2 cup parmesan", "1/4 cup Parmesan cheese", "2 tbsp parmigiano reggiano"],
       expectName: /^parmesan$/i,
       reject: /cheese|parmigiano/i,
+      rows: 1,
     },
     {
       name: "vanilla variants",
       lines: ["1 tsp vanilla", "1 tsp vanilla extract", "1 tsp pure vanilla extract"],
       expectName: /^vanilla$/i,
       reject: /extract|^pure$/i,
+      rows: 1,
+      quantity: 3,
+      unit: "tsp",
     },
     {
       name: "crushed garlic",
@@ -1039,60 +1051,73 @@ describe("ShoppingListService", () => {
       lines: ["1 cup almond flour"],
       expectName: /^almond flour$/i,
       reject: /all purpose/i,
+      rows: 1,
     },
     {
       name: "crushed tomatoes stay",
       lines: ["1 can crushed tomatoes"],
       expectName: /^crushed tomatoes$/i,
       reject: /^tomatoes$/i,
+      rows: 1,
     },
     {
       name: "flaxseed",
       lines: ["1/4 cup flaxseed"],
       expectName: /^flaxseed$/i,
+      rows: 1,
     },
     {
       name: "aniseed",
       lines: ["1 tsp aniseed"],
       expectName: /^aniseed$/i,
+      rows: 1,
     },
     {
       name: "cream cheese + cream",
       lines: ["8 oz cream cheese", "1 cup cream"],
       expectName: [/^cream cheese$/i, /^cream$/i],
+      rows: 2,
     },
     {
       name: "lemon extract + lemon",
       lines: ["1 tsp lemon extract", "1 lemon"],
       expectName: [/lemon extract/i, /^lemon$/i],
+      rows: 2,
+      aisles: { "lemon extract": "Baking", lemon: "Produce" },
     },
     {
       name: "mint extract + fresh mint",
       lines: ["1 tsp mint extract", "1 bunch fresh mint"],
       expectName: [/mint extract/i, /^mint$/i],
+      rows: 2,
+      aisles: { "mint extract": "Baking", mint: "Produce" },
     },
     {
       name: "salt/pepper",
       lines: ["salt/pepper"],
       expectName: [/^salt$/i, /^pepper$/i],
       includeStaples: true,
+      rows: 2,
     },
     {
       name: "butter/oil",
       lines: ["butter/oil"],
       expectName: [/^butter$/i, /^oil$/i],
       includeStaples: true,
+      rows: 2,
     },
     {
       name: "minced or crushed garlic",
       lines: ["2 cloves garlic, minced or crushed"],
       expectName: /^garlic$/i,
       reject: /minced|crushed|^or /i,
+      rows: 1,
     },
     {
       name: "fresh + dried thyme",
       lines: ["1 tbsp fresh thyme", "1 tsp dried thyme"],
       expectName: [/^thyme$/i, /^dried thyme$/i],
+      rows: 2,
     },
     {
       name: "onion lb + count",
@@ -1100,30 +1125,81 @@ describe("ShoppingListService", () => {
       expectName: /^onion$/i,
       rows: 2,
     },
-  ])("UAT shop lines $name", ({ lines, expectName, reject, rows, includeStaples }) => {
-    const list = build(
-      [
-        {
-          entry: entry({ recipeId: "uat", servings: 4 }),
-          recipeTitle: "UAT",
-          recipeServings: 4,
-          ingredients: lines.map((rawText) => ({ rawText })),
-        },
-      ],
-      includeStaples ? { includeStaples: true } : {}
-    );
-    const patterns = Array.isArray(expectName) ? expectName : [expectName];
-    const matched = list.ingredients.filter((item) =>
-      patterns.some((pattern) => pattern.test(item.name))
-    );
-    expect(matched).toHaveLength(rows ?? patterns.length);
-    if (rows == null) {
-      for (const pattern of patterns) {
-        expect(list.ingredients.filter((item) => pattern.test(item.name))).toHaveLength(1);
+    {
+      name: "eggs beaten",
+      lines: ["4 large eggs, beaten"],
+      expectName: /^egg$/i,
+      reject: /beaten/i,
+      rows: 1,
+    },
+    {
+      name: "lime wedges",
+      lines: ["1 lime, cut into wedges"],
+      expectName: /^lime$/i,
+      reject: /wedge/i,
+      rows: 1,
+    },
+    {
+      name: "butter plus more",
+      lines: ["2 tbsp butter, plus more for greasing"],
+      expectName: /^butter$/i,
+      reject: /greasing|plus/i,
+      rows: 1,
+    },
+    {
+      name: "broth or water",
+      lines: ["1 cup broth, or water"],
+      expectName: /^broth$/i,
+      reject: /^water$/i,
+      rows: 1,
+    },
+    {
+      name: "tomatoes canned",
+      lines: ["2 cups tomatoes, canned"],
+      expectName: /canned tomatoes/i,
+      reject: /^tomatoes$/i,
+      rows: 1,
+      aisles: { "canned tomatoes": "Canned goods" },
+    },
+    {
+      name: "bell pepper red",
+      lines: ["bell pepper, red"],
+      expectName: /red bell pepper/i,
+      reject: /^red$/i,
+      rows: 1,
+    },
+  ])(
+    "UAT shop lines $name",
+    ({ lines, expectName, reject, rows, includeStaples, aisles, quantity, unit }) => {
+      const list = build(
+        [
+          {
+            entry: entry({ recipeId: "uat", servings: 4 }),
+            recipeTitle: "UAT",
+            recipeServings: 4,
+            ingredients: lines.map((rawText) => ({ rawText })),
+          },
+        ],
+        includeStaples ? { includeStaples: true } : {}
+      );
+      const patterns = Array.isArray(expectName) ? expectName : [expectName];
+      const matched = list.ingredients.filter((item) =>
+        patterns.some((pattern) => pattern.test(item.name))
+      );
+      expect(list.ingredients).toHaveLength(rows);
+      expect(matched).toHaveLength(rows);
+      if (reject) {
+        expect(list.ingredients.some((item) => reject.test(item.name))).toBe(false);
+      }
+      if (aisles) {
+        for (const [itemName, aisle] of Object.entries(aisles)) {
+          expect(list.ingredients.find((item) => item.name === itemName)?.aisle).toBe(aisle);
+        }
+      }
+      if (quantity != null) {
+        expect(matched[0]?.quantity).toBe(quantity);
+        if (unit) expect(matched[0]?.unit).toBe(unit);
       }
     }
-    if (reject) {
-      expect(list.ingredients.some((item) => reject.test(item.name))).toBe(false);
-    }
-  });
+  );
 });

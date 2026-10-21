@@ -86,18 +86,21 @@ const PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const SHOP_PREP_NOTES =
-  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|beaten|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
-  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomatoes))/i;
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple))/i;
+
+const SHOP_KEEP_TAILS = /^(canned|red|green|yellow|orange|white|black|purple|brown)$/i;
 
 /** Shop-only: a comma/paren tail that is an instruction, not another grocery item. */
 function isShopPrepPhrase(text: string): boolean {
   const t = text.trim();
   if (!t) return true;
+  if (SHOP_KEEP_TAILS.test(t)) return false;
   if (SHOP_PREP_NOTES.test(t) || /^(or|and)$/i.test(t)) return true;
-  if (/^(otherwise|if|into|for|with|in)\b/i.test(t)) return true;
-  if (/^[\p{L}'-]+ed$/iu.test(t)) return true;
+  if (/^(otherwise|if|into|for|with|in|or|plus|cut\s+into)\b/i.test(t)) return true;
+  if (t.length > 4 && /^[\p{L}'-]+ed$/iu.test(t) && !/^canned$/i.test(t)) return true;
   if (/^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t)) return true;
   const parts = t
     .split(/\s*(?:,|&|\band\b|\bor\b)\s*/)
@@ -325,6 +328,10 @@ function cleanShopItemName(rest: string): string {
     const comma = name.lastIndexOf(",");
     if (comma <= 0) break;
     const tail = name.slice(comma + 1).trim();
+    if (SHOP_KEEP_TAILS.test(tail)) {
+      name = `${tail} ${name.slice(0, comma)}`.trim();
+      continue;
+    }
     if (isShopPrepPhrase(tail)) {
       name = name.slice(0, comma).trim();
       continue;
@@ -451,7 +458,7 @@ export function normalizeIngredientName(name: string): string {
   return name
     .toLowerCase()
     .replace(/-/g, " ")
-    .replace(/[^\w\s]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
     .replace(/\s+/g, " ")
     .trim();
 }

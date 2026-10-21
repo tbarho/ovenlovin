@@ -506,8 +506,7 @@ export function isPantryStaple(name: string): boolean {
   });
 }
 
-const MERGE_DESCRIPTORS =
-  /\b(unsalted|salted|plain|all purpose|grated|shredded|freshly|large|small|whole|low sodium)\b/g;
+const MERGE_DESCRIPTORS = /\b(plain|all purpose|grated|shredded|freshly|large|small|low sodium)\b/g;
 
 const GENERIC_FLOUR_NAMES = new Set([
   "flour",
@@ -517,7 +516,9 @@ const GENERIC_FLOUR_NAMES = new Set([
 ]);
 
 function descriptorlessName(name: string): string {
-  return normalizeIngredientName(name).replace(MERGE_DESCRIPTORS, " ").replace(/\s+/g, " ").trim();
+  let n = normalizeIngredientName(name);
+  if (/\bbutter\b/.test(n)) n = n.replace(/\b(unsalted|salted)\b/g, " ");
+  return n.replace(MERGE_DESCRIPTORS, " ").replace(/\s+/g, " ").trim();
 }
 
 function canonicalNameFor(name: string, match: CompiledAlias): string {
@@ -551,6 +552,9 @@ export function assignAisle(name: string, unit?: string | null): AisleAssignment
   // shortcut: a can / canned label is the canned-goods aisle, not produce
   if (unit?.trim().toLowerCase() === "can" || /\bcanned\b/.test(normalizeIngredientName(name))) {
     return { ...placement, aisle: "Canned goods" };
+  }
+  if (/\bextract\b/.test(normalizeIngredientName(name))) {
+    return { ...placement, aisle: "Baking" };
   }
   return placement;
 }

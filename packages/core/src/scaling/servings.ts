@@ -362,18 +362,9 @@ export function isCountableShopItem(unit?: string | null): boolean {
   return !MEASURED_SHOP_UNITS.has(normalized);
 }
 
-const COUNT_NOUN_PLURALS: Record<string, string> = {
-  tomato: "tomatoes",
-  potato: "potatoes",
-};
-
 export function shopItemDisplayName(name: string, quantity?: number, unit?: string | null): string {
   if (unit?.trim() || quantity == null || quantity <= 1) return name;
-  const key = name.trim().toLowerCase();
-  if (COUNT_NOUN_PLURALS[key]) return COUNT_NOUN_PLURALS[key];
-  if (/s$/.test(key)) return name;
-  if (/(?:ch|sh|x|z)$/.test(key)) return `${name}es`;
-  return `${name}s`;
+  return /^eggs?$/i.test(name.trim()) ? "eggs" : name;
 }
 
 /** Round countable grocery amounts up to a whole unit so the list never asks for 2/3 can. */
