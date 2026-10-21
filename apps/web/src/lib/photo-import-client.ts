@@ -15,6 +15,7 @@ export const PHOTO_IMPORT_NOT_RECIPE_MESSAGE =
   "That does not look like a recipe. Type or paste it instead.";
 export const PHOTO_IMPORT_NETWORK_MESSAGE = "Connection lost. Check your network and try again.";
 export const PHOTO_IMPORT_CANCELLED_MESSAGE = "Photo import cancelled";
+export const PHOTO_IMPORT_TOO_LARGE_MESSAGE = "That photo is too large. Try a closer crop.";
 export const PHOTO_SAVE_NO_IMAGE_MESSAGE =
   "Recipe saved, but the photo could not be stored. Open the recipe - do not import it again.";
 
@@ -82,6 +83,7 @@ export function photoImportMessageForKind(kind: PhotoImportErrorKind, fallback?:
   if (kind === "blurry") return PHOTO_IMPORT_BLURRY_MESSAGE;
   if (kind === "not_recipe") return PHOTO_IMPORT_NOT_RECIPE_MESSAGE;
   if (kind === "cancelled") return PHOTO_IMPORT_CANCELLED_MESSAGE;
+  if (/too large|entity too large/i.test(fallback ?? "")) return PHOTO_IMPORT_TOO_LARGE_MESSAGE;
   return fallback?.trim() || "Could not read that photo";
 }
 
@@ -169,15 +171,6 @@ async function resizePhotoFile(
   return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
 }
 
-export async function preparePhotoFile(file: File): Promise<File> {
-  if (file.size <= 1.5 * 1024 * 1024) return file;
-  try {
-    return await resizePhotoFile(file, { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: 0.82 });
-  } catch {
-    return file;
-  }
-}
-
 /** Compress a phone photo so Save can POST it without hitting Vercel's 4.5MB cap. */
 export async function compressPhotoForSave(file: File): Promise<string> {
   let next = file;
@@ -201,6 +194,16 @@ export async function compressPhotoForSave(file: File): Promise<string> {
     throw new Error("That photo is still too large to save. Try a closer crop.");
   }
   return dataUrl;
+}
+
+export async function preparePhotoFile(file: File): Promise<File> {
+  // shortcut: skip under 4MB so typical cards stay fast; Vercel 413s above 4.5MB
+  if (file.size <= 4 * 1024 * 1024) return file;
+  try {
+    return await resizePhotoFile(file, { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: 0.82 });
+  } catch {
+    return file;
+  }
 }
 
 export function postPhotoImportForm(
@@ -251,6 +254,10 @@ export function postPhotoImportForm(
       }
       if (xhr.status >= 200 && xhr.status < 300) {
         finish(() => resolve(body as PhotoImportPreview));
+        return;
+      }
+      if (xhr.status === 413) {
+        finish(() => reject(new Error(PHOTO_IMPORT_TOO_LARGE_MESSAGE)));
         return;
       }
       const problem = body as PhotoImportProblem;
