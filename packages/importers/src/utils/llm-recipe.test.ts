@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@ai-sdk/gateway", () => ({
+  gateway: (id: string) => id,
+}));
+
 import { isImportAiUnavailable } from "@ovenlovin/core/import-ai-unavailable";
-import { extractRecipeWithLlm, llmRecipeToJsonLd } from "./llm-recipe";
+import { extractRecipeWithLlm, llmRecipeSchema, llmRecipeToJsonLd } from "./llm-recipe";
 
 describe("llmRecipeToJsonLd", () => {
   it("returns null when the model says the page is not a recipe", () => {
@@ -25,6 +30,31 @@ describe("llmRecipeToJsonLd", () => {
     expect(recipe?.recipeInstructions).toEqual([
       { "@type": "HowToStep", text: "Boil the pasta and warm the tomatoes." },
     ]);
+  });
+});
+
+describe("llmRecipeSchema", () => {
+  it("treats strict-output 0 / empty / null as unknown", () => {
+    const parsed = llmRecipeSchema.parse({
+      isRecipe: true,
+      title: "slow-roasted tomatoes",
+      description: "",
+      servings: 0,
+      prepTimeMinutes: 0,
+      cookTimeMinutes: "",
+      totalTimeMinutes: null,
+      notes: 0,
+      cuisine: "",
+      course: null,
+    });
+    expect(parsed.servings).toBeUndefined();
+    expect(parsed.description).toBeUndefined();
+    expect(parsed.prepTimeMinutes).toBeUndefined();
+    expect(parsed.cookTimeMinutes).toBeUndefined();
+    expect(parsed.totalTimeMinutes).toBeUndefined();
+    expect(parsed.notes).toBeUndefined();
+    expect(parsed.cuisine).toBeUndefined();
+    expect(parsed.course).toBeUndefined();
   });
 });
 
@@ -56,10 +86,11 @@ describe("extractRecipeWithLlm", () => {
         maxRetries: 2,
         abortSignal: expect.any(AbortSignal),
         providerOptions: {
-          gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
+          gateway: { models: ["openai/gpt-6-luna"] },
         },
       })
     );
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway.only).toBeUndefined();
     expect(recipe?.name).toBe("Weeknight Tomato Pasta");
     expect(recipe?.recipeIngredient).toHaveLength(2);
   });
@@ -71,8 +102,37 @@ describe("extractRecipeWithLlm", () => {
       extractRecipeWithLlm("Ingredients\n- pasta", {
         env: { AI_GATEWAY_API_KEY: "test-key" },
         generate,
+        modelId: "openai/gpt-6-luna",
       })
     ).rejects.toBe(error);
+  });
+
+  it("pins DeepSeek to the DeepSeek gateway host", async () => {
+    const generate = vi.fn().mockResolvedValue({ object: { isRecipe: false } });
+    await extractRecipeWithLlm("Example Domain", {
+      env: { AI_GATEWAY_API_KEY: "test-key" },
+      generate,
+      modelId: "deepseek/deepseek-v4.1-flash",
+    });
+    expect(generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOptions: { gateway: { only: ["deepseek"] } },
+      })
+    );
+    expect(generate.mock.calls[0]?.[0].providerOptions.gateway.models).toBeUndefined();
+  });
+
+  it("rethrows a schema miss from the model", async () => {
+    const error = Object.assign(new Error("No object generated: response did not match schema"), {
+      name: "AI_NoObjectGeneratedError",
+    });
+    const generate = vi.fn().mockRejectedValue(error);
+    await expect(
+      extractRecipeWithLlm("Ingredients\n- pasta", {
+        env: { AI_GATEWAY_API_KEY: "test-key" },
+        generate,
+      })
+    ).rejects.toThrow(/No object generated/);
   });
 
   it("rethrows a hung-model timeout as AI unavailable", async () => {

@@ -1,22 +1,22 @@
 /* eslint-disable no-undef */
 import { generateObject } from "ai";
-import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
-import { isImportAiUnavailable, tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
+import { tagImportAiTimeout } from "@ovenlovin/core/import-ai-unavailable";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
-import { importGenerateOptions, remainingImportBudgetMs, resolveExtractModelId } from "./models";
+import { optionalField } from "./llm-schema";
+import { generateImportObject, remainingImportBudgetMs, resolveExtractModelId } from "./models";
 
-const llmRecipeSchema = z.object({
+export const llmRecipeSchema = z.object({
   isRecipe: z.boolean().describe("True only if the page text is a cookable recipe"),
-  title: z.string().optional().describe("Recipe title"),
-  description: z.string().optional(),
-  servings: z.number().positive().optional(),
-  prepTimeMinutes: z.number().nonnegative().optional(),
-  cookTimeMinutes: z.number().nonnegative().optional(),
-  totalTimeMinutes: z.number().nonnegative().optional(),
-  notes: z.string().optional(),
-  cuisine: z.string().optional(),
-  course: z.string().optional(),
+  title: optionalField(z.string()).describe("Recipe title"),
+  description: optionalField(z.string()),
+  servings: optionalField(z.number().positive()),
+  prepTimeMinutes: optionalField(z.number().nonnegative()),
+  cookTimeMinutes: optionalField(z.number().nonnegative()),
+  totalTimeMinutes: optionalField(z.number().nonnegative()),
+  notes: optionalField(z.string()),
+  cuisine: optionalField(z.string()),
+  course: optionalField(z.string()),
   ingredients: z
     .array(z.object({ text: z.string().describe("Full ingredient line as written") }))
     .optional(),
@@ -37,7 +37,7 @@ function minutesToIso(minutes: number | undefined): string | undefined {
 }
 
 export function llmRecipeToJsonLd(
-  recipe: z.infer<typeof llmRecipeSchema>
+  recipe: z.output<typeof llmRecipeSchema>
 ): Record<string, unknown> | null {
   if (!recipe.isRecipe) return null;
   const title = recipe.title?.trim() ?? "";
@@ -80,22 +80,17 @@ export async function extractRecipeWithLlm(
   }
 
   try {
-    const result = await generate({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      model: gateway(modelId) as any,
+    const result = await generateImportObject(generate, modelId, {
       schema: llmRecipeSchema,
       abortSignal: AbortSignal.timeout(remaining),
-      ...importGenerateOptions(modelId),
       prompt: `Extract a recipe from this page text if one is present. Preserve exact ingredient lines. If this is not a recipe (a homepage, paywall, or generic article), set isRecipe to false and omit the rest. Do not invent quantities.
 
 Text:
 ${pageText}`,
     });
 
-    return llmRecipeToJsonLd(result.object as z.infer<typeof llmRecipeSchema>);
+    return llmRecipeToJsonLd(result.object as z.output<typeof llmRecipeSchema>);
   } catch (error) {
-    const tagged = tagImportAiTimeout(error);
-    if (isImportAiUnavailable(tagged)) throw tagged;
-    return null;
+    throw tagImportAiTimeout(error);
   }
 }

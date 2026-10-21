@@ -12,6 +12,10 @@ vi.mock("ai", () => ({
   generateObject: vi.fn(),
 }));
 
+vi.mock("@ai-sdk/gateway", () => ({
+  gateway: (id: string) => id,
+}));
+
 vi.mock("@ai-sdk/openai", () => ({
   createOpenAI: () => () => "mock-model",
 }));
@@ -68,7 +72,7 @@ describe("Paste Importer", () => {
           maxRetries: 2,
           abortSignal: expect.any(AbortSignal),
           providerOptions: {
-            gateway: { models: ["deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"] },
+            gateway: { models: ["openai/gpt-6-luna"] },
           },
         })
       );
