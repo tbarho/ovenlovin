@@ -41,7 +41,7 @@ export const checkMealPlanSchema = z.object({
           .optional()
           .describe("Leftovers, eat-out, or an empty night with no recipe"),
         servings: z.number().int().positive().optional(),
-        attendees: z.array(z.string()),
+        attendees: z.array(z.string().uuid()),
       })
     ),
   }),

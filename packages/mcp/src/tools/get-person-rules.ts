@@ -11,7 +11,7 @@ import { createDbClient } from "@ovenlovin/db";
 import { LOVE_PREFERENCE_TYPE, loveLabel } from "@ovenlovin/allergens";
 
 export const getPersonRulesSchema = z.object({
-  personIds: z.array(z.string()).min(1).describe("Person IDs to get rules for"),
+  personIds: z.array(z.string().uuid()).min(1).describe("Person IDs to get rules for"),
   includeInactive: z.boolean().default(false),
 });
 

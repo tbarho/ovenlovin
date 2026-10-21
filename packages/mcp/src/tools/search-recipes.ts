@@ -28,7 +28,7 @@ import {
 export const searchRecipesSchema = z.object({
   query: z.string().optional(),
   forAttendees: z
-    .array(z.string())
+    .array(z.string().uuid())
     .optional()
     .describe("Filter out recipes with blocking rules for these person IDs"),
   methodTags: z.array(z.string()).optional(),

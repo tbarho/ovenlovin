@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { addCookbookRecipeBodySchema, CookbookService, RecipeService } from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
-import { BadRequestError, handleApiError } from "@/lib/api/errors";
+import { BadRequestError, handleApiError, requireResourceId } from "@/lib/api/errors";
 import { loadOwnedCookbook } from "@/lib/api/cookbooks";
 import { loadOwned } from "@/lib/api/owned";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
@@ -40,9 +40,7 @@ export async function DELETE(
     const url = new URL(request.url);
     const recipeId = url.searchParams.get("recipeId");
     if (!recipeId) throw new BadRequestError("recipeId query parameter is required");
-    await loadOwned("Recipe", recipeId, householdId, (ownedRecipeId) =>
-      new RecipeService(getDatabase()).getRecipe(ownedRecipeId)
-    );
+    requireResourceId("Recipe", recipeId);
 
     await new CookbookService(getDatabase()).removeRecipe(id, recipeId);
     return noContentResponse();

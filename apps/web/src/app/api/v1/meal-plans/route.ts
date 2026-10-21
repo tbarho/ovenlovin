@@ -11,6 +11,7 @@ import {
   agreedEntryCookFor,
   createMealPlanBodySchema,
   PlanService,
+  RecipeService,
   resolveWriteActor,
 } from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
       apiKeyId: context.clientId,
       apiKeyCreatedBy: context.apiKeyCreatedBy,
     });
+
+    if (body.entries) {
+      await new RecipeService(db).requireOwnedRecipeIds(
+        householdId,
+        body.entries.map((entry) => entry.recipeId)
+      );
+    }
 
     const plan = await service.createMealPlan({
       householdId,

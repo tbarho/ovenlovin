@@ -7,7 +7,7 @@
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
-import { PlanService } from "@ovenlovin/core";
+import { PlanService, RecipeService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const editMealPlanSchema = z
@@ -89,6 +89,7 @@ async function handler(input: EditMealPlanInput, context: AuthContext) {
   }
 
   const date = input.date!;
+  await new RecipeService(db).requireOwnedRecipeIds(context.householdId, [input.recipeId]);
   const patch =
     input.action === "clear"
       ? { date, meal: input.meal, clear: true as const }

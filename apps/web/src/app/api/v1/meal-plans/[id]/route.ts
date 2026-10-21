@@ -7,7 +7,12 @@ import {
   requireHouseholdId,
   requireWritableHousehold,
 } from "@/lib/api/middleware";
-import { PlanService, planPatchesToWrites, updateMealPlanBodySchema } from "@ovenlovin/core";
+import {
+  PlanService,
+  RecipeService,
+  planPatchesToWrites,
+  updateMealPlanBodySchema,
+} from "@ovenlovin/core";
 import { readJsonBody } from "@/lib/api/read-json";
 import { getDatabase } from "@ovenlovin/db";
 import { persistMealPlanCheck } from "@/lib/run-meal-plan-check";
@@ -59,6 +64,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     let previousEntries: Awaited<ReturnType<PlanService["getMealPlanEntries"]>> = [];
     if (body.entries) {
+      await new RecipeService(db).requireOwnedRecipeIds(
+        householdId,
+        body.entries.map((entry) => entry.recipeId)
+      );
       if ((body.entriesMode ?? "merge") === "replace") {
         previousEntries = await service.getMealPlanEntries(id);
         await service.replaceMealPlanEntries(id, planPatchesToWrites(body.entries));

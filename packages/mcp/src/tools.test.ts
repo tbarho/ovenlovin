@@ -85,6 +85,10 @@ describe("MCP Tool Schemas", () => {
       expect(searchRecipesTool.description).toMatch(/hiddenCount/);
       expect(searchRecipesTool.description).toMatch(/hidden/);
     });
+
+    it("rejects a malformed forAttendees id", () => {
+      expect(searchRecipesTool.inputSchema.safeParse({ forAttendees: ["x"] }).success).toBe(false);
+    });
   });
 
   describe("get_recipe", () => {
@@ -148,7 +152,7 @@ describe("MCP Tool Schemas", () => {
               meal: "dinner",
               recipeId: "550e8400-e29b-41d4-a716-446655440000",
               servings: 4,
-              attendees: ["person-1"],
+              attendees: ["550e8400-e29b-41d4-a716-446655440001"],
             },
           ],
         },
@@ -180,7 +184,7 @@ describe("MCP Tool Schemas", () => {
               date: "2026-10-13",
               meal: "dinner",
               freeformMeal: "Leftovers",
-              attendees: ["person-1"],
+              attendees: ["550e8400-e29b-41d4-a716-446655440001"],
             },
             {
               date: "2026-10-14",
@@ -197,7 +201,7 @@ describe("MCP Tool Schemas", () => {
   describe("get_person_rules", () => {
     it("validates correct input", () => {
       const result = getPersonRulesTool.inputSchema.safeParse({
-        personIds: ["person-1", "person-2"],
+        personIds: ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"],
       });
       expect(result.success).toBe(true);
     });
@@ -209,9 +213,13 @@ describe("MCP Tool Schemas", () => {
       expect(result.success).toBe(false);
     });
 
+    it("rejects a malformed person id", () => {
+      expect(getPersonRulesTool.inputSchema.safeParse({ personIds: ["x"] }).success).toBe(false);
+    });
+
     it("applies default includeInactive", () => {
       const result = getPersonRulesTool.inputSchema.safeParse({
-        personIds: ["person-1"],
+        personIds: ["550e8400-e29b-41d4-a716-446655440001"],
       });
       expect(result.success).toBe(true);
       if (result.success) {
@@ -230,7 +238,7 @@ describe("MCP Tool Schemas", () => {
             meal: "dinner",
             recipeId: "550e8400-e29b-41d4-a716-446655440000",
             servings: 4,
-            attendees: ["person-1"],
+            attendees: ["550e8400-e29b-41d4-a716-446655440001"],
           },
         ],
         checkReportJson: { status: "complete" },

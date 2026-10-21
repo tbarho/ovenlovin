@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { HouseholdAccessError } from "@ovenlovin/core";
 
 const OTHER = "11111111-1111-4111-8111-111111111111";
 const CALLER = "22222222-2222-4222-8222-222222222222";
@@ -45,6 +46,11 @@ function serviceStub() {
         {
           get: (_target, key) => {
             if (key === "then") return undefined;
+            if (String(key) === "requireOwnedRecipeIds") {
+              return async () => {
+                throw new HouseholdAccessError("Recipe not found", "not_found");
+              };
+            }
             return async () => otherKitchen;
           },
         }
@@ -168,6 +174,22 @@ describe("REST resource ids", () => {
       const response = await get(family.path(ID), family.params(ID), family.load);
       await expect404(response, family.otherDetail);
     }
+  });
+
+  it("404s a second kitchen's recipe on a meal plan write", async () => {
+    const handler = asHandler((await import("./meal-plans/route")).POST);
+    const response = await handler(
+      new NextRequest("http://localhost/api/v1/meal-plans", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          weekStart: "2026-10-13",
+          entries: [{ date: "2026-10-13", meal: "dinner", recipeId: ID }],
+        }),
+      }),
+      { params: Promise.resolve({}) }
+    );
+    await expect404(response, /Recipe not found/);
   });
 
   it("404s a malformed id instead of 500", async () => {
