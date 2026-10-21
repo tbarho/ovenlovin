@@ -18,6 +18,7 @@ export function RecipeCardSafety({
         hits={loveHitsForRecipe(recipe, lovePeople)}
         blockPersonIds={safety.blockPersonIds}
         warningPersonIds={safety.warnPersonIds}
+        blockTitles={safety.blockTitles ?? []}
       />
       {safety.warnings.length > 0 ? (
         <ul className="recipe-card-warnings" data-testid="recipe-card-warnings">
