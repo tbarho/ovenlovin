@@ -15,10 +15,14 @@ const publicTops = new Set([
   "mcp",
 ]);
 
-const selfAuthApi = ["/api", "/api/v1", "/api/cron", "/api/demo"] as const;
+const selfAuthApiExact = new Set(["/api", "/api/[...missing]"]);
+const selfAuthApiPrefixes = ["/api/v1", "/api/cron", "/api/demo"] as const;
 
 function isSelfAuthApi(pathname: string): boolean {
-  return selfAuthApi.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  if (selfAuthApiExact.has(pathname)) return true;
+  return selfAuthApiPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
 }
 
 function listAppRoutes(dir: string, prefix = ""): string[] {
