@@ -92,7 +92,7 @@ const SHOP_PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|beaten|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|cooked|toasted|chilled|crumbled|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
-  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+(?!tomato)|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple)|cooked\s+|toasted\s+|chilled\s+)/i;
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+(?!tomato)|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple)|cooked\s+|toasted\s+(?!sesame)|chilled\s+)/i;
 
 const SHOP_KEEP_TAILS =
   /^(canned|red|green|yellow|orange|white|black|purple|brown|smoked|aged|dried|roasted|evaporated|condensed|refried|sun-dried|powdered|seasoned|sweetened|unsweetened|pickled|salted)$/i;
@@ -104,6 +104,7 @@ function isShopPrepPhrase(text: string): boolean {
   if (SHOP_KEEP_TAILS.test(t)) return false;
   if (SHOP_PREP_NOTES.test(t) || /^(or|and)$/i.test(t)) return true;
   if (/^(otherwise|if|into|for|with|in|or|plus|cut\s+into)\b/i.test(t)) return true;
+  if (t.length > 4 && /^[\p{L}'-]+ed$/iu.test(t) && !/^canned$/i.test(t)) return true;
   if (/^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t)) return true;
   const parts = t
     .split(/\s*(?:,|&|\band\b|\bor\b)\s*/)

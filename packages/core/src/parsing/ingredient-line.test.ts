@@ -262,6 +262,18 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("1 cup cooked rice")).toEqual([
       expect.objectContaining({ quantityMin: 1, unit: "cup", name: "rice" }),
     ]);
+    expect(parseShopIngredientLines("toasted sesame oil")).toEqual([
+      expect.objectContaining({ name: "toasted sesame oil" }),
+    ]);
+    expect(parseShopIngredientLines("brown sugar, packed")).toEqual([
+      expect.objectContaining({ name: "brown sugar" }),
+    ]);
+    expect(parseShopIngredientLines("shrimp, peeled and deveined")).toEqual([
+      expect.objectContaining({ name: "shrimp" }),
+    ]);
+    expect(parseShopIngredientLines("rice, cooked and cooled")).toEqual([
+      expect.objectContaining({ name: "rice" }),
+    ]);
     expect(parseShopIngredientLines("1 can diced tomatoes")).toEqual([
       expect.objectContaining({ name: "diced tomatoes" }),
     ]);

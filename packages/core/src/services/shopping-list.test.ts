@@ -1263,6 +1263,27 @@ describe("ShoppingListService", () => {
       unit: "cup",
     },
     {
+      name: "packed brown sugar",
+      lines: ["brown sugar, packed"],
+      expectName: /^brown sugar$/i,
+      reject: /packed/i,
+      rows: 1,
+    },
+    {
+      name: "peeled deveined shrimp",
+      lines: ["shrimp, peeled and deveined"],
+      expectName: /^shrimp$/i,
+      reject: /peeled|deveined/i,
+      rows: 1,
+    },
+    {
+      name: "cooked and cooled rice",
+      lines: ["rice, cooked and cooled"],
+      expectName: /^rice$/i,
+      reject: /cooked|cooled/i,
+      rows: 1,
+    },
+    {
       name: "large garlic cloves",
       lines: ["4 large garlic cloves"],
       expectName: /^garlic$/i,
