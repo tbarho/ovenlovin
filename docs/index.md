@@ -176,7 +176,7 @@ All ids are UUIDs.
   "checkedAt": "2026-10-12T21:00:00.000Z",
   "byEntry": [
     {
-      "entryId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+      "entryId": "7c2a9d14-5e8b-4f01-a3c6-8b0d1e2f4a5c",
       "date": "2026-10-12",
       "mealSlot": "dinner",
       "recipeTitle": "Peanut Butter Cookies",
@@ -213,7 +213,7 @@ All ids are UUIDs.
         "warn": [],
         "prefer_avoid": []
       },
-      "affectedEntries": ["3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e"]
+      "affectedEntries": ["7c2a9d14-5e8b-4f01-a3c6-8b0d1e2f4a5c"]
     }
   ],
   "summary": {
