@@ -187,7 +187,7 @@ All ids are UUIDs.
             "personName": "Parent A",
             "severity": "block",
             "ingredientName": "peanut butter",
-            "message": "Contains peanuts, so Parent A can't eat this"
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
           }
         ],
         "warn": [],
@@ -207,7 +207,7 @@ All ids are UUIDs.
             "personName": "Parent A",
             "severity": "block",
             "ingredientName": "peanut butter",
-            "message": "Contains peanuts, so Parent A can't eat this"
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
           }
         ],
         "warn": [],

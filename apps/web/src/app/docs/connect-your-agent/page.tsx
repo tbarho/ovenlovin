@@ -19,13 +19,19 @@ export default async function ConnectYourAgentPage() {
       <p className="eyebrow">Agents</p>
       <h1>Connect your agent</h1>
       <p className="lead">
-        Point Claude, ChatGPT, or Grok at this instance. Auth is{" "}
-        <code>Authorization: ApiKey rkapi_…</code> (Bearer + the same key also works).
+        Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key,
+        and copy the <code>plaintext</code> value (shown once). Call{" "}
+        <code>{"https://<your-app>.vercel.app/api/v1"}</code> with{" "}
+        <code>Authorization: ApiKey rkapi_...</code> and connect MCP at{" "}
+        <code>{"https://<your-app>.vercel.app/mcp"}</code>.
       </p>
       <p className="intro">
-        Copy the API key from Settings (the public demo already shows a sandbox key), then paste it
-        into the snippet. Allergen findings name the person and the ingredient - not medical advice.
-        Always read the label.
+        Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key
+        at /api/demo/enter?format=json.
+      </p>
+      <p className="intro">
+        Bearer plus the same key also works. Allergen findings name the person and the ingredient -
+        not medical advice. Always read the label.
       </p>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>
