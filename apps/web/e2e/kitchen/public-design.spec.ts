@@ -2,11 +2,12 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import path from "node:path";
 
 const pages = [
-  { name: "home", path: "/" },
-  { name: "docs", path: "/docs" },
-  { name: "connect-your-agent", path: "/docs/connect-your-agent" },
-  { name: "sign-in", path: "/sign-in" },
-  { name: "404", path: "/this-does-not-exist" },
+  { name: "home", path: "/", ready: ".hero h1" },
+  { name: "docs", path: "/docs", ready: ".docs-page h1" },
+  { name: "connect-your-agent", path: "/docs/connect-your-agent", ready: ".intro" },
+  { name: "sign-in", path: "/sign-in", ready: "h1" },
+  { name: "sign-up", path: "/sign-up", ready: "h1" },
+  { name: "404", path: "/this-does-not-exist", ready: ".not-found h1" },
 ] as const;
 const widths = [390, 1440] as const;
 
@@ -66,25 +67,33 @@ async function contrastRatio(page: Page, selector: string): Promise<number | nul
   }, selector);
 }
 
+async function openPublicPage(page: Page, item: (typeof pages)[number]) {
+  const response = await page.goto(item.path, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(item.ready).first()).toBeVisible();
+  await page.evaluate(() => document.fonts?.ready ?? Promise.resolve());
+  return response;
+}
+
 test.describe("public design sign-off", () => {
-  test("keeps unknown public routes in-app and contrast above 4.5", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
+  });
 
-    for (const width of widths) {
-      await page.setViewportSize({
-        width,
-        height: width === 390 ? 844 : 900,
-      });
+  for (const item of pages) {
+    test(`${item.name} stays in-app and contrast above 4.5`, async ({ page }) => {
+      for (const width of widths) {
+        await page.setViewportSize({
+          width,
+          height: width === 390 ? 844 : 900,
+        });
 
-      for (const item of pages) {
         const errors: string[] = [];
         page.on("console", (msg) => {
           if (msg.type() === "error") errors.push(msg.text());
         });
         page.on("pageerror", (err) => errors.push(err.message));
 
-        const response = await page.goto(item.path, { waitUntil: "domcontentloaded" });
-        await page.waitForTimeout(800);
+        const response = await openPublicPage(page, item);
 
         expect(page.url()).not.toMatch(/accounts\.dev/);
         if (item.name === "404") {
@@ -92,7 +101,32 @@ test.describe("public design sign-off", () => {
           await expect(
             page.getByRole("heading", { name: /couldn.t find that page/i })
           ).toBeVisible();
-          await expect(page.getByRole("link", { name: "Docs" })).toBeVisible();
+          if (width <= 400) {
+            await expect(page.locator('.nav-cta a[href="/docs"]')).toBeHidden();
+            const signIn = page.locator('.nav-cta a[href="/sign-in"]');
+            if ((await signIn.count()) === 0) {
+              await page.locator(".nav-cta").evaluate((cta) => {
+                const a = document.createElement("a");
+                a.className = "btn";
+                a.href = "/sign-in";
+                a.textContent = "Sign in";
+                cta.appendChild(a);
+              });
+            }
+            await expect(signIn).toBeVisible();
+            const wrap = await signIn.evaluate((el) => {
+              const range = document.createRange();
+              range.selectNodeContents(el);
+              return {
+                lines: range.getClientRects().length,
+                right: el.getBoundingClientRect().right,
+              };
+            });
+            expect(wrap.lines, "404 Sign in wrap").toBe(1);
+            expect(wrap.right, "404 Sign in right edge").toBeLessThanOrEqual(390);
+          } else {
+            await expect(page.getByRole("link", { name: "Docs" })).toBeVisible();
+          }
           await expect(page.getByRole("link", { name: "Recipes" })).toHaveCount(0);
         }
 
@@ -113,6 +147,21 @@ test.describe("public design sign-off", () => {
           expect(footer, "footer").toBeGreaterThanOrEqual(4.5);
           await expect(page.locator(".hero .lead .nowrap")).toHaveText("Per-person");
           await expect(page.locator(".hero .lead")).toContainText("Always read the label.");
+          const homeType = await page.evaluate(() => {
+            const heading = document.querySelector("h1");
+            const pathBody = document.querySelector(".path-card p");
+            const foot = document.querySelector(".footer a");
+            return {
+              h1Weight: heading ? Number(getComputedStyle(heading).fontWeight) : 0,
+              pathSize: pathBody ? parseFloat(getComputedStyle(pathBody).fontSize) : 0,
+              pathLine: pathBody ? parseFloat(getComputedStyle(pathBody).lineHeight) : 0,
+              footerH: foot ? foot.getBoundingClientRect().height : 0,
+            };
+          });
+          expect(homeType.h1Weight, "h1 weight").toBe(600);
+          expect(homeType.pathSize, "path-card size").toBe(16);
+          expect(homeType.pathLine, "path-card line").toBe(24);
+          expect(homeType.footerH, "footer tap").toBeGreaterThanOrEqual(44);
           const heroBtns = page.locator(".hero-ctas .btn");
           await expect(heroBtns).toHaveCount(2);
           if (width === 390) {
@@ -175,6 +224,13 @@ test.describe("public design sign-off", () => {
           });
           expect(type.fontSize).toBeCloseTo(40, 0);
           expect(type.lineHeight / type.fontSize).toBeCloseTo(1.1, 1);
+        }
+        if (item.name === "sign-in" || item.name === "sign-up") {
+          const clerk = page.locator(".cl-rootBox");
+          if ((await clerk.count()) > 0) {
+            await expect(clerk.first()).toBeVisible();
+          }
+          await expect(page.locator("h1")).toHaveCount(1);
         }
         if (item.name === "docs" || item.name === "connect-your-agent") {
           await expect(page.locator(".intro").first()).toContainText("Always read the label.");
@@ -250,6 +306,6 @@ test.describe("public design sign-off", () => {
         page.removeAllListeners("console");
         page.removeAllListeners("pageerror");
       }
-    }
-  });
+    });
+  }
 });

@@ -28,10 +28,7 @@ export default async function SignInPage({
           OvenLovin
         </Link>
         {clerkEnabled && !demo ? (
-          <>
-            <h1 className="sr-only">Sign in</h1>
-            <SignIn fallbackRedirectUrl={redirectUrl} />
-          </>
+          <SignIn fallbackRedirectUrl={redirectUrl} />
         ) : (
           <>
             <h1>{unavailable.title}</h1>

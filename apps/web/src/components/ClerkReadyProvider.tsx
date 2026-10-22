@@ -16,6 +16,11 @@ const clerkAppearance = {
     borderRadius: "8px",
   },
   elements: {
+    card: {
+      boxShadow: "none",
+      border: "1px solid var(--border)",
+      borderRadius: "8px",
+    },
     formButtonPrimary: { height: "44px", minHeight: "44px" },
     formFieldInput: { height: "44px", minHeight: "44px" },
     socialButtonsBlockButton: { height: "44px", minHeight: "44px" },
