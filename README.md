@@ -46,8 +46,8 @@ Open-source recipe box and meal planner for families and their agents. Per-perso
 
 ## Connect your agent
 
-1. Deploy (button above) or use [ovenlovin.vercel.app](https://ovenlovin.vercel.app)
-2. Sign in, open **Settings**, create an API key (`rkapi_…`)
+1. Deploy your own copy (button above).
+2. Sign in, open **Settings**, then **API keys**, create a key, and copy the `plaintext` value (shown once). Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key at `/api/demo/enter?format=json`.
 3. Point the agent at this instance:
 
 ```
@@ -72,7 +72,7 @@ The public no-signup demo is a **separate Vercel project**. See [docs/demo.md](d
 
 ## Local development
 
-Prereqs: Node 20+, pnpm 9 (`corepack enable`), Postgres 15+ or Docker. `git clone https://github.com/tbarho/ovenlovin && cd ovenlovin && cp .env.example .env.local`. Full guide: https://tbarho.github.io/ovenlovin/docs/quickstart
+Prereqs: Node 20+, pnpm 9 (`corepack enable`), Postgres 15+ or Docker. `git clone https://github.com/tbarho/ovenlovin && cd ovenlovin && cp .env.example apps/web/.env.local`. Then `export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin && pnpm db:migrate`. Full guide: https://tbarho.github.io/ovenlovin/docs/quickstart
 
 ```bash
 pnpm install

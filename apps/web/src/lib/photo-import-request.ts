@@ -119,7 +119,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
   return {
     images,
     isHandwritten: Boolean(body.isHandwritten),
-    save: Boolean(body.save),
+    save: asBoolean(body.save),
     allowDuplicate: Boolean(body.allowDuplicate),
     cookbookId: body.cookbookId,
     draft: body.draft,

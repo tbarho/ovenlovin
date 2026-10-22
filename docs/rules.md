@@ -39,7 +39,7 @@ Every rule has a severity that determines how it's handled:
 **Example**:
 ```json
 {
-  "personId": "person-1",
+  "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
   "personName": "Parent A",
   "kind": "allergen",
   "target": "peanut",
@@ -244,7 +244,7 @@ OvenLovin implements these safety invariants:
 **Example output**:
 ```json
 {
-  "personId": "person-1",
+  "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
   "personName": "Parent A",
   "severity": "block",
   "ingredientName": "peanut butter",
@@ -311,28 +311,30 @@ The retired “Doesn't eat” diet bucket now maps to **Can't eat**. Existing di
 
 ### Via API
 
+All ids are UUIDs.
+
 **Create a rule**:
 
 ```bash
-POST /api/v1/households/{householdId}/people/{personId}/rules
+POST /api/v1/people/{personId}/rules
 
 {
   "kind": "allergen",
   "target": "peanut",
   "severity": "block",
-  "notes": "Severe peanut allergy - EpiPen required"
+  "note": "Severe peanut allergy - EpiPen required"
 }
 ```
 
 **Response**:
 ```json
 {
-  "id": "rule-123",
-  "personId": "person-1",
+  "id": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+  "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
   "kind": "allergen",
   "target": "peanut",
   "severity": "block",
-  "notes": "Severe peanut allergy - EpiPen required",
+  "note": "Severe peanut allergy - EpiPen required",
   "createdAt": "2026-10-12T21:00:00Z",
   "updatedAt": "2026-10-12T21:00:00Z"
 }
@@ -426,31 +428,7 @@ When generating shopping lists, OvenLovin marks ingredients that trigger rules:
 GET /api/v1/meal-plans/{planId}/shopping-list
 ```
 
-**Response includes warnings**:
-
-```json
-{
-  "sections": [
-    {
-      "name": "Pantry",
-      "items": [
-        {
-          "ingredient": "peanut butter",
-          "quantity": "1 jar",
-          "warnings": [
-            {
-              "personId": "person-1",
-              "personName": "Parent A",
-              "severity": "block",
-              "message": "Block: Parent A - peanut allergy"
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
+JSON is a `ShoppingListData` object. Section items use `key`, `name`, `quantity` (number), `unit`, `displayQuantity`, `displayUnit`, `aisle`, `recipes[]`, `checked`. Warnings are listed once in top-level `warnings`, not on each item.
 
 ## Best Practices
 

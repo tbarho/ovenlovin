@@ -44,6 +44,20 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.images[0]?.blob).toMatch(/^data:image\/png;base64,/);
   });
 
+  it("does not persist when JSON save is the string false", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        imageUrl: "https://blob.vercel-storage.com/card.jpg",
+        save: "false",
+      }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.save).toBe(false);
+  });
+
   it("accepts a previewed draft without sending the photo again", async () => {
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",

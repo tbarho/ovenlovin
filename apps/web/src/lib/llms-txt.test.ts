@@ -1,5 +1,9 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildLlmsTxt, OVENLOVIN_PITCH } from "./llms-txt";
+
+const docsContent = path.resolve(__dirname, "../../../docs/src/content/docs");
 
 describe("buildLlmsTxt", () => {
   it("includes this instance's MCP, REST, and the pitch", () => {
@@ -18,6 +22,8 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("X-Kitchen-Id");
     expect(text).toContain("mismatched `X-Kitchen-Id` is `403`");
     expect(text).toContain("https://tbarho.github.io/ovenlovin/docs/reference/api/");
+    expect(text).toContain("- MCP tools: https://tbarho.github.io/ovenlovin/docs/reference/");
+    expect(text).not.toContain("https://tbarho.github.io/ovenlovin/docs/reference/mcp/");
     expect(text).toContain("whoami");
     expect(text).toContain("import_recipe_from_image");
     expect(text).toContain("edit_meal_plan");
@@ -42,5 +48,13 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain("-32003");
     expect(text).toContain('data.code "forbidden"');
     expect(text).toContain("id arrays must be UUIDs");
+  });
+
+  it("points github.io full-docs links at pages that exist", () => {
+    expect(existsSync(path.join(docsContent, "quickstart.mdx"))).toBe(true);
+    expect(existsSync(path.join(docsContent, "reference/index.mdx"))).toBe(true);
+    expect(existsSync(path.join(docsContent, "reference/api/index.mdx"))).toBe(true);
+    expect(existsSync(path.join(docsContent, "kitchen-invites.mdx"))).toBe(true);
+    expect(existsSync(path.join(docsContent, "self-hosting.mdx"))).toBe(true);
   });
 });

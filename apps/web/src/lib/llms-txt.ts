@@ -92,7 +92,7 @@ export function buildLlmsTxt(origin: string): string {
     `- ${base}/docs`,
     `- Quickstart: https://tbarho.github.io/ovenlovin/docs/quickstart/`,
     `- REST reference: https://tbarho.github.io/ovenlovin/docs/reference/api/`,
-    `- MCP tools: https://tbarho.github.io/ovenlovin/docs/reference/mcp/`,
+    `- MCP tools: https://tbarho.github.io/ovenlovin/docs/reference/`,
     `- Kitchen invites: https://tbarho.github.io/ovenlovin/docs/kitchen-invites/`,
     `- Self-hosting: https://tbarho.github.io/ovenlovin/docs/self-hosting/`,
     `- https://tbarho.github.io/ovenlovin/`,

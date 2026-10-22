@@ -165,12 +165,14 @@ OvenLovin guarantees:
 
 **Example**: If a recipe contains peanuts and Parent A has a `block` rule for peanuts, every API response will include:
 
+All ids are UUIDs.
+
 ```json
 {
   "findings": {
     "block": [
       {
-        "personId": "person-1",
+        "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
         "personName": "Parent A",
         "severity": "block",
         "ingredientName": "peanuts",

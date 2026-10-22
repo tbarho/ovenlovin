@@ -216,7 +216,7 @@ Response:
 {
   "items": [
     {
-      "id": "recipe-123",
+      "id": "49e5fbdd-b252-4638-a1b4-e3a5cba25c46",
       "title": "Spaghetti Carbonara",
       "cuisine": "Italian",
       "prepTimeMinutes": 15,
@@ -228,69 +228,17 @@ Response:
 }
 ```
 
-**Get Household Context**
-
-```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-app.vercel.app/api/v1/households/household-123/context"
-```
-
-Response:
-```json
-{
-  "household": {
-    "id": "household-123",
-    "name": "The Smiths"
-  },
-  "people": [
-    {
-      "id": "person-1",
-      "displayName": "Parent A",
-      "rules": [
-        {
-          "id": "rule-1",
-          "kind": "allergen",
-          "target": "peanut",
-          "severity": "block"
-        }
-      ]
-    }
-  ]
-}
-```
+**Household context**: `GET /api/v1/households` returns the key's kitchen. `GET /api/v1/people` lists people. `GET /api/v1/people/{id}/rules` lists a person's rules. MCP `get_household_context` returns all of it in one call.
 
 **Check Meal Plan**
+
+Findings are grouped two ways: `byEntry` (per meal) and `byPerson`. Each has `findings.block`, `findings.warn`, `findings.prefer_avoid`. If `status` is `incomplete`, do not treat the plan as safe. POST saves the report; GET only reads.
 
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  "https://your-app.vercel.app/api/v1/meal-plans/plan-123/check"
-```
-
-Response:
-```json
-{
-  "status": "complete",
-  "findings": {
-    "block": [
-      {
-        "personId": "person-1",
-        "personName": "Parent A",
-        "severity": "block",
-        "ingredientName": "peanuts",
-        "message": "Parent A: recipe contains peanuts (block rule)"
-      }
-    ],
-    "warn": [],
-    "prefer_avoid": []
-  },
-  "summary": {
-    "affectedPeople": ["person-1"],
-    "entriesWithBlocks": 1,
-    "entriesWithWarnings": 0
-  }
-}
+  "https://your-app.vercel.app/api/v1/meal-plans/2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d/check"
 ```
 
 ### Pagination
@@ -311,13 +259,15 @@ Errors follow [RFC 9457 Problem Details](https://datatracker.ietf.org/doc/html/r
 
 ```json
 {
-  "type": "https://ovenlovin.example/errors/not-found",
-  "title": "Recipe not found",
+  "type": "https://<your-app>.vercel.app/problems/not-found",
+  "title": "Not Found",
   "status": 404,
-  "detail": "Recipe with ID 'recipe-123' does not exist",
-  "instance": "/api/v1/recipes/recipe-123"
+  "detail": "Recipe with id 3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182 not found",
+  "instance": "https://<your-app>.vercel.app/api/v1/recipes/3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182"
 }
 ```
+
+`instance` is the full request URL. All ids are UUIDs.
 
 ## OpenAPI Integration
 
