@@ -644,6 +644,31 @@ describe("MealPlanWeek", () => {
     });
   });
 
+  it("uses household cook-for for Match household in fixed mode, not People count", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [pesto])}
+        defaultServings={8}
+        defaultServingsMode="fixed"
+        familySize={4}
+        householdCookFor={6}
+        followsHousehold={false}
+      />
+    );
+
+    expect(screen.getByRole("option", { name: "Match household (6)" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Match household (4)" })).not.toBeInTheDocument();
+    const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
+    expect(scale).toHaveValue("8");
+    await user.selectOptions(scale, "household");
+    expect(scale).toHaveValue("household");
+    expect(screen.getByRole("link", { name: /view weeknight pesto pasta/i })).toHaveAttribute(
+      "href",
+      "/recipes/recipe-pesto?servings=6&from=plan"
+    );
+  });
+
   it("sends cookFor null when Match household is chosen", async () => {
     const user = userEvent.setup();
     render(

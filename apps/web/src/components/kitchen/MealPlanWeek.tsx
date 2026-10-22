@@ -330,6 +330,7 @@ export function MealPlanWeek({
   defaultServings = 4,
   defaultServingsMode = "family",
   familySize = 0,
+  householdCookFor = defaultServings,
   followsHousehold = true,
 }: {
   days: WeekDay[];
@@ -340,6 +341,7 @@ export function MealPlanWeek({
   defaultServings?: number;
   defaultServingsMode?: DefaultServingsMode;
   familySize?: number;
+  householdCookFor?: number;
   followsHousehold?: boolean;
 }) {
   const router = useRouter();
@@ -347,7 +349,6 @@ export function MealPlanWeek({
   const [query, setQuery] = useState("");
   const [servings, setServings] = useState(defaultServings);
   const [followingHousehold, setFollowingHousehold] = useState(followsHousehold);
-  const householdCount = familySize > 0 ? familySize : defaultServings;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createdPlanIdRef = useRef<string | null>(null);
@@ -505,7 +506,7 @@ export function MealPlanWeek({
   function applyServings(nextServings: number | null) {
     if (nextServings == null) {
       setFollowingHousehold(true);
-      setServings(householdCount);
+      setServings(householdCookFor);
       void persist(entriesView, { cookFor: null });
       return;
     }
@@ -531,7 +532,7 @@ export function MealPlanWeek({
               applyServings(value === "household" ? null : Number(value));
             }}
           >
-            <option value="household">Match household ({householdCount})</option>
+            <option value="household">Match household ({householdCookFor})</option>
             {Array.from({ length: SERVINGS_HARD_MAX }, (_, index) => index + 1).map((count) => (
               <option key={count} value={count}>
                 {count}

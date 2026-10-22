@@ -74,6 +74,7 @@ export default async function PlansPage({
         defaultServings={kitchen.defaultServings}
         defaultServingsMode={kitchen.defaultServingsMode}
         familySize={kitchen.familySize}
+        householdCookFor={kitchen.householdCookFor}
         followsHousehold={kitchen.plan?.cookFor == null}
       />
     </>

@@ -74,6 +74,7 @@ export type WeekKitchen = {
   defaultServings: number;
   defaultServingsMode: DefaultServingsMode;
   familySize: number;
+  householdCookFor: number;
 };
 
 export function findingsFromCheck(check: WhoCanEatResult): WeekFinding[] {
@@ -215,6 +216,7 @@ export async function loadWeekKitchen(
       defaultServings: servingsSettings.defaultCookFor,
       defaultServingsMode: servingsSettings.mode,
       familySize: servingsSettings.familySize,
+      householdCookFor: servingsSettings.defaultCookFor,
     };
   }
 
@@ -350,6 +352,7 @@ export async function loadWeekKitchen(
     defaultServings: cookFor,
     defaultServingsMode: servingsSettings.mode,
     familySize: servingsSettings.familySize,
+    householdCookFor: servingsSettings.defaultCookFor,
   };
 }
 
