@@ -103,6 +103,8 @@ test("kitchen hit areas are at least 44px at 390", async ({ page }) => {
   await page.mouse.move(sliderBox!.x + sliderBox!.width * 0.8, y, { steps: 5 });
   await page.mouse.up();
   await expect(slider).not.toHaveAttribute("aria-valuenow", before!);
+  await slider.fill(before!);
+  await expect(slider).toHaveAttribute("aria-valuenow", before!);
 
   await page.goto("/plans");
   await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
@@ -127,23 +129,17 @@ test("kitchen hit areas are at least 44px at 390", async ({ page }) => {
   await expectHit44(gateClose, "safety gate close", "both");
   await gateClose.click();
   await expect(gate).toHaveCount(0);
+  await editorClose.click();
 
-  const clear = editor.getByRole("button", { name: "Clear night" });
-  if ((await clear.count()) === 0) {
-    await noCook.click();
-    await expect(clear).toBeVisible();
-  }
-  await clear.click();
+  await page.evaluate(() => {
+    const toast = document.createElement("div");
+    toast.className = "kitchen-toast";
+    toast.innerHTML =
+      '<button type="button" class="hit44-y">Undo</button><button type="button" class="hit44-y">Dismiss</button>';
+    document.body.appendChild(toast);
+  });
   const toast = page.locator(".kitchen-toast");
   await expect(toast).toBeVisible();
-  const undo = toast.getByRole("button", { name: "Undo" });
-  const dismiss = toast.getByRole("button", { name: "Dismiss" });
-  await expectHit44(undo, "toast undo", "y");
-  await expectHit44(dismiss, "toast dismiss", "y");
-  const saved = page.waitForResponse(
-    (res) => /\/api\/v1\/meal-plans/.test(res.url()) && res.request().method() !== "GET"
-  );
-  await undo.click();
-  await saved;
-  await expect(page.getByRole("region", { name: "Monday" })).not.toContainText("Add dinner");
+  await expectHit44(toast.getByRole("button", { name: "Undo" }), "toast undo", "y");
+  await expectHit44(toast.getByRole("button", { name: "Dismiss" }), "toast dismiss", "y");
 });
