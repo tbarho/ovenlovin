@@ -55,9 +55,8 @@ export function loveTagText(
   hit: { personId: string; personName: string; tag: string },
   safety: Pick<RecipeSafetySummary, "blockPersonIds" | "warnPersonIds">
 ): string | null {
-  if (safety.blockPersonIds.includes(hit.personId)) return null;
-  if (safety.warnPersonIds.includes(hit.personId)) {
-    return `${hit.personName} loves this - check first`;
+  if (safety.blockPersonIds.includes(hit.personId) || safety.warnPersonIds.includes(hit.personId)) {
+    return null;
   }
   return hit.tag;
 }

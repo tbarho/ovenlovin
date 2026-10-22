@@ -10,6 +10,7 @@ import { requireWriteRole } from "../auth/index";
 import {
   agreedEntryCookFor,
   PeopleService,
+  pickPlanForWeek,
   PlanService,
   RecipeService,
   resolveWriteActor,
@@ -77,33 +78,66 @@ async function handler(
     apiKeyId: context.apiKeyId,
     apiKeyCreatedBy: context.apiKeyCreatedBy,
   });
-
-  // Create the meal plan
-  const plan = await planService.createMealPlan({
-    householdId: context.householdId,
+  const cookFor = input.cookFor ?? agreedEntryCookFor(input.entries.map((entry) => entry.servings));
+  const checkedAt = new Date().toISOString();
+  const listed = await planService.listMealPlans(context.householdId, {
     weekStart: input.weekStart,
-    cookFor: input.cookFor ?? agreedEntryCookFor(input.entries.map((entry) => entry.servings)),
-    status: input.status,
-    latestCheckReport: input.checkReportJson,
-    checkedAt: new Date().toISOString(),
-    acknowledgedWarnings: input.acknowledgedWarnings ?? [],
-    needsRecheck: false,
-    createdBy: actor.createdBy,
-    createdByApiKeyId: actor.createdByApiKeyId,
+    weekEnd: input.weekStart,
   });
+  const existing = pickPlanForWeek(listed.items, input.weekStart);
+  const writes = input.entries.map((entry) => ({
+    date: entry.date,
+    meal: entry.meal,
+    recipeId: entry.recipeId,
+    freeformMeal: entry.freeformMeal,
+    servings: entry.servings,
+    attendees: entry.attendees,
+    prepAheadNotes: entry.prepAheadNotes,
+  }));
 
-  // Create entries
-  for (const entry of input.entries) {
-    await planService.createMealPlanEntry({
-      mealPlanId: plan.id,
-      date: entry.date,
-      mealSlot: entry.meal,
-      recipeId: entry.recipeId ?? null,
-      freeformMeal: entry.freeformMeal ?? null,
-      servings: entry.servings ?? null,
-      attendees: entry.attendees,
-      prepAheadNotes: entry.prepAheadNotes ?? null,
+  const plan = existing
+    ? await planService.updateMealPlan(existing.id, {
+        cookFor,
+        status: input.status,
+        latestCheckReport: input.checkReportJson,
+        checkedAt,
+        acknowledgedWarnings: input.acknowledgedWarnings ?? [],
+        needsRecheck: false,
+      })
+    : await planService.createMealPlan({
+        householdId: context.householdId,
+        weekStart: input.weekStart,
+        cookFor,
+        status: input.status,
+        latestCheckReport: input.checkReportJson,
+        checkedAt,
+        acknowledgedWarnings: input.acknowledgedWarnings ?? [],
+        needsRecheck: false,
+        createdBy: actor.createdBy,
+        createdByApiKeyId: actor.createdByApiKeyId,
+      });
+  if (!plan) throw new Error("Meal plan not found");
+
+  if (existing) {
+    await planService.replaceMealPlanEntries(plan.id, writes, { recordHistory: false });
+    await planService.updateMealPlan(plan.id, {
+      needsRecheck: false,
+      latestCheckReport: input.checkReportJson,
+      checkedAt,
     });
+  } else {
+    for (const entry of input.entries) {
+      await planService.createMealPlanEntry({
+        mealPlanId: plan.id,
+        date: entry.date,
+        mealSlot: entry.meal,
+        recipeId: entry.recipeId ?? null,
+        freeformMeal: entry.freeformMeal ?? null,
+        servings: entry.servings ?? null,
+        attendees: entry.attendees,
+        prepAheadNotes: entry.prepAheadNotes ?? null,
+      });
+    }
   }
 
   return {

@@ -38,7 +38,7 @@ export function saferPicks(
 }
 
 export function recipeNeedsPlanConfirm(recipe: PlanRecipePick): boolean {
-  return recipe.safety === "block" || recipe.safety === "warn" || recipe.safety === "unknown";
+  return recipe.safety === "block" || recipe.safety === "unknown";
 }
 
 export function planRiskConfirmCopy(

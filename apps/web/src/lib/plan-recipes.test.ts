@@ -115,6 +115,16 @@ describe("plan risk confirm copy", () => {
     expect(
       recipeNeedsPlanConfirm(pick({ id: "pizza", title: "Weeknight pizza", safety: "ok" }))
     ).toBe(false);
+    expect(
+      recipeNeedsPlanConfirm(
+        pick({
+          id: "ziti",
+          title: "Baked ziti",
+          safety: "warn",
+          warning: "Contains dairy, so check with Parent B first",
+        })
+      )
+    ).toBe(false);
     const copy = planRiskConfirmCopy(kungPao, "Sunday");
     expect(copy.title).toContain("Kung pao chicken");
     expect(copy.title).toContain("Sunday");

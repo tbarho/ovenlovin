@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { PlanService, RecipeService, PeopleService } from "@ovenlovin/core";
+import { PeopleService, pickPlanForWeek, PlanService, RecipeService } from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const getMealPlanSchema = z
@@ -65,7 +65,7 @@ async function handler(input: GetMealPlanInput, context: AuthContext): Promise<G
       weekStart: input.weekStart,
       weekEnd: input.weekStart,
     });
-    plan = plans.items[0] ?? null;
+    plan = pickPlanForWeek(plans.items, input.weekStart);
   }
 
   if (!plan || plan.householdId !== context.householdId) {

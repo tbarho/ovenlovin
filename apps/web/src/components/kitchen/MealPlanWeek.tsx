@@ -333,6 +333,7 @@ export function MealPlanWeek({
   recipes = EMPTY_RECIPES,
   defaultServings = 4,
   defaultServingsMode = "family",
+  familySize = 0,
 }: {
   days: WeekDay[];
   planId?: string | null;
@@ -341,6 +342,7 @@ export function MealPlanWeek({
   recipes?: PlanRecipePick[];
   defaultServings?: number;
   defaultServingsMode?: DefaultServingsMode;
+  familySize?: number;
 }) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -539,6 +541,11 @@ export function MealPlanWeek({
             ))}
           </select>
         </label>
+        {defaultServingsMode === "family" && familySize > 0 && servings !== familySize ? (
+          <p className="muted">
+            This week is scaled for {servings}. Your household has {familySize} people.
+          </p>
+        ) : null}
         <p className="muted">Select a day to pick, swap, or clear dinner.</p>
       </div>
 

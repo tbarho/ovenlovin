@@ -7,6 +7,8 @@ import {
   ShoppingListService,
   emptyShoppingTripState,
   parseShoppingTripState,
+  keepLiveRecipeEntries,
+  pickPlanForWeek,
   planEntriesForWeek,
   shopItemKey,
   weekDefaultServings,
@@ -71,6 +73,7 @@ export type WeekKitchen = {
   recipes: PlanRecipePick[];
   defaultServings: number;
   defaultServingsMode: DefaultServingsMode;
+  familySize: number;
 };
 
 export function findingsFromCheck(check: WhoCanEatResult): WeekFinding[] {
@@ -166,21 +169,7 @@ function storeIngredients(
   );
 }
 
-/** Same week can have leftover plans; show the one updated last. */
-export function pickPlanForWeek<T extends { id: string; weekStart: string; updatedAt: string }>(
-  plans: T[],
-  weekStart: string
-): T | null {
-  const matches = plans.filter((item) => item.weekStart === weekStart);
-  if (matches.length === 0) return null;
-  return (
-    [...matches].sort((a, b) => {
-      const updated = b.updatedAt.localeCompare(a.updatedAt);
-      if (updated !== 0) return updated;
-      return b.id.localeCompare(a.id);
-    })[0] ?? null
-  );
-}
+export { keepLiveRecipeEntries, pickPlanForWeek } from "@ovenlovin/core";
 
 export async function loadWeekKitchen(
   householdId: string,
@@ -225,12 +214,13 @@ export async function loadWeekKitchen(
       recipes: recipePicks,
       defaultServings: servingsSettings.defaultCookFor,
       defaultServingsMode: servingsSettings.mode,
+      familySize: servingsSettings.familySize,
     };
   }
 
-  const entries = planEntriesForWeek(await plans.getMealPlanEntries(plan.id), weekStart);
+  const rawEntries = planEntriesForWeek(await plans.getMealPlanEntries(plan.id), weekStart);
   const recipeIds = [
-    ...new Set(entries.map((entry) => entry.recipeId).filter(Boolean)),
+    ...new Set(rawEntries.map((entry) => entry.recipeId).filter(Boolean)),
   ] as string[];
   const recipeById = new Map<string, Recipe>();
   const ingredientsByRecipe = new Map<
@@ -265,6 +255,7 @@ export async function loadWeekKitchen(
     ingredientsByRecipe
   );
 
+  const entries = keepLiveRecipeEntries(rawEntries, new Set(recipeById.keys()));
   const cookFor = weekCookFor({
     planCookFor: plan.cookFor,
     householdCookFor: servingsSettings.defaultCookFor,
@@ -358,6 +349,7 @@ export async function loadWeekKitchen(
     recipes: recipePicks,
     defaultServings: cookFor,
     defaultServingsMode: servingsSettings.mode,
+    familySize: servingsSettings.familySize,
   };
 }
 

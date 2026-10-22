@@ -57,10 +57,8 @@ describe("loveTagText", () => {
     expect(loveTagText(hit, { blockPersonIds: ["child-c"], warnPersonIds: [] })).toBeNull();
   });
 
-  it("qualifies a love when that person has a warning, not a block", () => {
-    expect(loveTagText(hit, { blockPersonIds: [], warnPersonIds: ["child-c"] })).toBe(
-      "Child C loves this - check first"
-    );
+  it("drops a love when that person has a safety finding", () => {
+    expect(loveTagText(hit, { blockPersonIds: [], warnPersonIds: ["child-c"] })).toBeNull();
   });
 
   it("keeps a love when there is no conflict", () => {

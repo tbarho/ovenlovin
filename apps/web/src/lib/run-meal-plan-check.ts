@@ -3,6 +3,7 @@ import {
   PlanService,
   RecipeService,
   ScheduleService,
+  keepLiveRecipeEntries,
   nightForDate,
   planEntriesForWeek,
   recipeTotalTimeMinutes,
@@ -45,7 +46,21 @@ export async function runMealPlanCheck(planId: string, householdId: string) {
     throw new NotFoundError("MealPlan", planId);
   }
 
-  const entries = planEntriesForWeek(await planService.getMealPlanEntries(planId), plan.weekStart);
+  const rawEntries = planEntriesForWeek(
+    await planService.getMealPlanEntries(planId),
+    plan.weekStart
+  );
+  const liveRecipeIds = new Set<string>();
+  await Promise.all(
+    [
+      ...new Set(
+        rawEntries.map((entry) => entry.recipeId).filter((id): id is string => Boolean(id))
+      ),
+    ].map(async (recipeId) => {
+      if (await recipeService.getRecipe(recipeId)) liveRecipeIds.add(recipeId);
+    })
+  );
+  const entries = keepLiveRecipeEntries(rawEntries, liveRecipeIds);
 
   const entryInputs: MealPlanEntryInput[] = await Promise.all(
     entries.map(async (entry) => {
@@ -58,8 +73,7 @@ export async function runMealPlanCheck(planId: string, householdId: string) {
           name: ing.rawText,
         }));
         const recipe = await recipeService.getRecipe(entry.recipeId);
-        recipeTitle =
-          recipe?.title ?? (await planService.getRecipeTitle(entry.recipeId)) ?? undefined;
+        recipeTitle = recipe?.title;
         recipeMinutesByEntryId.set(entry.id, recipeTotalTimeMinutes(recipe));
       }
 
