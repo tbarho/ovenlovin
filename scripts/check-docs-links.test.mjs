@@ -48,6 +48,25 @@ describe("check-docs-links", () => {
     assert.ok(missingBase.some((row) => row.href === "/"));
   });
 
+  it("resolves percent-encoded src paths to the on-disk file", () => {
+    const root = mkdtempSync(join(tmpdir(), "docs-links-enc-"));
+    mkdirSync(join(root, "docs"), { recursive: true });
+    mkdirSync(join(root, "_next", "static", "chunks", "app", "docs", "[[...slug]]"), {
+      recursive: true,
+    });
+    writeFileSync(
+      join(root, "docs", "index.html"),
+      `<script src="/ovenlovin/_next/static/chunks/app/docs/%5B%5B...slug%5D%5D/page.js"></script>`
+    );
+    writeFileSync(
+      join(root, "_next", "static", "chunks", "app", "docs", "[[...slug]]", "page.js"),
+      ""
+    );
+
+    const { broken } = checkDocsLinks(root);
+    assert.deepEqual(broken, []);
+  });
+
   it("catches a single-quoted relative href", () => {
     const root = mkdtempSync(join(tmpdir(), "docs-links-sq-"));
     mkdirSync(join(root, "docs", "quickstart"), { recursive: true });

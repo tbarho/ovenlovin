@@ -31,6 +31,11 @@ export function resolveInternalHref(fromUrl, href) {
 
 export function expectedFiles(outRoot, pathname) {
   let path = pathname;
+  try {
+    path = decodeURIComponent(pathname);
+  } catch {
+    path = pathname;
+  }
   if (path === BASE_PATH || path === `${BASE_PATH}/`) {
     return [join(outRoot, "index.html")];
   }
