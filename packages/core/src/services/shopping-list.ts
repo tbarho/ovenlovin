@@ -153,13 +153,44 @@ const UNIT_TO_BASE: Record<string, { dimension: UnitDimension; toBase: number }>
   lb: { dimension: "weight", toBase: 453.59237 },
 };
 
+/** US-cup grams for ingredients with a stable published density. Unknown names stay unmerged. */
+const GRAMS_PER_CUP: Record<string, number> = {
+  butter: 227,
+  water: 236.5882365,
+  milk: 245,
+  cream: 238,
+  yogurt: 245,
+  "sour cream": 242,
+  oil: 218,
+  "olive oil": 218,
+  "vegetable oil": 218,
+  "canola oil": 218,
+  "coconut oil": 218,
+  sugar: 200,
+  honey: 340,
+};
+
+const TSP_PER_CUP = 48;
+
+function gramsPerCupFor(name: string): number | undefined {
+  return GRAMS_PER_CUP[normalizeIngredientName(name)];
+}
+
+function quantityToGrams(quantity: number, unit: string, gramsPerCup: number): number | null {
+  const meta = UNIT_TO_BASE[unit];
+  if (!meta) return null;
+  if (meta.dimension === "weight") return quantity * meta.toBase;
+  return ((quantity * meta.toBase) / TSP_PER_CUP) * gramsPerCup;
+}
+
 function roundQuantity(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
 
 function addQuantities(
   left: { quantity?: number; unit?: string },
-  right: { quantity: number; unit?: string }
+  right: { quantity: number; unit?: string },
+  itemName?: string
 ): { quantity: number; unit?: string } | null {
   if (left.quantity == null) {
     return { quantity: right.quantity, unit: right.unit };
@@ -176,18 +207,24 @@ function addQuantities(
 
   const leftMeta = UNIT_TO_BASE[leftUnit];
   const rightMeta = UNIT_TO_BASE[rightUnit];
-  if (!leftMeta || !rightMeta || leftMeta.dimension !== rightMeta.dimension) {
-    return null;
+  if (!leftMeta || !rightMeta) return null;
+  if (leftMeta.dimension === rightMeta.dimension) {
+    const base = left.quantity * leftMeta.toBase + right.quantity * rightMeta.toBase;
+    const larger = leftMeta.toBase >= rightMeta.toBase ? leftUnit : rightUnit;
+    const largerMeta = UNIT_TO_BASE[larger];
+    if (largerMeta && base >= largerMeta.toBase) {
+      return { quantity: base / largerMeta.toBase, unit: larger };
+    }
+    const smaller = larger === leftUnit ? rightUnit : leftUnit;
+    return { quantity: base / UNIT_TO_BASE[smaller]!.toBase, unit: smaller };
   }
 
-  const base = left.quantity * leftMeta.toBase + right.quantity * rightMeta.toBase;
-  const larger = leftMeta.toBase >= rightMeta.toBase ? leftUnit : rightUnit;
-  const largerMeta = UNIT_TO_BASE[larger];
-  if (largerMeta && base >= largerMeta.toBase) {
-    return { quantity: base / largerMeta.toBase, unit: larger };
-  }
-  const smaller = larger === leftUnit ? rightUnit : leftUnit;
-  return { quantity: base / UNIT_TO_BASE[smaller]!.toBase, unit: smaller };
+  const gramsPerCup = itemName ? gramsPerCupFor(itemName) : undefined;
+  if (gramsPerCup == null) return null;
+  const leftGrams = quantityToGrams(left.quantity, leftUnit, gramsPerCup);
+  const rightGrams = quantityToGrams(right.quantity, rightUnit, gramsPerCup);
+  if (leftGrams == null || rightGrams == null) return null;
+  return { quantity: (leftGrams + rightGrams) / gramsPerCup, unit: "cup" };
 }
 
 function mergeKey(name: string, recipeKey: string): string {
@@ -307,7 +344,7 @@ export class ShoppingListService {
           let mapKey = key;
           let existing = ingredientMap.get(mapKey);
           if (existing && scaledQuantity != null) {
-            const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
+            const merged = addQuantities(existing, { quantity: scaledQuantity, unit }, itemName);
             if (merged) {
               existing.recipes.push(recipeRef);
               existing.quantity = merged.quantity;
@@ -320,7 +357,7 @@ export class ShoppingListService {
           if (existing) {
             existing.recipes.push(recipeRef);
             if (scaledQuantity != null) {
-              const merged = addQuantities(existing, { quantity: scaledQuantity, unit });
+              const merged = addQuantities(existing, { quantity: scaledQuantity, unit }, itemName);
               if (merged) {
                 existing.quantity = merged.quantity;
                 existing.unit = merged.unit;
