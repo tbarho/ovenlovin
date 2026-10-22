@@ -104,14 +104,18 @@ test.describe("public design sign-off", () => {
           if (width <= 400) {
             await expect(page.locator('.nav-cta a[href="/docs"]')).toBeHidden();
             const signIn = page.locator('.nav-cta a[href="/sign-in"]');
-            if ((await signIn.count()) === 0) {
-              await page.locator(".nav-cta").evaluate((cta) => {
-                const a = document.createElement("a");
-                a.className = "btn";
-                a.href = "/sign-in";
-                a.textContent = "Sign in";
-                cta.appendChild(a);
-              });
+            if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+              if ((await signIn.count()) === 0) {
+                await page.locator(".nav-cta").evaluate((cta) => {
+                  const a = document.createElement("a");
+                  a.className = "btn";
+                  a.href = "/sign-in";
+                  a.textContent = "Sign in";
+                  cta.appendChild(a);
+                });
+              }
+            } else {
+              await expect(signIn).toHaveCount(1);
             }
             await expect(signIn).toBeVisible();
             const wrap = await signIn.evaluate((el) => {
