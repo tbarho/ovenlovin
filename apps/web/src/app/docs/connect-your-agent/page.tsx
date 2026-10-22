@@ -26,12 +26,12 @@ export default async function ConnectYourAgentPage() {
         <code>{"https://<your-app>.vercel.app/mcp"}</code>.
       </p>
       <p className="intro">
-        Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key
-        at /api/demo/enter?format=json.
-      </p>
-      <p className="intro">
         Bearer plus the same key also works. Allergen findings name the person and the ingredient -
         not medical advice. Always read the label.
+      </p>
+      <p className="intro">
+        Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key
+        at /api/demo/enter?format=json.
       </p>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>

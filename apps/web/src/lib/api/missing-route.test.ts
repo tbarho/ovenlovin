@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import {
   isApiOrMcpPath,
@@ -9,6 +9,7 @@ import {
 
 describe("missing API routes", () => {
   it("points product 404s to Settings, then API keys, never the demo", async () => {
+    vi.stubEnv("OVENLOVIN_DEMO_MODE", "");
     const request = new NextRequest("https://your-app.vercel.app/api/v1");
     const response = missingApiResponse(request);
     expect(response.status).toBe(404);

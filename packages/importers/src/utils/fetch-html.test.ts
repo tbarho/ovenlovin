@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("dns/promises", () => ({
   lookup: vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]),
 }));
-
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

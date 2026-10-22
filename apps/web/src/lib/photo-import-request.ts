@@ -20,6 +20,7 @@ export type PhotoImportRequest = {
 
 function asBoolean(value: unknown): boolean {
   if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
   if (typeof value === "string") return value === "1" || value.toLowerCase() === "true";
   return false;
 }
@@ -101,8 +102,8 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
         .max(20)
         .optional(),
       isHandwritten: z.boolean().optional(),
-      save: z.union([z.boolean(), z.string()]).optional(),
-      allowDuplicate: z.union([z.boolean(), z.string()]).optional(),
+      save: z.union([z.boolean(), z.string(), z.number()]).optional(),
+      allowDuplicate: z.union([z.boolean(), z.string(), z.number()]).optional(),
       cookbookId: z.string().uuid().optional(),
       draft: z.unknown().optional(),
     })

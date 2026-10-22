@@ -177,9 +177,7 @@ test.describe("public design sign-off", () => {
           expect(type.lineHeight / type.fontSize).toBeCloseTo(1.1, 1);
         }
         if (item.name === "docs" || item.name === "connect-your-agent") {
-          await expect(
-            page.locator(".intro").filter({ hasText: "Always read the label." })
-          ).toBeVisible();
+          await expect(page.locator(".intro").first()).toContainText("Always read the label.");
         }
         if (item.name === "home" || item.name === "connect-your-agent") {
           const box = page.locator(".copy-scroll").first();
