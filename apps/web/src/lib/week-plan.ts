@@ -124,12 +124,12 @@ export function pickSafety(
     return { safety: "unknown", warning: "We couldn't finish checking this recipe." };
   }
   const { findings, checkStatus } = checkMeal(people, rules, ingredients);
-  if (checkStatus === "incomplete" && findings.length === 0) {
-    return { safety: "unknown", warning: "We couldn't finish checking this recipe." };
-  }
   const blocked = findings.find((finding) => finding.severity === "block");
   const messages = findings.map((finding) => finding.message).join(" ");
   if (blocked) return { safety: "block", warning: messages };
+  if (checkStatus === "incomplete") {
+    return { safety: "unknown", warning: messages || "We couldn't finish checking this recipe." };
+  }
   if (findings.length > 0) return { safety: "warn", warning: messages };
   return { safety: "ok", warning: null };
 }

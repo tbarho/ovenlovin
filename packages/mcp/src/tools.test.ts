@@ -405,11 +405,7 @@ describe("MCP Tool Schemas", () => {
 
       expect(create).not.toHaveBeenCalled();
       expect(update).toHaveBeenCalled();
-      expect(replace).toHaveBeenCalledWith(
-        existing.id,
-        [],
-        expect.objectContaining({ recordHistory: false })
-      );
+      expect(replace).toHaveBeenCalledWith(existing.id, []);
       expect(saved.planId).toBe(existing.id);
       expect(update.mock.calls[0]?.[1]).toMatchObject({ cookFor: 8 });
     });

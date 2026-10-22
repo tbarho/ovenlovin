@@ -119,7 +119,7 @@ async function handler(
   if (!plan) throw new Error("Meal plan not found");
 
   if (existing) {
-    await planService.replaceMealPlanEntries(plan.id, writes, { recordHistory: false });
+    await planService.replaceMealPlanEntries(plan.id, writes);
     await planService.updateMealPlan(plan.id, {
       needsRecheck: false,
       latestCheckReport: input.checkReportJson,
