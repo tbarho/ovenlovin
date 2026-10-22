@@ -1,13 +1,48 @@
 import { readInviteToken } from "@/lib/kitchen-cookies";
+import { isKitchenNavActive, kitchenNavLinks } from "@/lib/kitchen-nav";
 
-export function safeAuthRedirect(raw: string | null | undefined): string {
-  if (!raw) return "/recipes";
+function hasDotSegment(path: string): boolean {
+  let decoded = path;
+  for (let i = 0; i < 2; i++) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+  return decoded.split("/").some((part) => {
+    const segment = part.replace(/[\t\n\r]/g, "");
+    return segment === "." || segment === "..";
+  });
+}
+
+function originOf(raw: string): string | null {
+  return URL.canParse(raw) ? new URL(raw).origin : null;
+}
+
+function sameOriginPath(raw: string, origins: string[]): string {
+  if (!/^https?:\/\//i.test(raw) || /[\t\n\r]/.test(raw) || !URL.canParse(raw)) return raw;
+  const url = new URL(raw);
+  const allowed = origins.some((origin) => originOf(origin) === url.origin);
+  return allowed ? `${url.pathname}${url.search}` : raw;
+}
+
+export function safeAuthRedirect(url: string | null | undefined, origins: string[] = []): string {
+  if (!url) return "/recipes";
+  const raw = sameOriginPath(url, origins);
   if (!raw.startsWith("/")) return "/recipes";
-  if (raw.startsWith("//") || raw.includes("://")) return "/recipes";
+  if (raw.startsWith("//") || raw.includes("://") || raw.includes("\\") || /[\t\n\r]/.test(raw)) {
+    return "/recipes";
+  }
   if (raw.startsWith("/api") || raw.startsWith("/mcp")) return "/recipes";
+  const path = raw.split(/[?#]/)[0] ?? "";
+  if (hasDotSegment(path)) return "/recipes";
   if (raw.startsWith("/invite/")) {
     const token = raw.slice("/invite/".length).split(/[/?#]/)[0] ?? "";
     return readInviteToken(token) ? `/invite/${token}` : "/recipes";
   }
+  if (kitchenNavLinks.some((link) => isKitchenNavActive(path, link.match))) return raw;
   return "/recipes";
 }

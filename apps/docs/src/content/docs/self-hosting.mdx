@@ -176,6 +176,27 @@ For families, you typically want:
 - **Domains**: None (allow any email)
 - **Verified domains**: Not required
 
+## Going to production with Clerk
+
+Clerk development instances (`pk_test_...`) rely on a cross-site handshake that can loop forever in browsers that block third-party cookies (Safari tracking prevention, private tabs, in-app browsers). Use a production instance (`pk_live_...`) for real users. See Clerk's [production deployment guide](https://clerk.com/docs/guides/development/deployment/production).
+
+1. Create the production instance in the Clerk Dashboard. It needs a custom domain you own - not `*.vercel.app`.
+2. Add every DNS record shown on the Clerk **Domains** page: the `clerk.`, `accounts.`, `clkmail.`, `clk._domainkey.`, and `clk2._domainkey.` CNAMEs. On Cloudflare, set them to **DNS only** (not proxied).
+3. Configure social providers (for example Google) with your own OAuth credentials. Production does not use Clerk's shared dev credentials.
+4. In Vercel **Production** env vars, replace `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` with the production keys, then redeploy.
+
+Paths settings do not copy over from development. OvenLovin sends sign-in and sign-up to its own `/sign-in` and `/sign-up` pages by default, so nothing to configure there. Override with `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `NEXT_PUBLIC_CLERK_SIGN_UP_URL` if needed.
+
+### Carry existing kitchens over
+
+Users and sessions do not carry over from development - everyone signs up again and gets a new Clerk user id. OvenLovin keys `user` rows by Clerk user id (`user.clerk_user_id`), so remap each existing person **before** they first sign in on production. Otherwise a new, empty kitchen is created for them.
+
+```sql
+UPDATE "user" SET clerk_user_id = '<prod user id>' WHERE clerk_user_id = '<dev user id>';
+```
+
+Create the production user first (Clerk Dashboard → **Users**) to get the new id.
+
 ## Database Migrations
 
 On Vercel, migrations run automatically at the end of the web app build (`pnpm --filter @ovenlovin/db db:migrate:deploy`). The script prefers a direct (non-pooled) Neon URL when one is available.

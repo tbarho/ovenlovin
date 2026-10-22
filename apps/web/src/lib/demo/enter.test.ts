@@ -15,6 +15,9 @@ describe("demo enter helpers", () => {
     expect(safeDemoEnterNext("//evil.example")).toBe("/recipes");
     expect(safeDemoEnterNext("/api/demo/enter")).toBe("/recipes");
     expect(safeDemoEnterNext("/mcp")).toBe("/recipes");
+    expect(safeDemoEnterNext("/recipes/\\evil.com")).toBe("/recipes");
+    expect(safeDemoEnterNext("/recipes/\t/evil.com")).toBe("/recipes");
+    expect(safeDemoEnterNext("/recipes/../api/v1/x")).toBe("/recipes");
   });
 
   it("sends uncookied kitchen pages to enter, not MCP or cron", () => {

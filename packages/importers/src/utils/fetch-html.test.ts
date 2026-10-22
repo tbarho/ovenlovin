@@ -11,6 +11,7 @@ import {
   FULL_BROWSER_HEADERS,
   RecipeImportFetchError,
   RecipePageGoneError,
+  RecipePagePrivateError,
   fetchHtml as fetchHtmlImpl,
   googleTranslateUrl,
   importBlockedMessage,
@@ -18,6 +19,8 @@ import {
   looksLikeBotChallenge,
   looksLikeCompleteDocument,
   looksLikeGonePage,
+  looksLikeSignInPage,
+  looksLikeSignInUrl,
   looksLikeStructuredMarkdownRecipe,
   jinaReaderUrl,
   relatedRecipeUrls,
@@ -570,6 +573,59 @@ describe("fetchHtml layers", () => {
       name: "RecipePageGoneError",
       message: expect.stringMatching(/page is gone[\s\S]*Paste the recipe text or add a photo/),
     });
+  });
+
+  it("says a private Google Doc is private, not gone", async () => {
+    expect(
+      looksLikeSignInUrl(
+        "https://accounts.google.com/ServiceLogin?continue=https://docs.google.com"
+      )
+    ).toBe(true);
+    expect(
+      looksLikeSignInPage(
+        `<html><head><title>Sign in - Google Accounts</title></head><body></body></html>`
+      )
+    ).toBe(true);
+    expect(
+      looksLikeSignInPage(
+        `<html><head><title>Chocolate Yule Log in 5 Steps</title></head><body></body></html>`
+      )
+    ).toBe(false);
+    expect(
+      looksLikeGonePage(
+        `<html><head><title>Sign in - Google Accounts</title></head><body></body></html>`
+      )
+    ).toBe(false);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      url: "https://accounts.google.com/ServiceLogin?continue=https://docs.google.com/document/d/abc",
+      text: async () =>
+        `<html><head><title>Sign in - Google Accounts</title></head><body><p>Sign in to continue</p></body></html>`,
+    });
+    await expect(
+      fetchHtml("https://docs.google.com/document/d/abc/edit", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      })
+    ).rejects.toBeInstanceOf(RecipePagePrivateError);
+  });
+
+  it("says 401 is private", async () => {
+    const unauthorized = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+      url: "https://example.com/secret-recipe",
+      text: async () => "<html><head><title>Unauthorized</title></head><body></body></html>",
+    });
+    await expect(
+      fetchHtml("https://example.com/secret-recipe", {
+        fetchImpl: unauthorized as unknown as typeof fetch,
+        env: { RECIPE_IMPORT_CACHE_FALLBACK: "0" },
+      })
+    ).rejects.toBeInstanceOf(RecipePagePrivateError);
   });
 
   it("says a 404 is gone instead of no recipe", async () => {

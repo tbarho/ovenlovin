@@ -466,6 +466,43 @@ describe("URL Importer", () => {
       expect(extractWithLlm).not.toHaveBeenCalled();
     });
 
+    it("imports a recipe page that has a login link in its header", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      const extracted = await createUrlImporter({ extractWithLlm }).extract({
+        url: "https://www.example.com/recipes/chocolate-yule-log",
+        html: `<html><head>
+          <title>Chocolate Yule Log in 5 Steps</title>
+          <script type="application/ld+json">${JSON.stringify({
+            "@type": "Recipe",
+            name: "Chocolate Yule Log in 5 Steps",
+            recipeIngredient: ["eggs", "sugar", "cocoa"],
+            recipeInstructions: [{ "@type": "HowToStep", text: "Roll." }],
+          })}</script>
+          </head>
+          <body>
+            <header><a href="/login">Sign in to your account</a></header>
+            <h1>Chocolate Yule Log in 5 Steps</h1>
+          </body></html>`,
+      });
+      expect(extracted.rawData).toMatchObject({ name: "Chocolate Yule Log in 5 Steps" });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
+    it("says private for a Google sign-in page before the LLM", async () => {
+      const extractWithLlm = vi.fn(async () => null);
+      await expect(
+        createUrlImporter({ extractWithLlm }).extract({
+          url: "https://docs.google.com/document/d/abc/edit",
+          html: `<html><head><title>Sign in - Google Accounts</title></head>
+            <body><p>Sign in to continue</p></body></html>`,
+        })
+      ).rejects.toMatchObject({
+        name: "RecipePagePrivateError",
+        message: expect.stringMatching(/private or needs a sign-in/),
+      });
+      expect(extractWithLlm).not.toHaveBeenCalled();
+    });
+
     it("says gone for a 404 chrome page before the LLM", async () => {
       const extractWithLlm = vi.fn(async () => null);
       await expect(

@@ -1,6 +1,7 @@
 "use client";
 
 import { ClerkProvider } from "@clerk/nextjs";
+import { clerkUrls } from "@/lib/clerk-urls";
 
 export function ClerkReadyProvider({ children }: { children: React.ReactNode }) {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -8,5 +9,9 @@ export function ClerkReadyProvider({ children }: { children: React.ReactNode }) 
     return children;
   }
 
-  return <ClerkProvider publishableKey={publishableKey}>{children}</ClerkProvider>;
+  return (
+    <ClerkProvider publishableKey={publishableKey} {...clerkUrls()}>
+      {children}
+    </ClerkProvider>
+  );
 }
