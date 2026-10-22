@@ -5,11 +5,15 @@ on:
     paths:
       - "apps/docs/**"
       - ".github/workflows/link-check.yml"
+      - "scripts/check-docs-links.mjs"
+      - "scripts/check-docs-links.test.mjs"
   push:
     branches: [main]
     paths:
       - "apps/docs/**"
       - ".github/workflows/link-check.yml"
+      - "scripts/check-docs-links.mjs"
+      - "scripts/check-docs-links.test.mjs"
 
 jobs:
   link-check:
@@ -31,65 +35,11 @@ jobs:
       - name: Build documentation
         run: pnpm --filter @ovenlovin/docs build
       
-      - name: Check for basePath issues
-        run: |
-          echo "Checking for links without basePath prefix..."
-          
-          # Check for href="/" without /ovenlovin prefix (excluding external links)
-          if grep -r 'href="/"' apps/docs/out/docs/ --include="*.html"; then
-            echo "❌ ERROR: Found links with href='/' that should use basePath '/ovenlovin'"
-            exit 1
-          fi
-          
-          # Check for src="/" without /ovenlovin prefix
-          if grep -r 'src="/"' apps/docs/out/docs/ --include="*.html" | grep -v 'https://'; then
-            echo "❌ ERROR: Found src attributes with src='/' that should use basePath '/ovenlovin'"
-            exit 1
-          fi
-          
-          echo "✅ All internal links use correct basePath"
-      
-      - name: Check for broken internal links
-        run: |
-          echo "Checking for broken internal links..."
-          
-          cd apps/docs/out
-          
-          # Extract all internal links (starting with /ovenlovin)
-          grep -roh 'href="/ovenlovin[^"]*"' docs/ --include="*.html" | \
-            sed 's/href="//;s/"$//' | \
-            sort -u > /tmp/all-links.txt
-          
-          # Check if each linked file exists
-          BROKEN_LINKS=0
-          while IFS= read -r link; do
-            # Remove /ovenlovin prefix and query params/anchors
-            file_path=$(echo "$link" | sed 's|^/ovenlovin||' | sed 's|[?#].*||')
-            
-            # Handle root path (empty after removing basePath)
-            if [[ -z "$file_path" || "$file_path" == "/" ]]; then
-              file_path="index.html"
-            else
-              # Add .html if it's a directory-style link
-              if [[ "$file_path" != *.* ]]; then
-                file_path="${file_path}.html"
-              fi
-              # Remove leading slash for file check
-              file_path=${file_path#/}
-            fi
-            
-            if [[ ! -f "$file_path" ]] && [[ ! -d "${file_path%.html}" ]]; then
-              echo "❌ Broken link: $link (expected file: $file_path)"
-              BROKEN_LINKS=$((BROKEN_LINKS + 1))
-            fi
-          done < /tmp/all-links.txt
-          
-          if [ $BROKEN_LINKS -gt 0 ]; then
-            echo "❌ Found $BROKEN_LINKS broken links"
-            exit 1
-          fi
-          
-          echo "✅ All internal links are valid"
+      - name: Prove the checker catches today's relative 404
+        run: node --test scripts/check-docs-links.test.mjs
+
+      - name: Check documentation links
+        run: node scripts/check-docs-links.mjs
       
       - name: Summary
         run: |

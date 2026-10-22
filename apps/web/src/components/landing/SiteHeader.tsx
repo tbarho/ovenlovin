@@ -31,9 +31,7 @@ export function SiteHeader({
             <a href="#migrate">Migrate ReciMe</a>
           </li>
           <li>
-            <a href="https://tbarho.github.io/ovenlovin/" target="_blank" rel="noreferrer">
-              Docs
-            </a>
+            <Link href="/docs">Docs</Link>
           </li>
         </ul>
         <div className="nav-cta">

@@ -40,6 +40,7 @@ test.describe("phone kitchen menu", () => {
     await expect(dialog.getByRole("link", { name: "List" })).toBeVisible();
     await expect(dialog.getByRole("link", { name: "People" })).toBeVisible();
     await expect(dialog.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(dialog.getByRole("link", { name: "Docs" })).toHaveAttribute("href", "/docs");
     const peopleBox = await dialog.getByRole("link", { name: "People" }).boundingBox();
     expect(peopleBox).toBeTruthy();
     expect(peopleBox!.height).toBeGreaterThanOrEqual(44);

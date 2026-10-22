@@ -75,6 +75,17 @@ export function MenuIcon() {
   );
 }
 
+export function DocsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M7 3.75h10A1.75 1.75 0 0 1 18.75 5.5v13A1.75 1.75 0 0 1 17 20.25H7A1.75 1.75 0 0 1 5.25 18.5v-13A1.75 1.75 0 0 1 7 3.75Zm.25 2v12.5h9.5V5.75H7.25Zm2 2.25h5.5v1.5h-5.5v-1.5Zm0 3.25h5.5v1.5h-5.5v-1.5Zm0 3.25h3.5v1.5h-3.5v-1.5Z"
+      />
+    </svg>
+  );
+}
+
 export const kitchenNavIcons = {
   Recipes: RecipesIcon,
   Plan: PlanIcon,

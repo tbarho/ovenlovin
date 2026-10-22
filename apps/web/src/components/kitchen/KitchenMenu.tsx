@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { isKitchenNavActive, kitchenNavLinks } from "@/lib/kitchen-nav";
+import { isKitchenNavActive, kitchenDocsLink, kitchenNavLinks } from "@/lib/kitchen-nav";
 import { KitchenSwitcher } from "@/components/settings/KitchenSwitcher";
 import { BottomSheet } from "./BottomSheet";
-import { MenuIcon, kitchenNavIcons } from "./KitchenNavIcons";
+import { DocsIcon, MenuIcon, kitchenNavIcons } from "./KitchenNavIcons";
 
 export function KitchenMenu({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
@@ -72,6 +72,17 @@ export function KitchenMenu({ children }: { children?: ReactNode }) {
                 </li>
               );
             })}
+            <li>
+              <Link
+                href={kitchenDocsLink.href}
+                aria-current={
+                  isKitchenNavActive(pathname, kitchenDocsLink.match) ? "page" : undefined
+                }
+              >
+                <DocsIcon />
+                <span>{kitchenDocsLink.label}</span>
+              </Link>
+            </li>
           </ul>
         </nav>
         <KitchenSwitcher />

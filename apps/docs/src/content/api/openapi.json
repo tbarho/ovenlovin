@@ -1965,6 +1965,9 @@
           "404": {
             "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           },
+          "409": {
+            "description": "Exact SHA match or near-duplicate PNG without allowDuplicate. Includes recipeId and title."
+          },
           "503": {
             "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
           }

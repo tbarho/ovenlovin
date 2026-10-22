@@ -90,6 +90,7 @@ describe("generateOpenApiDocument", () => {
     expect(JSON.stringify(spec.paths?.["/recipes/import/photo"]?.post)).toContain("PNG");
     expect(spec.paths?.["/recipes/import/page"]?.post).toBeTruthy();
     expect(spec.paths?.["/recipes/import/photo"]?.post).toBeTruthy();
+    expect(spec.paths?.["/recipes/import/photo"]?.post?.responses?.["409"]).toBeTruthy();
     const photoPreview = spec.components?.schemas?.PhotoImportPreview as {
       properties?: Record<string, unknown>;
     };
