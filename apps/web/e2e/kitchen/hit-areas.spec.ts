@@ -89,12 +89,19 @@ test("kitchen hit areas are at least 44px at 390", async ({ page }) => {
   await slider.scrollIntoViewIfNeeded();
   const sliderBox = await slider.boundingBox();
   expect(sliderBox, "servings slider box").toBeTruthy();
-  if (!sliderBox) return;
-  expect(sliderBox.height, "servings slider height").toBeGreaterThanOrEqual(44);
-  expect(sliderBox.width, "servings slider width").toBeGreaterThanOrEqual(44);
+  expect(sliderBox!.height, "servings slider height").toBeGreaterThanOrEqual(44);
+  expect(sliderBox!.width, "servings slider width").toBeGreaterThanOrEqual(44);
   const before = await slider.getAttribute("aria-valuenow");
+  const min = Number((await slider.getAttribute("min")) ?? "1");
+  const max = Number((await slider.getAttribute("max")) ?? "24");
   expect(before).toBeTruthy();
-  await page.mouse.click(sliderBox.x + sliderBox.width * 0.8, sliderBox.y + sliderBox.height / 2);
+  const now = Number(before);
+  const y = sliderBox!.y + sliderBox!.height / 2;
+  const thumbX = sliderBox!.x + ((now - min) / (max - min)) * sliderBox!.width;
+  await page.mouse.move(thumbX, y);
+  await page.mouse.down();
+  await page.mouse.move(sliderBox!.x + sliderBox!.width * 0.8, y, { steps: 5 });
+  await page.mouse.up();
   await expect(slider).not.toHaveAttribute("aria-valuenow", before!);
 
   await page.goto("/plans");
