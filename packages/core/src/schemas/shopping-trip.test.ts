@@ -13,6 +13,7 @@ describe("shopping trip state", () => {
     expect(shopItemKey("olive-oil")).toBe("olive oil");
     expect(shopItemKey("garlic", "clove")).toBe("garlic::clove");
     expect(shopItemKey("garlic", "clove")).toBe(shopItemKey("Garlic", "Clove"));
+    expect(shopItemKey("jalapeño")).toBe("jalapeo");
   });
 
   it("drops malformed saved state instead of inventing check-offs", () => {

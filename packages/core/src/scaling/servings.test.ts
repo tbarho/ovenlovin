@@ -11,6 +11,7 @@ import {
   scaleFactorForPlanEntry,
   scaleIngredientDisplay,
   scaleQuantity,
+  shopItemDisplayName,
   toFriendlyMeasure,
   wholeShopQuantity,
 } from "./servings";
@@ -304,5 +305,27 @@ describe("countable shopping amounts", () => {
     expect(formatMeasureText(2 / 3, "can")).toBe("1 can");
     expect(formatMeasureText(5 / 6, "lb")).toBe("3/4 lb");
     expect(formatMeasureText(5 / 6, "lb", true)).toBe("1 lb");
+    expect(wholeShopQuantity(6.67)).toBe(7);
+    expect(shopItemDisplayName("egg", 7)).toBe("eggs");
+    expect(shopItemDisplayName("eggs", 7)).toBe("eggs");
+    expect(shopItemDisplayName("egg", 1)).toBe("egg");
+    expect(shopItemDisplayName("garlic", 3)).toBe("garlic");
+    expect(shopItemDisplayName("celery", 3)).toBe("celery");
+    expect(shopItemDisplayName("strawberry", 3)).toBe("strawberries");
+    expect(shopItemDisplayName("potato", 3)).toBe("potatoes");
+    expect(shopItemDisplayName("tomato", 3)).toBe("tomatoes");
+    expect(shopItemDisplayName("lemon", 3)).toBe("lemons");
+    expect(shopItemDisplayName("Potato", 3)).toBe("Potatoes");
+    expect(shopItemDisplayName("lemon wedges", 3)).toBe("lemon wedges");
+    expect(shopItemDisplayName("tomato paste", 3)).toBe("tomato paste");
+    expect(shopItemDisplayName("cherry tomatoes", 1, "cup")).toBe("cherry tomatoes");
+    expect(shopItemDisplayName("cherry tomato", 1, "cup")).toBe("cherry tomato");
+    expect(shopItemDisplayName("cilantro", 3)).toBe("cilantro");
+    expect(shopItemDisplayName("leaf", 3)).toBe("leaf");
+    expect(shopItemDisplayName("loaf bread", 3)).toBe("loaf bread");
+    expect(shopItemDisplayName("baby bok choy", 3)).toBe("baby bok choy");
+    expect(shopItemDisplayName("all purpose flour", 3, "cup")).toBe("all purpose flour");
+    expect(shopItemDisplayName("garlic", 4, "clove")).toBe("garlic");
+    expect(shopItemDisplayName("coconut milk", 2, "can")).toBe("coconut milk");
   });
 });

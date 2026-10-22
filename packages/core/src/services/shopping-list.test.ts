@@ -939,4 +939,419 @@ describe("ShoppingListService", () => {
       "Refrigerated",
     ]);
   });
+
+  it("rounds counted items up, merges flour, keeps crushed tomatoes, and files plant milk outside Dairy", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "a", servings: 4 }),
+        recipeTitle: "Cookies",
+        recipeServings: 4,
+        ingredients: [
+          { rawText: "3.75 eggs" },
+          { rawText: "2 cups all-purpose flour" },
+          { rawText: "1 can crushed tomatoes" },
+          { rawText: "1 cup oat milk" },
+        ],
+      },
+      {
+        entry: entry({ id: "entry-2", recipeId: "b", servings: 4 }),
+        recipeTitle: "Pancakes",
+        recipeServings: 4,
+        ingredients: [
+          { rawText: "2.5 eggs" },
+          { rawText: "1 cup flour" },
+          { rawText: "0.42 eggs" },
+        ],
+      },
+    ]);
+    const eggs = list.ingredients.find((item) => item.name === "egg");
+    expect(eggs?.quantity).toBe(7);
+    expect(eggs?.displayQuantity).toBe("7");
+    expect(service.exportAsMarkdown(list)).toContain("7 eggs");
+    expect(list.ingredients.filter((item) => item.name === "all purpose flour")).toHaveLength(1);
+    expect(list.ingredients.find((item) => item.name === "flour")).toBeUndefined();
+    expect(list.ingredients.find((item) => item.name === "crushed tomatoes")).toMatchObject({
+      aisle: "Canned goods",
+      unit: "can",
+    });
+    expect(list.ingredients.find((item) => item.name === "oat milk")?.aisle).not.toBe("Dairy");
+    expect(list.ingredients.find((item) => item.name === "tomatoes")).toBeUndefined();
+  });
+
+  it.each([
+    {
+      name: "lemon juiced",
+      lines: ["1 lemon, juiced"],
+      expectName: /^lemon$/i,
+      reject: /juiced|zested/i,
+      rows: 1,
+    },
+    {
+      name: "lemons zested and juiced",
+      lines: ["2 lemons, zested and juiced"],
+      expectName: /^lemon$/i,
+      reject: /juiced|zested/i,
+      rows: 1,
+    },
+    {
+      name: "unbalanced butter paren",
+      lines: ["1 cup unsalted butter)"],
+      expectName: /^butter$/i,
+      reject: /[()]|unsalted/i,
+      rows: 1,
+    },
+    {
+      name: "unbalanced eggs paren",
+      lines: ["6 eggs (room temperature))"],
+      expectName: /^egg$/i,
+      reject: /room temperature|[()]/i,
+      rows: 1,
+    },
+    {
+      name: "flour slash",
+      lines: ["1 1/8 cups plain / all purpose flour"],
+      expectName: /^all purpose flour$/i,
+      reject: /^plain$/i,
+      rows: 1,
+    },
+    {
+      name: "butter variants",
+      lines: ["1 cup butter", "1/2 cup unsalted butter", "2 tbsp salted butter"],
+      expectName: /^butter$/i,
+      reject: /unsalted|salted/i,
+      rows: 1,
+      quantity: 1.625,
+      unit: "cup",
+    },
+    {
+      name: "parmesan variants",
+      lines: ["1/2 cup parmesan", "1/4 cup Parmesan cheese", "2 tbsp parmigiano reggiano"],
+      expectName: /^parmesan$/i,
+      reject: /cheese|parmigiano/i,
+      rows: 1,
+    },
+    {
+      name: "vanilla variants",
+      lines: ["1 tsp vanilla", "1 tsp vanilla extract", "1 tsp pure vanilla extract"],
+      expectName: /^vanilla$/i,
+      reject: /extract|^pure$/i,
+      rows: 1,
+      quantity: 3,
+      unit: "tsp",
+    },
+    {
+      name: "crushed garlic",
+      lines: ["3 cloves garlic, crushed", "1 tsp crushed garlic"],
+      expectName: /^garlic$/i,
+      reject: /^crushed$/i,
+      rows: 2,
+    },
+    {
+      name: "almond flour stays",
+      lines: ["1 cup almond flour"],
+      expectName: /^almond flour$/i,
+      reject: /all purpose/i,
+      rows: 1,
+    },
+    {
+      name: "crushed tomatoes stay",
+      lines: ["1 can crushed tomatoes"],
+      expectName: /^crushed tomatoes$/i,
+      reject: /^tomatoes$/i,
+      rows: 1,
+    },
+    {
+      name: "flaxseed",
+      lines: ["1/4 cup flaxseed"],
+      expectName: /^flaxseed$/i,
+      rows: 1,
+    },
+    {
+      name: "aniseed",
+      lines: ["1 tsp aniseed"],
+      expectName: /^aniseed$/i,
+      rows: 1,
+    },
+    {
+      name: "cream cheese + cream",
+      lines: ["8 oz cream cheese", "1 cup cream"],
+      expectName: [/^cream cheese$/i, /^cream$/i],
+      rows: 2,
+    },
+    {
+      name: "lemon extract + lemon",
+      lines: ["1 tsp lemon extract", "1 lemon"],
+      expectName: [/lemon extract/i, /^lemon$/i],
+      rows: 2,
+      aisles: { "lemon extract": "Baking", lemon: "Produce" },
+      categories: { "lemon extract": "pantry", lemon: "produce" },
+    },
+    {
+      name: "mint extract + fresh mint",
+      lines: ["1 tsp mint extract", "1 bunch fresh mint"],
+      expectName: [/mint extract/i, /^mint$/i],
+      rows: 2,
+      aisles: { "mint extract": "Baking", mint: "Produce" },
+      categories: { "mint extract": "pantry", mint: "produce" },
+    },
+    {
+      name: "salt/pepper",
+      lines: ["salt/pepper"],
+      expectName: [/^salt$/i, /^pepper$/i],
+      includeStaples: true,
+      rows: 2,
+    },
+    {
+      name: "butter/oil",
+      lines: ["butter/oil"],
+      expectName: [/^butter$/i, /^oil$/i],
+      includeStaples: true,
+      rows: 2,
+    },
+    {
+      name: "minced or crushed garlic",
+      lines: ["2 cloves garlic, minced or crushed"],
+      expectName: /^garlic$/i,
+      reject: /minced|crushed|^or /i,
+      rows: 1,
+    },
+    {
+      name: "fresh + dried thyme",
+      lines: ["1 tbsp fresh thyme", "1 tsp dried thyme"],
+      expectName: [/^thyme$/i, /^dried thyme$/i],
+      rows: 2,
+    },
+    {
+      name: "onion lb + count",
+      lines: ["1 onion", "1 lb onion"],
+      expectName: /^onion$/i,
+      rows: 2,
+    },
+    {
+      name: "eggs beaten",
+      lines: ["4 large eggs, beaten"],
+      expectName: /^egg$/i,
+      reject: /beaten/i,
+      rows: 1,
+    },
+    {
+      name: "lime wedges",
+      lines: ["1 lime, cut into wedges"],
+      expectName: /^lime$/i,
+      reject: /wedge/i,
+      rows: 1,
+    },
+    {
+      name: "butter plus more",
+      lines: ["2 tbsp butter, plus more for greasing"],
+      expectName: /^butter$/i,
+      reject: /greasing|plus/i,
+      rows: 1,
+    },
+    {
+      name: "broth or water",
+      lines: ["1 cup broth, or water"],
+      expectName: /^broth$/i,
+      reject: /^water$/i,
+      rows: 1,
+    },
+    {
+      name: "tomatoes canned",
+      lines: ["2 cups tomatoes, canned"],
+      expectName: /canned tomatoes/i,
+      reject: /^tomatoes$/i,
+      rows: 1,
+      aisles: { "canned tomatoes": "Canned goods" },
+      categories: { "canned tomatoes": "pantry" },
+    },
+    {
+      name: "crushed tomato cup",
+      lines: ["1 cup crushed tomato"],
+      expectName: /^crushed tomatoes$/i,
+      rows: 1,
+      aisles: { "crushed tomatoes": "Canned goods" },
+      categories: { "crushed tomatoes": "pantry" },
+    },
+    {
+      name: "crushed pineapple cup",
+      lines: ["1 cup crushed pineapple"],
+      expectName: /^crushed pineapple$/i,
+      rows: 1,
+      aisles: { "crushed pineapple": "Canned goods" },
+      categories: { "crushed pineapple": "pantry" },
+    },
+    {
+      name: "bell pepper red",
+      lines: ["bell pepper, red"],
+      expectName: /red bell pepper/i,
+      reject: /^red$/i,
+      rows: 1,
+    },
+    {
+      name: "garlic cloves trailing unit",
+      lines: ["3 garlic cloves", "2 cloves garlic"],
+      expectName: /^garlic$/i,
+      reject: /cloves/i,
+      rows: 1,
+      quantity: 5,
+      unit: "clove",
+    },
+    {
+      name: "potato tomato oes",
+      lines: ["1 potato", "2 potatoes", "1 tomato", "2 tomatoes"],
+      expectName: [/^potato$/i, /^tomato$/i],
+      rows: 2,
+      quantities: { potato: 3, tomato: 3 },
+    },
+    {
+      name: "whole cloves stay",
+      lines: ["6 whole cloves"],
+      expectName: /^whole cloves$/i,
+      reject: /^whole$/i,
+      rows: 1,
+      quantity: 6,
+    },
+    {
+      name: "diced tomatoes stay diced",
+      lines: ["1 can diced tomatoes"],
+      expectName: /^diced tomatoes$/i,
+      reject: /^tomato$/i,
+      rows: 1,
+      aisles: { "diced tomatoes": "Canned goods" },
+    },
+    {
+      name: "smoked roasted keep tails",
+      lines: ["paprika, smoked", "peanuts, roasted"],
+      expectName: [/^smoked paprika$/i, /^roasted peanuts$/i],
+      rows: 2,
+    },
+    {
+      name: "evaporated milk stays",
+      lines: ["evaporated milk", "milk, evaporated"],
+      expectName: /^evaporated milk$/i,
+      reject: /^milk$/i,
+      rows: 1,
+    },
+    {
+      name: "sweetened condensed milk stays",
+      lines: ["sweetened condensed milk", "condensed milk, sweetened"],
+      expectName: /^sweetened condensed milk$/i,
+      reject: /^milk$/i,
+      rows: 1,
+    },
+    {
+      name: "refried beans stay",
+      lines: ["refried beans", "beans, refried"],
+      expectName: /^refried beans$/i,
+      reject: /^beans$/i,
+      rows: 1,
+    },
+    {
+      name: "sun-dried tomatoes stay",
+      lines: ["sun-dried tomatoes", "tomatoes, sun-dried"],
+      expectName: /^sun-dried tomatoes$/i,
+      reject: /^tomatoes$/i,
+      rows: 1,
+    },
+    {
+      name: "cooked rice strips cooked",
+      lines: ["1 cup cooked rice"],
+      expectName: /^rice$/i,
+      reject: /cooked/i,
+      rows: 1,
+      quantity: 1,
+      unit: "cup",
+    },
+    {
+      name: "packed brown sugar",
+      lines: ["brown sugar, packed"],
+      expectName: /^brown sugar$/i,
+      reject: /packed/i,
+      rows: 1,
+    },
+    {
+      name: "peeled deveined shrimp",
+      lines: ["shrimp, peeled and deveined"],
+      expectName: /^shrimp$/i,
+      reject: /peeled|deveined/i,
+      rows: 1,
+    },
+    {
+      name: "cooked and cooled rice",
+      lines: ["rice, cooked and cooled"],
+      expectName: /^rice$/i,
+      reject: /cooked|cooled/i,
+      rows: 1,
+    },
+    {
+      name: "large garlic cloves",
+      lines: ["4 large garlic cloves"],
+      expectName: /^garlic$/i,
+      reject: /large/i,
+      rows: 1,
+      quantity: 4,
+      unit: "clove",
+    },
+    {
+      name: "or substitutes no comma",
+      lines: ["chicken broth or water", "butter or margarine"],
+      expectName: [/broth/i, /^butter$/i],
+      reject: /water|margarine/i,
+      rows: 2,
+    },
+  ])(
+    "UAT shop lines $name",
+    ({
+      lines,
+      expectName,
+      reject,
+      rows,
+      includeStaples,
+      aisles,
+      categories,
+      quantity,
+      unit,
+      quantities,
+    }) => {
+      const list = build(
+        [
+          {
+            entry: entry({ recipeId: "uat", servings: 4 }),
+            recipeTitle: "UAT",
+            recipeServings: 4,
+            ingredients: lines.map((rawText) => ({ rawText })),
+          },
+        ],
+        includeStaples ? { includeStaples: true } : {}
+      );
+      const patterns = Array.isArray(expectName) ? expectName : [expectName];
+      const matched = list.ingredients.filter((item) =>
+        patterns.some((pattern) => pattern.test(item.name))
+      );
+      expect(list.ingredients).toHaveLength(rows);
+      expect(matched).toHaveLength(rows);
+      if (reject) {
+        expect(list.ingredients.some((item) => reject.test(item.name))).toBe(false);
+      }
+      if (aisles) {
+        for (const [itemName, aisle] of Object.entries(aisles)) {
+          expect(list.ingredients.find((item) => item.name === itemName)?.aisle).toBe(aisle);
+        }
+      }
+      if (categories) {
+        for (const [itemName, category] of Object.entries(categories)) {
+          expect(list.ingredients.find((item) => item.name === itemName)?.category).toBe(category);
+        }
+      }
+      if (quantity != null) {
+        expect(matched[0]?.quantity).toBe(quantity);
+        if (unit) expect(matched[0]?.unit).toBe(unit);
+      }
+      if (quantities) {
+        for (const [itemName, amount] of Object.entries(quantities)) {
+          expect(list.ingredients.find((item) => item.name === itemName)?.quantity).toBe(amount);
+        }
+      }
+    }
+  );
 });

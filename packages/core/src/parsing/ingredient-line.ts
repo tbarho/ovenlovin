@@ -61,6 +61,9 @@ const UNIT_ALIASES: Array<{ match: string; unit: string }> = [
   { match: "sprig", unit: "sprig" },
 ];
 
+/** Count units that also appear after the item (`3 garlic cloves`). */
+const TRAILING_COUNT_UNITS = /^(cloves?|sprigs?|stalks?)$/i;
+
 const UNICODE_FRACTIONS: Record<string, number> = {
   "¼": 0.25,
   "½": 0.5,
@@ -86,10 +89,38 @@ const PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const SHOP_PREP_NOTES =
-  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|beaten|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|cooked|toasted|chilled|crumbled|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
-  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+)/i;
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+(?!tomato)|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple)|cooked\s+|toasted\s+(?!sesame)|chilled\s+)/i;
+
+const SHOP_KEEP_TAILS =
+  /^(canned|red|green|yellow|orange|white|black|purple|brown|smoked|aged|dried|roasted|evaporated|condensed|refried|sun-dried|powdered|seasoned|sweetened|unsweetened|pickled|salted)$/i;
+
+/** Shop-only: a comma/paren tail that is an instruction, not another grocery item. */
+function isShopPrepPhrase(text: string): boolean {
+  const t = text.trim();
+  if (!t) return true;
+  if (SHOP_KEEP_TAILS.test(t)) return false;
+  if (SHOP_PREP_NOTES.test(t) || /^(or|and)$/i.test(t)) return true;
+  if (/^(otherwise|if|into|for|with|in|or|plus|cut\s+into)\b/i.test(t)) return true;
+  if (t.length > 4 && /^[\p{L}'-]+ed$/iu.test(t) && !/^canned$/i.test(t)) return true;
+  if (/^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t)) return true;
+  const parts = t
+    .split(/\s*(?:,|&|\band\b|\bor\b)\s*/)
+    .filter((part) => part && !/^(or|and)$/i.test(part));
+  return parts.length > 1 && parts.every((part) => isShopPrepPhrase(part));
+}
+
+function stripShopParens(text: string): string {
+  let next = text;
+  let prev = "";
+  while (next !== prev) {
+    prev = next;
+    next = next.replace(/\s*\([^()]*\)/g, " ");
+  }
+  return next.replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+}
 
 export type BackfillableIngredient = {
   rawText: string;
@@ -280,24 +311,34 @@ function cleanItemName(rest: string): string {
 }
 
 function cleanShopItemName(rest: string): string {
-  let name = rest
-    .replace(/^of\s+/i, "")
-    .replace(/^,\s*/, "")
-    .replace(/^optional:\s*/i, "")
-    .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
-    .replace(/\(\s*note\s*\d+\s*\)/gi, "")
-    .replace(/\s*\([^)]*\)/g, "")
-    .replace(/,?\s+or$/i, "")
-    .replace(/\s+to taste$/i, "")
-    .replace(/,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i, "")
-    .replace(/[.…]+$/g, "")
-    .trim();
+  let name = stripShopParens(
+    rest
+      .replace(/^of\s+/i, "")
+      .replace(/^,\s*/, "")
+      .replace(/^optional:\s*/i, "")
+      .replace(/\(\(\s*note\s*\d+\s*\)\)/gi, "")
+      .replace(/\(\s*note\s*\d+\s*\)/gi, "")
+      .replace(/\bplain\s*\/\s*all[\s-]?purpose\b/gi, "plain all purpose")
+      .replace(/,?\s+or$/i, "")
+      .replace(/\s+to taste$/i, "")
+      .replace(/\s+for\s+(drizzling|serving|garnish|greasing|frying)\b.*$/i, "")
+      .replace(/\s+or\s+(water|stock|broth|margarine|oil|milk)\b.*$/i, "")
+      .replace(
+        /,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i,
+        ""
+      )
+      .replace(/[.…]+$/g, "")
+  );
 
   while (true) {
     const comma = name.lastIndexOf(",");
     if (comma <= 0) break;
     const tail = name.slice(comma + 1).trim();
-    if (SHOP_PREP_NOTES.test(tail) || /^(or|and)$/i.test(tail)) {
+    if (SHOP_KEEP_TAILS.test(tail)) {
+      name = `${tail} ${name.slice(0, comma)}`.trim();
+      continue;
+    }
+    if (isShopPrepPhrase(tail)) {
       name = name.slice(0, comma).trim();
       continue;
     }
@@ -320,6 +361,23 @@ function splitShopNameList(name: string): string[] {
     .map((part) => part.replace(LEADING_PREP, "").trim())
     .filter(Boolean);
   return parts.length > 0 ? parts : [name];
+}
+
+/** Leftovers that are a prep word, not a grocery (`6 whole cloves`). */
+const TRAILING_COUNT_NOT_ITEM =
+  /^(whole|ground|minced|chopped|diced|crushed|fresh|dried|large|small|grated|shredded|freshly|plain)$/i;
+
+function consumeTrailingCountUnit(text: string): { unit: string; rest: string } | null {
+  const match = text.trim().match(/^(.*?)\s+(\S+?)\.?$/);
+  if (!match?.[1] || !match[2] || !TRAILING_COUNT_UNITS.test(match[2])) return null;
+  const rest = match[1]
+    .trim()
+    .replace(/^(large|small|medium|whole)\s+/i, "")
+    .trim();
+  if (!rest || TRAILING_COUNT_NOT_ITEM.test(rest)) return null;
+  const word = match[2].toLowerCase();
+  const unit = word.startsWith("clove") ? "clove" : word.startsWith("sprig") ? "sprig" : "stalk";
+  return { unit, rest };
 }
 
 function consumeTrailingMeasure(text: string): {
@@ -402,12 +460,21 @@ function parseShopIngredientLine(rawText: string): ParsedIngredientLine {
     }
   }
 
+  let name = cleanShopItemName(unit.rest);
+  if (!unit.unit) {
+    const trailing = consumeTrailingCountUnit(name);
+    if (trailing) {
+      unit = { unit: trailing.unit, rest: trailing.rest };
+      name = trailing.rest;
+    }
+  }
+
   return {
     rawText: original,
     quantityMin: quantity.min,
     quantityMax: quantity.max,
     unit: unit.unit,
-    name: cleanShopItemName(unit.rest),
+    name,
   };
 }
 
@@ -426,6 +493,11 @@ export function normalizeIngredientName(name: string): string {
     .replace(/[^\w\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** Shop merge only: potatoes/tomatoes → potato/tomato. Leave shoes. */
+export function singularizeShopOes(name: string): string {
+  return name.replace(/\b(?!shoes\b)(\p{L}+?)oes\b/gu, "$1o");
 }
 
 /**

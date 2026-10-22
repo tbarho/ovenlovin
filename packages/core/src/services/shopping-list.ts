@@ -1,4 +1,8 @@
-import { parseShopIngredientLines, normalizeIngredientName } from "../parsing/ingredient-line";
+import {
+  parseShopIngredientLines,
+  normalizeIngredientName,
+  singularizeShopOes,
+} from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
@@ -9,6 +13,7 @@ import {
   inflectedUnit,
   isCountableShopItem,
   scaleFactorForPlanEntry,
+  shopItemDisplayName,
   toFriendlyMeasure,
   wholeShopQuantity,
 } from "../scaling/servings";
@@ -186,7 +191,7 @@ function addQuantities(
 }
 
 function mergeKey(name: string, recipeKey: string): string {
-  return `${recipeKey}|${normalizeIngredientName(name)}`;
+  return `${recipeKey}|${singularizeShopOes(normalizeIngredientName(name))}`;
 }
 
 function sectionForItem(
@@ -284,7 +289,7 @@ export class ShoppingListService {
         for (const parsed of shopLines) {
           if (!parsed.name) continue;
 
-          const placement = assignAisle(parsed.name);
+          const placement = assignAisle(parsed.name, parsed.unit ?? line.unit);
           const itemName = placement.canonicalName;
           const quantityMin = parsed.quantityMin ?? line.quantityMin ?? line.quantity ?? null;
           const scaledQuantity = quantityMin != null ? quantityMin * scale : undefined;
@@ -620,18 +625,18 @@ export function applyShoppingTrip(
 }
 
 function shopItemName(ing: ShoppingListIngredient): string {
-  if (ing.name !== "egg" && ing.name !== "eggs") return ing.name;
-  if (ing.quantity == null) return ing.name;
-  return ing.quantity === 1 ? "egg" : "eggs";
+  return shopItemDisplayName(ing.name, ing.quantity, ing.unit);
 }
 
 function formatItemLine(ing: ShoppingListIngredient, includeRecipes = true): string {
   const quantityPart =
-    ing.quantity != null
-      ? `${formatMeasureText(ing.quantity, ing.unit, true)} `
-      : ing.recipes.length > 0
-        ? "as needed "
-        : "";
+    ing.displayQuantity && ing.displayQuantity !== "as needed"
+      ? `${ing.displayUnit ? `${ing.displayQuantity} ${ing.displayUnit}` : ing.displayQuantity} `
+      : ing.quantity != null
+        ? `${formatMeasureText(ing.quantity, ing.unit, true)} `
+        : ing.recipes.length > 0
+          ? "as needed "
+          : "";
   const recipes = includeRecipes
     ? ` (${ing.recipes
         .map((r) => r.recipeTitle)
