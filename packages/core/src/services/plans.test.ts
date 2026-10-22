@@ -47,6 +47,19 @@ function entry(recipeId: string | null, date: string) {
   };
 }
 
+describe("PlanService.markCurrentAndFuturePlansNeedRecheck", () => {
+  it("sets needsRecheck on current and future household plans", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    const update = vi.fn().mockReturnValue({ set });
+    const service = new PlanService({ update } as never);
+    await service.markCurrentAndFuturePlansNeedRecheck(HOUSEHOLD, "2026-10-20");
+    expect(update).toHaveBeenCalled();
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ needsRecheck: true }));
+    expect(where).toHaveBeenCalled();
+  });
+});
+
 describe("PlanService.getMealPlanWithEntries", () => {
   it("does not present a deleted recipe as a live dinner", async () => {
     const service = new PlanService({} as never);

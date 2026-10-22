@@ -3,6 +3,7 @@ import { person, personRule, preference } from "@ovenlovin/db";
 import type { Person, PersonRule, Preference } from "../schemas/people";
 import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { BaseService } from "./base";
+import { PlanService } from "./plans";
 import { HouseholdAccessError } from "./kitchen-access";
 import { PeopleOrderError, orderedPersonIds } from "./people-order";
 
@@ -109,6 +110,7 @@ export class PeopleService extends BaseService {
       .returning();
 
     if (!created) throw new Error("Failed to create person");
+    await new PlanService(this._db).markCurrentAndFuturePlansNeedRecheck(data.householdId);
     return this.mapPerson(created);
   }
 
@@ -155,7 +157,7 @@ export class PeopleService extends BaseService {
 
   async deletePerson(id: string): Promise<boolean> {
     const now = new Date();
-    return this._db.transaction(async (tx) => {
+    const deleted = await this._db.transaction(async (tx) => {
       await tx
         .update(personRule)
         .set({ deletedAt: now, updatedAt: now })
@@ -172,8 +174,12 @@ export class PeopleService extends BaseService {
         .where(and(eq(person.id, id), isNull(person.deletedAt)))
         .returning();
 
-      return !!deleted;
+      return deleted ?? null;
     });
+    if (deleted) {
+      await new PlanService(this._db).markCurrentAndFuturePlansNeedRecheck(deleted.householdId);
+    }
+    return !!deleted;
   }
 
   async getRulesForPerson(personId: string): Promise<PersonRule[]> {

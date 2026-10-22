@@ -15,7 +15,7 @@ import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
 import { scaleFactorForPlanEntry } from "../scaling/servings";
 import { BaseService } from "./base";
-import { liveEntriesForPlanRead } from "./plan-week-entries";
+import { currentMondayWeekStart, liveEntriesForPlanRead } from "./plan-week-entries";
 
 export class PlanService extends BaseService {
   async getMealPlan(id: string): Promise<MealPlan | null> {
@@ -302,6 +302,22 @@ export class PlanService extends BaseService {
       recordHistory: false,
     });
     return { entries, previous, restored: last };
+  }
+
+  async markCurrentAndFuturePlansNeedRecheck(
+    householdId: string,
+    fromWeekStart = currentMondayWeekStart()
+  ): Promise<void> {
+    await this._db
+      .update(mealPlan)
+      .set({ needsRecheck: true, updatedAt: new Date() })
+      .where(
+        and(
+          eq(mealPlan.householdId, householdId),
+          isNull(mealPlan.deletedAt),
+          gte(mealPlan.weekStart, fromWeekStart)
+        )
+      );
   }
 
   async getMealPlanWithEntries(

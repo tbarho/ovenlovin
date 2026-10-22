@@ -67,6 +67,17 @@ export function mondayWeekDates(weekStart: string): string[] {
   });
 }
 
+/** Monday of the week containing `now` (UTC date). Current and future plans use this. */
+export function currentMondayWeekStart(now = new Date()): string {
+  const iso = now.toISOString().slice(0, 10);
+  const { year, month, day } = splitIsoDate(iso);
+  const date = new Date(Date.UTC(year, month, day));
+  const weekday = date.getUTCDay();
+  const offset = weekday === 0 ? -6 : 1 - weekday;
+  date.setUTCDate(date.getUTCDate() + offset);
+  return date.toISOString().slice(0, 10);
+}
+
 /**
  * Keep one live entry per date+slot on the plan week.
  * Soft-deleted, out-of-week, and older duplicate slots are dropped so a
