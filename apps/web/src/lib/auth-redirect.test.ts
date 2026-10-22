@@ -16,6 +16,14 @@ describe("safeAuthRedirect", () => {
     expect(safeAuthRedirect("/\\evil.com")).toBe("/recipes");
     expect(safeAuthRedirect("/%5Cevil.com")).toBe("/recipes");
     expect(safeAuthRedirect("/%2F%2Fevil.com")).toBe("/recipes");
+    expect(safeAuthRedirect("/settings/../api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/settings/%2e%2e/api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/settings/%2E%2E/api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/settings/%252e%252e/api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/settings/.\n./api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/settings/..\t/api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/settings/%2e%0a%2e/api/v1/x")).toBe("/recipes");
+    expect(safeAuthRedirect("/\t/evil.com")).toBe("/recipes");
   });
 
   it("reduces same-origin absolute URLs from Clerk to path and search", () => {
@@ -38,5 +46,14 @@ describe("safeAuthRedirect", () => {
     );
     expect(safeAuthRedirect("https://kitchen.example/%2F%2Fevil.com", origins)).toBe("/recipes");
     expect(safeAuthRedirect("javascript:alert(1)", origins)).toBe("/recipes");
+    expect(safeAuthRedirect("https://kitchen.example/people\t", origins)).toBe("/recipes");
+  });
+
+  it("ignores an unparseable allowed origin without disabling the others", () => {
+    const origins = ["kitchen.example", "https://kitchen.example"];
+    expect(safeAuthRedirect("https://kitchen.example/people", origins)).toBe("/people");
+    expect(safeAuthRedirect("https://kitchen.example/people", ["kitchen.example"])).toBe(
+      "/recipes"
+    );
   });
 });
