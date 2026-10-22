@@ -92,4 +92,5 @@ export const kitchenNavIcons = {
   List: ListIcon,
   People: PeopleIcon,
   Settings: SettingsIcon,
+  Docs: DocsIcon,
 } as const;

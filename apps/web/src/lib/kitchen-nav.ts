@@ -9,6 +9,8 @@ export const kitchenNavLinks = [
 /** Public in-app docs. Not in kitchenNavLinks so Clerk does not protect /docs. */
 export const kitchenDocsLink = { href: "/docs", label: "Docs", match: "/docs" } as const;
 
+export const kitchenMenuLinks = [...kitchenNavLinks, kitchenDocsLink] as const;
+
 export function isKitchenNavActive(pathname: string, match: string | null): boolean {
   if (!match) return false;
   return pathname === match || pathname.startsWith(`${match}/`);

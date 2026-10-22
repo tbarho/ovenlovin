@@ -64,9 +64,9 @@ function walkHtml(dir, files = []) {
 
 function extractHrefs(html) {
   const hrefs = [];
-  const re = /href="([^"]*)"/g;
+  const re = /\b(?:href|src)=(?:"([^"]*)"|'([^']*)')/g;
   let match;
-  while ((match = re.exec(html))) hrefs.push(match[1]);
+  while ((match = re.exec(html))) hrefs.push(match[1] ?? match[2]);
   return hrefs;
 }
 
