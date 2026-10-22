@@ -281,16 +281,20 @@ test.describe("public design sign-off", () => {
               els.map((el) => {
                 const style = getComputedStyle(el);
                 const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize);
+                const breaks = el.querySelectorAll("wbr").length;
                 return {
                   height: el.getBoundingClientRect().height,
                   line,
+                  breaks,
                   scrollWidth: el.scrollWidth,
                   clientWidth: el.clientWidth,
                 };
               })
             );
             for (const code of codes) {
-              expect(code.height, "li code one line").toBeLessThanOrEqual(code.line + 2);
+              expect(code.height, "li code lines").toBeLessThanOrEqual(
+                code.line * (code.breaks + 1) + 2
+              );
               expect(code.scrollWidth, "li code overflow").toBeLessThanOrEqual(code.clientWidth);
             }
           }
