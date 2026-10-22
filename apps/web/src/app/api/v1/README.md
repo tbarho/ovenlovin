@@ -83,13 +83,17 @@ curl -X POST \
 
 All errors follow RFC 9457 (problem+json):
 
+```
+GET /api/v1/recipes/3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182
+```
+
 ```json
 {
-  "type": "https://your-app.vercel.app/problems/not-found",
+  "type": "https://<your-app>.vercel.app/problems/not-found",
   "title": "Not Found",
   "status": 404,
-  "detail": "Recipe with id abc123 not found",
-  "instance": "https://your-app.vercel.app/api/v1/recipes/abc123"
+  "detail": "Recipe with id 3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182 not found",
+  "instance": "https://<your-app>.vercel.app/api/v1/recipes/3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182"
 }
 ```
 

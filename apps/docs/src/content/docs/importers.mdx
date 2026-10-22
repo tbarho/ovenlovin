@@ -384,7 +384,9 @@ All importers calculate confidence scores to help you identify recipes that may 
 
 | `code` | HTTP | When |
 | --- | --- | --- |
+| `not_a_public_url` | 400 | Private or loopback http(s) address |
 | `import_blocked` | 400 | Site blocked the importer |
+| `import_page_private` | 400 | Page is private or needs a sign-in |
 | `import_page_gone` | 400 | Page is gone |
 | `import_not_a_recipe` | 400 | No recipe found, including leftover `AI_*` errors that are not unavailable |
 | `import_unsupported_site` | 400 | Site is not supported |

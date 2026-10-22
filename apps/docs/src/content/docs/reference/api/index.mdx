@@ -110,7 +110,7 @@ GET /recipes?limit=20&cursor=<cursor-token>
 
 Import failures: `400` with `not_a_public_url` (private/loopback http(s)), `import_blocked`, `import_page_private` (the page is private or needs a sign-in), `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`. Photo: `PHOTO_BLURRY`, `PHOTO_NOT_RECIPE`. `409` with `import_duplicate` (URL or exact photo already saved), `import_near_duplicate` (photo `save: true` without `allowDuplicate: true`), `import_in_progress` (same `Idempotency-Key` still running). Photo import on an instance without AI Gateway is `400` with no `code`. Busy model: `503` `import_ai_unavailable`.
 
-There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GET /recipes?forAttendees=<personId>` (blocked recipes are listed in `hidden`) or the MCP tool `get_recipe`.
+There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GET /recipes?forAttendees=<personId>` (blocked recipes are listed in `hidden`) or the MCP tool `search_recipes` with `forAttendees`.
 
 ### Cookbooks
 

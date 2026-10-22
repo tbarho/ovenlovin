@@ -165,12 +165,13 @@ When you check a meal plan, OvenLovin:
             "personName": "Parent A",
             "severity": "block",
             "ingredientName": "peanut butter",
-            "message": "Parent A: recipe contains peanut butter (block rule for peanuts)"
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
           }
         ],
         "warn": [],
         "prefer_avoid": []
-      }
+      },
+      "affectedPeople": ["6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d"]
     }
   ],
   "byPerson": [
@@ -184,14 +185,25 @@ When you check a meal plan, OvenLovin:
             "personName": "Parent A",
             "severity": "block",
             "ingredientName": "peanut butter",
-            "message": "Parent A: recipe contains peanut butter (block rule for peanuts)"
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
           }
         ],
         "warn": [],
         "prefer_avoid": []
-      }
+      },
+      "affectedEntries": ["3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e"]
     }
-  ]
+  ],
+  "summary": {
+    "totalEntries": 1,
+    "totalPeople": 1,
+    "entriesWithBlocks": 1,
+    "entriesWithWarnings": 0,
+    "entriesWithPreferAvoid": 0,
+    "peopleWithBlocks": 1,
+    "peopleWithWarnings": 0,
+    "peopleWithPreferAvoid": 0
+  }
 }
 ```
 
@@ -255,7 +267,7 @@ Shopping lists aggregate ingredients from a meal plan and organize them by groce
     {
       "ingredient": "peanut butter",
       "personName": "Parent A",
-      "note": "Parent A has a block rule for peanuts"
+      "note": "Contains peanuts (peanut butter), so Parent A can't eat this"
     }
   ]
 }

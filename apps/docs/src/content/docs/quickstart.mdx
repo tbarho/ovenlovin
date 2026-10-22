@@ -3,8 +3,6 @@ title: Quickstart
 description: Get OvenLovin running in minutes
 ---
 
-import { Tab, Tabs } from "fumadocs-ui/components/tabs";
-
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=NEXT_PUBLIC_INSTANCE_NAME&envDescription=Optional%20instance%20name.%20USDA%20is%20optional%20and%20not%20required%20to%20deploy.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20-%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=The%20family%20recipe%20box%20your%20AI%20can%20actually%20use&demo-url=https://ovenlovin.vercel.app)
 
 Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key, and copy the `plaintext` value (shown once). Call `https://<your-app>.vercel.app/api/v1` with `Authorization: ApiKey rkapi_...` and connect MCP at `https://<your-app>.vercel.app/mcp`.
@@ -60,170 +58,60 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 
 ### Installation
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
-  <Tab value="pnpm">
-    ```bash
-    # Clone the repository
-    git clone https://github.com/tbarho/ovenlovin.git
-    cd ovenlovin
+OvenLovin is a pnpm workspace. Run `corepack enable` first; npm and yarn are not supported.
 
-    # Set up environment variables
-    cp .env.example apps/web/.env.local
-    # Edit apps/web/.env.local with your API keys
+```bash
+# Clone the repository
+git clone https://github.com/tbarho/ovenlovin.git
+cd ovenlovin
 
-    # Install dependencies
-    pnpm install
+# Set up environment variables
+cp .env.example apps/web/.env.local
+# Edit apps/web/.env.local with your API keys
 
-    # Start Postgres (or use your own at the DATABASE_URL below)
-    docker compose -f docker-compose.e2e.yml up -d
+# Install dependencies
+pnpm install
 
-    # Run database migrations (reads DATABASE_URL from the shell, not .env.local)
-    export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
-    pnpm db:migrate
+# Start Postgres (or use your own at the DATABASE_URL below)
+docker compose -f docker-compose.e2e.yml up -d
 
-    # Start development server
-    pnpm dev
-    ```
+# Run database migrations (reads DATABASE_URL from the shell, not .env.local)
+export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
+pnpm db:migrate
 
-  </Tab>
-  <Tab value="npm">
-    ```bash
-    # Clone the repository
-    git clone https://github.com/tbarho/ovenlovin.git
-    cd ovenlovin
-
-    # Set up environment variables
-    cp .env.example apps/web/.env.local
-    # Edit apps/web/.env.local with your API keys
-
-    # Install dependencies
-    npm install
-
-    # Start Postgres (or use your own at the DATABASE_URL below)
-    docker compose -f docker-compose.e2e.yml up -d
-
-    # Run database migrations (reads DATABASE_URL from the shell, not .env.local)
-    # requires pnpm (`corepack enable`)
-    export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
-    npm run db:migrate
-
-    # Start development server
-    npm run dev
-    ```
-
-  </Tab>
-  <Tab value="yarn">
-    ```bash
-    # Clone the repository
-    git clone https://github.com/tbarho/ovenlovin.git
-    cd ovenlovin
-
-    # Set up environment variables
-    cp .env.example apps/web/.env.local
-    # Edit apps/web/.env.local with your API keys
-
-    # Install dependencies
-    yarn install
-
-    # Start Postgres (or use your own at the DATABASE_URL below)
-    docker compose -f docker-compose.e2e.yml up -d
-
-    # Run database migrations (reads DATABASE_URL from the shell, not .env.local)
-    # requires pnpm (`corepack enable`)
-    export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
-    yarn db:migrate
-
-    # Start development server
-    yarn dev
-    ```
-
-  </Tab>
-</Tabs>
+# Start development server
+pnpm dev
+```
 
 The app will be available at `http://localhost:3000`.
 
 ### Development Commands
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
-  <Tab value="pnpm">
-    ```bash
-    # Run all workspaces in dev mode
-    pnpm dev
+OvenLovin is a pnpm workspace. Run `corepack enable` first; npm and yarn are not supported.
 
-    # Run specific workspace
-    pnpm --filter @ovenlovin/web dev
-    pnpm --filter @ovenlovin/core test:watch
+```bash
+# Run all workspaces in dev mode
+pnpm dev
 
-    # Build
-    pnpm build
+# Run specific workspace
+pnpm --filter @ovenlovin/web dev
+pnpm --filter @ovenlovin/core test:watch
 
-    # Test
-    pnpm test
-    pnpm test:watch
+# Build
+pnpm build
 
-    # Lint & format
-    pnpm lint
-    pnpm format
-    pnpm typecheck
+# Test
+pnpm test
+pnpm test:watch
 
-    # Clean
-    pnpm clean
-    ```
+# Lint & format
+pnpm lint
+pnpm format
+pnpm typecheck
 
-  </Tab>
-  <Tab value="npm">
-    ```bash
-    # Run all workspaces in dev mode
-    npm run dev
-
-    # Run specific workspace
-    npm run --workspace @ovenlovin/web dev
-    npm run --workspace @ovenlovin/core test:watch
-
-    # Build
-    npm run build
-
-    # Test
-    npm test
-    npm run test:watch
-
-    # Lint & format
-    npm run lint
-    npm run format
-    npm run typecheck
-
-    # Clean
-    npm run clean
-    ```
-
-  </Tab>
-  <Tab value="yarn">
-    ```bash
-    # Run all workspaces in dev mode
-    yarn dev
-
-    # Run specific workspace
-    yarn workspace @ovenlovin/web dev
-    yarn workspace @ovenlovin/core test:watch
-
-    # Build
-    yarn build
-
-    # Test
-    yarn test
-    yarn test:watch
-
-    # Lint & format
-    yarn lint
-    yarn format
-    yarn typecheck
-
-    # Clean
-    yarn clean
-    ```
-
-  </Tab>
-</Tabs>
+# Clean
+pnpm clean
+```
 
 ## Talk to this instance
 

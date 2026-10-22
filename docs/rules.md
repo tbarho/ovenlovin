@@ -415,7 +415,7 @@ Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat
 User: "Is the Chicken Pad Thai recipe safe for everyone in my household?"
 
 Bot: [Calls get_household_context]
-Bot: [Calls search_recipes with query "Chicken Pad Thai" and forAttendees set to the household person ids]
+Bot: [Calls search_recipes with forAttendees set to everyone; a recipe that hits a block rule is listed in `hidden`]
 
 Bot: "search_recipes hid Chicken Pad Thai (`hiddenCount`: 1). Block findings:
 
