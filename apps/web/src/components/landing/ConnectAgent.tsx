@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildAgentGuides, type AgentGuideId } from "@ovenlovin/core/onboarding";
 import { CopyBox } from "./CopyBox";
+import { OverflowX } from "./OverflowX";
 
 const TABS: AgentGuideId[] = ["grok", "claude", "chatgpt", "mcp"];
 
@@ -24,23 +25,25 @@ export function ConnectAgent({ origin, apiKey }: { origin: string; apiKey?: stri
 
   return (
     <div className="agent">
-      <div className="tabs" role="tablist" aria-label="Connect your agent">
-        {TABS.map((id) => {
-          const item = guides.find((guideItem) => guideItem.id === id);
-          return (
-            <button
-              key={id}
-              type="button"
-              className="tab"
-              role="tab"
-              aria-selected={active === id}
-              onClick={() => setActive(id)}
-            >
-              {item?.label ?? id}
-            </button>
-          );
-        })}
-      </div>
+      <OverflowX className="tabs-fade">
+        <div className="tabs" data-scroll role="tablist" aria-label="Connect your agent">
+          {TABS.map((id) => {
+            const item = guides.find((guideItem) => guideItem.id === id);
+            return (
+              <button
+                key={id}
+                type="button"
+                className="tab"
+                role="tab"
+                aria-selected={active === id}
+                onClick={() => setActive(id)}
+              >
+                {item?.label ?? id}
+              </button>
+            );
+          })}
+        </div>
+      </OverflowX>
       <div className="guide">
         <div>
           <p className="intro">{guide.summary}</p>

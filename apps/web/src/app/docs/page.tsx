@@ -20,8 +20,8 @@ export default async function DocsIndexPage() {
       <p className="lead">{OVENLOVIN_PITCH}</p>
       <p className="intro">
         This instance is <code>{origin}</code>. Open Settings to copy the sandbox key, or sign in on
-        a full kitchen to mint one. Allergen checks are deterministic and per-person - not medical
-        advice. Always check labels.
+        a full kitchen to mint one. Allergen checks are deterministic and{" "}
+        <span className="nowrap">per-person</span>. Not medical advice. Always read the label.
       </p>
       <ul className="yours-row">
         <li>
@@ -39,7 +39,11 @@ export default async function DocsIndexPage() {
         <li>
           <span>OpenAPI</span>
           <b>
-            <code>{origin}/api/v1/openapi.json</code>
+            <code>
+              {`${origin}/api/v1/openapi.json`
+                .split("/")
+                .flatMap((part, i) => (i === 0 ? [part] : [<wbr key={i} />, `/${part}`]))}
+            </code>
           </b>
         </li>
       </ul>

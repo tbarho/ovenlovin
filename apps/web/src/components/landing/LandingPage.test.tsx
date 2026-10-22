@@ -60,6 +60,8 @@ describe("LandingPage", () => {
     expect(screen.queryByRole("link", { name: "You're live" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Connect an agent" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Try the demo" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Always read the label/)).toBeInTheDocument();
+    expect(document.querySelectorAll(".hero-ctas .btn")).toHaveLength(2);
   });
 
   it("shows the public demo CTA when a demo URL is configured", () => {

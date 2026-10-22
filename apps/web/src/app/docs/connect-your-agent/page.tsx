@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ConnectAgent } from "@/components/landing/ConnectAgent";
+import { OverflowX } from "@/components/landing/OverflowX";
 import { DocsChrome } from "@/components/docs/DocsChrome";
 import { OVENLOVIN_PITCH } from "@/lib/llms-txt";
 import { resolveOrigin } from "@/lib/origin";
@@ -24,15 +25,17 @@ export default async function ConnectYourAgentPage() {
       <p className="intro">
         Copy the API key from Settings (the public demo already shows a sandbox key), then paste it
         into the snippet. Allergen findings name the person and the ingredient - not medical advice.
-        Always check labels.
+        Always read the label.
       </p>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>
       <p className="intro">Remote HTTP is the supported path. After you have a key:</p>
-      <pre className="copy-pre">
-        {`claude mcp add --transport http ovenlovin ${origin}/mcp \\
+      <OverflowX className="copy-pre">
+        <pre data-scroll tabIndex={0} role="region" aria-label="Claude Code command">
+          {`claude mcp add --transport http ovenlovin ${origin}/mcp \\
   --header "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY"`}
-      </pre>
+        </pre>
+      </OverflowX>
       <h2>Safety</h2>
       <p className="intro">
         Call <code>check_meal_plan</code> before <code>save_meal_plan</code>. If checking cannot

@@ -28,6 +28,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
+  colorScheme: "light",
 };
 
 export const metadata: Metadata = {

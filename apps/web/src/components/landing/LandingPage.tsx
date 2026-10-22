@@ -66,9 +66,15 @@ export function LandingPage({
             </div>
             <h1>{signedIn ? deploy.headline : OVENLOVIN_PITCH}</h1>
             <p className="lead">
-              {signedIn
-                ? `This is yours - ${instanceName}. Your household. Your data.`
-                : "Open-source recipe box for families and their agents. Per-person allergen checks. Not medical advice - always read the label."}
+              {signedIn ? (
+                `This is yours - ${instanceName}. Your household. Your data.`
+              ) : (
+                <>
+                  Open-source recipe box for families and their agents.{" "}
+                  <span className="nowrap">Per-person</span> allergen checks. Not medical advice.
+                  Always read the label.
+                </>
+              )}
             </p>
             {signedIn ? (
               <ul className="yours-row">
@@ -108,21 +114,16 @@ export function LandingPage({
                 <Link className="btn" href="/sign-in">
                   Sign in
                 </Link>
-              ) : null}
-              <a
-                className="btn"
-                href="https://tbarho.github.io/ovenlovin/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Read the docs
-              </a>
-              <a className="btn ghost" href="#connect">
-                Connect your agent
-              </a>
-              <a className="btn ghost" href="#migrate">
-                Migrate from ReciMe
-              </a>
+              ) : (
+                <a
+                  className="btn"
+                  href="https://tbarho.github.io/ovenlovin/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Read the docs
+                </a>
+              )}
             </div>
             {signedIn ? <VercelBand deploy={deploy} /> : null}
           </div>
