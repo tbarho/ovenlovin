@@ -165,27 +165,57 @@ OvenLovin guarantees:
 4. ✅ Incomplete checks are reported as `status: incomplete`, never "no issues"
 5. ✅ No hard-coded allergen policies - all rules are per-person configuration
 
-**Example**: If a recipe contains peanuts and Parent A has a `block` rule for peanuts, every API response will include:
+**Example**: If a plan entry has peanut butter and Parent A has a `block` rule for peanuts, `GET` or `POST /api/v1/meal-plans/{id}/check` returns this object (`GET` is a dry run; `POST` stores it). Findings live under `byEntry` and `byPerson`, not a top-level `findings` map.
 
 All ids are UUIDs.
 
 ```json
 {
   "status": "complete",
-  "findings": {
-    "block": [
-      {
-        "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
-        "personName": "Parent A",
-        "ruleId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
-        "severity": "block",
-        "ingredientName": "peanuts",
-        "message": "Parent A: recipe contains peanuts (block rule for peanuts)"
-      }
-    ],
-    "warn": [],
-    "prefer_avoid": []
-  }
+  "planId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
+  "checkedAt": "2026-10-12T21:00:00.000Z",
+  "byEntry": [
+    {
+      "entryId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+      "date": "2026-10-12",
+      "mealSlot": "dinner",
+      "recipeTitle": "Peanut Butter Cookies",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedPeople": ["6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d"]
+    }
+  ],
+  "byPerson": [
+    {
+      "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+      "personName": "Parent A",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedEntries": ["3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e"]
+    }
+  ]
 }
 ```
 

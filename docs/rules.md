@@ -15,10 +15,10 @@ OvenLovin provides comprehensive support for managing household dietary restrict
 
 Families have diverse dietary needs:
 
-- **Parent A** might have a severe peanut allergy (block)
-- **Child B** might be vegetarian (block animal products)
-- **Parent C** might prefer to avoid gluten (prefer_avoid)
-- **Child D** might prefer to avoid mushrooms (`prefer_avoid`)
+- **Parent A** (`6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d`): peanut allergy, `block`
+- **Child B** (`8a3d4e5f-1b2c-4d6e-8f90-1a2b3c4d5e6f`): `diet` / `vegetarian`, `block`
+- **Parent C** (`9b4e5f60-2c3d-4e7f-9012-2b3c4d5e6f70`): `ingredient` / `gluten`, `prefer_avoid`
+- **Child D** (`b7c8d9e0-1f2a-4b3c-9d4e-5f6a7b8c9d0e`): `allergen` / `milk`, `warn`
 
 OvenLovin allows each person to have their own rules with different severity levels, ensuring safe and appropriate meal planning for everyone.
 
@@ -62,15 +62,15 @@ Every rule has a severity that determines how it's handled:
 **Example**:
 ```json
 {
-  "personId": "8a3d4e5f-1b2c-4d6e-8f90-1a2b3c4d5e6f",
-  "personName": "Child B",
+  "personId": "b7c8d9e0-1f2a-4b3c-9d4e-5f6a7b8c9d0e",
+  "personName": "Child D",
   "kind": "allergen",
   "target": "milk",
   "severity": "warn"
 }
 ```
 
-**Result**: Recipes with milk or dairy trigger a warning for Child B.
+**Result**: Recipes with milk or dairy trigger a warning for Child D.
 
 ### Prefer-Avoid (Preference)
 
@@ -176,6 +176,8 @@ Every rule has a severity that determines how it's handled:
 **Example**:
 ```json
 {
+  "personId": "8a3d4e5f-1b2c-4d6e-8f90-1a2b3c4d5e6f",
+  "personName": "Child B",
   "kind": "diet",
   "target": "vegetarian",
   "severity": "block",
@@ -211,19 +213,75 @@ OvenLovin implements these safety invariants:
 
 **Why**: Families need to know exactly who is affected and why.
 
-**Example output**:
+**Example** (`GET` or `POST /api/v1/meal-plans/{id}/check` returns this object. `GET` is a dry run; `POST` stores it on the plan. There is no top-level `{ findings: { block, warn, prefer_avoid } }`):
+
 ```json
 {
-  "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
-  "personName": "Parent A",
-  "ruleId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
-  "severity": "block",
-  "ingredientName": "peanut butter",
-  "allergenCode": "peanut",
-  "allergenName": "peanuts",
-  "relation": "contains",
-  "message": "Parent A: recipe contains peanut butter (block rule for peanuts)",
-  "confidence": 1
+  "status": "complete",
+  "planId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
+  "checkedAt": "2026-10-12T21:00:00.000Z",
+  "byEntry": [
+    {
+      "entryId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+      "date": "2026-10-12",
+      "mealSlot": "dinner",
+      "recipeTitle": "Peanut Butter Cookies",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "ruleId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "allergenCode": "peanut",
+            "allergenName": "peanuts",
+            "relation": "contains",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this",
+            "confidence": 1
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedPeople": ["6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d"]
+    }
+  ],
+  "byPerson": [
+    {
+      "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+      "personName": "Parent A",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "ruleId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "allergenCode": "peanut",
+            "allergenName": "peanuts",
+            "relation": "contains",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this",
+            "confidence": 1
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedEntries": ["3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e"]
+    }
+  ],
+  "summary": {
+    "totalEntries": 1,
+    "totalPeople": 1,
+    "entriesWithBlocks": 1,
+    "entriesWithWarnings": 0,
+    "entriesWithPreferAvoid": 0,
+    "peopleWithBlocks": 1,
+    "peopleWithWarnings": 0,
+    "peopleWithPreferAvoid": 0
+  }
 }
 ```
 
@@ -233,19 +291,26 @@ OvenLovin implements these safety invariants:
 
 **Why**: "No issues" must mean the check actually ran, not that it failed silently.
 
-**Example**:
+**Example** (same `GET` / `POST /api/v1/meal-plans/{id}/check` object when `input.people` is empty):
+
 ```json
 {
   "status": "incomplete",
-  "incompleteReasons": [
-    "Recipe missing ingredient list",
-    "Parent A's rules not loaded"
-  ],
-  "findings": {
-    "block": [],
-    "warn": [],
-    "prefer_avoid": []
-  }
+  "planId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
+  "checkedAt": "2026-10-12T21:00:00.000Z",
+  "byEntry": [],
+  "byPerson": [],
+  "summary": {
+    "totalEntries": 0,
+    "totalPeople": 0,
+    "entriesWithBlocks": 0,
+    "entriesWithWarnings": 0,
+    "entriesWithPreferAvoid": 0,
+    "peopleWithBlocks": 0,
+    "peopleWithWarnings": 0,
+    "peopleWithPreferAvoid": 0
+  },
+  "incompleteReasons": ["No people to check this plan against"]
 }
 ```
 
@@ -331,7 +396,7 @@ Any recipes containing peanuts will now be flagged as unsafe for Parent A."
 
 ### Check a Single Recipe
 
-Use `GET /api/v1/recipes?forAttendees=PERSON_ID,PERSON_ID` (recipes that hit a block rule move to `hidden`), or put the recipe on a plan and call `GET /api/v1/meal-plans/{planId}/check`.
+Use `GET /api/v1/recipes?forAttendees=PERSON_ID,PERSON_ID` (blocked recipes move to `hidden`), or MCP `search_recipes` with `forAttendees`. `get_recipe` takes `id`, `includeNutrition`, `includeSource`, and `servings` only. To check a saved plan, `POST /api/v1/meal-plans/{planId}/check` (runs the check and stores the report). `GET` on that path is a dry run of the same check; it does not read a stored report.
 
 ### Check a Meal Plan
 
@@ -340,7 +405,7 @@ Use `GET /api/v1/recipes?forAttendees=PERSON_ID,PERSON_ID` (recipes that hit a b
 POST /api/v1/meal-plans/{planId}/check
 ```
 
-Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe. POST saves the report; GET only reads.
+Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe. `POST` runs the check and stores the report. `GET` runs the same check without saving.
 
 ### Via Bots
 
@@ -349,20 +414,15 @@ Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat
 ```
 User: "Is the Chicken Pad Thai recipe safe for everyone in my household?"
 
-Bot: [Calls get_household_context to get attendees and rules]
-Bot: [Calls get_recipe with the recipe id and forAttendees]
+Bot: [Calls get_household_context]
+Bot: [Calls search_recipes with query "Chicken Pad Thai" and forAttendees set to the household person ids]
 
-Bot: "The Chicken Pad Thai recipe has the following findings:
+Bot: "search_recipes hid Chicken Pad Thai (`hiddenCount`: 1). Block findings:
 
-⚠️ **Block** (unsafe):
-- Parent A: contains peanuts and peanut oil (severe peanut allergy)
+- Parent A: peanut oil - Contains peanuts (peanut oil), so Parent A can't eat this
+- Child B: chicken - Contains vegetarian diet (chicken), so Child B can't eat this
 
-✅ **Safe for**:
-- Child B (vegetarian rule not triggered)
-- Parent C (no gluten found)
-
-**Recommendation**: This recipe is not safe for Parent A. Would you like me to 
-find a peanut-free Pad Thai recipe, or suggest a substitution?"
+Parent C had no gluten phrase on the ingredient lines. This recipe is not safe for Parent A or Child B."
 ```
 
 ## Shopping Lists with Warnings
@@ -371,28 +431,38 @@ When generating shopping lists, OvenLovin marks ingredients that trigger rules:
 
 **Example shopping list**:
 
-```
-📝 Shopping List - Week of Oct 13, 2026
+```markdown
+# Shopping List
 
-🥬 Produce
-  • 2 lbs chicken breast
-  • 1 lb broccoli
-  • 3 bell peppers
-  • 1 head garlic
-  • 1 bunch cilantro
+**Week Starting:** 2026-10-12
 
-🥫 Pantry
-  • 1 jar soy sauce
-  • ⚠️ 1 jar peanut butter [⚠️ Block: Parent A - peanut allergy]
-  • 1 package rice noodles
+## Produce
 
-🧀 Dairy
-  • 1 gallon milk
-  • 8 oz cheddar cheese
-  • ⚠️ 1 stick butter [⚠️ Prefer-avoid: Child B - vegan]
+- [ ] 1 lb broccoli
 
-🍞 Bakery
-  • ⚠️ 1 loaf wheat bread [⚠️ Prefer-avoid: Parent C - gluten-free]
+## Meat
+
+- [ ] 2 lbs chicken breast
+
+## Pantry
+
+- [ ] 1 jar peanut butter
+- [ ] 1 package rice noodles
+
+## Dairy
+
+- [ ] 1 gallon milk
+
+## Bakery
+
+- [ ] 1 loaf wheat bread
+
+## ⚠️ Warnings
+
+- **Parent A**: peanut butter - Contains peanuts (peanut butter), so Parent A can't eat this
+- **Child B**: chicken breast - Contains vegetarian diet (chicken breast), so Child B can't eat this
+- **Parent C**: wheat bread - Contains gluten (wheat bread), and Parent C usually skips this
+- **Child D**: milk - Contains dairy (milk), so check with Child D first
 ```
 
 **Via API**:
