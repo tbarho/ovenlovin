@@ -264,6 +264,7 @@ const AISLE_RULES: AisleRule[] = [
       "parsley",
       "basil",
       "mint",
+      "chives",
       "dill",
       "rosemary",
       "thyme",
@@ -517,7 +518,8 @@ export function isPantryStaple(name: string): boolean {
   });
 }
 
-const MERGE_DESCRIPTORS = /\b(plain|all purpose|grated|shredded|freshly|large|small|low sodium)\b/g;
+const MERGE_DESCRIPTORS =
+  /\b(plain|all purpose|grated|shredded|freshly|large|small|low sodium|cold|cubed|softened|melted|room temperature)\b/g;
 
 const GENERIC_FLOUR_NAMES = new Set([
   "flour",

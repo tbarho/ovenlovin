@@ -978,6 +978,80 @@ describe("ShoppingListService", () => {
     expect(list.ingredients.find((item) => item.name === "tomatoes")).toBeUndefined();
   });
 
+  it("Olive F5: grams and cups of a known-density grocery merge into one row", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "oatmeal", servings: 4 }),
+        recipeTitle: "Oatmeal Cookies",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 cup butter" }],
+      },
+      {
+        entry: entry({ id: "entry-2", recipeId: "pasta", servings: 4 }),
+        recipeTitle: "Garlic Butter Pasta",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1/3 cup butter" }],
+      },
+      {
+        entry: entry({ id: "entry-3", recipeId: "rte-cookies", servings: 4 }),
+        recipeTitle: "Chocolate Chip Cookies",
+        recipeServings: 4,
+        ingredients: [
+          { rawText: "175g unsalted butter, melted" },
+          { rawText: "2/3 cup cold butter, cubed" },
+        ],
+      },
+    ]);
+    const butters = list.ingredients.filter((item) => item.name === "butter");
+    expect(butters).toHaveLength(1);
+    expect(butters[0]).toMatchObject({ unit: "cup" });
+    expect(butters[0]?.quantity).toBeCloseTo(175 / 227 + 1 + 1 / 3 + 2 / 3, 4);
+    expect(list.ingredients.some((item) => /cold butter/i.test(item.name))).toBe(false);
+    expect(butters[0]?.recipes).toHaveLength(4);
+  });
+
+  it("does not merge mass and volume when the grocery has no known density", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "chicken", servings: 4 }),
+        recipeTitle: "Chicken",
+        recipeServings: 4,
+        ingredients: [{ rawText: "100 g chicken breast" }, { rawText: "1 cup chicken breast" }],
+      },
+    ]);
+    const chickens = list.ingredients.filter((item) => /chicken/i.test(item.name));
+    expect(chickens).toHaveLength(2);
+    expect(chickens.map((item) => item.unit).sort()).toEqual(["cup", "g"]);
+  });
+
+  it("merges sugar grams and cups via published density, not a butter special case", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "cake", servings: 4 }),
+        recipeTitle: "Cake",
+        recipeServings: 4,
+        ingredients: [{ rawText: "200g sugar" }, { rawText: "1 cup sugar" }],
+      },
+    ]);
+    const sugars = list.ingredients.filter((item) => item.name === "sugar");
+    expect(sugars).toHaveLength(1);
+    expect(sugars[0]).toMatchObject({ quantity: 2, unit: "cup" });
+  });
+
+  it("Olive F5: 6.67 eggs buy 7", () => {
+    const list = build([
+      {
+        entry: entry({ recipeId: "cookies", servings: 4 }),
+        recipeTitle: "Cookies",
+        recipeServings: 4,
+        ingredients: [{ rawText: "6.67 eggs" }],
+      },
+    ]);
+    const eggs = list.ingredients.find((item) => item.name === "egg");
+    expect(eggs).toMatchObject({ quantity: 7, displayQuantity: "7" });
+    expect(service.exportAsMarkdown(list)).toContain("7 eggs");
+  });
+
   it.each([
     {
       name: "lemon juiced",
@@ -1022,6 +1096,30 @@ describe("ShoppingListService", () => {
       rows: 1,
       quantity: 1.625,
       unit: "cup",
+    },
+    {
+      name: "cold butter cubed",
+      lines: ["2/3 cup cold butter, cubed", "1 cup butter"],
+      expectName: /^butter$/i,
+      reject: /cold|cubed/i,
+      rows: 1,
+      quantity: 1.6667,
+      unit: "cup",
+    },
+    {
+      name: "chives produce",
+      lines: ["2 tbsp chives"],
+      expectName: /^chives$/i,
+      rows: 1,
+      aisles: { chives: "Produce" },
+      categories: { chives: "produce" },
+    },
+    {
+      name: "6.67 eggs",
+      lines: ["6.67 eggs"],
+      expectName: /^egg$/i,
+      rows: 1,
+      quantity: 7,
     },
     {
       name: "parmesan variants",

@@ -62,6 +62,11 @@ describe("assignAisle", () => {
     expect(assignAisle("chicken stock")).toMatchObject({ aisle: "Pantry", category: "pantry" });
     expect(assignAisle("vegetable stock")).toMatchObject({ aisle: "Pantry", category: "pantry" });
     expect(assignAisle("arugula")).toMatchObject({ aisle: "Produce", category: "produce" });
+    expect(assignAisle("chives")).toMatchObject({
+      aisle: "Produce",
+      category: "produce",
+      canonicalName: "chives",
+    });
     expect(assignAisle("yellow onion")).toMatchObject({
       aisle: "Produce",
       canonicalName: "onion",
@@ -110,6 +115,9 @@ describe("canonicalIngredientName", () => {
   it("merges descriptor variants of the same grocery", () => {
     expect(canonicalShopName("unsalted butter")).toBe("butter");
     expect(canonicalShopName("salted butter")).toBe("butter");
+    expect(canonicalShopName("cold butter")).toBe("butter");
+    expect(canonicalShopName("softened butter")).toBe("butter");
+    expect(canonicalShopName("melted butter")).toBe("butter");
     expect(canonicalShopName("Parmesan cheese")).toBe("parmesan");
     expect(canonicalShopName("parmigiano reggiano")).toBe("parmesan");
     expect(canonicalShopName("vanilla extract")).toBe("vanilla");
