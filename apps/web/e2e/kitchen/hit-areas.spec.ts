@@ -140,5 +140,10 @@ test("kitchen hit areas are at least 44px at 390", async ({ page }) => {
   const dismiss = toast.getByRole("button", { name: "Dismiss" });
   await expectHit44(undo, "toast undo", "y");
   await expectHit44(dismiss, "toast dismiss", "y");
+  const saved = page.waitForResponse(
+    (res) => /\/api\/v1\/meal-plans/.test(res.url()) && res.request().method() !== "GET"
+  );
   await undo.click();
+  await saved;
+  await expect(page.getByRole("region", { name: "Monday" })).not.toContainText("Add dinner");
 });
