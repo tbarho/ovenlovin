@@ -269,8 +269,9 @@ test.describe("public design sign-off", () => {
               leadType.clientWidth
             );
           }
-          await expect(page.locator(".docs-page ol")).toContainText("plaintext");
-          await expect(page.locator(".docs-page ol")).toContainText("Deploy button");
+          const startHere = page.getByRole("heading", { name: "Start here" }).locator("+ ol");
+          await expect(startHere).toContainText("plaintext");
+          await expect(startHere).toContainText("Deploy button");
         }
         if (item.name === "home" || item.name === "connect-your-agent") {
           const box = page.locator(".copy-scroll").first();

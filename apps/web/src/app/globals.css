@@ -916,10 +916,6 @@ select {
   line-height: 1.5;
 }
 
-.lead code {
-  white-space: nowrap;
-}
-
 .docs-page .yours-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
