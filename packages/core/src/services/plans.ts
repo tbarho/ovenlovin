@@ -15,6 +15,7 @@ import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
 import { scaleFactorForPlanEntry } from "../scaling/servings";
 import { BaseService } from "./base";
+import { liveEntriesForPlanRead } from "./plan-week-entries";
 
 export class PlanService extends BaseService {
   async getMealPlan(id: string): Promise<MealPlan | null> {
@@ -308,7 +309,9 @@ export class PlanService extends BaseService {
   ): Promise<(MealPlan & { entries: MealPlanEntry[] }) | null> {
     const plan = await this.getMealPlan(id);
     if (!plan) return null;
-    const entries = await this.getMealPlanEntries(id);
+    const entries = await liveEntriesForPlanRead(await this.getMealPlanEntries(id), (recipeId) =>
+      this.getRecipeTitle(recipeId)
+    );
     return { ...plan, entries };
   }
 

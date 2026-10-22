@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   keepLiveRecipeEntries,
+  liveEntriesForPlanRead,
   mondayWeekDates,
   pickPlanForWeek,
   planEntriesForWeek,
@@ -88,6 +89,20 @@ describe("keepLiveRecipeEntries", () => {
         entry({ date: "2026-10-14", recipeId: "pesto" }),
       ],
       new Set(["pesto"])
+    );
+    expect(kept.map((item) => item.date)).toEqual(["2026-10-13", "2026-10-14"]);
+  });
+});
+
+describe("liveEntriesForPlanRead", () => {
+  it("uses keepLiveRecipeEntries after resolving live recipes", async () => {
+    const kept = await liveEntriesForPlanRead(
+      [
+        entry({ recipeId: "gone" }),
+        entry({ date: "2026-10-13", recipeId: null, mealSlot: "dinner" }),
+        entry({ date: "2026-10-14", recipeId: "pesto" }),
+      ],
+      async (id) => id === "pesto"
     );
     expect(kept.map((item) => item.date)).toEqual(["2026-10-13", "2026-10-14"]);
   });

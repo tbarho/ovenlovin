@@ -3,7 +3,7 @@ import {
   PlanService,
   RecipeService,
   ScheduleService,
-  keepLiveRecipeEntries,
+  liveEntriesForPlanRead,
   nightForDate,
   planEntriesForWeek,
   recipeTotalTimeMinutes,
@@ -50,17 +50,9 @@ export async function runMealPlanCheck(planId: string, householdId: string) {
     await planService.getMealPlanEntries(planId),
     plan.weekStart
   );
-  const liveRecipeIds = new Set<string>();
-  await Promise.all(
-    [
-      ...new Set(
-        rawEntries.map((entry) => entry.recipeId).filter((id): id is string => Boolean(id))
-      ),
-    ].map(async (recipeId) => {
-      if (await recipeService.getRecipe(recipeId)) liveRecipeIds.add(recipeId);
-    })
+  const entries = await liveEntriesForPlanRead(rawEntries, (recipeId) =>
+    recipeService.getRecipe(recipeId)
   );
-  const entries = keepLiveRecipeEntries(rawEntries, liveRecipeIds);
 
   const entryInputs: MealPlanEntryInput[] = await Promise.all(
     entries.map(async (entry) => {

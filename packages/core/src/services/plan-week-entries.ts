@@ -31,6 +31,26 @@ export function keepLiveRecipeEntries<T extends { recipeId?: string | null }>(
   return entries.filter((entry) => !entry.recipeId || liveRecipeIds.has(entry.recipeId));
 }
 
+/* eslint-disable no-unused-vars -- call-signature parameter names */
+type LiveRecipeLookup = (recipeId: string) => Promise<unknown>;
+/* eslint-enable no-unused-vars */
+
+/** Plan reads: resolve live recipes, then drop deleted-recipe nights. */
+export async function liveEntriesForPlanRead<T extends { recipeId?: string | null }>(
+  entries: T[],
+  isLiveRecipe: LiveRecipeLookup
+): Promise<T[]> {
+  const liveRecipeIds = new Set<string>();
+  await Promise.all(
+    [
+      ...new Set(entries.map((entry) => entry.recipeId).filter((id): id is string => Boolean(id))),
+    ].map(async (recipeId) => {
+      if (await isLiveRecipe(recipeId)) liveRecipeIds.add(recipeId);
+    })
+  );
+  return keepLiveRecipeEntries(entries, liveRecipeIds);
+}
+
 export function toIsoDateOnly(value: string): string {
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
   const parsed = Date.parse(value);
