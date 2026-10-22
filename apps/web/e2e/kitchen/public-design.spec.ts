@@ -269,9 +269,37 @@ test.describe("public design sign-off", () => {
               leadType.clientWidth
             );
           }
-          const startHere = page.getByRole("heading", { name: "Start here" }).locator("+ ol");
-          await expect(startHere).toContainText("plaintext");
-          await expect(startHere).toContainText("Deploy button");
+        }
+        if (item.name === "docs") {
+          const startHere = page.locator("#start-here");
+          await expect(startHere).toBeVisible();
+          const startList = startHere.locator("+ ol");
+          await expect(startList).toContainText("plaintext");
+          await expect(startList).toContainText("Deploy button");
+          if (width === 390) {
+            const codes = await page.locator("#start-here + ol li code").evaluateAll((els) =>
+              els.map((el) => {
+                const style = getComputedStyle(el);
+                const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize);
+                return {
+                  height: el.getBoundingClientRect().height,
+                  line,
+                  scrollWidth: el.scrollWidth,
+                  clientWidth: el.clientWidth,
+                };
+              })
+            );
+            for (const code of codes) {
+              expect(code.height, "li code one line").toBeLessThanOrEqual(code.line + 2);
+              expect(code.scrollWidth, "li code overflow").toBeLessThanOrEqual(code.clientWidth);
+            }
+          }
+        }
+        if (item.name === "connect-your-agent") {
+          await expect(page.getByRole("link", { name: "Start here" })).toHaveAttribute(
+            "href",
+            "/docs#start-here"
+          );
         }
         if (item.name === "home" || item.name === "connect-your-agent") {
           const box = page.locator(".copy-scroll").first();

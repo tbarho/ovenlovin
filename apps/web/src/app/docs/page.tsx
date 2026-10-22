@@ -57,7 +57,7 @@ export default async function DocsIndexPage() {
           Full reference
         </a>
       </div>
-      <h2>Start here</h2>
+      <h2 id="start-here">Start here</h2>
       <ol>
         <li>
           Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key,
@@ -79,13 +79,8 @@ export default async function DocsIndexPage() {
           .
         </li>
         <li>
-          Just looking? The public demo at{" "}
-          <code>
-            https://
-            <wbr />
-            ovenlovin-demo.vercel.app
-          </code>{" "}
-          issues a 24h sandbox key at <code>/api/demo/enter?format=json</code>.
+          Just looking? The public demo at <code>https://ovenlovin-demo.vercel.app</code> issues a
+          24h sandbox key at <code>/api/demo/enter?format=json</code>.
         </li>
         <li>
           Paste the snippet from <Link href="/docs/connect-your-agent">Connect your agent</Link>{" "}
