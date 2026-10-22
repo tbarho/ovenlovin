@@ -166,6 +166,20 @@ test.describe("public design sign-off", () => {
           expect(homeType.pathSize, "path-card size").toBe(16);
           expect(homeType.pathLine, "path-card line").toBe(24);
           expect(homeType.footerH, "footer tap").toBeGreaterThanOrEqual(44);
+          const footerAlign = await page.evaluate(() => {
+            const foot = document.querySelector(".footer");
+            const label = document.querySelector(".footer > span");
+            return {
+              align: foot ? getComputedStyle(foot).alignItems : "",
+              labelMin: label ? parseFloat(getComputedStyle(label).minHeight) : 0,
+            };
+          });
+          expect(footerAlign.align, "footer align").toBe("center");
+          expect(footerAlign.labelMin, "footer label").toBeGreaterThanOrEqual(44);
+          const pathCard = page.locator(".path-card p").first();
+          const pathWrap = await pathCard.evaluate((el) => getComputedStyle(el).textWrap);
+          expect(pathWrap, "path-card wrap").toMatch(/pretty/);
+          await expect(pathCard, "path 01 sign-in").toContainText("\u2011");
           const heroBtns = page.locator(".hero-ctas .btn");
           await expect(heroBtns).toHaveCount(2);
           if (width === 390) {
@@ -238,6 +252,26 @@ test.describe("public design sign-off", () => {
         }
         if (item.name === "docs" || item.name === "connect-your-agent") {
           await expect(page.locator(".intro").first()).toContainText("Always read the label.");
+          const leadType = await page.locator(".docs-page .lead").evaluate((el) => {
+            const style = getComputedStyle(el);
+            return {
+              height: el.getBoundingClientRect().height,
+              line: parseFloat(style.lineHeight),
+              scrollWidth: el.scrollWidth,
+              clientWidth: el.clientWidth,
+            };
+          });
+          expect(leadType.height, `${item.name} lead lines`).toBeLessThanOrEqual(
+            leadType.line * 3 + 2
+          );
+          if (width === 390) {
+            expect(leadType.scrollWidth, `${item.name} lead overflow`).toBeLessThanOrEqual(
+              leadType.clientWidth
+            );
+          }
+          const startHere = page.getByRole("heading", { name: "Start here" }).locator("+ ol");
+          await expect(startHere).toContainText("plaintext");
+          await expect(startHere).toContainText("Deploy button");
         }
         if (item.name === "home" || item.name === "connect-your-agent") {
           const box = page.locator(".copy-scroll").first();
