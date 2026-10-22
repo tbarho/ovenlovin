@@ -13,7 +13,7 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 | `format`              | enum          | No       | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"`                     |
 | `groupBy`             | enum          | No       | `"aisle"`    | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"`                       |
 | `includeStaples`      | boolean       | No       | `false`      | Include kitchen staples (salt, pepper, oil). Distinct from the pantry category. |
-| `includePantryItems`  | boolean       | No       | - | Deprecated alias for `includeStaples`                                           |
+| `includePantryItems`  | boolean       | No       | -            | Deprecated alias for `includeStaples`                                           |
 | `includeRuleWarnings` | boolean       | No       | `true`       | Include per-person rule warnings for shoppers                                   |
 | `timeZone`            | string        | No       | kitchen TZ   | IANA timezone for the markdown/text Generated line (always labeled)             |
 
@@ -67,7 +67,7 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
 
 ```json
 {
-  "mealPlanId": "plan-abc-123",
+  "mealPlanId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
   "weekStart": "2026-10-12",
   "groupBy": "aisle",
   "includeStaples": false,
@@ -127,7 +127,7 @@ WARNINGS:
 
 ```json
 {
-  "planId": "plan-abc-123",
+  "planId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
   "format": "markdown",
   "groupBy": "recipe",
   "includeStaples": false,
@@ -140,7 +140,11 @@ WARNINGS:
 ```json
 {
   "format": "markdown",
-  "list": { "mealPlanId": "plan-abc-123", "ingredients": [], "itemCount": 15 },
+  "list": {
+    "mealPlanId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
+    "ingredients": [],
+    "itemCount": 15
+  },
   "content": "# Shopping List\n\n## Grilled Chicken Salad\n\n- 2 lbs chicken breast...",
   "itemCount": 15,
   "warnings": [

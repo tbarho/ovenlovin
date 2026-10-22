@@ -62,16 +62,15 @@ Every rule has a severity that determines how it's handled:
 **Example**:
 ```json
 {
-  "personId": "person-2",
+  "personId": "8a3d4e5f-1b2c-4d6e-8f90-1a2b3c4d5e6f",
   "personName": "Child B",
-  "kind": "nutrition",
-  "target": "sodium",
-  "threshold": {"max": 500, "unit": "mg"},
+  "kind": "allergen",
+  "target": "dairy",
   "severity": "warn"
 }
 ```
 
-**Result**: Recipes with more than 500mg sodium per serving trigger a warning for Child B.
+**Result**: Recipes with dairy trigger a warning for Child B.
 
 ### Prefer-Avoid (Preference)
 
@@ -86,7 +85,7 @@ Every rule has a severity that determines how it's handled:
 **Example**:
 ```json
 {
-  "personId": "person-3",
+  "personId": "9b4e5f60-2c3d-4e7f-9012-2b3c4d5e6f70",
   "personName": "Parent C",
   "kind": "ingredient",
   "target": "gluten",

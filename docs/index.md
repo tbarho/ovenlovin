@@ -69,8 +69,8 @@ cd ovenlovin
 pnpm install
 
 # Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your API keys
+cp .env.example apps/web/.env.local
+# Edit apps/web/.env.local with your API keys
 
 # Run development server
 pnpm dev

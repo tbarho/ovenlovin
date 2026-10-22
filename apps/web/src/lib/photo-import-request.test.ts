@@ -58,6 +58,20 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.save).toBe(false);
   });
 
+  it("does not allow duplicates when JSON allowDuplicate is the string false", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        imageUrl: "https://blob.vercel-storage.com/card.jpg",
+        allowDuplicate: "false",
+      }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.allowDuplicate).toBe(false);
+  });
+
   it("accepts a previewed draft without sending the photo again", async () => {
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",

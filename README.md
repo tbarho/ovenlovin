@@ -72,10 +72,9 @@ The public no-signup demo is a **separate Vercel project**. See [docs/demo.md](d
 
 ## Local development
 
-Prereqs: Node 20+, pnpm 9 (`corepack enable`), Postgres 15+ or Docker. `git clone https://github.com/tbarho/ovenlovin && cd ovenlovin && cp .env.example apps/web/.env.local`. Then `export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin && pnpm db:migrate`. Full guide: https://tbarho.github.io/ovenlovin/docs/quickstart
+Prereqs: Node 20+, pnpm 9 (`corepack enable`), Postgres 15+ or Docker. `git clone https://github.com/tbarho/ovenlovin && cd ovenlovin && cp .env.example apps/web/.env.local && pnpm install`. Start Postgres (`docker compose -f docker-compose.e2e.yml up -d`, or use your own at the URL below), then `export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin && pnpm db:migrate`. Full guide: https://tbarho.github.io/ovenlovin/docs/quickstart
 
 ```bash
-pnpm install
 pnpm dev
 pnpm test
 ```

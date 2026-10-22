@@ -67,14 +67,18 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
     git clone https://github.com/tbarho/ovenlovin.git
     cd ovenlovin
 
-    # Install dependencies
-    pnpm install
-
     # Set up environment variables
     cp .env.example apps/web/.env.local
     # Edit apps/web/.env.local with your API keys
 
-    # Run database migrations
+    # Install dependencies
+    pnpm install
+
+    # Start Postgres (or use your own at the DATABASE_URL below)
+    docker compose -f docker-compose.e2e.yml up -d
+
+    # Run database migrations (reads DATABASE_URL from the shell, not .env.local)
+    export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
     pnpm db:migrate
 
     # Start development server
@@ -88,15 +92,20 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
     git clone https://github.com/tbarho/ovenlovin.git
     cd ovenlovin
 
-    # Install dependencies
-    npm install
-
     # Set up environment variables
     cp .env.example apps/web/.env.local
     # Edit apps/web/.env.local with your API keys
 
-    # Run database migrations
-    pnpm db:migrate
+    # Install dependencies
+    npm install
+
+    # Start Postgres (or use your own at the DATABASE_URL below)
+    docker compose -f docker-compose.e2e.yml up -d
+
+    # Run database migrations (reads DATABASE_URL from the shell, not .env.local)
+    # requires pnpm (`corepack enable`)
+    export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
+    npm run db:migrate
 
     # Start development server
     npm run dev
@@ -109,15 +118,20 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
     git clone https://github.com/tbarho/ovenlovin.git
     cd ovenlovin
 
-    # Install dependencies
-    yarn install
-
     # Set up environment variables
     cp .env.example apps/web/.env.local
     # Edit apps/web/.env.local with your API keys
 
-    # Run database migrations
-    pnpm db:migrate
+    # Install dependencies
+    yarn install
+
+    # Start Postgres (or use your own at the DATABASE_URL below)
+    docker compose -f docker-compose.e2e.yml up -d
+
+    # Run database migrations (reads DATABASE_URL from the shell, not .env.local)
+    # requires pnpm (`corepack enable`)
+    export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
+    yarn db:migrate
 
     # Start development server
     yarn dev
