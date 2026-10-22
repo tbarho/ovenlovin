@@ -292,6 +292,21 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("1 cup unsalted butter)")).toEqual([
       expect.objectContaining({ name: "unsalted butter" }),
     ]);
+    expect(parseShopIngredientLines("butter, unsalted")).toEqual([
+      expect.objectContaining({ name: "unsalted butter" }),
+    ]);
+    expect(parseShopIngredientLines("oil, rapeseed").map((row) => row.name)).toEqual([
+      "oil",
+      "rapeseed",
+    ]);
+    expect(parseShopIngredientLines("oil, linseed").map((row) => row.name)).toEqual([
+      "oil",
+      "linseed",
+    ]);
+    expect(parseShopIngredientLines("spice, aniseed").map((row) => row.name)).toEqual([
+      "spice",
+      "aniseed",
+    ]);
     expect(parseShopIngredientLines("200g caster sugar)")).toEqual([
       expect.objectContaining({ name: "caster sugar" }),
     ]);

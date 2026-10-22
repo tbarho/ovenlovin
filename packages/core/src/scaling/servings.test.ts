@@ -327,5 +327,7 @@ describe("countable shopping amounts", () => {
     expect(shopItemDisplayName("all purpose flour", 3, "cup")).toBe("all purpose flour");
     expect(shopItemDisplayName("garlic", 4, "clove")).toBe("garlic");
     expect(shopItemDisplayName("coconut milk", 2, "can")).toBe("coconut milk");
+    expect(shopItemDisplayName(" potato ", 1)).toBe("potato");
+    expect(shopItemDisplayName(" potato ", 3, "cup")).toBe("potato");
   });
 });

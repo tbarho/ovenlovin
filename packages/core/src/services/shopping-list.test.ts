@@ -1299,6 +1299,12 @@ describe("ShoppingListService", () => {
       reject: /water|margarine/i,
       rows: 2,
     },
+    {
+      name: "rapeseed tail",
+      lines: ["oil, rapeseed"],
+      expectName: /^rapeseed$/i,
+      rows: 1,
+    },
   ])(
     "UAT shop lines $name",
     ({
