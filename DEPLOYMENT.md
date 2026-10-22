@@ -35,7 +35,7 @@ The Deploy button provisions Neon, Blob, and Clerk via the `stores` parameter. C
 #### Provisioned by stores
 - `DATABASE_URL` - Neon Postgres connection string (a non-pooled `DATABASE_URL_UNPOOLED` / `POSTGRES_URL_NON_POOLING` is used for migrations when present)
 - `BLOB_READ_WRITE_TOKEN` - Vercel Blob
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` - Clerk (set these manually if the Clerk store is not offered)
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` - Clerk (set these manually if the Clerk store is not offered). Use a production instance (`pk_live_`) for real users - dev instances can loop on sign-in in Safari and private tabs. Cutover steps, including remapping `user.clerk_user_id` before first sign-in: [Going to production with Clerk](https://tbarho.github.io/ovenlovin/docs/self-hosting#going-to-production-with-clerk)
 
 #### Prompted on clone
 - `NEXT_PUBLIC_INSTANCE_NAME` - optional landing-page name (defaults to "Your OvenLovin")

@@ -18,8 +18,20 @@ function hasDotSegment(path: string): boolean {
   });
 }
 
-export function safeAuthRedirect(raw: string | null | undefined): string {
-  if (!raw) return "/recipes";
+function originOf(raw: string): string | null {
+  return URL.canParse(raw) ? new URL(raw).origin : null;
+}
+
+function sameOriginPath(raw: string, origins: string[]): string {
+  if (!/^https?:\/\//i.test(raw) || /[\t\n\r]/.test(raw) || !URL.canParse(raw)) return raw;
+  const url = new URL(raw);
+  const allowed = origins.some((origin) => originOf(origin) === url.origin);
+  return allowed ? `${url.pathname}${url.search}` : raw;
+}
+
+export function safeAuthRedirect(url: string | null | undefined, origins: string[] = []): string {
+  if (!url) return "/recipes";
+  const raw = sameOriginPath(url, origins);
   if (!raw.startsWith("/")) return "/recipes";
   if (raw.startsWith("//") || raw.includes("://") || raw.includes("\\") || /[\t\n\r]/.test(raw)) {
     return "/recipes";

@@ -2,6 +2,7 @@ import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { isApiOrMcpPath, isApiShapedRequest, missingApiResponse } from "@/lib/api/missing-route";
 import { isClerkProtectExempt } from "@/lib/clerk-protect";
+import { clerkUrls } from "@/lib/clerk-urls";
 import { DEMO_ENTER_PATH, shouldRedirectToDemoEnter } from "@/lib/demo/enter";
 import { DEMO_COOKIE_NAME } from "@/lib/demo/fixture";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
@@ -22,6 +23,8 @@ const clerkConfigured = Boolean(
   process.env.CLERK_SECRET_KEY && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 );
 
+const clerkOptions = clerkUrls();
+
 const clerk = clerkMiddleware(async (auth, req) => {
   if (isClerkProtectExempt(req.nextUrl.pathname)) return;
   const path = req.nextUrl.pathname;
@@ -36,7 +39,7 @@ const clerk = clerkMiddleware(async (auth, req) => {
     return;
   }
   await auth.protect();
-});
+}, clerkOptions);
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (isDevPreviewPath(req.nextUrl.pathname) && !isDevPreviewAllowed()) {
