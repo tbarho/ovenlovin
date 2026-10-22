@@ -176,11 +176,10 @@ test.describe("public design sign-off", () => {
           });
           expect(footerAlign.align, "footer align").toBe("center");
           expect(footerAlign.labelMin, "footer label").toBeGreaterThanOrEqual(44);
-          const pathWrap = await page
-            .locator(".path-card p")
-            .first()
-            .evaluate((el) => getComputedStyle(el).textWrap);
+          const pathCard = page.locator(".path-card p").first();
+          const pathWrap = await pathCard.evaluate((el) => getComputedStyle(el).textWrap);
           expect(pathWrap, "path-card wrap").toMatch(/pretty/);
+          await expect(pathCard, "path 01 sign-in").toContainText("\u2011");
           const heroBtns = page.locator(".hero-ctas .btn");
           await expect(heroBtns).toHaveCount(2);
           if (width === 390) {
@@ -254,16 +253,22 @@ test.describe("public design sign-off", () => {
         if (item.name === "docs" || item.name === "connect-your-agent") {
           await expect(page.locator(".intro").first()).toContainText("Always read the label.");
           const leadType = await page.locator(".docs-page .lead").evaluate((el) => {
-            const code = el.querySelector("code");
             const style = getComputedStyle(el);
             return {
               height: el.getBoundingClientRect().height,
               line: parseFloat(style.lineHeight),
-              codeWrap: code ? getComputedStyle(code).whiteSpace : "",
+              scrollWidth: el.scrollWidth,
+              clientWidth: el.clientWidth,
             };
           });
-          expect(leadType.height, `${item.name} lead lines`).toBeLessThanOrEqual(leadType.line * 3 + 2);
-          expect(leadType.codeWrap, `${item.name} lead code`).toBe("nowrap");
+          expect(leadType.height, `${item.name} lead lines`).toBeLessThanOrEqual(
+            leadType.line * 3 + 2
+          );
+          if (width === 390) {
+            expect(leadType.scrollWidth, `${item.name} lead overflow`).toBeLessThanOrEqual(
+              leadType.clientWidth
+            );
+          }
           await expect(page.locator(".docs-page ol")).toContainText("plaintext");
           await expect(page.locator(".docs-page ol")).toContainText("Deploy button");
         }

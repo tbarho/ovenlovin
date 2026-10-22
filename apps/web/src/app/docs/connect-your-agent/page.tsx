@@ -18,10 +18,7 @@ export default async function ConnectYourAgentPage() {
     <DocsChrome current="connect">
       <p className="eyebrow">Agents</p>
       <h1>Connect your agent</h1>
-      <p className="lead">
-        You deploy your own copy, and the public demo at{" "}
-        <code>https://ovenlovin-demo.vercel.app</code> is optional.
-      </p>
+      <p className="lead">Deploy your own OvenLovin, then connect your agent with an API key.</p>
       <p className="intro">
         Bearer plus the same key also works. Allergen findings name the person and the ingredient -
         not medical advice. Always read the label.
@@ -48,8 +45,13 @@ export default async function ConnectYourAgentPage() {
           .
         </li>
         <li>
-          Just looking? The public demo at <code>https://ovenlovin-demo.vercel.app</code> issues a
-          24h sandbox key at <code>/api/demo/enter?format=json</code>.
+          Just looking? The public demo at{" "}
+          <code>
+            https://
+            <wbr />
+            ovenlovin-demo.vercel.app
+          </code>{" "}
+          issues a 24h sandbox key at <code>/api/demo/enter?format=json</code>.
         </li>
       </ol>
       <ConnectAgent origin={origin} />

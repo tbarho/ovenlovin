@@ -17,10 +17,7 @@ export default async function DocsIndexPage() {
     <DocsChrome current="index">
       <p className="eyebrow">Docs</p>
       <h1>OvenLovin for humans and agents</h1>
-      <p className="lead">
-        You deploy your own copy, and the public demo at{" "}
-        <code>https://ovenlovin-demo.vercel.app</code> is optional.
-      </p>
+      <p className="lead">Deploy your own OvenLovin, then connect your agent with an API key.</p>
       <p className="intro">
         This host is <code>{origin}</code>. Allergen checks are deterministic and{" "}
         <span className="nowrap">per-person</span>. Not medical advice. Always read the label.
@@ -82,8 +79,13 @@ export default async function DocsIndexPage() {
           .
         </li>
         <li>
-          Just looking? The public demo at <code>https://ovenlovin-demo.vercel.app</code> issues a
-          24h sandbox key at <code>/api/demo/enter?format=json</code>.
+          Just looking? The public demo at{" "}
+          <code>
+            https://
+            <wbr />
+            ovenlovin-demo.vercel.app
+          </code>{" "}
+          issues a 24h sandbox key at <code>/api/demo/enter?format=json</code>.
         </li>
         <li>
           Paste the snippet from <Link href="/docs/connect-your-agent">Connect your agent</Link>{" "}
