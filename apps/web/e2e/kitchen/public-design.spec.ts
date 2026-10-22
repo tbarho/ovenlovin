@@ -220,18 +220,23 @@ test.describe("public design sign-off", () => {
           }
         }
         if (item.name === "sign-in") {
-          const screenBox = await page.locator(".auth-screen").boundingBox();
+          const viewport = page.viewportSize();
           const brandBox = await page.locator(".auth-screen .brand").boundingBox();
           const heading = page.locator(".auth-screen h1");
           const headingBox = await heading.boundingBox();
           const btnBox = await page.locator(".auth-screen .btn").first().boundingBox();
-          expect(screenBox && brandBox && headingBox && btnBox).toBeTruthy();
-          if (screenBox && brandBox && headingBox && btnBox) {
+          const clerkCard = page.locator(".auth-screen .cl-cardBox").first();
+          const cardBox = (await clerkCard.count()) > 0 ? await clerkCard.boundingBox() : null;
+          expect(viewport && brandBox && headingBox && btnBox).toBeTruthy();
+          if (viewport && brandBox && headingBox && btnBox) {
             const mid = (box: { x: number; width: number }) => box.x + box.width / 2;
-            const center = mid(screenBox);
-            expect(Math.abs(mid(brandBox) - center)).toBeLessThan(8);
-            expect(Math.abs(mid(headingBox) - center)).toBeLessThan(8);
-            expect(Math.abs(mid(btnBox) - center)).toBeLessThan(8);
+            const center = viewport.width / 2;
+            expect(Math.abs(mid(brandBox) - center), "brand center").toBeLessThan(2);
+            expect(Math.abs(mid(headingBox) - center), "heading center").toBeLessThan(2);
+            expect(Math.abs(mid(btnBox) - center), "button center").toBeLessThan(2);
+            if (cardBox) {
+              expect(Math.abs(mid(cardBox) - center), "sign-in card center").toBeLessThan(2);
+            }
           }
           const type = await heading.evaluate((el) => {
             const style = getComputedStyle(el);

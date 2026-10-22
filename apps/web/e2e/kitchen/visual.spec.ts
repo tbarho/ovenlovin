@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import path from "node:path";
 import { expectPeopleCardsStretchInRows, expectSnugFilledLanes } from "../people-card-layout";
 
@@ -18,6 +18,14 @@ type KitchenUrls = {
 
 async function settle(page: Page) {
   await page.waitForLoadState("domcontentloaded");
+}
+
+async function expectTapTarget(locator: Locator, label: string) {
+  const box = await locator.boundingBox();
+  expect(box, label).toBeTruthy();
+  if (!box) return;
+  expect(box.width, `${label} width`).toBeGreaterThanOrEqual(44);
+  expect(box.height, `${label} height`).toBeGreaterThanOrEqual(44);
 }
 
 async function expectPeopleDragHandlesTopRight(page: Page) {
@@ -169,6 +177,8 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
     "Recipe makes 4 · cooking for 5"
   );
   await expect(page.getByRole("button", { name: "Reset to 4" })).toBeVisible();
+  await expectTapTarget(page.getByRole("button", { name: "Fewer servings" }), "fewer servings");
+  await expectTapTarget(page.getByRole("button", { name: "More servings" }), "more servings");
   await expect(page.getByTestId("who-can-eat")).toBeVisible();
   await expect(page.getByTestId("recipe-main-image")).toHaveCount(1);
   await expect(page.locator(".recipe-thumbs")).toHaveCount(0);
@@ -261,6 +271,12 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(
     page.getByRole("combobox", { name: /scale shopping and portions for/i })
   ).toHaveValue("5");
+  await expectTapTarget(page.getByRole("link", { name: "Previous week" }), "previous week");
+  await expectTapTarget(page.getByRole("link", { name: "Next week" }), "next week");
+  await expectTapTarget(
+    page.getByRole("combobox", { name: /scale shopping and portions for/i }),
+    "cook-for select"
+  );
   await shot(page, width, "plans-week");
 
   await page.goto("/list");

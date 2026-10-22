@@ -1235,10 +1235,21 @@ select {
 .auth-screen {
   display: grid;
   justify-items: center;
+  justify-content: center;
   align-content: center;
+  width: 100vw;
+  max-width: 100vw;
   min-height: 100dvh;
-  padding: 48px 0 80px;
+  margin: 0;
+  padding: 48px var(--gut) 80px;
   text-align: center;
+}
+
+.auth-screen .cl-rootBox,
+.auth-screen .cl-cardBox {
+  width: min(100%, 25rem);
+  margin-inline: auto;
+  justify-self: center;
 }
 
 .auth-screen .brand {
@@ -1415,6 +1426,14 @@ select {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
+}
+
+.servings-stepper .btn {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
 }
 
 .servings-reset {
@@ -3255,6 +3274,11 @@ select {
   margin: -8px 0 var(--space-3);
 }
 
+.week-pager .btn {
+  height: 44px;
+  min-height: 44px;
+}
+
 .week-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -3271,8 +3295,9 @@ select {
 }
 
 .week-servings select {
-  min-height: 40px;
-  padding: 0 10px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
   border: 1px solid var(--line-2);
   border-radius: 10px;
   background: #fff;
