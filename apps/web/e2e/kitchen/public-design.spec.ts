@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import path from "node:path";
 
 const pages = [
@@ -14,6 +14,15 @@ const shotRoot = process.env.E2E_SHOT_DIR
   ? path.resolve(process.env.E2E_SHOT_DIR)
   : path.resolve(__dirname, "../../../../e2e-artifacts/design");
 const label = process.env.E2E_SHOT_LABEL || "current";
+
+function markedMatchesOverflow(host: Locator) {
+  return host.evaluate((el) => {
+    const node =
+      el.querySelector<HTMLElement>("[data-scroll]") ?? el.querySelector<HTMLElement>("pre") ?? el;
+    const overflows = node.scrollLeft + node.clientWidth < node.scrollWidth - 1;
+    return el.hasAttribute("data-overflow") === overflows;
+  });
+}
 
 async function contrastRatio(page: Page, selector: string): Promise<number | null> {
   return page.evaluate((sel) => {
@@ -172,17 +181,16 @@ test.describe("public design sign-off", () => {
         }
         if (item.name === "home" || item.name === "connect-your-agent") {
           const box = page.locator(".copy-scroll").first();
+          await expect.poll(async () => markedMatchesOverflow(box), { timeout: 5_000 }).toBe(true);
           const fade = await box.evaluate((el) => {
             const pre = el.querySelector("pre");
             const after = getComputedStyle(el, "::after");
             return {
               overflows: Boolean(pre && pre.scrollLeft + pre.clientWidth < pre.scrollWidth - 1),
-              marked: el.hasAttribute("data-overflow"),
               width: parseFloat(after.width),
               image: after.backgroundImage,
             };
           });
-          expect(fade.marked, `${item.name} fade attr`).toBe(fade.overflows);
           if (fade.overflows) {
             expect(fade.width, `${item.name} fade`).toBeGreaterThanOrEqual(24);
             expect(fade.image).toMatch(/linear-gradient/i);
@@ -193,32 +201,34 @@ test.describe("public design sign-off", () => {
             expect(copy?.height ?? 0).toBeGreaterThanOrEqual(44);
             expect(tab?.height ?? 0).toBeGreaterThanOrEqual(44);
             const tabs = page.locator(".tabs-fade");
+            await expect
+              .poll(async () => markedMatchesOverflow(tabs), { timeout: 5_000 })
+              .toBe(true);
             const tabFade = await tabs.evaluate((el) => {
               const row = el.querySelector("[data-scroll]");
               const style = row ? getComputedStyle(row) : null;
               return {
                 overflows: Boolean(row && row.scrollLeft + row.clientWidth < row.scrollWidth - 1),
-                marked: el.hasAttribute("data-overflow"),
                 mask: style?.webkitMaskImage || style?.maskImage || "",
               };
             });
-            expect(tabFade.marked).toBe(tabFade.overflows);
             if (tabFade.overflows) expect(tabFade.mask).toMatch(/linear-gradient/i);
           }
         }
         if (item.name === "connect-your-agent") {
           const claude = page.locator(".copy-pre");
+          await expect
+            .poll(async () => markedMatchesOverflow(claude), { timeout: 5_000 })
+            .toBe(true);
           const fade = await claude.evaluate((el) => {
             const pre = el.querySelector("pre");
             const after = getComputedStyle(el, "::after");
             return {
               overflows: Boolean(pre && pre.scrollLeft + pre.clientWidth < pre.scrollWidth - 1),
-              marked: el.hasAttribute("data-overflow"),
               width: parseFloat(after.width),
               image: after.backgroundImage,
             };
           });
-          expect(fade.marked, "claude fade attr").toBe(fade.overflows);
           if (fade.overflows) {
             expect(fade.width, "claude fade").toBeGreaterThanOrEqual(24);
             expect(fade.image).toMatch(/linear-gradient/i);
