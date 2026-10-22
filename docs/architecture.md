@@ -211,10 +211,10 @@ export const personRules = pgTable('person_rules', {
   householdId: uuid('household_id').notNull(),
   personId: uuid('person_id').notNull(),
   
-  kind: text('kind').notNull(), // 'allergen' | 'ingredient' | 'dietary' | 'nutrition'
+  kind: text('kind').notNull(), // 'allergen' | 'ingredient' | 'ingredient_category' | 'diet' | 'tag' | 'custom'
   target: text('target').notNull(), // 'peanut' | 'vegetarian' | etc.
   severity: text('severity').notNull(), // 'block' | 'warn' | 'prefer_avoid'
-  notes: text('notes'),
+  note: text('note'),
   
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -227,15 +227,14 @@ export const personRules = pgTable('person_rules', {
 Allergen taxonomy and rule matcher.
 
 **Taxonomy**:
-- Canonical allergen names (peanut, tree_nuts, dairy, etc.)
-- Aliases (groundnuts → peanuts, cow's milk → dairy)
-- Hidden ingredients (albumin → eggs, casein → dairy)
+- Canonical allergen names (peanut, tree_nut, milk, etc.)
+- Aliases (groundnuts → peanut, cow's milk → milk)
+- Hidden ingredients (albumin → egg, casein → milk)
 - Common misspellings and OCR errors
 
 **Matchers**:
-- `matchAllergen(ingredient, allergen)` - Check if ingredient contains allergen
-- `matchDietary(ingredient, diet)` - Check if ingredient violates diet
-- `matchNutrition(recipe, threshold)` - Check if recipe exceeds nutrition limit
+- `matchIngredient(name)` - Map an ingredient line to allergen codes
+- `matchPhrasesForTarget(target)` - Phrases a diet or ingredient rule matches
 
 **Testing**: Adversarial test fixtures (misspellings, plurals, OCR errors, hidden ingredients)
 

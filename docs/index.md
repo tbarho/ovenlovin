@@ -148,10 +148,12 @@ Each household member can have custom dietary rules with three severity levels:
 
 ### Rule Types
 
-- **allergen** - Food allergies (peanuts, tree nuts, dairy, eggs, fish, shellfish, wheat, soy, sesame)
+- **allergen** - Food allergies (`peanut`, `tree_nut`, `milk`, `egg`, `fish`, `shellfish`, `wheat`, `soy`, `sesame`)
 - **ingredient** - Specific ingredient restrictions (garlic, onions, nightshades)
-- **dietary** - Dietary patterns (vegetarian, vegan, gluten-free, kosher, halal)
-- **nutrition** - Nutritional constraints (low-sodium, low-sugar, low-carb)
+- **ingredient_category** - A category of ingredients
+- **diet** - Dietary patterns (`vegetarian`, `vegan`, `pescatarian`, `gluten_free`, `dairy_free`)
+- **tag** - A labeled tag (for example spicy)
+- **custom** - A household-defined rule
 
 ### Safety Invariants
 
@@ -169,16 +171,20 @@ All ids are UUIDs.
 
 ```json
 {
+  "status": "complete",
   "findings": {
     "block": [
       {
         "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
         "personName": "Parent A",
+        "ruleId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
         "severity": "block",
         "ingredientName": "peanuts",
-        "message": "Parent A: recipe contains peanuts (block rule)"
+        "message": "Parent A: recipe contains peanuts (block rule for peanuts)"
       }
-    ]
+    ],
+    "warn": [],
+    "prefer_avoid": []
   }
 }
 ```

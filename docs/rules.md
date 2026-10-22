@@ -18,7 +18,7 @@ Families have diverse dietary needs:
 - **Parent A** might have a severe peanut allergy (block)
 - **Child B** might be vegetarian (block animal products)
 - **Parent C** might prefer to avoid gluten (prefer_avoid)
-- **Child D** might need low-sodium meals (warn)
+- **Child D** might prefer to avoid mushrooms (`prefer_avoid`)
 
 OvenLovin allows each person to have their own rules with different severity levels, ensuring safe and appropriate meal planning for everyone.
 
@@ -65,12 +65,12 @@ Every rule has a severity that determines how it's handled:
   "personId": "8a3d4e5f-1b2c-4d6e-8f90-1a2b3c4d5e6f",
   "personName": "Child B",
   "kind": "allergen",
-  "target": "dairy",
+  "target": "milk",
   "severity": "warn"
 }
 ```
 
-**Result**: Recipes with dairy trigger a warning for Child B.
+**Result**: Recipes with milk or dairy trigger a warning for Child B.
 
 ### Prefer-Avoid (Preference)
 
@@ -117,9 +117,9 @@ Every rule has a severity that determines how it's handled:
 ```json
 {
   "kind": "allergen",
-  "target": "tree_nuts",
+  "target": "tree_nut",
   "severity": "block",
-  "notes": "Severe allergy - includes all tree nuts and nut oils"
+  "note": "Severe allergy - includes all tree nuts and nut oils"
 }
 ```
 
@@ -148,7 +148,7 @@ Every rule has a severity that determines how it's handled:
   "kind": "ingredient",
   "target": "garlic",
   "severity": "block",
-  "notes": "Cannot digest garlic or garlic powder"
+  "note": "Cannot digest garlic or garlic powder"
 }
 ```
 
@@ -157,67 +157,38 @@ Every rule has a severity that determines how it's handled:
 - Compound ingredients: "garlic butter", "garlic bread"
 - Related forms: fresh, dried, powdered, oil, extract
 
-### Dietary Rules
+### Diet Rules
 
-**Target**: Dietary patterns and lifestyles
+**Target**: Dietary patterns (`kind: diet`)
 
-**Supported diets**:
-- Vegetarian (no meat, fish, or poultry)
-- Vegan (no animal products)
-- Pescatarian (no meat or poultry, fish allowed)
-- Gluten-free
-- Dairy-free
-- Kosher
-- Halal
-- Paleo
-- Keto
-- Low-carb
+**Supported diet targets**:
+- `vegetarian`
+- `vegan`
+- `pescatarian`
+- `gluten_free`
+- `dairy_free`
+- `kosher`
+- `halal`
+- `paleo`
+- `keto`
+- `low_carb`
 
 **Example**:
 ```json
 {
-  "kind": "dietary",
+  "kind": "diet",
   "target": "vegetarian",
   "severity": "block",
-  "notes": "Strict vegetarian - no meat, fish, or poultry"
+  "note": "Strict vegetarian - no meat, fish, or poultry"
 }
 ```
 
-**Matching**:
-- For vegetarian: blocks beef, chicken, pork, fish, seafood, gelatin, anchovies (in sauces)
-- For vegan: blocks all animal products including dairy, eggs, honey
-- For gluten-free: blocks wheat, barley, rye, and cross-contaminated oats
+**Matching** (only when that person has the diet rule):
+- `vegetarian`: meat, poultry, fish, gelatin
+- `vegan`: those plus milk, cheese, butter, eggs, honey
+- `gluten_free`: wheat, barley, rye, gluten
 
-### Nutrition Rules
-
-**Target**: Nutritional constraints and limits
-
-**Use cases**:
-- Low-sodium (heart health)
-- Low-sugar (diabetes management)
-- Low-carb (weight management)
-- High-protein (fitness goals)
-- Calorie limits
-
-**Example**:
-```json
-{
-  "kind": "nutrition",
-  "target": "sodium",
-  "threshold": {
-    "max": 600,
-    "unit": "mg"
-  },
-  "severity": "warn",
-  "notes": "Reduce sodium for blood pressure management"
-}
-```
-
-**Matching**:
-- Compares recipe nutrition data against threshold
-- Per-serving calculations
-- Warns when threshold is exceeded
-- Suggests low-sodium alternatives
+There is no `nutrition` rule kind and no `threshold` field. Nutritional targets are not person rules.
 
 ## Safety Guarantees
 
@@ -245,10 +216,14 @@ OvenLovin implements these safety invariants:
 {
   "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
   "personName": "Parent A",
+  "ruleId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
   "severity": "block",
   "ingredientName": "peanut butter",
-  "ruleName": "Peanut allergy",
-  "message": "Parent A: recipe contains peanut butter (block rule: Peanut allergy)"
+  "allergenCode": "peanut",
+  "allergenName": "peanuts",
+  "relation": "contains",
+  "message": "Parent A: recipe contains peanut butter (block rule for peanuts)",
+  "confidence": 1
 }
 ```
 
@@ -262,7 +237,7 @@ OvenLovin implements these safety invariants:
 ```json
 {
   "status": "incomplete",
-  "reasons": [
+  "incompleteReasons": [
     "Recipe missing ingredient list",
     "Parent A's rules not loaded"
   ],
@@ -346,7 +321,7 @@ POST /api/v1/people/{personId}/rules
 ```
 User: "Add a peanut allergy rule for Parent A with severity block"
 
-Bot: [Calls add_person_rule MCP tool]
+Bot: [Calls manage_person_rules]
 
 Bot: "I've added a block rule for peanuts to Parent A's profile. 
 Any recipes containing peanuts will now be flagged as unsafe for Parent A."
@@ -375,7 +350,7 @@ Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat
 User: "Is the Chicken Pad Thai recipe safe for everyone in my household?"
 
 Bot: [Calls get_household_context to get attendees and rules]
-Bot: [Calls check_recipe with recipe ID and attendees]
+Bot: [Calls get_recipe with the recipe id and forAttendees]
 
 Bot: "The Chicken Pad Thai recipe has the following findings:
 
@@ -383,9 +358,8 @@ Bot: "The Chicken Pad Thai recipe has the following findings:
 - Parent A: contains peanuts and peanut oil (severe peanut allergy)
 
 ✅ **Safe for**:
-- Child B (vegetarian rule not triggered - chicken is optional in notes)
+- Child B (vegetarian rule not triggered)
 - Parent C (no gluten found)
-- Child D (sodium 450mg, within 600mg limit)
 
 **Recommendation**: This recipe is not safe for Parent A. Would you like me to 
 find a peanut-free Pad Thai recipe, or suggest a substitution?"

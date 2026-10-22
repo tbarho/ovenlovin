@@ -75,6 +75,7 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
   "itemCount": 2,
   "ingredients": [
     {
+      "key": "chicken-breast",
       "name": "chicken breast",
       "quantity": 2,
       "unit": "lb",
@@ -83,14 +84,26 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
       "isStaple": false,
       "isPantryItem": false,
       "recipes": [
-        { "recipeId": "r1", "recipeTitle": "Grilled Chicken Salad", "quantity": 2, "unit": "lb" }
+        {
+          "recipeId": "49e5fbdd-b252-4638-a1b4-e3a5cba25c46",
+          "recipeTitle": "Grilled Chicken Salad",
+          "quantity": 2,
+          "unit": "lb"
+        }
       ]
     }
   ],
   "sections": [
     {
       "name": "Meat",
-      "items": [{ "name": "chicken breast", "quantity": 2, "unit": "lb" }]
+      "items": [
+        {
+          "key": "chicken-breast",
+          "name": "chicken breast",
+          "quantity": 2,
+          "unit": "lb"
+        }
+      ]
     }
   ],
   "warnings": [
@@ -106,10 +119,10 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
 ### CSV
 
 ```csv
-Name,Quantity,Unit,Aisle,Category,Recipes
-"chicken breast","2","lb","Meat","meat","Grilled Chicken Salad"
-"pasta","1","lb","Grains","grains","Vegetarian Pasta Primavera"
-"cherry tomatoes","2","cup","Produce","produce","Grilled Chicken Salad"
+Name,Quantity,Unit,Aisle,Category,Recipes,Checked
+"chicken breast","2","lb","Meat","meat","Grilled Chicken Salad",""
+"pasta","1","lb","Grains","grains","Vegetarian Pasta Primavera",""
+"cherry tomatoes","2","cup","Produce","produce","Grilled Chicken Salad",""
 ```
 
 ### Text
