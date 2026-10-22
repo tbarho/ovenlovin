@@ -69,8 +69,8 @@ cd ovenlovin
 pnpm install
 
 # Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your API keys
+cp .env.example apps/web/.env.local
+# Edit apps/web/.env.local with your API keys
 
 # Run development server
 pnpm dev
@@ -86,7 +86,7 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 - **[Bot Setup Guide](bot-setup.md)** - Connect Grok Bot, ChatGPT, or Claude to OvenLovin
 - **[Allergy & Dietary Rules](rules.md)** - Configure per-person dietary restrictions and allergen checking
 - **[Kitchen invites](kitchen-invites.md)** - Share a kitchen with a spouse or family member
-- **[API Reference](api-reference.md)** - REST API endpoints and OpenAPI specification
+- **[API Reference](https://tbarho.github.io/ovenlovin/docs/reference/api)** - REST API and OpenAPI
 
 ### For Developers
 
@@ -148,10 +148,12 @@ Each household member can have custom dietary rules with three severity levels:
 
 ### Rule Types
 
-- **allergen** - Food allergies (peanuts, tree nuts, dairy, eggs, fish, shellfish, wheat, soy, sesame)
+- **allergen** - Food allergies (`peanut`, `tree_nut`, `milk`, `egg`, `fish`, `shellfish`, `wheat`, `soy`, `sesame`)
 - **ingredient** - Specific ingredient restrictions (garlic, onions, nightshades)
-- **dietary** - Dietary patterns (vegetarian, vegan, gluten-free, kosher, halal)
-- **nutrition** - Nutritional constraints (low-sodium, low-sugar, low-carb)
+- **ingredient_category** - A category of ingredients
+- **diet** - Dietary patterns (`vegetarian`, `vegan`, `pescatarian`, `gluten_free`, `dairy_free`)
+- **tag** - A labeled tag (for example spicy)
+- **custom** - A household-defined rule
 
 ### Safety Invariants
 
@@ -163,20 +165,66 @@ OvenLovin guarantees:
 4. ✅ Incomplete checks are reported as `status: incomplete`, never "no issues"
 5. ✅ No hard-coded allergen policies - all rules are per-person configuration
 
-**Example**: If a recipe contains peanuts and Parent A has a `block` rule for peanuts, every API response will include:
+**Example**: If a plan entry has peanut butter and Parent A has a `block` rule for peanuts, `GET` or `POST /api/v1/meal-plans/{id}/check` returns this object (`GET` is a dry run; `POST` stores it). Findings live under `byEntry` and `byPerson`, not a top-level `findings` map.
+
+All ids are UUIDs.
 
 ```json
 {
-  "findings": {
-    "block": [
-      {
-        "personId": "person-1",
-        "personName": "Parent A",
-        "severity": "block",
-        "ingredientName": "peanuts",
-        "message": "Parent A: recipe contains peanuts (block rule)"
-      }
-    ]
+  "status": "complete",
+  "planId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
+  "checkedAt": "2026-10-12T21:00:00.000Z",
+  "byEntry": [
+    {
+      "entryId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+      "date": "2026-10-12",
+      "mealSlot": "dinner",
+      "recipeTitle": "Peanut Butter Cookies",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedPeople": ["6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d"]
+    }
+  ],
+  "byPerson": [
+    {
+      "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+      "personName": "Parent A",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedEntries": ["3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e"]
+    }
+  ],
+  "summary": {
+    "totalEntries": 1,
+    "totalPeople": 1,
+    "entriesWithBlocks": 1,
+    "entriesWithWarnings": 0,
+    "entriesWithPreferAvoid": 0,
+    "peopleWithBlocks": 1,
+    "peopleWithWarnings": 0,
+    "peopleWithPreferAvoid": 0
   }
 }
 ```
@@ -225,9 +273,8 @@ Standard REST API with OpenAPI 3.1 specification:
 
 Download the OpenAPI spec:
 - JSON: `https://your-app.vercel.app/api/v1/openapi.json`
-- YAML: `https://your-app.vercel.app/api/v1/openapi.yaml`
 
-[View full API reference →](api-reference.md)
+[View full API reference →](https://tbarho.github.io/ovenlovin/docs/reference/api)
 
 ### MCP Server
 

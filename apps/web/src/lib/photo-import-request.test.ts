@@ -44,6 +44,48 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.images[0]?.blob).toMatch(/^data:image\/png;base64,/);
   });
 
+  it("persists when JSON save is the number 1", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        imageUrl: "https://blob.vercel-storage.com/card.jpg",
+        save: 1,
+      }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.save).toBe(true);
+  });
+
+  it("does not persist when JSON save is the string false", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        imageUrl: "https://blob.vercel-storage.com/card.jpg",
+        save: "false",
+      }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.save).toBe(false);
+  });
+
+  it("does not allow duplicates when JSON allowDuplicate is the string false", async () => {
+    const request = new Request("http://localhost/api/v1/recipes/import/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        imageUrl: "https://blob.vercel-storage.com/card.jpg",
+        allowDuplicate: "false",
+      }),
+    });
+
+    const parsed = await readPhotoImportRequest(request);
+    expect(parsed.allowDuplicate).toBe(false);
+  });
+
   it("accepts a previewed draft without sending the photo again", async () => {
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",

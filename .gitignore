@@ -15,6 +15,7 @@ packages/importers/src/eval/fixtures/photo/.fonts
 .next/
 out/
 build
+apps/docs/.source/
 
 # Turbo
 .turbo

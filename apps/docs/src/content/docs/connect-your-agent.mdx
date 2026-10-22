@@ -7,20 +7,18 @@ description: Point Claude, ChatGPT, or Grok at your OvenLovin instance
 
 OvenLovin speaks **MCP** (Streamable HTTP at `/mcp`) and **REST** (`/api/v1`, OpenAPI at `/api/v1/openapi.json`).
 
-Auth:
+Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key, and copy the `plaintext` value (shown once). Call `https://<your-app>.vercel.app/api/v1` with `Authorization: ApiKey rkapi_...` and connect MCP at `https://<your-app>.vercel.app/mcp`.
 
-```
-Authorization: ApiKey rkapi_…
-```
+Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key at /api/demo/enter?format=json.
 
-`Bearer rkapi_…` is accepted too. Create a key under Settings.
+`Bearer rkapi_...` is accepted too.
 
 This is not medical advice. Always check ingredient labels before serving.
 
 ## Claude Code
 
 ```bash
-claude mcp add --transport http ovenlovin https://YOUR_INSTANCE/mcp \
+claude mcp add --transport http ovenlovin https://<your-app>.vercel.app/mcp \
   --header "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY"
 ```
 
@@ -33,7 +31,7 @@ Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 {
   "mcpServers": {
     "ovenlovin": {
-      "url": "https://YOUR_INSTANCE/mcp",
+      "url": "https://<your-app>.vercel.app/mcp",
       "headers": {
         "Authorization": "ApiKey YOUR_OVENLOVIN_API_KEY"
       }
@@ -46,7 +44,7 @@ Restart Claude, then ask it to call `whoami` and `get_household_context`.
 
 ## ChatGPT (Custom GPT Actions)
 
-1. GPT builder → Actions → Import from URL: `https://YOUR_INSTANCE/api/v1/openapi.json`
+1. GPT builder → Actions → Import from URL: `https://<your-app>.vercel.app/api/v1/openapi.json`
 2. Authentication: API Key
 3. Header name: `Authorization`
 4. Value: `ApiKey YOUR_OVENLOVIN_API_KEY` (include the `ApiKey` prefix)
@@ -58,7 +56,7 @@ Restart Claude, then ask it to call `whoami` and `get_household_context`.
   "mcpServers": {
     "ovenlovin": {
       "transport": "http",
-      "url": "https://YOUR_INSTANCE/mcp",
+      "url": "https://<your-app>.vercel.app/mcp",
       "headers": {
         "Authorization": "ApiKey YOUR_OVENLOVIN_API_KEY"
       }

@@ -6,6 +6,7 @@ describe("generateOpenApiDocument", () => {
     const spec = generateOpenApiDocument("https://kitchen.example");
     expect(spec.servers?.[0]?.url).toBe("https://kitchen.example/api/v1");
     expect(spec.servers?.[0]?.url).not.toContain("your-app.vercel.app");
+    expect(generateOpenApiDocument().servers?.[0]?.url).toBe("https://your-app.vercel.app/api/v1");
     expect(spec.info.version).toBe("0.1.0");
     expect(spec.components?.securitySchemes).toHaveProperty("apiKey");
     expect(spec.security).toEqual([{ apiKey: [] }, { bearerAuth: [] }]);
@@ -46,7 +47,31 @@ describe("generateOpenApiDocument", () => {
         "/api-keys",
       ])
     );
+    expect(spec.paths?.["/health"]?.get).toBeTruthy();
+    expect(spec.paths?.["/openapi.json"]?.get).toBeTruthy();
     expect(spec.paths?.["/status"]?.get).toBeTruthy();
+    expect(spec.paths?.["/recipes/{id}/image"]?.post).toBeTruthy();
+    expect(spec.paths?.["/cookbooks/{id}/recipes"]?.delete).toBeTruthy();
+    expect(spec.paths?.["/people/{id}/rules/{ruleId}"]?.get).toBeTruthy();
+    expect(spec.paths?.["/people/{id}/rules/{ruleId}"]?.patch).toBeTruthy();
+    expect(spec.paths?.["/people/{id}/preferences/{prefId}"]?.get).toBeTruthy();
+    expect(spec.paths?.["/households"]?.patch).toBeTruthy();
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).not.toContain('"maximum":100');
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("status");
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("nextCursor");
+    expect(JSON.stringify(spec.paths?.["/recipes"]?.get)).toContain("hasMore");
+    expect(spec.paths?.["/recipes"]?.get?.responses?.["401"]).toBeTruthy();
+    expect(spec.paths?.["/recipes"]?.get?.responses?.["400"]).toBeTruthy();
+    expect(spec.paths?.["/recipes"]?.get?.responses?.["404"]).toBeTruthy();
+    expect(spec.paths?.["/health"]?.get?.responses?.["401"]).toBeUndefined();
+    expect(spec.paths?.["/health"]?.get?.responses?.["400"]).toBeUndefined();
+    expect(spec.paths?.["/health"]?.get?.responses?.["404"]).toBeUndefined();
+    expect(spec.paths?.["/status"]?.get?.responses?.["400"]).toBeUndefined();
+    expect(spec.paths?.["/status"]?.get?.responses?.["404"]).toBeUndefined();
+    expect(spec.paths?.["/openapi.json"]?.get?.responses?.["400"]).toBeUndefined();
+    expect(spec.paths?.["/openapi.json"]?.get?.responses?.["404"]).toBeUndefined();
+    expect(spec.paths?.["/invites/{token}"]?.get?.responses).toHaveProperty("404");
+    expect(spec.paths?.["/invites/{token}"]?.get?.responses).toHaveProperty("410");
     const configStatus = spec.components?.schemas?.ConfigStatus as {
       properties?: Record<string, unknown>;
     };
@@ -121,9 +146,23 @@ describe("generateOpenApiDocument", () => {
       $ref: "#/components/responses/Forbidden",
     });
     expect(JSON.stringify(spec.components?.responses?.Forbidden)).toMatch(/problems\/forbidden/);
+    expect(JSON.stringify(spec.components?.responses?.Forbidden)).toMatch(/missing scope/);
+    expect(JSON.stringify(spec.components?.responses?.Forbidden)).toMatch(/role not allowed/);
+    expect(JSON.stringify(spec.components?.responses?.Forbidden)).toMatch(/X-Kitchen-Id/);
+    expect(JSON.stringify(spec.components?.responses?.Forbidden)).toMatch(/demo write\/upload cap/);
+    expect(JSON.stringify(spec.paths?.["/recipes/{id}"]?.get?.responses?.["404"])).toMatch(
+      /malformed or foreign id/
+    );
     expect(spec.paths?.["/api-keys"]?.get?.responses).not.toHaveProperty("403");
-    expect(spec.paths?.["/api-keys"]?.post?.responses).not.toHaveProperty("403");
-    expect(spec.paths?.["/api-keys/{id}"]?.delete?.responses).not.toHaveProperty("403");
+    expect(spec.paths?.["/api-keys"]?.post?.responses?.["403"]).toMatchObject({
+      description: expect.stringMatching(/Admin or owner role required/),
+    });
+    expect(spec.paths?.["/api-keys"]?.post?.responses?.["403"]).not.toEqual({
+      $ref: "#/components/responses/Forbidden",
+    });
+    expect(spec.paths?.["/api-keys/{id}"]?.delete?.responses?.["403"]).toMatchObject({
+      description: expect.stringMatching(/Admin or owner role required/),
+    });
     expect(spec.paths?.["/api-keys"]?.get?.responses).toHaveProperty("401");
     expect(spec.paths?.["/api-keys"]?.post?.responses).toHaveProperty("401");
     expect(spec.paths?.["/api-keys/{id}"]?.delete?.responses).toHaveProperty("401");

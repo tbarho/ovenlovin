@@ -13,7 +13,7 @@ Export a shopping list for a saved meal plan with automatic ingredient aggregati
 | `format`              | enum          | No       | `"markdown"` | Output format: `"json"`, `"csv"`, `"markdown"`, or `"text"`                     |
 | `groupBy`             | enum          | No       | `"aisle"`    | Grouping strategy: `"aisle"`, `"recipe"`, or `"category"`                       |
 | `includeStaples`      | boolean       | No       | `false`      | Include kitchen staples (salt, pepper, oil). Distinct from the pantry category. |
-| `includePantryItems`  | boolean       | No       | - | Deprecated alias for `includeStaples`                                           |
+| `includePantryItems`  | boolean       | No       | -            | Deprecated alias for `includeStaples`                                           |
 | `includeRuleWarnings` | boolean       | No       | `true`       | Include per-person rule warnings for shoppers                                   |
 | `timeZone`            | string        | No       | kitchen TZ   | IANA timezone for the markdown/text Generated line (always labeled)             |
 
@@ -60,14 +60,14 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
 
 ## ⚠️ Warnings
 
-- **Child B**: parmesan cheese - Contains dairy (lactose intolerant preference)
+- **Child B**: parmesan cheese - Contains dairy (parmesan cheese), and Child B usually skips this
 ```
 
 ### JSON
 
 ```json
 {
-  "mealPlanId": "plan-abc-123",
+  "mealPlanId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
   "weekStart": "2026-10-12",
   "groupBy": "aisle",
   "includeStaples": false,
@@ -75,6 +75,7 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
   "itemCount": 2,
   "ingredients": [
     {
+      "key": "chicken-breast",
       "name": "chicken breast",
       "quantity": 2,
       "unit": "lb",
@@ -83,21 +84,33 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
       "isStaple": false,
       "isPantryItem": false,
       "recipes": [
-        { "recipeId": "r1", "recipeTitle": "Grilled Chicken Salad", "quantity": 2, "unit": "lb" }
+        {
+          "recipeId": "49e5fbdd-b252-4638-a1b4-e3a5cba25c46",
+          "recipeTitle": "Grilled Chicken Salad",
+          "quantity": 2,
+          "unit": "lb"
+        }
       ]
     }
   ],
   "sections": [
     {
       "name": "Meat",
-      "items": [{ "name": "chicken breast", "quantity": 2, "unit": "lb" }]
+      "items": [
+        {
+          "key": "chicken-breast",
+          "name": "chicken breast",
+          "quantity": 2,
+          "unit": "lb"
+        }
+      ]
     }
   ],
   "warnings": [
     {
       "ingredient": "parmesan cheese",
       "personName": "Child B",
-      "note": "Contains dairy (lactose intolerant preference)"
+      "note": "Contains dairy (parmesan cheese), and Child B usually skips this"
     }
   ]
 }
@@ -106,10 +119,10 @@ MCP `tools/call` also sets `structuredContent` to this object. Do not `JSON.pars
 ### CSV
 
 ```csv
-Name,Quantity,Unit,Aisle,Category,Recipes
-"chicken breast","2","lb","Meat","meat","Grilled Chicken Salad"
-"pasta","1","lb","Grains","grains","Vegetarian Pasta Primavera"
-"cherry tomatoes","2","cup","Produce","produce","Grilled Chicken Salad"
+Name,Quantity,Unit,Aisle,Category,Recipes,Checked
+"chicken breast","2","lb","Meat","meat","Grilled Chicken Salad",""
+"pasta","1","lb","Grains","grains","Vegetarian Pasta Primavera",""
+"cherry tomatoes","2","cup","Produce","produce","Grilled Chicken Salad",""
 ```
 
 ### Text
@@ -120,14 +133,14 @@ Name,Quantity,Unit,Aisle,Category,Recipes
 - 2 cups cherry tomatoes (Grilled Chicken Salad)
 
 WARNINGS:
-⚠️  Child B: parmesan cheese - Contains dairy (lactose intolerant preference)
+⚠️  Child B: parmesan cheese - Contains dairy (parmesan cheese), and Child B usually skips this
 ```
 
 ## Example Call
 
 ```json
 {
-  "planId": "plan-abc-123",
+  "planId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
   "format": "markdown",
   "groupBy": "recipe",
   "includeStaples": false,
@@ -140,14 +153,18 @@ WARNINGS:
 ```json
 {
   "format": "markdown",
-  "list": { "mealPlanId": "plan-abc-123", "ingredients": [], "itemCount": 15 },
+  "list": {
+    "mealPlanId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
+    "ingredients": [],
+    "itemCount": 15
+  },
   "content": "# Shopping List\n\n## Grilled Chicken Salad\n\n- 2 lbs chicken breast...",
   "itemCount": 15,
   "warnings": [
     {
       "ingredient": "parmesan cheese",
       "personName": "Child B",
-      "note": "Contains dairy (lactose intolerant preference)"
+      "note": "Contains dairy (parmesan cheese), and Child B usually skips this"
     }
   ]
 }

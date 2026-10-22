@@ -3,9 +3,11 @@ title: Quickstart
 description: Get OvenLovin running in minutes
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tbarho/ovenlovin&root-directory=apps/web&project-name=ovenlovin&repository-name=ovenlovin&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22clerk%22%2C%22productSlug%22%3A%22clerk%22%7D%5D&env=NEXT_PUBLIC_INSTANCE_NAME&envDescription=Optional%20instance%20name.%20USDA%20is%20optional%20and%20not%20required%20to%20deploy.%20On%20Vercel%2C%20AI%20Gateway%20uses%20OIDC%20-%20no%20AI_GATEWAY_API_KEY%20needed.%20Neon%2C%20Blob%2C%20and%20Clerk%20come%20from%20the%20stores%20step.%20If%20Clerk%20is%20not%20offered%2C%20set%20NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY%20and%20CLERK_SECRET_KEY%20in%20Vercel.&envLink=https://tbarho.github.io/ovenlovin/docs/self-hosting&demo-title=OvenLovin&demo-description=The%20family%20recipe%20box%20your%20AI%20can%20actually%20use&demo-url=https://ovenlovin.vercel.app)
+
+Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key, and copy the `plaintext` value (shown once). Call `https://<your-app>.vercel.app/api/v1` with `Authorization: ApiKey rkapi_...` and connect MCP at `https://<your-app>.vercel.app/mcp`.
+
+Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key at /api/demo/enter?format=json.
 
 ## Deploy to Vercel
 
@@ -24,21 +26,27 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 
 ### Environment Variables
 
-| Variable | Description | Get It |
-|----------|-------------|--------|
-| `DATABASE_URL` | Neon Postgres connection string | Auto-configured by the Neon store |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key | Auto-configured by the Clerk store, or [clerk.com](https://clerk.com) |
-| `CLERK_SECRET_KEY` | Clerk secret key | Auto-configured by the Clerk store, or [clerk.com](https://clerk.com) |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token | Auto-configured by the Blob store |
-| `AI_GATEWAY_API_KEY` | Optional; on Vercel, AI Gateway uses OIDC (`VERCEL=1` or `VERCEL_OIDC_TOKEN`) | [OIDC docs](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc) |
-| `USDA_FDC_API_KEY` | Optional; reserved for FoodData Central nutrition (not read today). Not required to deploy | [fdc.nal.usda.gov](https://fdc.nal.usda.gov) |
-| `RK_MODEL_DEFAULT` | Optional paste-import model. Default `deepseek/deepseek-v4.1-flash` | Leave unset for DeepSeek |
-| `RK_MODEL_VISION` | Optional photo-import model. Default `deepseek/deepseek-v4.1-flash` | Leave unset for DeepSeek |
-| `RK_MODEL_EXTRACT` | Optional URL-import text model after JSON-LD/HTML miss. Else `RK_MODEL_DEFAULT`, then DeepSeek. DeepSeek failures retry `openai/gpt-6-luna` | Leave unset for DeepSeek |
-| `NEXT_PUBLIC_INSTANCE_NAME` | Optional landing-page name | Defaults to `Your OvenLovin` |
-| `OVENLOVIN_VERCEL_TEAM_SLUG` | Optional Vercel team slug for dashboard links (not the GitHub owner) | From the Vercel dashboard URL |
-| `OVENLOVIN_VERCEL_PROJECT_SLUG` | Optional Vercel project slug if it differs from the git repo name | Vercel project settings |
-| `VERCEL_TOKEN` | Optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset | [Account tokens](https://vercel.com/account/tokens) |
+| Variable                                                                                  | Description                                                                                                                                 | Get It                                                                       |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                            | Neon Postgres connection string                                                                                                             | Auto-configured by the Neon store                                            |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`                                                       | Clerk publishable key                                                                                                                       | Auto-configured by the Clerk store, or [clerk.com](https://clerk.com)        |
+| `CLERK_SECRET_KEY`                                                                        | Clerk secret key                                                                                                                            | Auto-configured by the Clerk store, or [clerk.com](https://clerk.com)        |
+| `BLOB_READ_WRITE_TOKEN`                                                                   | Vercel Blob storage token                                                                                                                   | Auto-configured by the Blob store                                            |
+| `AI_GATEWAY_API_KEY`                                                                      | Optional; on Vercel, AI Gateway uses OIDC (`VERCEL=1` or `VERCEL_OIDC_TOKEN`)                                                               | [OIDC docs](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc) |
+| `USDA_FDC_API_KEY`                                                                        | Optional; reserved for FoodData Central nutrition (not read today). Not required to deploy                                                  | [fdc.nal.usda.gov](https://fdc.nal.usda.gov)                                 |
+| `RK_MODEL_DEFAULT`                                                                        | Optional paste-import model. Default `deepseek/deepseek-v4.1-flash`                                                                         | Leave unset for DeepSeek                                                     |
+| `RK_MODEL_VISION`                                                                         | Optional photo-import model. Default `deepseek/deepseek-v4.1-flash`                                                                         | Leave unset for DeepSeek                                                     |
+| `RK_MODEL_EXTRACT`                                                                        | Optional URL-import text model after JSON-LD/HTML miss. Else `RK_MODEL_DEFAULT`, then DeepSeek. DeepSeek failures retry `openai/gpt-6-luna` | Leave unset for DeepSeek                                                     |
+| `NEXT_PUBLIC_INSTANCE_NAME`                                                               | Optional landing-page name                                                                                                                  | Defaults to `Your OvenLovin`                                                 |
+| `OVENLOVIN_VERCEL_TEAM_SLUG`                                                              | Optional Vercel team slug for dashboard links (not the GitHub owner)                                                                        | From the Vercel dashboard URL                                                |
+| `OVENLOVIN_VERCEL_PROJECT_SLUG`                                                           | Optional Vercel project slug if it differs from the git repo name                                                                           | Vercel project settings                                                      |
+| `VERCEL_TOKEN`                                                                            | Optional; resolve slugs from `VERCEL_PROJECT_ID` when overrides are unset                                                                   | [Account tokens](https://vercel.com/account/tokens)                          |
+| `NEXT_PUBLIC_APP_URL`                                                                     | Optional public origin for problem+json types and OpenAPI servers                                                                           | Your deploy URL                                                              |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `NEXT_PUBLIC_CLERK_SIGN_UP_URL`                         | Clerk sign-in and sign-up paths                                                                                                             | Defaults `/sign-in` and `/sign-up`                                           |
+| `RECIPE_IMPORT_CACHE_FALLBACK`                                                            | Optional. `0` skips Google Translate / Jina public copies                                                                                   | Leave unset to try copies                                                    |
+| `NEXT_PUBLIC_IOS_SHORTCUT_URL`                                                            | Optional iCloud link for the iOS shortcut                                                                                                   | Leave unset for manual steps                                                 |
+| `E2E_AUTH_BYPASS`                                                                         | Signed-in kitchen harness only. Never set on Vercel production                                                                              | See README                                                                   |
+| `OVENLOVIN_DEMO_MODE` / `OVENLOVIN_DEMO_PROJECT` / `CRON_SECRET` / `NEXT_PUBLIC_DEMO_URL` | Public demo project only. Never on product production                                                                                       | [docs/demo.md](https://github.com/tbarho/ovenlovin/blob/main/docs/demo.md)   |
 
 ## Local Development
 
@@ -50,150 +58,60 @@ If the Clerk store is not offered, set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `
 
 ### Installation
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
-  <Tab value="pnpm">
-    ```bash
-    # Clone the repository
-    git clone https://github.com/tbarho/ovenlovin.git
-    cd ovenlovin
+OvenLovin is a pnpm workspace. Run `corepack enable` first; npm and yarn are not supported.
 
-    # Install dependencies
-    pnpm install
+```bash
+# Clone the repository
+git clone https://github.com/tbarho/ovenlovin.git
+cd ovenlovin
 
-    # Set up environment variables
-    cp .env.example .env.local
-    # Edit .env.local with your API keys
+# Set up environment variables
+cp .env.example apps/web/.env.local
+# Edit apps/web/.env.local with your API keys
 
-    # Run database migrations
-    pnpm --filter @ovenlovin/db db:migrate
+# Install dependencies
+pnpm install
 
-    # Start development server
-    pnpm dev
-    ```
-  </Tab>
-  <Tab value="npm">
-    ```bash
-    # Clone the repository
-    git clone https://github.com/tbarho/ovenlovin.git
-    cd ovenlovin
+# Start Postgres (or use your own at the DATABASE_URL below)
+docker compose -f docker-compose.e2e.yml up -d
 
-    # Install dependencies
-    npm install
+# Run database migrations (reads DATABASE_URL from the shell, not .env.local)
+export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin
+pnpm db:migrate
 
-    # Set up environment variables
-    cp .env.example .env.local
-    # Edit .env.local with your API keys
-
-    # Run database migrations
-    npm run --workspace @ovenlovin/db db:migrate
-
-    # Start development server
-    npm run dev
-    ```
-  </Tab>
-  <Tab value="yarn">
-    ```bash
-    # Clone the repository
-    git clone https://github.com/tbarho/ovenlovin.git
-    cd ovenlovin
-
-    # Install dependencies
-    yarn install
-
-    # Set up environment variables
-    cp .env.example .env.local
-    # Edit .env.local with your API keys
-
-    # Run database migrations
-    yarn workspace @ovenlovin/db db:migrate
-
-    # Start development server
-    yarn dev
-    ```
-  </Tab>
-</Tabs>
+# Start development server
+pnpm dev
+```
 
 The app will be available at `http://localhost:3000`.
 
 ### Development Commands
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
-  <Tab value="pnpm">
-    ```bash
-    # Run all workspaces in dev mode
-    pnpm dev
+OvenLovin is a pnpm workspace. Run `corepack enable` first; npm and yarn are not supported.
 
-    # Run specific workspace
-    pnpm --filter @ovenlovin/web dev
-    pnpm --filter @ovenlovin/core test:watch
+```bash
+# Run all workspaces in dev mode
+pnpm dev
 
-    # Build
-    pnpm build
+# Run specific workspace
+pnpm --filter @ovenlovin/web dev
+pnpm --filter @ovenlovin/core test:watch
 
-    # Test
-    pnpm test
-    pnpm test:watch
+# Build
+pnpm build
 
-    # Lint & format
-    pnpm lint
-    pnpm format
-    pnpm typecheck
+# Test
+pnpm test
+pnpm test:watch
 
-    # Clean
-    pnpm clean
-    ```
-  </Tab>
-  <Tab value="npm">
-    ```bash
-    # Run all workspaces in dev mode
-    npm run dev
+# Lint & format
+pnpm lint
+pnpm format
+pnpm typecheck
 
-    # Run specific workspace
-    npm run --workspace @ovenlovin/web dev
-    npm run --workspace @ovenlovin/core test:watch
-
-    # Build
-    npm run build
-
-    # Test
-    npm test
-    npm run test:watch
-
-    # Lint & format
-    npm run lint
-    npm run format
-    npm run typecheck
-
-    # Clean
-    npm run clean
-    ```
-  </Tab>
-  <Tab value="yarn">
-    ```bash
-    # Run all workspaces in dev mode
-    yarn dev
-
-    # Run specific workspace
-    yarn workspace @ovenlovin/web dev
-    yarn workspace @ovenlovin/core test:watch
-
-    # Build
-    yarn build
-
-    # Test
-    yarn test
-    yarn test:watch
-
-    # Lint & format
-    yarn lint
-    yarn format
-    yarn typecheck
-
-    # Clean
-    yarn clean
-    ```
-  </Tab>
-</Tabs>
+# Clean
+pnpm clean
+```
 
 ## Talk to this instance
 
@@ -203,13 +121,13 @@ REST lives at `/api/v1`. Meal-plan checks are POST.
 
 ```bash
 curl -H "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY" \
-  https://your-app.vercel.app/api/v1/recipes
+  https://<your-app>.vercel.app/api/v1/recipes
 ```
 
 ```bash
 curl -X POST \
   -H "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY" \
-  https://your-app.vercel.app/api/v1/meal-plans/PLAN_ID/check
+  https://<your-app>.vercel.app/api/v1/meal-plans/PLAN_ID/check
 ```
 
 MCP (Streamable HTTP):
@@ -218,7 +136,7 @@ MCP (Streamable HTTP):
 {
   "mcpServers": {
     "ovenlovin": {
-      "url": "https://your-app.vercel.app/mcp",
+      "url": "https://<your-app>.vercel.app/mcp",
       "headers": {
         "Authorization": "ApiKey YOUR_OVENLOVIN_API_KEY"
       }
@@ -231,4 +149,4 @@ MCP (Streamable HTTP):
 
 - [Connect Your Agent](./agents) - Set up Grok Bot, ChatGPT, or Claude Desktop
 - [Learn Concepts](./concepts) - Understand households, rules, and meal planning
-- [API Reference](./api) - Explore the REST API and MCP tools
+- [API Reference](./reference/api) - Explore the REST API and MCP tools

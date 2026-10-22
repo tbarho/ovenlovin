@@ -1,6 +1,6 @@
 # REST API
 
-> **Status:** In development
+> **Status:** Shipped
 
 Bot-first REST API with OpenAPI 3.1 spec generation.
 
@@ -16,8 +16,7 @@ src/
 │   ├── uploads/
 │   ├── people/
 │   ├── households/
-│   ├── meal-plans/
-│   └── shopping-lists/
+│   └── meal-plans/{id}/shopping-list/
 └── lib/api/              # API utilities
     ├── errors.ts         # problem+json error handling
     ├── middleware.ts     # auth & idempotency
@@ -31,7 +30,7 @@ src/
 - **problem+json** error responses (RFC 9457)
 - **Cursor pagination** for list endpoints
 - **Idempotency keys** on write operations
-- **Auth**: Clerk JWT (Bearer) or API keys for bots
+- **Auth**: `ApiKey rkapi_...`, `Bearer rkapi_...`, or `Bearer <Clerk JWT>`
 
 ## Authentication
 
@@ -69,7 +68,7 @@ Response:
 
 ## Idempotency
 
-Write operations (POST, PATCH, DELETE) support idempotency keys. Import persist (`POST /recipes/import` with `save=true`, `POST /recipes/import/photo` with `save=true`, and `POST /recipes`) uses `Idempotency-Key` plus photo/URL locks so a dropped connection can be retried without a second recipe.
+`Idempotency-Key` (trimmed, first 512 characters) is honored on `POST /recipes`, `POST /recipes/import` with `save: true`, and `POST /recipes/import/photo` with `save: true`. A replay returns 200 with the original resource.
 
 ```bash
 curl -X POST \
@@ -84,13 +83,17 @@ curl -X POST \
 
 All errors follow RFC 9457 (problem+json):
 
+```
+GET /api/v1/recipes/3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182
+```
+
 ```json
 {
-  "type": "https://your-app.vercel.app/problems/not-found",
+  "type": "https://<your-app>.vercel.app/problems/not-found",
   "title": "Not Found",
   "status": 404,
-  "detail": "Recipe with id abc123 not found",
-  "instance": "/api/v1/recipes/abc123"
+  "detail": "Recipe with id 3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182 not found",
+  "instance": "https://<your-app>.vercel.app/api/v1/recipes/3f0c8a21-7b9d-4e6f-8a1c-2d4e5f607182"
 }
 ```
 

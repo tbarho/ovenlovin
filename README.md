@@ -46,8 +46,8 @@ Open-source recipe box and meal planner for families and their agents. Per-perso
 
 ## Connect your agent
 
-1. Deploy (button above) or use [ovenlovin.vercel.app](https://ovenlovin.vercel.app)
-2. Sign in, open **Settings**, create an API key (`rkapi_…`)
+1. Deploy your own copy (button above).
+2. Sign in, open **Settings**, then **API keys**, create a key, and copy the `plaintext` value (shown once). Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key at `/api/demo/enter?format=json`.
 3. Point the agent at this instance:
 
 ```
@@ -72,13 +72,18 @@ The public no-signup demo is a **separate Vercel project**. See [docs/demo.md](d
 
 ## Local development
 
+Prereqs: Node 20+, pnpm 9 (`corepack enable`), Postgres 15+ or Docker. `git clone https://github.com/tbarho/ovenlovin && cd ovenlovin && cp .env.example apps/web/.env.local && pnpm install`. Start Postgres (`docker compose -f docker-compose.e2e.yml up -d`, or use your own at the URL below), then `export DATABASE_URL=postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin && pnpm db:migrate`. Full guide: https://tbarho.github.io/ovenlovin/docs/quickstart
+
 ```bash
-pnpm install
 pnpm dev
 pnpm test
 ```
 
+`pnpm dev` starts the kitchen at http://localhost:3000 and docs at http://localhost:3001/ovenlovin/docs. Without env vars, pages load but sign-in and data do not; check http://localhost:3000/api/v1/status for what is missing.
+
 Signed-in kitchen (no production Clerk):
+
+Requires Docker (starts Postgres from docker-compose.e2e.yml) or an existing Postgres at postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin.
 
 ```bash
 ./scripts/e2e-kitchen-up.sh

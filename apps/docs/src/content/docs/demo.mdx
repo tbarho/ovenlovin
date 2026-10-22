@@ -34,9 +34,11 @@ Set `NEXT_PUBLIC_DEMO_URL` on the **product** Vercel project so the main landing
 
 ## Agent connect
 
-`GET /api/demo/enter?format=json` returns `mcpUrl` and `apiKey`. Or open **Settings** after visiting the kitchen.
+Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key at /api/demo/enter?format=json.
 
-- MCP URL: `https://<demo-host>/mcp`
+`GET /api/demo/enter?format=json` returns `mcpUrl` and `apiKey`. Or open **Settings** after visiting the kitchen. `GET /api/demo/reset` and the nightly cron are internal.
+
+- MCP URL: `https://ovenlovin-demo.vercel.app/mcp`
 - Header: `Authorization: ApiKey rkapi_…`
 - Transport: stateless HTTP (no session id). Household comes from the key.
 

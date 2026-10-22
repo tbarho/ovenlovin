@@ -17,7 +17,12 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import { MCP_RESOURCE_SCOPE, mcpApiKeyScopeDenial, missingScopeMessage } from "@ovenlovin/core";
+import {
+  MCP_RESOURCE_SCOPE,
+  VERSION,
+  mcpApiKeyScopeDenial,
+  missingScopeMessage,
+} from "@ovenlovin/core";
 import type { AuthContext } from "./auth/index";
 import { JsonRpcErrorCode } from "./json-rpc";
 import { listResources, readResource } from "./resources/index";
@@ -67,7 +72,7 @@ export function createServer(config: ServerConfig = {}) {
   const server = new Server(
     {
       name: config.name || "ovenlovin-mcp",
-      version: config.version || "0.1.0",
+      version: config.version || VERSION,
     },
     {
       capabilities: {

@@ -3,11 +3,11 @@
   "pages": [
     "index",
     "quickstart",
+    "self-hosting",
     "demo",
     "connect-your-agent",
     "concepts",
     "kitchen-invites",
-    "agents",
     "reference"
   ]
 }

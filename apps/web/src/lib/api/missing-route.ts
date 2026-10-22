@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isClerkProtectExempt } from "@/lib/clerk-protect";
+import { isDemoModeEnabled, type EnvLike } from "@/lib/demo/mode";
 
-export function missingApiMessage(pathname: string): string {
-  return `${pathname} is not an API route. Use /api/v1/{resource}, or mint a demo key with /api/demo/enter?format=json.`;
+export function missingApiMessage(pathname: string, env: EnvLike = process.env): string {
+  const prefix = `${pathname} is not an API route. Use /api/v1/{resource}.`;
+  if (isDemoModeEnabled(env)) {
+    return `${prefix} For a no-signup sandbox key, call /api/demo/enter?format=json.`;
+  }
+  return `${prefix} Create a key under Settings, then API keys, on this origin.`;
 }
 
 export function isApiOrMcpPath(pathname: string): boolean {

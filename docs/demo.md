@@ -232,7 +232,7 @@ First production build must see `DATABASE_URL` so `0003_demo_sandbox` applies. R
 ### Smoke after deploy
 
 1. `curl -sS https://<demo-host>/mcp` → `{ "transport": "stateless-http", "auth": "ApiKey or Bearer rkapi_", … }`
-2. `curl -sS -H 'Accept: application/json' https://<demo-host>/api/demo/enter?format=json` → `rkapi_` key + `mcpUrl`
+2. `curl -sS -H 'Accept: application/json' "https://<demo-host>/api/demo/enter?format=json"` → `rkapi_` key + `mcpUrl`
 3. MCP `initialize` + `tools/list` with `Authorization: ApiKey <key>` (see above)
 4. Open `/recipes` in a browser → banner “Demo, resets daily”, 5 people, ~20 recipes
 5. Open `/settings` → same MCP URL and key

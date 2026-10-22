@@ -29,17 +29,19 @@ Each household can have:
 
 ### Example People
 
+All ids are UUIDs.
+
 ```typescript
 {
-  id: "person_1",
-  householdId: "household_1",
-  name: "Parent A",
+  id: "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+  householdId: "550e8400-e29b-41d4-a716-446655440002",
+  displayName: "Parent A",
   rules: [
     {
       kind: "allergen",
-      value: "peanuts",
+      target: "peanut",
       severity: "block",
-      reason: "Severe peanut allergy"
+      note: "Severe peanut allergy"
     }
   ]
 }
@@ -53,20 +55,22 @@ Dietary rules are **per-person** configurations that define allergies, restricti
 
 > **Note:** All rules are per-person and configured by the family admin. OvenLovin never hard-codes allergen policies.
 
-- **allergen** - Food allergies (peanuts, tree nuts, dairy, eggs, fish, shellfish, wheat, soy, sesame)
+- **allergen** - Food allergies (`peanut`, `tree_nut`, `milk`, `egg`, `fish`, `shellfish`, `wheat`, `soy`, `sesame`)
 - **ingredient** - Specific ingredient restrictions (garlic, onions, nightshades)
-- **dietary** - Dietary patterns (vegetarian, vegan, gluten-free, kosher, halal)
-- **nutrition** - Nutritional constraints (low-sodium, low-sugar, low-carb)
+- **ingredient_category** - A category of ingredients
+- **diet** - Dietary patterns (`vegetarian`, `vegan`, `pescatarian`, `gluten_free`, `dairy_free`)
+- **tag** - A labeled tag (for example spicy)
+- **custom** - A household-defined rule
 
 ### Severity Levels
 
 Each rule has a severity level that determines how strictly it's enforced:
 
-| Severity | Meaning | Example |
-|----------|---------|---------|
-| `block` | Recipe is unsafe for this person | Severe peanut allergy |
-| `warn` | Recipe should be flagged for review | Possible cross-contamination with allergen |
-| `prefer_avoid` | Recipe is not preferred but not dangerous | Dietary preference, mild intolerance |
+| Severity       | Meaning                                   | Example                                    |
+| -------------- | ----------------------------------------- | ------------------------------------------ |
+| `block`        | Recipe is unsafe for this person          | Severe peanut allergy                      |
+| `warn`         | Recipe should be flagged for review       | Possible cross-contamination with allergen |
+| `prefer_avoid` | Recipe is not preferred but not dangerous | Dietary preference, mild intolerance       |
 
 ### Shared Facility Setting
 
@@ -75,14 +79,16 @@ Rules can include a `sharedFacility` flag to warn about products processed in fa
 ```typescript
 {
   kind: "allergen",
-  value: "peanuts",
+  target: "peanut",
   severity: "warn",
-  sharedFacility: true,
-  reason: "Warn if processed in facility with peanuts"
+  sharedFacility: "warn",
+  note: "Warn if processed in a facility with peanuts"
 }
 ```
 
 ## Recipes
+
+When you create a recipe, send each ingredient as `{ "rawText": "2 cups broccoli" }`. The API parses it into name, quantity and unit.
 
 Recipes are the building blocks of meal plans. Each recipe includes:
 
@@ -105,29 +111,13 @@ OvenLovin supports multiple import methods:
 
 ```json
 {
-  "id": "recipe_1",
+  "id": "49e5fbdd-b252-4638-a1b4-e3a5cba25c46",
   "title": "Chocolate Chip Cookies",
   "ingredients": [
-    {
-      "name": "all-purpose flour",
-      "quantity": { "min": 2.5, "max": 2.5 },
-      "unit": "cups"
-    },
-    {
-      "name": "butter",
-      "quantity": { "min": 1, "max": 1 },
-      "unit": "cup"
-    },
-    {
-      "name": "chocolate chips",
-      "quantity": { "min": 2, "max": 2 },
-      "unit": "cups"
-    }
-  ],
-  "nutrition": {
-    "servings": 24,
-    "caloriesPerServing": 150
-  }
+    { "rawText": "2.5 cups all-purpose flour" },
+    { "rawText": "1 cup butter" },
+    { "rawText": "2 cups chocolate chips" }
+  ]
 }
 ```
 
@@ -162,20 +152,57 @@ When you check a meal plan, OvenLovin:
 ```json
 {
   "status": "complete",
-  "findings": {
-    "block": [
-      {
-        "personId": "person_1",
-        "personName": "Parent A",
-        "severity": "block",
-        "recipeId": "recipe_1",
-        "recipeName": "Peanut Butter Cookies",
-        "ingredientName": "peanut butter",
-        "reason": "Parent A: recipe contains peanut butter (block rule for peanuts)"
-      }
-    ],
-    "warn": [],
-    "preferAvoid": []
+  "byEntry": [
+    {
+      "entryId": "3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e",
+      "date": "2026-10-12",
+      "mealSlot": "dinner",
+      "recipeTitle": "Peanut Butter Cookies",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedPeople": ["6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d"]
+    }
+  ],
+  "byPerson": [
+    {
+      "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+      "personName": "Parent A",
+      "findings": {
+        "block": [
+          {
+            "personId": "6f1c2a90-8d3e-4b7a-9c12-0e4f5a6b7c8d",
+            "personName": "Parent A",
+            "severity": "block",
+            "ingredientName": "peanut butter",
+            "message": "Contains peanuts (peanut butter), so Parent A can't eat this"
+          }
+        ],
+        "warn": [],
+        "prefer_avoid": []
+      },
+      "affectedEntries": ["3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e"]
+    }
+  ],
+  "summary": {
+    "totalEntries": 1,
+    "totalPeople": 1,
+    "entriesWithBlocks": 1,
+    "entriesWithWarnings": 0,
+    "entriesWithPreferAvoid": 0,
+    "peopleWithBlocks": 1,
+    "peopleWithWarnings": 0,
+    "peopleWithPreferAvoid": 0
   }
 }
 ```
@@ -193,28 +220,54 @@ Shopping lists aggregate ingredients from a meal plan and organize them by groce
 
 ```json
 {
-  "id": "list_1",
-  "mealPlanId": "plan_1",
-  "items": [
+  "mealPlanId": "2d8f1a6b-5c4e-4a91-9c0e-7c2a1e8f4b3d",
+  "weekStart": "2026-10-12",
+  "groupBy": "aisle",
+  "includeStaples": false,
+  "includePantryItems": false,
+  "itemCount": 2,
+  "ingredients": [
     {
-      "ingredient": "all-purpose flour",
-      "quantity": { "min": 5, "max": 5 },
+      "key": "all-purpose-flour",
+      "name": "all-purpose flour",
+      "quantity": 5,
       "unit": "cups",
-      "section": "pantry",
-      "warnings": []
+      "aisle": "Pantry",
+      "recipes": []
     },
     {
-      "ingredient": "peanut butter",
-      "quantity": { "min": 2, "max": 2 },
+      "key": "peanut-butter",
+      "name": "peanut butter",
+      "quantity": 2,
       "unit": "cups",
-      "section": "pantry",
-      "warnings": [
+      "aisle": "Pantry",
+      "recipes": []
+    }
+  ],
+  "sections": [
+    {
+      "name": "Pantry",
+      "items": [
         {
-          "personName": "Parent A",
-          "severity": "block",
-          "reason": "Parent A has a block rule for peanuts"
+          "key": "all-purpose-flour",
+          "name": "all-purpose flour",
+          "quantity": 5,
+          "unit": "cups"
+        },
+        {
+          "key": "peanut-butter",
+          "name": "peanut butter",
+          "quantity": 2,
+          "unit": "cups"
         }
       ]
+    }
+  ],
+  "warnings": [
+    {
+      "ingredient": "peanut butter",
+      "personName": "Parent A",
+      "note": "Contains peanuts (peanut butter), so Parent A can't eat this"
     }
   ]
 }

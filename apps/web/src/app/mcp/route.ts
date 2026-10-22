@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { VERSION } from "@ovenlovin/core";
 import { authenticateRequest, handleHttpRequest, JsonRpcErrorCode } from "@ovenlovin/mcp";
 import { ForbiddenError } from "@/lib/api/errors";
 import { recordSuccessfulDemoImport } from "@/lib/demo/enforce";
@@ -20,7 +21,7 @@ export const maxDuration = 60;
 
 const SERVER_INFO = {
   name: "ovenlovin-mcp",
-  version: "0.1.0",
+  version: VERSION,
 };
 
 function collectHeaders(request: NextRequest): Record<string, string> {

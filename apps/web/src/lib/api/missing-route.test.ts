@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import {
   isApiOrMcpPath,
@@ -8,14 +8,25 @@ import {
 } from "./missing-route";
 
 describe("missing API routes", () => {
-  it("returns problem+json 404 instead of a demo key", async () => {
-    const request = new NextRequest("https://ovenlovin-demo.vercel.app/api/v1");
+  it("points product 404s to Settings, then API keys, never the demo", async () => {
+    vi.stubEnv("OVENLOVIN_DEMO_MODE", "");
+    const request = new NextRequest("https://your-app.vercel.app/api/v1");
     const response = missingApiResponse(request);
     expect(response.status).toBe(404);
     expect(response.headers.get("content-type")).toContain("application/problem+json");
     const body = (await response.json()) as { detail?: string };
     expect(body.detail).toBe(missingApiMessage("/api/v1"));
-    expect(body.detail).not.toMatch(/apiKey/i);
+    expect(body.detail).toContain("Settings, then API keys, on this origin");
+    expect(body.detail).not.toContain("demo");
+    expect(body.detail).not.toContain("ovenlovin-demo");
+    expect(body.detail).not.toMatch(/mint a demo key with \/api\/demo\/enter/);
+  });
+
+  it("keeps the demo enter hint when demo mode is on", () => {
+    const detail = missingApiMessage("/api/v1", { OVENLOVIN_DEMO_MODE: "1" });
+    expect(detail).toContain("/api/demo/enter?format=json");
+    expect(detail).not.toContain("ovenlovin-demo.vercel.app");
+    expect(detail).not.toContain("Settings");
   });
 
   it("treats ApiKey and JSON Accept as API-shaped, not kitchen HTML", () => {
@@ -56,7 +67,7 @@ describe("missing API routes", () => {
   });
 
   it("returns problem+json 404 for a wrong base path an agent would follow", async () => {
-    const request = new NextRequest("https://ovenlovin-demo.vercel.app/recipes", {
+    const request = new NextRequest("https://your-app.vercel.app/recipes", {
       headers: {
         Authorization: "ApiKey rkapi_abc",
         Accept: "application/json",
@@ -69,5 +80,7 @@ describe("missing API routes", () => {
     expect(body.status).toBe(404);
     expect(body.detail).toBe(missingApiMessage("/recipes"));
     expect(body.detail).toMatch(/\/api\/v1\//);
+    expect(body.detail).toContain("Settings, then API keys, on this origin");
+    expect(body.detail).not.toContain("demo");
   });
 });

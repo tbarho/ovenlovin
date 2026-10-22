@@ -1,5 +1,13 @@
 #!/bin/bash
-# Fix type errors in auto-generated .source/index.ts
+# Generate fumadocs map if missing, then mark docs/meta as any (line-agnostic).
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-sed -i '27s/^export const docs = /\/\/ eslint-disable-next-line\nexport const docs: any = /' .source/index.ts
-sed -i '29s/^export const meta = /\/\/ eslint-disable-next-line\nexport const meta: any = /' .source/index.ts
+if [ ! -f .source/index.ts ]; then
+  pnpm exec fumadocs-mdx
+fi
+
+if [ -f .source/index.ts ]; then
+  perl -pi -e 's/^export const docs = /export const docs: any = /' .source/index.ts
+  perl -pi -e 's/^export const meta = /export const meta: any = /' .source/index.ts
+fi

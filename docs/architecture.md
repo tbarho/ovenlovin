@@ -131,7 +131,7 @@ ovenlovin/
 │   ├── index.md
 │   ├── bot-setup.md
 │   ├── rules.md
-│   └── api-reference.md
+│   └── (REST lives on the docs site)
 │
 ├── .github/
 │   └── workflows/          # CI/CD pipelines
@@ -211,10 +211,10 @@ export const personRules = pgTable('person_rules', {
   householdId: uuid('household_id').notNull(),
   personId: uuid('person_id').notNull(),
   
-  kind: text('kind').notNull(), // 'allergen' | 'ingredient' | 'dietary' | 'nutrition'
+  kind: text('kind').notNull(), // 'allergen' | 'ingredient' | 'ingredient_category' | 'diet' | 'tag' | 'custom'
   target: text('target').notNull(), // 'peanut' | 'vegetarian' | etc.
   severity: text('severity').notNull(), // 'block' | 'warn' | 'prefer_avoid'
-  notes: text('notes'),
+  note: text('note'),
   
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -227,15 +227,14 @@ export const personRules = pgTable('person_rules', {
 Allergen taxonomy and rule matcher.
 
 **Taxonomy**:
-- Canonical allergen names (peanut, tree_nuts, dairy, etc.)
-- Aliases (groundnuts → peanuts, cow's milk → dairy)
-- Hidden ingredients (albumin → eggs, casein → dairy)
+- Canonical allergen names (peanut, tree_nut, milk, etc.)
+- Aliases (groundnuts → peanut, cow's milk → milk)
+- Hidden ingredients (albumin → egg, casein → milk)
 - Common misspellings and OCR errors
 
 **Matchers**:
-- `matchAllergen(ingredient, allergen)` - Check if ingredient contains allergen
-- `matchDietary(ingredient, diet)` - Check if ingredient violates diet
-- `matchNutrition(recipe, threshold)` - Check if recipe exceeds nutrition limit
+- `matchIngredient(name)` - Map an ingredient line to allergen codes
+- `matchPhrasesForTarget(target)` - Phrases a diet or ingredient rule matches
 
 **Testing**: Adversarial test fixtures (misspellings, plurals, OCR errors, hidden ingredients)
 
@@ -336,15 +335,15 @@ apps/web/src/app/api/v1/
 │   ├── import/route.ts       # POST /recipes/import
 │   └── [id]/
 │       ├── route.ts          # GET /recipes/{id}, PATCH /recipes/{id}
-│       └── check/route.ts    # POST /recipes/{id}/check
+│       ├── image/route.ts    # GET/POST /recipes/{id}/image
+│       └── restore/route.ts
+│
+├── people/
+│   └── [id]/rules/route.ts   # GET/POST /people/{id}/rules
 │
 ├── households/
-│   └── [id]/
-│       ├── context/route.ts  # GET /households/{id}/context
-│       └── people/
-│           └── [personId]/
-│               └── rules/
-│                   └── route.ts # POST /people/{id}/rules
+│   ├── route.ts              # GET /households, PATCH /households
+│   └── mine/route.ts
 │
 ├── meal-plans/
 │   ├── route.ts              # GET /meal-plans, POST /meal-plans
@@ -567,7 +566,7 @@ See [AGENTS.md](../AGENTS.md) for detailed guidelines on adding importers, MCP t
 ## Resources
 
 - **[Bot Setup Guide](bot-setup.md)** - Connect AI bots to OvenLovin
-- **[API Reference](api-reference.md)** - REST API endpoints and schemas
+- **[API Reference](https://tbarho.github.io/ovenlovin/docs/reference/api)** - REST API and OpenAPI
 - **[Allergy & Dietary Rules](rules.md)** - Safety invariants and rule types
 - **[AGENTS.md](../AGENTS.md)** - Development guidelines for AI agents
 

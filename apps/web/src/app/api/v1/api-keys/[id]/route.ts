@@ -16,9 +16,9 @@ export async function DELETE(
 ) {
   try {
     const context = await getRequestContext(request);
+    requireUserId(context);
     requireAdminRole(context);
     const householdId = requireHouseholdId(context);
-    requireUserId(context);
     const { id } = await params;
     requireResourceId("API key", id);
 

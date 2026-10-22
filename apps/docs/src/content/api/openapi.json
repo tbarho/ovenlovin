@@ -15,7 +15,7 @@
   },
   "servers": [
     {
-      "url": "https://ovenlovin.vercel.app/api/v1",
+      "url": "https://your-app.vercel.app/api/v1",
       "description": "This OvenLovin instance"
     },
     {
@@ -47,6 +47,23 @@
       }
     },
     "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "version": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["status", "version", "timestamp"]
+      },
       "ConfigStatus": {
         "type": "object",
         "properties": {
@@ -953,7 +970,7 @@
     "parameters": {},
     "responses": {
       "Forbidden": {
-        "description": "API key is missing a required scope. Type is `<origin>/problems/forbidden`. Clerk sessions are not scope-checked.",
+        "description": "Forbidden. Type is `<origin>/problems/forbidden`. Causes: missing scope, role not allowed, mismatched `X-Kitchen-Id`, or the public demo write/upload cap. Clerk sessions are not scope-checked.",
         "content": {
           "application/problem+json": {
             "schema": {
@@ -961,7 +978,7 @@
               "properties": {
                 "type": {
                   "type": "string",
-                  "example": "https://ovenlovin.vercel.app/problems/forbidden"
+                  "example": "https://your-app.vercel.app/problems/forbidden"
                 },
                 "title": {
                   "type": "string",
@@ -983,6 +1000,38 @@
     }
   },
   "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health check",
+        "description": "API version is the same value as OpenAPI info.version and MCP serverInfo.version.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": ["health"],
+        "summary": "OpenAPI 3.1 document",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OpenAPI JSON"
+          }
+        }
+      }
+    },
     "/status": {
       "get": {
         "tags": ["health"],
@@ -1013,8 +1062,7 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "exclusiveMinimum": true,
-              "maximum": 100
+              "exclusiveMinimum": true
             },
             "required": false,
             "name": "limit",
@@ -1063,6 +1111,15 @@
             "required": false,
             "name": "uncategorized",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["draft", "needs_review", "published"]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
           }
         ],
         "responses": {
@@ -1070,6 +1127,16 @@
             "description": "Recipe page. When forAttendees is set, also returns hiddenCount and hidden.",
             "content": {
               "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "id": "49e5fbdd-b252-4638-a1b4-e3a5cba25c46",
+                      "title": "Veggie Stir Fry"
+                    }
+                  ],
+                  "nextCursor": null,
+                  "hasMore": false
+                },
                 "schema": {
                   "type": "object",
                   "properties": {
@@ -1078,6 +1145,13 @@
                       "items": {
                         "$ref": "#/components/schemas/Recipe"
                       }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "hasMore": {
+                      "type": "boolean"
                     },
                     "hiddenCount": {
                       "type": "integer",
@@ -1120,13 +1194,22 @@
                       }
                     }
                   },
-                  "required": ["items"]
+                  "required": ["items", "nextCursor", "hasMore"]
                 }
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1160,6 +1243,64 @@
                   "cookTimeMinutes": {
                     "type": "integer",
                     "minimum": 0
+                  },
+                  "totalTimeMinutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cuisine": {
+                    "type": "string"
+                  },
+                  "course": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["draft", "needs_review", "published"]
+                  },
+                  "sourceUrl": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "canonicalUrl": {
+                        "type": "string"
+                      },
+                      "author": {
+                        "type": "string"
+                      },
+                      "importerName": {
+                        "type": "string"
+                      },
+                      "importerVersion": {
+                        "type": "string"
+                      },
+                      "rawExtractionJson": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "nullable": true
+                        }
+                      }
+                    }
+                  },
+                  "reviewReasons": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "uncertainFields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "images": {
                     "type": "array",
@@ -1212,8 +1353,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1255,8 +1405,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1365,8 +1524,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1388,8 +1556,17 @@
           "204": {
             "description": "Deleted"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1417,11 +1594,65 @@
           "302": {
             "description": "Redirect to a Blob or remote URL"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "Recipe or image not found"
+          }
+        }
+      },
+      "post": {
+        "tags": ["recipes"],
+        "summary": "Store a compressed main photo (data URL, 700KB cap)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["image"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated recipe"
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1452,8 +1683,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1511,8 +1751,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           },
           "409": {
             "description": "Duplicate or in-flight import. Includes recipeId, title, and recipeUrl."
@@ -1560,8 +1809,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           },
           "503": {
             "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
@@ -1695,8 +1953,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           },
           "503": {
             "description": "AI recipe reading is busy (import_ai_unavailable). Retry-After is 60 seconds."
@@ -1728,8 +1995,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1765,8 +2041,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1797,8 +2082,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1845,8 +2139,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -1868,8 +2171,17 @@
           "204": {
             "description": "Deleted"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1909,8 +2221,58 @@
           "200": {
             "description": "Membership saved"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
+          }
+        }
+      },
+      "delete": {
+        "tags": ["cookbooks"],
+        "summary": "Remove a recipe from a cookbook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "recipeId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -1959,8 +2321,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2002,8 +2373,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2053,13 +2433,70 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
     },
     "/people/{id}/preferences/{prefId}": {
+      "get": {
+        "tags": ["people"],
+        "summary": "Get one preference",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "prefId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preference"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
+          }
+        }
+      },
       "delete": {
         "tags": ["people"],
         "summary": "Remove a preference",
@@ -2087,8 +2524,17 @@
           "204": {
             "description": "Deleted"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2114,8 +2560,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2144,8 +2599,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2181,8 +2645,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2213,8 +2686,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2261,8 +2743,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2284,8 +2775,17 @@
           "204": {
             "description": "Deleted"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2319,8 +2819,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2382,13 +2891,154 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
     },
     "/people/{id}/rules/{ruleId}": {
+      "get": {
+        "tags": ["people"],
+        "summary": "Get one rule",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ruleId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
+          }
+        }
+      },
+      "patch": {
+        "tags": ["people"],
+        "summary": "Update a rule",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ruleId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "allergen",
+                      "ingredient",
+                      "ingredient_category",
+                      "diet",
+                      "tag",
+                      "custom"
+                    ]
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["block", "warn", "prefer_avoid"]
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "confirmUnknown": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
+          }
+        }
+      },
       "delete": {
         "tags": ["people"],
         "summary": "Remove a rule",
@@ -2416,8 +3066,17 @@
           "204": {
             "description": "Deleted"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2472,8 +3131,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2562,8 +3230,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2594,8 +3271,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2741,8 +3427,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -2764,8 +3459,17 @@
           "204": {
             "description": "Deleted"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2789,6 +3493,12 @@
         "responses": {
           "200": {
             "description": "Restored plan"
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -2818,8 +3528,17 @@
           "200": {
             "description": "Revision list"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2842,6 +3561,12 @@
         "responses": {
           "200": {
             "description": "Check report"
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -2868,6 +3593,12 @@
         "responses": {
           "200": {
             "description": "Check report"
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -2957,8 +3688,14 @@
           "400": {
             "description": "Invalid format, groupBy, or timeZone"
           },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -2989,8 +3726,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3031,8 +3777,14 @@
           "400": {
             "description": "Unknown keys or invalid check-off payload"
           },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3045,8 +3797,55 @@
           "200": {
             "description": "Household"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
+          }
+        }
+      },
+      "patch": {
+        "tags": ["households"],
+        "summary": "Rename the kitchen (owner)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Household"
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3067,8 +3866,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3108,8 +3916,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3129,8 +3946,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3188,8 +4014,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3202,8 +4037,14 @@
           "200": {
             "description": "API keys"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
           "401": {
             "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3235,8 +4076,17 @@
           "201": {
             "description": "Created key with plaintext"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
           "401": {
             "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
+          },
+          "403": {
+            "description": "Admin or owner role required. Type is `<origin>/problems/forbidden`. Distinct from a missing-scope 403. An API key still gets 401."
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3260,8 +4110,17 @@
           "204": {
             "description": "Revoked"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
           "401": {
             "description": "Signed-in user required. API keys cannot list, create, or revoke keys."
+          },
+          "403": {
+            "description": "Admin or owner role required. Type is `<origin>/problems/forbidden`. Distinct from a missing-scope 403. An API key still gets 401."
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3274,8 +4133,17 @@
           "200": {
             "description": "Kitchens with an `active` flag. `activeHouseholdId` is the current kitchen. API keys cannot switch."
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3304,8 +4172,17 @@
           "200": {
             "description": "Selected kitchen"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3334,8 +4211,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3374,8 +4260,17 @@
           "200": {
             "description": "Updated membership"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3397,8 +4292,17 @@
           "204": {
             "description": "Removed"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3411,8 +4315,17 @@
           "200": {
             "description": "Left kitchen"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3441,8 +4354,17 @@
               }
             }
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       },
@@ -3472,8 +4394,17 @@
           "201": {
             "description": "Created invite with url"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3497,8 +4428,17 @@
           "200": {
             "description": "Revoked invite"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Authorization."
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }
@@ -3528,6 +4468,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
+          },
+          "410": {
+            "description": "Gone. Expired invite."
           }
         }
       }
@@ -3550,11 +4499,17 @@
           "200": {
             "description": "Joined kitchen"
           },
+          "400": {
+            "description": "Validation Error. type is <origin>/problems/validation-error. Body includes errors[{path,message,code}]."
+          },
           "401": {
             "description": "Signed-in user required. An API key cannot accept; the problem detail includes the invite link."
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. Missing resource, unknown path, or a malformed or foreign id. Never 500. Never another kitchen's data."
           }
         }
       }

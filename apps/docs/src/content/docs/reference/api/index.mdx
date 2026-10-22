@@ -1,9 +1,9 @@
 ---
 title: REST API Overview
-description: Bot-optimized REST API with OpenAPI 3.1 specification
+description: Live /api/v1 routes, statuses, and OpenAPI 3.1
 ---
 
-OvenLovin provides a REST API optimized for AI agents and bot clients. All endpoints follow REST conventions with JSON request/response bodies.
+OvenLovin REST at `/api/v1`. JSON bodies. OpenAPI 3.1 from the same Zod schemas the handlers use. All ids are UUIDs. `version` on `/health` is the API version (`0.1.0`), the same value as OpenAPI `info.version` and MCP `serverInfo.version`.
 
 ## Base URL
 
@@ -13,213 +13,179 @@ OvenLovin provides a REST API optimized for AI agents and bot clients. All endpo
 
 ## Authentication
 
-Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have an OvenLovin kitchen (open the app in the browser once; MCP does not create one). On MCP with a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is rejected.
+Send `Authorization: ApiKey rkapi_...` or `Bearer` with the same key or a Clerk JWT. Clerk users must already have a kitchen (open the app once). On a Clerk JWT, optional `X-Kitchen-Id` selects a kitchen you belong to. An API key is bound to one kitchen; a mismatched `X-Kitchen-Id` is `403`.
 
-### User Authentication (Clerk JWT)
-
-For authenticated user requests:
+No auth: `GET /health`, `GET /status`, `GET /openapi.json`, `GET /invites/{token}`.
 
 ```bash
-curl -H "Authorization: Bearer <jwt-token>" \
+curl -H "Authorization: Bearer <jwt-or-rkapi-key>" \
   https://your-app.vercel.app/api/v1/recipes
 ```
-
-### Bot Authentication (API Key)
-
-For bot client requests:
 
 ```bash
 curl -H "Authorization: ApiKey <api-key>" \
   https://your-app.vercel.app/api/v1/recipes
 ```
 
-## Response Formats
+Keys store `scopes`. A request outside the key's scopes returns `403` with `type` `<origin>/problems/forbidden`. The detail names the missing scope. Clerk sessions are not scope-checked. Omit scopes when you create a key for full access. `HEAD` is treated as `GET`.
 
-### Success Response
+`GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/{id}` are session-only. An API key gets `401`. `POST /api-keys` and `DELETE /api-keys/{id}` also require a signed-in admin or owner. The response field `plaintext` holds the full `rkapi_...` key. It is returned once.
 
-Standard JSON response:
+Routes also authorize by kitchen membership role (viewer / member / admin / owner).
 
-```json
-{
-  "id": "abc-123",
-  "title": "Recipe Title",
-  ...
-}
-```
-
-### Paginated Response
-
-List endpoints return cursor-based pagination:
+## Error Response (RFC 9457)
 
 ```json
 {
-  "items": [...],
-  "nextCursor": "cursor-token",
-  "hasMore": true
+  "type": "https://your-app.vercel.app/problems/validation-error",
+  "title": "Validation Error",
+  "status": 400,
+  "detail": "Request validation failed",
+  "instance": "https://your-app.vercel.app/api/v1/recipes",
+  "errors": [
+    {
+      "path": "title",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    }
+  ]
 }
 ```
 
-### Error Response (RFC 9457)
+`instance` is the full request URL. Non-JSON bodies are `400` `problems/bad-request` "Request body must be JSON".
 
-All errors follow problem+json format:
+Statuses the handlers return:
 
-```json
-{
-  "type": "https://your-app.vercel.app/problems/not-found",
-  "title": "Not Found",
-  "status": 404,
-  "detail": "Recipe with id abc-123 not found",
-  "instance": "/api/v1/recipes/abc-123"
-}
-```
+- `200` / `201` / `204` - Success, created (`Location` when set), no content
+- `400` - Invalid input, including Zod validation (`problems/validation-error`)
+- `401` - Missing or invalid auth
+- `403` - Role not allowed, kitchen header mismatch, demo write/upload cap, or API key missing a required scope (`problems/forbidden`)
+- `404` - Missing resource, unknown path, or a malformed or foreign id. Never `500`. Never another kitchen's data.
+- `409` - Conflict (duplicate import, near-duplicate, in-flight import, household conflict)
+- `410` - Expired invite
+- `500` - Unhandled server error
+- `503` - AI recipe reading is busy (`import_ai_unavailable`). `Retry-After: 60`
 
-## Available Endpoints
+There is no rate limit today. Be gentle: retry `503` `import_ai_unavailable` after `Retry-After` seconds. The public demo can `403` writes after its sandbox cap.
 
-### Health
+`not_a_public_url` is an http(s) URL whose host is private, loopback, link-local, or not on port 80 or 443. Content that is not an http(s) URL at all (for example `file:` or `ftp:`) is `400` with detail "That doesn't look like a web address" and no `code`. Image fields otherwise: a public http(s) image URL, a stored blob URL, or an inline image.
 
-- `GET /health` - Health check and API version
+## Idempotency-Key
 
-### Recipes
+Optional header. Any string (trimmed, first 512 characters). Not required to be a UUID.
 
-- `GET /recipes` - List recipes with pagination and search
-- `POST /recipes` - Create a new recipe
-- `GET /recipes/{id}` - Get recipe details
-- `PATCH /recipes/{id}` - Update a recipe
-- `DELETE /recipes/{id}` - Delete a recipe (soft delete)
+Honored when saving a recipe: `POST /recipes`, `POST /recipes/import` with `save: true`, `POST /recipes/import/photo` with `save: true`. A completed key returns the first saved recipe (`200`). There is no "key conflict" status. `409` means a duplicate URL or photo, or an in-flight lock.
 
-### People
-
-- `GET /people` - List household members
-- `POST /people` - Add a person to household
-- `GET /people/{id}` - Get person details
-- `PATCH /people/{id}` - Update person information
-- `DELETE /people/{id}` - Remove person from household
-
-### Person Rules
-
-- `GET /people/{id}/rules` - List dietary rules for a person
-- `POST /people/{id}/rules` - Add a new rule
-- `GET /people/{id}/rules/{ruleId}` - Get rule details
-- `PATCH /people/{id}/rules/{ruleId}` - Update a rule
-- `DELETE /people/{id}/rules/{ruleId}` - Delete a rule
-
-### Meal Plans
-
-- `GET /meal-plans` - List meal plans
-- `POST /meal-plans` - Create a meal plan
-- `GET /meal-plans/{id}` - Get meal plan details
-- `PATCH /meal-plans/{id}` - Update meal plan
-- `DELETE /meal-plans/{id}` - Delete meal plan
-- `POST /meal-plans/{id}/check` - Check plan against rules
-- `GET /meal-plans/{id}/shopping-list` - Generate shopping list
-
-### Households
-
-- `GET /households` - Get the authenticated household
-- `GET /households/mine` - List kitchens (signed-in: every kitchen you belong to; API key: the key's kitchen only, read-only, with `active: true`)
-- `POST /households/select` - Switch the active kitchen (signed-in users only; API keys are bound to one kitchen)
-
-- `GET /households/members` - List kitchen members
-- `PATCH /households/members/{userId}` - Change a member role (owner)
-- `DELETE /households/members/{userId}` - Remove a member (owner)
-- `POST /households/leave` - Leave the active kitchen
-- `GET /households/invites` - List pending invite links (owner or admin)
-- `POST /households/invites` - Create an invite link (owner or admin)
-- `DELETE /households/invites/{id}` - Revoke an invite (owner or admin)
-- `GET /invites/{token}` - Preview an invite (no auth)
-- `POST /invites/{token}/accept` - Accept an invite (signed-in person only; an API key cannot join another kitchen)
-
-See [Kitchen invites](/docs/kitchen-invites).
+Other POSTs may read the header and ignore it.
 
 ## Pagination
-
-All list endpoints support cursor pagination:
 
 ```bash
 GET /recipes?limit=20&cursor=<cursor-token>
 ```
 
-Parameters:
+`limit` defaults to `20` (`GET /cookbooks`: `50`). There is no maximum. `GET /cookbooks?view=cards` returns every cookbook in one page. Response: `{ items, nextCursor, hasMore }`. Rule and preference GETs return the array itself. `search` is a case-sensitive substring match on the title today.
 
-- `limit`: Number of items per page (default: 20, max: 100)
-- `cursor`: Continuation token from previous response
+## Endpoints
 
-Response includes:
+### Health
 
-- `items`: Array of results
-- `nextCursor`: Token for next page (null if no more results)
-- `hasMore`: Boolean indicating more results available
-
-## Filtering and Search
-
-Many endpoints support filtering:
+- `GET /health` - `{ status: "ok", version, timestamp }`. No auth. `version` is `0.1.0`.
+- `GET /status` - No auth. `{ mode, commitSha, ready, checks }`
+- `GET /openapi.json` - OpenAPI 3.1. No auth.
 
 ### Recipes
 
-```bash
-GET /recipes?search=chicken&status=published
-```
+- `GET /recipes` - `limit`, `cursor`, `status` (`draft`, `needs_review`, `published`), `search` (title only; case-sensitive), `cookbookId`, `uncategorized=true`, `forAttendees` (person UUIDs, repeat or comma-separated). Blocked recipes land in `hidden`.
+- `POST /recipes` - `{ title, ingredients: [{ rawText }], steps: [{ text }], ... }`. `201`, or `200` on idempotent replay
+- `GET /recipes/{id}` - Details. Optional `?servings=`. `ingredients` are rows with `rawText` plus parsed `name`, `quantityMin`, `quantityMax`, `unit`. `steps` are rows with `text` and `order`.
+- `PATCH /recipes/{id}` - Title, times, images, ingredients, steps, `cookbookIds`
+- `DELETE /recipes/{id}` - `204`
+- `POST /recipes/{id}/restore` - Undo a delete (`200` recipe)
+- `GET /recipes/{id}/image` - `302` to the photo, or bytes when stored inline. `404` if none
+- `POST /recipes/{id}/image` - `{ image: <data URL> }` (700KB max). `200` recipe
+- `POST /recipes/import` - URL or paste. Preview unless `save: true`
+- `POST /recipes/import/page` - Captured page `{ url, html?, jsonLd? }`. Saves. `201` (form post without JSON Accept: `303`)
+- `POST /recipes/import/photo` - Photo. Preview unless `save: true`
 
-### Meal Plans
+Import failures: `400` with `not_a_public_url` (private/loopback http(s)), `import_blocked`, `import_page_private` (the page is private or needs a sign-in), `import_page_gone`, `import_not_a_recipe`, `import_unsupported_site`. Photo: `PHOTO_BLURRY`, `PHOTO_NOT_RECIPE`. `409` with `import_duplicate` (URL or exact photo already saved), `import_near_duplicate` (photo `save: true` without `allowDuplicate: true`), `import_in_progress` (same `Idempotency-Key` still running). Photo import on an instance without AI Gateway is `400` with no `code`. Busy model: `503` `import_ai_unavailable`.
 
-```bash
-GET /meal-plans?weekStart=2024-01-15&weekEnd=2024-01-21
-```
+There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GET /recipes?forAttendees=<personId>` (blocked recipes are listed in `hidden`) or the MCP tool `search_recipes` with `forAttendees`.
 
-## Idempotency
+### Cookbooks
 
-Write operations (POST, PATCH, DELETE) support idempotency keys:
+- `GET /cookbooks` - default `limit` 50, no maximum. `?view=cards` returns every cookbook in one page (`recipeCount`, `previewImages`)
+- `POST /cookbooks` - `{ name, description? }`
+- `GET /cookbooks/{id}` / `PATCH /cookbooks/{id}` / `DELETE /cookbooks/{id}` (`204`)
+- `POST /cookbooks/{id}/recipes` - `{ recipeId }`
+- `DELETE /cookbooks/{id}/recipes?recipeId=`
 
-```bash
-curl -X POST \
-  -H "Authorization: Bearer <jwt>" \
-  -H "Idempotency-Key: <uuid>" \
-  -H "Content-Type: application/json" \
-  -d '{"title": "My Recipe"}' \
-  https://your-app.vercel.app/api/v1/recipes
-```
+### People and rules
 
-Idempotency keys:
+- `GET /people` / `POST /people` - `{ displayName }`
+- `GET /people/{id}` / `PATCH /people/{id}` / `DELETE /people/{id}` (mutate: admin)
+- `POST /people/reorder` - `{ personIds }` (every person, once)
+- `GET /people/{id}/rules` - Rule array
+- `POST /people/{id}/rules` - `{ target, severity, kind?, note? }` (admin). `201` or `200` if duplicate
+- `GET /people/{id}/rules/{ruleId}` / `PATCH` / `DELETE` (`204`)
+- `GET /people/{id}/preferences?type=love` / `POST` / `GET .../{prefId}` / `DELETE`
 
-- Must be UUIDs
-- Prevent duplicate operations
-- Cached for 24 hours
-- Return original response for duplicate requests
+### Meal plans
 
-## Rate Limiting
+- `GET /meal-plans` - `limit`, `cursor`, `status`, `weekStart`, `weekEnd`
+- `POST /meal-plans` - `{ weekStart, status?, entries? }`. `201` with the plan and `entries`. Entries come back with `mealSlot` (the `meal` you sent), `freeformMeal`, `scaleFactor`, and `attendees`.
+- `GET /meal-plans/{id}` / `PATCH` / `DELETE` (`204`)
+- `GET /meal-plans/{id}/check` - Run check (dry run; does not persist)
+- `POST /meal-plans/{id}/check` - Run and persist (write). No body. Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe.
+- `POST /meal-plans/{id}/undo` / `GET /meal-plans/{id}/history`
+- `GET /meal-plans/{id}/shopping-list` - `format`, `groupBy`, `includeStaples`, `timeZone`. JSON is `ShoppingListData` (`mealPlanId`, `weekStart`, `groupBy`, `includeStaples`, `includePantryItems`, `ingredients`, `sections`, `itemCount`, `generatedAt`, `warnings`, `scaledFor`, `scaledForMixed`). Section items use `key`, `name`, `quantity`, `unit`, `displayQuantity`, `displayUnit`, `aisle`, `category`, `isStaple`, `isPantryItem`, `recipes[]`, `checked`. Warnings are listed once in top-level `warnings`. A bad `timeZone` is `400`.
+- `GET /meal-plans/{id}/shopping-list/state` / `PATCH` - `{ checkedKeys, extras }`
 
-- User endpoints: 100 requests/minute
-- Bot endpoints: 500 requests/minute
-- Rate limit headers included in responses
+### Household
+
+- `GET /households` / `PATCH /households` (owner, `{ name }`)
+- `GET /households/mine` (API key: its one kitchen, `active: true`) / `POST /households/select` (signed-in only; API key `401`)
+- `GET /households/settings` / `PATCH` - `{ mode: family|fixed|recipe, servings? }`
+- `GET /households/schedule` / `PUT` - `{ week }`
+- `GET /households/members` / `PATCH|DELETE /households/members/{userId}` (owner)
+- `POST /households/leave` - signed-in only
+- `GET|POST /households/invites` / `DELETE /households/invites/{id}` (admin; `200` with the revoked invite)
+- `GET /invites/{token}` (no auth) / `POST /invites/{token}/accept` (signed-in)
+
+There is no `GET /households/{id}/context`. `GET /households` returns the key's kitchen. `GET /people` lists people. `GET /people/{id}/rules` lists a person's rules. MCP `get_household_context` returns all of it in one call.
+
+### Uploads and API keys
+
+- `POST /uploads/images` - `file` or `{ url }`. `201` `{ url }`. Demo `403`
+- `GET /api-keys` / `POST /api-keys` / `DELETE /api-keys/{id}` - signed-in only. An API key gets `401`. `POST` and `DELETE` also require admin or owner.
+
+See [Kitchen invites](/docs/kitchen-invites).
+
+This page lists common endpoints. The complete, current list is the OpenAPI spec at `/api/v1/openapi.json`.
 
 ## OpenAPI Specification
-
-Full OpenAPI 3.1 specification available at:
 
 ```bash
 curl https://your-app.vercel.app/api/v1/openapi.json
 ```
 
+There is no YAML spec route.
+
 ## Code Examples
 
-### TypeScript (Fetch)
+### TypeScript
 
 ```typescript
 const response = await fetch("https://your-app.vercel.app/api/v1/recipes", {
-  headers: {
-    Authorization: `Bearer ${jwtToken}`,
-    "Content-Type": "application/json",
-  },
+  headers: { Authorization: `Bearer ${token}` },
 });
-
 const data = await response.json();
 ```
 
 ### cURL
 
 ```bash
-curl -H "Authorization: Bearer <jwt>" \
-  -H "Content-Type: application/json" \
+curl -H "Authorization: Bearer <token>" \
   https://your-app.vercel.app/api/v1/recipes
 ```
 
@@ -228,38 +194,43 @@ curl -H "Authorization: Bearer <jwt>" \
 ```python
 import requests
 
-headers = {
-    'Authorization': f'Bearer {jwt_token}',
-    'Content-Type': 'application/json'
-}
-
-response = requests.get(
-    'https://your-app.vercel.app/api/v1/recipes',
-    headers=headers
-)
-
-data = response.json()
+data = requests.get(
+    "https://your-app.vercel.app/api/v1/recipes",
+    headers={"Authorization": f"Bearer {token}"},
+).json()
 ```
 
-## Error Handling
+## API key scopes
 
-Common status codes:
+Live table: `REST_SCOPE_TABLE` and `MCP_SCOPE_TABLE` in `packages/core/src/auth/api-key-scopes.ts`. `HEAD` maps to `GET`. Unknown REST paths deny. `null` means any authenticated key (then a later `requireUserId` can still return `401`).
 
-- `200 OK` - Success
-- `201 Created` - Resource created
-- `400 Bad Request` - Invalid input
-- `401 Unauthorized` - Missing or invalid auth
-- `403 Forbidden` - Insufficient permissions. An API key outside its scopes returns type `<origin>/problems/forbidden` and names the missing scope. Clerk sessions are not scope-checked.
-- `404 Not Found` - Resource not found
-- `409 Conflict` - Idempotency key conflict
-- `422 Unprocessable Entity` - Validation error
-- `429 Too Many Requests` - Rate limit exceeded
-- `500 Internal Server Error` - Server error
+| Scope                         | REST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (public, no key)              | `GET /health`, `GET /status`, `GET /openapi.json`, `GET /invites/{token}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| (session-only; API key `401`; POST/DELETE admin or owner) | `GET /api-keys`, `POST /api-keys`, `DELETE /api-keys/{id}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `recipes:read`                | `GET /recipes`, `GET /recipes/{id}`, `GET /recipes/{id}/image`, `GET /cookbooks`, `GET /cookbooks/{id}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `recipes:write`               | `POST /recipes`, `PATCH /recipes/{id}`, `DELETE /recipes/{id}`, `POST /recipes/{id}/restore`, `POST /recipes/{id}/image`, `POST /recipes/import`, `POST /recipes/import/page`, `POST /recipes/import/photo`, `POST /cookbooks`, `PATCH /cookbooks/{id}`, `DELETE /cookbooks/{id}`, `POST /cookbooks/{id}/recipes`, `DELETE /cookbooks/{id}/recipes`, `POST /uploads/images`                                                                                                                                                                                                            |
+| `plans:read`                  | `GET /meal-plans`, `GET /meal-plans/{id}`, `GET /meal-plans/{id}/check`, `GET /meal-plans/{id}/history`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `plans:write`                 | `POST /meal-plans`, `PATCH /meal-plans/{id}`, `DELETE /meal-plans/{id}`, `POST /meal-plans/{id}/check`, `POST /meal-plans/{id}/undo`                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `lists:export`                | `GET /meal-plans/{id}/shopping-list`, `GET /meal-plans/{id}/shopping-list/state`, `PATCH /meal-plans/{id}/shopping-list/state`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `people:read`                 | `GET /people`, `GET /people/{id}`, `GET /people/{id}/rules`, `GET /people/{id}/rules/{ruleId}`, `GET /people/{id}/preferences`, `GET /people/{id}/preferences/{prefId}`, `GET /households`, `GET /households/mine`, `GET /households/settings`, `GET /households/schedule`, `GET /households/members`, `GET /households/invites`                                                                                                                                                                                                                                                       |
+| `people:write`                | `POST /people`, `PATCH /people/{id}`, `DELETE /people/{id}`, `POST /people/reorder`, `POST /people/{id}/rules`, `PATCH /people/{id}/rules/{ruleId}`, `DELETE /people/{id}/rules/{ruleId}`, `POST /people/{id}/preferences`, `DELETE /people/{id}/preferences/{prefId}`, `PATCH /households`, `POST /households/select`, `PATCH /households/settings`, `PUT /households/schedule`, `PATCH /households/members/{userId}`, `DELETE /households/members/{userId}`, `POST /households/leave`, `POST /households/invites`, `DELETE /households/invites/{id}`, `POST /invites/{token}/accept` |
 
-All errors include problem+json body with details.
+`POST /households/select`, `POST /households/leave`, and `POST /invites/{token}/accept` still require a signed-in user after the scope gate.
+
+| MCP tool                                                                                                                                                                                      | Scope                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `whoami`                                                                                                                                                                                      | (any authenticated key) |
+| `search_recipes`, `get_recipe`, `list_cookbooks`, `get_cookbook`                                                                                                                              | `recipes:read`          |
+| `create_recipe`, `import_recipe`, `import_recipe_from_image`, `delete_recipe`, `manage_cookbook`                                                                                              | `recipes:write`         |
+| `get_household_context`, `get_person_rules`                                                                                                                                                   | `people:read`           |
+| `manage_household_schedule`, `manage_household_settings`, `manage_kitchen_invites`, `manage_kitchen_members`, `manage_people`, `manage_person_rules`, `manage_person_loves`, `reorder_people` | `people:write`          |
+| `check_meal_plan`, `get_meal_plan`                                                                                                                                                            | `plans:read`            |
+| `save_meal_plan`, `edit_meal_plan`, `delete_meal_plan`                                                                                                                                        | `plans:write`           |
+| `export_shopping_list`                                                                                                                                                                        | `lists:export`          |
+
+MCP resources use `people:read`. A tool call outside the key's scopes returns JSON-RPC `-32003` with `data.code` `"forbidden"`. MCP id fields and id arrays must be UUIDs.
 
 ## Multi-Tenant Security
 
-- All requests are scoped to the authenticated user's household
-- Cross-household access is prevented at the database level
-- Row-level security enforced via Clerk authentication
+Every query is filtered by the caller's household in application code. A malformed or foreign id on every `[id]` route returns `404`. Never `500`. Never another kitchen's data.

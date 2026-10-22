@@ -80,6 +80,41 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
 
   registry.registerPath({
     method: "get",
+    path: "/health",
+    tags: ["health"],
+    summary: "Health check",
+    description:
+      "API version is the same value as OpenAPI info.version and MCP serverInfo.version.",
+    security: [],
+    responses: {
+      200: {
+        description: "API is healthy",
+        content: {
+          "application/json": {
+            schema: z
+              .object({
+                status: z.literal("ok"),
+                version: z.string(),
+                timestamp: z.string().datetime(),
+              })
+              .openapi("HealthResponse"),
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/openapi.json",
+    tags: ["health"],
+    summary: "OpenAPI 3.1 document",
+    security: [],
+    responses: { 200: { description: "OpenAPI JSON" } },
+  });
+
+  registry.registerPath({
+    method: "get",
     path: "/status",
     tags: ["health"],
     summary: "Instance configuration and deploy SHA",
@@ -103,7 +138,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       "`images` is a thumbnail URL only. Photo imports never inline `data:` bytes here; fetch `GET /recipes/{id}/image` when Blob is not configured.",
     request: {
       query: z.object({
-        limit: z.coerce.number().int().positive().max(100).optional(),
+        limit: z.coerce.number().int().positive().optional(),
         cursor: z.string().optional(),
         search: z.string().optional(),
         forAttendees: z
@@ -114,6 +149,7 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           ),
         cookbookId: z.string().uuid().optional(),
         uncategorized: z.enum(["true", "false"]).optional(),
+        status: z.enum(["draft", "needs_review", "published"]).optional(),
       }),
     },
     responses: {
@@ -123,6 +159,8 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           "application/json": {
             schema: z.object({
               items: z.array(recipeSchema),
+              nextCursor: z.string().nullable(),
+              hasMore: z.boolean(),
               hiddenCount: z.number().int().nonnegative().optional(),
               hidden: z
                 .array(
@@ -141,6 +179,16 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
                 )
                 .optional(),
             }),
+            example: {
+              items: [
+                {
+                  id: "49e5fbdd-b252-4638-a1b4-e3a5cba25c46",
+                  title: "Veggie Stir Fry",
+                },
+              ],
+              nextCursor: null,
+              hasMore: false,
+            },
           },
         },
       },
@@ -163,6 +211,24 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
               servings: z.number().int().positive().optional(),
               prepTimeMinutes: z.number().int().nonnegative().optional(),
               cookTimeMinutes: z.number().int().nonnegative().optional(),
+              totalTimeMinutes: z.number().int().nonnegative().optional(),
+              cuisine: z.string().optional(),
+              course: z.string().optional(),
+              status: z.enum(["draft", "needs_review", "published"]).optional(),
+              sourceUrl: z.string().optional(),
+              source: z
+                .object({
+                  type: z.string().optional(),
+                  url: z.string().optional(),
+                  canonicalUrl: z.string().optional(),
+                  author: z.string().optional(),
+                  importerName: z.string().optional(),
+                  importerVersion: z.string().optional(),
+                  rawExtractionJson: z.record(z.string(), z.unknown()).optional(),
+                })
+                .optional(),
+              reviewReasons: z.array(z.string()).optional(),
+              uncertainFields: z.array(z.string()).optional(),
               images: z.array(z.string()).optional(),
               ingredients: z.array(z.object({ rawText: z.string() })).optional(),
               steps: z.array(z.object({ text: z.string() })).optional(),
@@ -271,6 +337,22 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       302: { description: "Redirect to a Blob or remote URL" },
       404: { description: "Recipe or image not found" },
     },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/recipes/{id}/image",
+    tags: ["recipes"],
+    summary: "Store a compressed main photo (data URL, 700KB cap)",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        content: {
+          "application/json": { schema: z.object({ image: z.string().min(1) }) },
+        },
+      },
+    },
+    responses: { 200: { description: "Updated recipe" } },
   });
 
   registry.registerPath({
@@ -573,6 +655,18 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: { 200: { description: "Membership saved" } },
   });
 
+  registry.registerPath({
+    method: "delete",
+    path: "/cookbooks/{id}/recipes",
+    tags: ["cookbooks"],
+    summary: "Remove a recipe from a cookbook",
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      query: z.object({ recipeId: z.string().uuid() }),
+    },
+    responses: { 204: { description: "Removed" } },
+  });
+
   const personSchema = z
     .object({
       id: z.string().uuid(),
@@ -655,6 +749,20 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: {
       201: {
         description: "Created preference",
+        content: { "application/json": { schema: preferenceSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/people/{id}/preferences/{prefId}",
+    tags: ["people"],
+    summary: "Get one preference",
+    request: { params: z.object({ id: z.string().uuid(), prefId: z.string().uuid() }) },
+    responses: {
+      200: {
+        description: "Preference",
         content: { "application/json": { schema: preferenceSchema } },
       },
     },
@@ -818,6 +926,53 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     responses: {
       201: {
         description: "Created rule",
+        content: { "application/json": { schema: personRuleSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/people/{id}/rules/{ruleId}",
+    tags: ["people"],
+    summary: "Get one rule",
+    request: { params: z.object({ id: z.string().uuid(), ruleId: z.string().uuid() }) },
+    responses: {
+      200: {
+        description: "Rule",
+        content: { "application/json": { schema: personRuleSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: "patch",
+    path: "/people/{id}/rules/{ruleId}",
+    tags: ["people"],
+    summary: "Update a rule",
+    request: {
+      params: z.object({ id: z.string().uuid(), ruleId: z.string().uuid() }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z
+              .object({
+                kind: z
+                  .enum(["allergen", "ingredient", "ingredient_category", "diet", "tag", "custom"])
+                  .optional(),
+                target: z.string().optional(),
+                severity: z.enum(["block", "warn", "prefer_avoid"]).optional(),
+                note: z.string().nullable().optional(),
+                confirmUnknown: z.boolean().optional(),
+              })
+              .refine((value) => Object.keys(value).length > 0),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Updated rule",
         content: { "application/json": { schema: personRuleSchema } },
       },
     },
@@ -1155,6 +1310,19 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     path: "/households",
     tags: ["households"],
     summary: "Get the authenticated household",
+    responses: { 200: { description: "Household" } },
+  });
+
+  registry.registerPath({
+    method: "patch",
+    path: "/households",
+    tags: ["households"],
+    summary: "Rename the kitchen (owner)",
+    request: {
+      body: {
+        content: { "application/json": { schema: z.object({ name: z.string().min(1).max(255) }) } },
+      },
+    },
     responses: { 200: { description: "Household" } },
   });
 
