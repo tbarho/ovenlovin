@@ -51,7 +51,7 @@ export function DemoBanner() {
         </a>
         <button
           type="button"
-          className="demo-banner-dismiss"
+          className="demo-banner-dismiss hit44-y"
           onClick={() => {
             window.sessionStorage.setItem(STORAGE_KEY, "1");
             setHidden(true);
@@ -59,7 +59,11 @@ export function DemoBanner() {
         >
           Dismiss
         </button>
-        <button type="button" className="demo-banner-reset" onClick={() => setConfirmReset(true)}>
+        <button
+          type="button"
+          className="demo-banner-reset hit44-y"
+          onClick={() => setConfirmReset(true)}
+        >
           Reset kitchen
         </button>
       </div>

@@ -143,6 +143,32 @@ select {
   outline-offset: 2px;
 }
 
+.hit44,
+.hit44-y {
+  position: relative;
+}
+
+.hit44::after,
+.hit44-y::after {
+  content: "";
+  position: absolute;
+  pointer-events: auto;
+}
+
+.hit44::after {
+  inset: 50% auto auto 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.hit44-y::after {
+  inset: 50% 0 auto 0;
+  width: auto;
+  height: max(100%, 44px);
+  transform: translateY(-50%);
+}
+
 .shell {
   position: relative;
   z-index: 1;
@@ -365,12 +391,6 @@ select {
 }
 
 .sheet-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 8px;
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -1428,8 +1448,12 @@ select {
 
 .servings-card input[type="range"] {
   width: 100%;
-  min-height: 44px;
   accent-color: var(--orange);
+}
+
+.servings-stepper .hit44-y {
+  display: grid;
+  min-width: 0;
 }
 
 .servings-stepper {
@@ -2648,34 +2672,20 @@ select {
 }
 
 .recipe-card-more {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 32px;
+  height: 32px;
   border: 0;
   border-radius: 999px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
 }
 
-.recipe-card-more::before {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-}
-
 .recipe-card-menu-list {
   position: absolute;
-  top: 48px;
+  top: 36px;
   right: 0;
   z-index: 3;
   min-width: 160px;
@@ -3371,11 +3381,8 @@ select {
 }
 
 .week-meal-open {
-  display: inline-flex;
-  align-items: center;
-  min-width: 44px;
-  min-height: 44px;
-  margin-top: 0;
+  display: inline-block;
+  margin-top: 10px;
   color: var(--orange-deep);
   font-size: 13px;
   font-weight: 650;
@@ -3417,11 +3424,6 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.week-editor-actions .btn.compact {
-  height: 44px;
-  min-height: 44px;
 }
 
 .week-pick-list {
@@ -3521,13 +3523,6 @@ select {
 }
 
 .kitchen-toast button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  margin-block: -8px;
-  padding: 0 4px;
   appearance: none;
   border: 0;
   background: transparent;
@@ -3748,13 +3743,6 @@ select {
 }
 
 .kitchen-toast button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  margin-block: -8px;
-  padding: 0 4px;
   appearance: none;
   border: 0;
   background: transparent;
@@ -3883,13 +3871,6 @@ select {
 
 .demo-banner-dismiss,
 .demo-banner-reset {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  margin-block: -12px;
-  padding: 0 8px;
   appearance: none;
   border: 0;
   background: transparent;

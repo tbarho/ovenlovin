@@ -24,7 +24,7 @@ function RecipeCardMenu({ pending, onRemove }: { pending: boolean; onRemove: () 
     <div className="recipe-card-menu">
       <button
         type="button"
-        className="recipe-card-more"
+        className="recipe-card-more hit44"
         aria-label="Recipe actions"
         aria-expanded={open}
         title="More actions"

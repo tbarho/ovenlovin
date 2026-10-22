@@ -54,7 +54,7 @@ export function BottomSheet({
         <div className="sheet-handle" aria-hidden="true" />
         <header className="sheet-head">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" className="sheet-close" onClick={onClose}>
+          <button type="button" className="sheet-close hit44" onClick={onClose}>
             Close
           </button>
         </header>
