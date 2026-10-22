@@ -2,12 +2,12 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import path from "node:path";
 
 const pages = [
-  { name: "home", path: "/" },
-  { name: "docs", path: "/docs" },
-  { name: "connect-your-agent", path: "/docs/connect-your-agent" },
-  { name: "sign-in", path: "/sign-in" },
-  { name: "sign-up", path: "/sign-up" },
-  { name: "404", path: "/this-does-not-exist" },
+  { name: "home", path: "/", ready: ".hero h1" },
+  { name: "docs", path: "/docs", ready: ".docs-page h1" },
+  { name: "connect-your-agent", path: "/docs/connect-your-agent", ready: ".intro" },
+  { name: "sign-in", path: "/sign-in", ready: "h1" },
+  { name: "sign-up", path: "/sign-up", ready: "h1" },
+  { name: "404", path: "/this-does-not-exist", ready: ".not-found h1" },
 ] as const;
 const widths = [390, 1440] as const;
 
@@ -67,26 +67,33 @@ async function contrastRatio(page: Page, selector: string): Promise<number | nul
   }, selector);
 }
 
+async function openPublicPage(page: Page, item: (typeof pages)[number]) {
+  const response = await page.goto(item.path, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(item.ready).first()).toBeVisible();
+  await page.evaluate(() => document.fonts?.ready ?? Promise.resolve());
+  return response;
+}
+
 test.describe("public design sign-off", () => {
-  test("keeps unknown public routes in-app and contrast above 4.5", async ({ page }) => {
-    test.setTimeout(120_000);
+  test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
+  });
 
-    for (const width of widths) {
-      await page.setViewportSize({
-        width,
-        height: width === 390 ? 844 : 900,
-      });
+  for (const item of pages) {
+    test(`${item.name} stays in-app and contrast above 4.5`, async ({ page }) => {
+      for (const width of widths) {
+        await page.setViewportSize({
+          width,
+          height: width === 390 ? 844 : 900,
+        });
 
-      for (const item of pages) {
         const errors: string[] = [];
         page.on("console", (msg) => {
           if (msg.type() === "error") errors.push(msg.text());
         });
         page.on("pageerror", (err) => errors.push(err.message));
 
-        const response = await page.goto(item.path, { waitUntil: "domcontentloaded" });
-        await page.waitForTimeout(800);
+        const response = await openPublicPage(page, item);
 
         expect(page.url()).not.toMatch(/accounts\.dev/);
         if (item.name === "404") {
@@ -287,6 +294,6 @@ test.describe("public design sign-off", () => {
         page.removeAllListeners("console");
         page.removeAllListeners("pageerror");
       }
-    }
-  });
+    });
+  }
 });
