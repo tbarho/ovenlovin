@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isKitchenNavActive, kitchenDocsLink, kitchenNavLinks } from "@/lib/kitchen-nav";
-import { DocsIcon, kitchenNavIcons } from "./KitchenNavIcons";
+import { isKitchenNavActive, kitchenMenuLinks } from "@/lib/kitchen-nav";
+import { kitchenNavIcons } from "./KitchenNavIcons";
 
 export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar" }) {
   const pathname = usePathname();
@@ -12,7 +12,7 @@ export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar
     return (
       <nav className="kitchen-sidebar-nav" aria-label="Kitchen">
         <ul>
-          {kitchenNavLinks.map((link) => {
+          {kitchenMenuLinks.map((link) => {
             const current = isKitchenNavActive(pathname, link.match);
             const Icon = kitchenNavIcons[link.label];
             return (
@@ -24,17 +24,6 @@ export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar
               </li>
             );
           })}
-          <li>
-            <Link
-              href={kitchenDocsLink.href}
-              aria-current={
-                isKitchenNavActive(pathname, kitchenDocsLink.match) ? "page" : undefined
-              }
-            >
-              <DocsIcon />
-              <span>{kitchenDocsLink.label}</span>
-            </Link>
-          </li>
         </ul>
       </nav>
     );
@@ -42,7 +31,7 @@ export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar
 
   return (
     <ul className="nav-links kitchen-nav">
-      {kitchenNavLinks.map((link) => {
+      {kitchenMenuLinks.map((link) => {
         const current = isKitchenNavActive(pathname, link.match);
         return (
           <li key={link.href}>
@@ -52,14 +41,6 @@ export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar
           </li>
         );
       })}
-      <li>
-        <Link
-          href={kitchenDocsLink.href}
-          aria-current={isKitchenNavActive(pathname, kitchenDocsLink.match) ? "page" : undefined}
-        >
-          {kitchenDocsLink.label}
-        </Link>
-      </li>
     </ul>
   );
 }

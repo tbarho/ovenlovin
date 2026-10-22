@@ -38,4 +38,46 @@ describe("check-docs-links", () => {
     const { broken } = checkDocsLinks(root);
     assert.deepEqual(broken, []);
   });
+
+  it("catches src=/ missing the /ovenlovin basePath", () => {
+    const root = mkdtempSync(join(tmpdir(), "docs-links-src-"));
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(join(root, "docs", "index.html"), `<img src="/">`);
+
+    const { missingBase } = checkDocsLinks(root);
+    assert.ok(missingBase.some((row) => row.href === "/"));
+  });
+
+  it("resolves percent-encoded src paths to the on-disk file", () => {
+    const root = mkdtempSync(join(tmpdir(), "docs-links-enc-"));
+    mkdirSync(join(root, "docs"), { recursive: true });
+    mkdirSync(join(root, "_next", "static", "chunks", "app", "docs", "[[...slug]]"), {
+      recursive: true,
+    });
+    writeFileSync(
+      join(root, "docs", "index.html"),
+      `<script src="/ovenlovin/_next/static/chunks/app/docs/%5B%5B...slug%5D%5D/page.js"></script>`
+    );
+    writeFileSync(
+      join(root, "_next", "static", "chunks", "app", "docs", "[[...slug]]", "page.js"),
+      ""
+    );
+
+    const { broken } = checkDocsLinks(root);
+    assert.deepEqual(broken, []);
+  });
+
+  it("catches a single-quoted relative href", () => {
+    const root = mkdtempSync(join(tmpdir(), "docs-links-sq-"));
+    mkdirSync(join(root, "docs", "quickstart"), { recursive: true });
+    mkdirSync(join(root, "docs", "agents"), { recursive: true });
+    writeFileSync(
+      join(root, "docs", "quickstart", "index.html"),
+      `<a href='./agents/'>Connect Your Agent</a>`
+    );
+    writeFileSync(join(root, "docs", "agents", "index.html"), "<p>agents</p>");
+
+    const { broken } = checkDocsLinks(root);
+    assert.ok(broken.some((row) => row.resolved === "/ovenlovin/docs/quickstart/agents/"));
+  });
 });

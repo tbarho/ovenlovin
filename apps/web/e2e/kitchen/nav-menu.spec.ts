@@ -95,5 +95,8 @@ test.describe("phone kitchen menu", () => {
     await expect(
       page.getByRole("navigation", { name: "Kitchen" }).getByRole("link", { name: "People" })
     ).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Kitchen" }).getByRole("link", { name: "Docs" })
+    ).toHaveAttribute("href", "/docs");
   });
 });
