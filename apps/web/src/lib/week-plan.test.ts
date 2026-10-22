@@ -1,6 +1,7 @@
 import { attendingPeopleForEntry } from "@ovenlovin/allergens";
 import { describe, expect, it } from "vitest";
 import { testPerson, testPersonRule } from "@/test/fixtures";
+import { recipeNeedsPlanConfirm } from "./plan-recipes";
 import {
   addDays,
   checkMeal,
@@ -161,6 +162,41 @@ describe("week-plan view", () => {
     expect(findingsFromCheck(check)).toEqual([]);
     expect(check.people.every((person) => person.mark === "ok")).toBe(true);
     expect(check.incompleteReasons.join(" ")).not.toMatch(/no rules provided/i);
+  });
+
+  it("keeps the hard gate when an anaphylaxis rule cannot finish the check", () => {
+    const childC = testPerson({
+      id: "00000000-0000-4000-8000-000000000013",
+      displayName: "Child C",
+    });
+    const safety = pickSafety(
+      [childC],
+      [
+        testPersonRule({
+          personId: childC.id,
+          target: "milk",
+          severity: "block",
+          sharedFacility: "block",
+          includeCrossContact: true,
+          includeMayContain: true,
+          includeDescendants: true,
+        }),
+      ],
+      [{ id: "mystery", name: "2 tbsp unidentified dairy solids" }]
+    );
+    expect(safety.safety).toBe("unknown");
+    expect(
+      recipeNeedsPlanConfirm({
+        id: "mystery-sauce",
+        title: "Mystery sauce",
+        image: null,
+        servings: 4,
+        cookTimeMinutes: null,
+        prepTimeMinutes: null,
+        safety: safety.safety,
+        warning: safety.warning,
+      })
+    ).toBe(true);
   });
 
   it("names a dislike in the pre-add warning along with other rules", () => {

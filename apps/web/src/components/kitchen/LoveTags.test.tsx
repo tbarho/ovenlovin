@@ -11,7 +11,7 @@ const childCLove = {
 };
 
 describe("LoveTags", () => {
-  it("qualifies a love tag when that person also has a warning", () => {
+  it("hides a love tag when that person has a safety finding", () => {
     render(
       <LoveTags
         hits={[
@@ -26,8 +26,8 @@ describe("LoveTags", () => {
         warningPersonIds={["parent-b"]}
       />
     );
-    expect(screen.getByText("Parent B loves this - check first")).toBeVisible();
-    expect(screen.queryByText("Parent B loves this")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("love-tags")).not.toBeInTheDocument();
+    expect(screen.queryByText(/loves this/)).not.toBeInTheDocument();
   });
 
   it("hides a love tag when that person can't eat the recipe", () => {

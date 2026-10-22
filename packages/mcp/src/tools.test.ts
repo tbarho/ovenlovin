@@ -348,6 +348,67 @@ describe("MCP Tool Schemas", () => {
       ).rejects.toThrow(/Person not found/);
       expect(create).not.toHaveBeenCalled();
     });
+
+    it("updates the existing week plan instead of creating a second one", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockResolvedValue();
+      vi.spyOn(PeopleService.prototype, "requireOwnedPersonIds").mockResolvedValue();
+      const existing = {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        createdAt: "2027-02-08T00:00:00.000Z",
+        updatedAt: "2027-02-08T00:00:00.000Z",
+        deletedAt: null,
+        createdBy: "user-1",
+        householdId: "22222222-2222-4222-8222-222222222222",
+        weekStart: "2027-02-08",
+        cookFor: 3,
+        status: "draft" as const,
+        generator: null,
+        generatorModel: null,
+        latestCheckReport: null,
+        checkedAt: null,
+        contentHash: null,
+        acknowledgedWarnings: [],
+        needsRecheck: false,
+        createdByApiKeyId: null,
+      };
+      vi.spyOn(PlanService.prototype, "listMealPlans").mockResolvedValue({
+        items: [existing],
+        nextCursor: null,
+        hasMore: false,
+      });
+      const create = vi.spyOn(PlanService.prototype, "createMealPlan");
+      const update = vi.spyOn(PlanService.prototype, "updateMealPlan").mockResolvedValue({
+        ...existing,
+        cookFor: 8,
+        updatedAt: "2027-02-08T01:00:00.000Z",
+      });
+      const replace = vi
+        .spyOn(PlanService.prototype, "replaceMealPlanEntries")
+        .mockResolvedValue([]);
+
+      const saved = await saveMealPlanTool.handler(
+        {
+          weekStart: "2027-02-08",
+          cookFor: 8,
+          entries: [],
+          checkReportJson: { status: "complete" },
+          status: "draft",
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          userId: "550e8400-e29b-41d4-a716-446655440000",
+          scopes: [],
+        }
+      );
+
+      expect(create).not.toHaveBeenCalled();
+      expect(update).toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith(existing.id, []);
+      expect(saved.planId).toBe(existing.id);
+      expect(update.mock.calls[0]?.[1]).toMatchObject({ cookFor: 8 });
+    });
   });
 
   describe("export_shopping_list", () => {

@@ -127,6 +127,44 @@ describe("RecipeCardSafety", () => {
     expect(screen.getByTestId(`mark-${childC.id}`)).toBeVisible();
   });
 
+  it("does not show Parent B loves this when the card says Parent B usually skips it", () => {
+    const milkSkip = testPersonRule({
+      id: "00000000-0000-4000-8000-000000000019",
+      personId: parentB.id,
+      kind: "ingredient",
+      target: "milk",
+      severity: "prefer_avoid",
+    });
+    render(
+      <RecipeDetail
+        recipe={testRecipeDetails({
+          title: "Mac and cheese",
+          ingredients: [
+            {
+              id: "00000000-0000-4000-8000-000000000041",
+              recipeId: "00000000-0000-4000-8000-000000000040",
+              order: 0,
+              rawText: "2 cups cheddar cheese",
+              isOptional: false,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-01T00:00:00.000Z",
+            },
+          ],
+        })}
+        cookbooks={[testCookbook()]}
+        people={[parentB]}
+        rules={[milkSkip]}
+        lovePeople={householdLovePeople(
+          [parentB],
+          [testPreference({ personId: parentB.id, type: "love", value: "cheese" })]
+        )}
+      />
+    );
+
+    expect(screen.queryByText(/loves this/)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`mark-${parentB.id}`)).toHaveAttribute("data-mark", "warn");
+  });
+
   it("does not show loves chips on an ingredient-less recipe card", () => {
     const recipe = testRecipe({ title: "Weeknight pesto pasta" });
     render(

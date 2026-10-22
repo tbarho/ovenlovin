@@ -4,6 +4,7 @@ import { DECIMAL_TWO_THIRDS_CELERY } from "../scaling/quantity-display.fixture";
 import {
   KITCHEN_STAPLES_SECTION,
   ShoppingListService,
+  collectShoppingListEntries,
   applyShoppingTrip,
   formatShoppingListGeneratedAt,
   resolveIncludeStaples,
@@ -44,6 +45,35 @@ function build(
     ...options,
   });
 }
+
+describe("collectShoppingListEntries", () => {
+  it("drops a deleted recipe so the list cannot show Unknown Recipe", async () => {
+    const collected = await collectShoppingListEntries(
+      [
+        entry({ id: "ghost", recipeId: "deleted-recipe" }),
+        entry({ id: "live", recipeId: "recipe-a", date: "2026-10-13" }),
+      ],
+      {
+        getRecipe: async (id) =>
+          id === "recipe-a" ? { title: "Veggie tacos", servings: 4 } : null,
+        getIngredients: async (id) =>
+          id === "recipe-a"
+            ? [{ name: "cabbage", rawText: "1 head cabbage", quantity: 1, unit: "head" }]
+            : [{ name: "milk", rawText: "1 cup milk", quantity: 1, unit: "cup" }],
+      }
+    );
+    expect(collected).toHaveLength(1);
+    expect(collected[0]?.recipeTitle).toBe("Veggie tacos");
+    const list = service.build({
+      mealPlanId: "plan-1",
+      weekStart: "2026-10-12",
+      generatedAt: "2026-10-14T00:00:00.000Z",
+      entries: collected,
+    });
+    expect(JSON.stringify(list)).not.toMatch(/Unknown Recipe/i);
+    expect(JSON.stringify(list)).not.toMatch(/milk/i);
+  });
+});
 
 describe("resolveIncludeStaples", () => {
   it("prefers includeStaples over the includePantryItems alias", () => {

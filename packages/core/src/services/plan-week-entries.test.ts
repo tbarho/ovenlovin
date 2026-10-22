@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { mondayWeekDates, planEntriesForWeek, toIsoDateOnly } from "./plan-week-entries";
+import {
+  keepLiveRecipeEntries,
+  mondayWeekDates,
+  pickPlanForWeek,
+  planEntriesForWeek,
+  toIsoDateOnly,
+} from "./plan-week-entries";
 
 function entry(
   overrides: Partial<{
@@ -70,5 +76,36 @@ describe("planEntriesForWeek", () => {
       "2026-10-12"
     );
     expect(kept[0]?.date).toBe("2026-10-17");
+  });
+});
+
+describe("keepLiveRecipeEntries", () => {
+  it("drops a deleted recipe night and keeps freeform leftovers", () => {
+    const kept = keepLiveRecipeEntries(
+      [
+        entry({ recipeId: "gone" }),
+        entry({ date: "2026-10-13", recipeId: null, mealSlot: "dinner" }),
+        entry({ date: "2026-10-14", recipeId: "pesto" }),
+      ],
+      new Set(["pesto"])
+    );
+    expect(kept.map((item) => item.date)).toEqual(["2026-10-13", "2026-10-14"]);
+  });
+});
+
+describe("pickPlanForWeek", () => {
+  it("picks the newest plan when two rows share a week", () => {
+    const older = {
+      id: "plan-a",
+      weekStart: "2027-02-08",
+      updatedAt: "2027-02-08T00:00:00.000Z",
+    };
+    const newer = {
+      id: "plan-b",
+      weekStart: "2027-02-08",
+      updatedAt: "2027-02-09T18:00:00.000Z",
+    };
+    expect(pickPlanForWeek([older, newer], "2027-02-08")?.id).toBe("plan-b");
+    expect(pickPlanForWeek([newer, older], "2027-02-08")?.id).toBe("plan-b");
   });
 });

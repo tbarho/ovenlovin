@@ -668,6 +668,37 @@ describe("MealPlanWeek", () => {
     expect(api).toHaveBeenCalledTimes(1);
   });
 
+  it("adds a dairy check-first recipe without the anaphylaxis Add anyway gate", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /wednesday/i }));
+    await user.click(screen.getByRole("button", { name: /baked ziti/i }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add anyway" })).not.toBeInTheDocument();
+    expect(api).toHaveBeenCalledTimes(1);
+  });
+
+  it("explains when cook-for stays at 5 after the household grows to 6", () => {
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        defaultServings={5}
+        defaultServingsMode="family"
+        familySize={6}
+      />
+    );
+    expect(
+      screen.getByText("This week is scaled for 5. Your household has 6 people.")
+    ).toBeVisible();
+  });
+
   it("shows a visible error and retry when adding dinner fails", async () => {
     const user = userEvent.setup();
     vi.mocked(api).mockRejectedValueOnce(new Error("Internal Server Error"));

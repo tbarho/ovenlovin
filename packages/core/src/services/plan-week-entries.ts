@@ -4,7 +4,32 @@ export type PlanWeekEntryLike = {
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
+  recipeId?: string | null;
 };
+
+/** Same week can have leftover plans; use the one updated last. */
+export function pickPlanForWeek<T extends { id: string; weekStart: string; updatedAt: string }>(
+  plans: T[],
+  weekStart: string
+): T | null {
+  const matches = plans.filter((item) => item.weekStart === weekStart);
+  if (matches.length === 0) return null;
+  return (
+    [...matches].sort((a, b) => {
+      const updated = b.updatedAt.localeCompare(a.updatedAt);
+      if (updated !== 0) return updated;
+      return b.id.localeCompare(a.id);
+    })[0] ?? null
+  );
+}
+
+/** Drop nights whose recipe was deleted so they cannot ghost the plan or list. */
+export function keepLiveRecipeEntries<T extends { recipeId?: string | null }>(
+  entries: T[],
+  liveRecipeIds: ReadonlySet<string>
+): T[] {
+  return entries.filter((entry) => !entry.recipeId || liveRecipeIds.has(entry.recipeId));
+}
 
 export function toIsoDateOnly(value: string): string {
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);

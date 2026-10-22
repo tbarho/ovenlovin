@@ -279,7 +279,7 @@ export async function collectShoppingListEntries(
     getIngredients: IngredientLoader;
   }
 ): Promise<ShoppingListEntryInput[]> {
-  return Promise.all(
+  const collected = await Promise.all(
     entries.map(async (entry) => {
       if (!entry.recipeId) {
         return {
@@ -293,14 +293,16 @@ export async function collectShoppingListEntries(
         deps.getRecipe(entry.recipeId),
         deps.getIngredients(entry.recipeId),
       ]);
+      if (!recipe) return null;
       return {
         entry,
-        recipeTitle: recipe?.title ?? entry.freeformMeal ?? undefined,
-        recipeServings: recipe?.servings ?? null,
+        recipeTitle: recipe.title,
+        recipeServings: recipe.servings ?? null,
         ingredients,
       };
     })
   );
+  return collected.filter((row): row is NonNullable<typeof row> => row !== null);
 }
 
 export class ShoppingListService {
