@@ -270,7 +270,7 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await expect(page.getByText("Recipe makes 6 · cooking for 5").first()).toBeVisible();
   await expect(
     page.getByRole("combobox", { name: /scale shopping and portions for/i })
-  ).toHaveValue("5");
+  ).toHaveValue("household");
   await expectTapTarget(page.getByRole("link", { name: "Previous week" }), "previous week");
   await expectTapTarget(page.getByRole("link", { name: "Next week" }), "next week");
   await expectTapTarget(

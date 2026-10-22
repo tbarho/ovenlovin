@@ -468,13 +468,11 @@ describe("MealPlanWeek", () => {
       body: JSON.stringify({
         weekStart: "2026-10-12",
         status: "draft",
-        cookFor: 4,
         entries: [
           {
             date: "2026-10-18",
             meal: "dinner",
             recipeId: "recipe-kung-pao",
-            servings: 4,
             attendees: [],
           },
         ],
@@ -538,7 +536,13 @@ describe("MealPlanWeek", () => {
 
   it("lets the plan scale select go to 99 and uses the stored week cook-for", () => {
     const seven: WeekMeal = { ...pesto, servings: 7, recipeServings: 4 };
-    render(<MealPlanWeek days={groupMealsByDate("2026-10-12", [seven])} defaultServings={8} />);
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [seven])}
+        defaultServings={8}
+        followsHousehold={false}
+      />
+    );
     const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
     expect(scale).toHaveValue("8");
     expect(screen.getByText("Recipe makes 4 · cooking for 8")).toBeVisible();
@@ -592,13 +596,11 @@ describe("MealPlanWeek", () => {
       body: JSON.stringify({
         weekStart: "2026-10-12",
         status: "draft",
-        cookFor: 4,
         entries: [
           {
             date: "2026-10-18",
             meal: "dinner",
             recipeId: "recipe-tacos",
-            servings: 4,
             attendees: [],
           },
         ],
@@ -606,7 +608,7 @@ describe("MealPlanWeek", () => {
     });
   });
 
-  it("stores the cook-for count when adding dinner in family mode", async () => {
+  it("does not pin cook-for or entry servings when adding dinner on a following week", async () => {
     const user = userEvent.setup();
     render(
       <MealPlanWeek
@@ -615,9 +617,14 @@ describe("MealPlanWeek", () => {
         recipes={recipes}
         defaultServings={8}
         defaultServingsMode="family"
+        familySize={8}
       />
     );
 
+    expect(screen.getByRole("combobox", { name: /scale shopping and portions for/i })).toHaveValue(
+      "household"
+    );
+    expect(screen.getByRole("option", { name: "Match household (8)" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /sunday/i }));
     await user.click(screen.getByRole("button", { name: /veggie tacos/i }));
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans", {
@@ -625,18 +632,67 @@ describe("MealPlanWeek", () => {
       body: JSON.stringify({
         weekStart: "2026-10-12",
         status: "draft",
-        cookFor: 8,
         entries: [
           {
             date: "2026-10-18",
             meal: "dinner",
             recipeId: "recipe-tacos",
-            servings: 8,
             attendees: [],
           },
         ],
       }),
     });
+  });
+
+  it("uses household cook-for for Match household in fixed mode, not People count", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [pesto])}
+        defaultServings={8}
+        defaultServingsMode="fixed"
+        familySize={4}
+        householdCookFor={6}
+        followsHousehold={false}
+      />
+    );
+
+    expect(screen.getByRole("option", { name: "Match household (6)" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Match household (4)" })).not.toBeInTheDocument();
+    const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
+    expect(scale).toHaveValue("8");
+    await user.selectOptions(scale, "household");
+    expect(scale).toHaveValue("household");
+    expect(screen.getByRole("link", { name: /view weeknight pesto pasta/i })).toHaveAttribute(
+      "href",
+      "/recipes/recipe-pesto?servings=6&from=plan"
+    );
+  });
+
+  it("sends cookFor null when Match household is chosen", async () => {
+    const user = userEvent.setup();
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [])}
+        weekStart="2026-10-12"
+        planId="plan-1"
+        defaultServings={5}
+        defaultServingsMode="family"
+        familySize={6}
+        followsHousehold={false}
+      />
+    );
+
+    const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
+    expect(scale).toHaveValue("5");
+    await user.selectOptions(scale, "household");
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
+        method: "PATCH",
+        body: JSON.stringify({ cookFor: null }),
+      })
+    );
+    expect(scale).toHaveValue("household");
   });
 
   it("adds a clear recipe in one tap when nobody has food rules", async () => {
@@ -692,6 +748,7 @@ describe("MealPlanWeek", () => {
         defaultServings={5}
         defaultServingsMode="family"
         familySize={6}
+        followsHousehold={false}
       />
     );
     expect(
@@ -820,7 +877,7 @@ describe("MealPlanWeek", () => {
     );
 
     const scale = screen.getByRole("combobox", { name: /scale shopping and portions for/i });
-    expect(scale).toHaveValue("5");
+    expect(scale).toHaveValue("household");
     await user.selectOptions(scale, "8");
     expect(scale).toHaveValue("8");
     await waitFor(() =>
@@ -846,7 +903,6 @@ describe("MealPlanWeek", () => {
               date: "2026-10-12",
               meal: "dinner",
               recipeId: "recipe-batch",
-              servings: 8,
               attendees: [],
             },
           ],

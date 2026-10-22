@@ -1076,7 +1076,14 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
       id: z.string().uuid(),
       householdId: z.string().uuid(),
       weekStart: z.string(),
-      cookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX).nullable().optional(),
+      cookFor: z
+        .number()
+        .int()
+        .min(1)
+        .max(SERVINGS_HARD_MAX)
+        .nullable()
+        .optional()
+        .describe("Week cook-for. Null follows the household."),
       status: z.enum(["draft", "approved", "archived"]),
       needsRecheck: z.boolean(),
       shoppingState: shoppingTripStateDoc.optional(),

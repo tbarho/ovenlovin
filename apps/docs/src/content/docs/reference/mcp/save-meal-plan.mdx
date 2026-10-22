@@ -7,21 +7,21 @@ Save a meal plan with its safety check report. Nights may omit `recipeId` (lefto
 
 ## Input
 
-| Parameter                  | Type                      | Required | Default   | Description                                                          |
-| -------------------------- | ------------------------- | -------- | --------- | -------------------------------------------------------------------- |
-| `weekStart`                | string (date)             | Yes      | -         | Week start `YYYY-MM-DD`                                              |
-| `cookFor`                  | number                    | No       | -         | Week cook-for. Night labels and the shopping list use this one count |
-| `entries`                  | array                     | Yes      | -         | Nights for the week                                                  |
-| `entries[].date`           | string (date)             | Yes      | -         | Night `YYYY-MM-DD`                                                   |
-| `entries[].meal`           | string                    | Yes      | -         | Meal slot (for example `dinner`)                                     |
-| `entries[].recipeId`       | string (UUID)             | No       | -         | Recipe. Omit for leftovers / no-cook                                 |
-| `entries[].freeformMeal`   | string                    | No       | -         | Leftovers, eat-out, or an empty night                                |
-| `entries[].servings`       | number                    | No       | -         | Positive integer                                                     |
-| `entries[].attendees`      | string[]                  | Yes      | -         | Person IDs                                                           |
-| `entries[].prepAheadNotes` | string                    | No       | -         | Prep-ahead notes                                                     |
-| `checkReportJson`          | object                    | Yes      | -         | The latest `check_meal_plan` result                                  |
-| `acknowledgedWarnings`     | string[]                  | No       | -         | Finding IDs the household accepted                                   |
-| `status`                   | `"draft"` \| `"approved"` | No       | `"draft"` | Plan status                                                          |
+| Parameter                  | Type                      | Required | Default   | Description                                                                                                                   |
+| -------------------------- | ------------------------- | -------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `weekStart`                | string (date)             | Yes      | -         | Week start `YYYY-MM-DD`                                                                                                       |
+| `cookFor`                  | number \| null            | No       | follow    | Hand-set week count. Omit or `null` to follow the household. A later save that omits `cookFor` leaves a hand-set number alone |
+| `entries`                  | array                     | Yes      | -         | Nights for the week                                                                                                           |
+| `entries[].date`           | string (date)             | Yes      | -         | Night `YYYY-MM-DD`                                                                                                            |
+| `entries[].meal`           | string                    | Yes      | -         | Meal slot (for example `dinner`)                                                                                              |
+| `entries[].recipeId`       | string (UUID)             | No       | -         | Recipe. Omit for leftovers / no-cook                                                                                          |
+| `entries[].freeformMeal`   | string                    | No       | -         | Leftovers, eat-out, or an empty night                                                                                         |
+| `entries[].servings`       | number                    | No       | -         | Positive integer                                                                                                              |
+| `entries[].attendees`      | string[]                  | Yes      | -         | Person IDs                                                                                                                    |
+| `entries[].prepAheadNotes` | string                    | No       | -         | Prep-ahead notes                                                                                                              |
+| `checkReportJson`          | object                    | Yes      | -         | The latest `check_meal_plan` result                                                                                           |
+| `acknowledgedWarnings`     | string[]                  | No       | -         | Finding IDs the household accepted                                                                                            |
+| `status`                   | `"draft"` \| `"approved"` | No       | `"draft"` | Plan status                                                                                                                   |
 
 ## Example
 

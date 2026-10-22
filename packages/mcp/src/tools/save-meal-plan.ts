@@ -8,7 +8,6 @@ import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
 import {
-  agreedEntryCookFor,
   PeopleService,
   pickPlanForWeek,
   PlanService,
@@ -25,8 +24,9 @@ export const saveMealPlanSchema = z.object({
     .int()
     .min(1)
     .max(SERVINGS_HARD_MAX)
+    .nullable()
     .optional()
-    .describe("Week cook-for. Night labels and the shopping list all use this one count."),
+    .describe("Week cook-for. Omit or null to follow the household. A number is a hand-set count."),
   entries: z.array(
     z.object({
       date: z.string().date(),
@@ -78,7 +78,7 @@ async function handler(
     apiKeyId: context.apiKeyId,
     apiKeyCreatedBy: context.apiKeyCreatedBy,
   });
-  const cookFor = input.cookFor ?? agreedEntryCookFor(input.entries.map((entry) => entry.servings));
+  const cookFor = input.cookFor ?? null;
   const checkedAt = new Date().toISOString();
   const listed = await planService.listMealPlans(context.householdId, {
     weekStart: input.weekStart,
@@ -97,7 +97,7 @@ async function handler(
 
   const plan = existing
     ? await planService.updateMealPlan(existing.id, {
-        cookFor,
+        ...(input.cookFor !== undefined ? { cookFor } : {}),
         status: input.status,
         latestCheckReport: input.checkReportJson,
         checkedAt,

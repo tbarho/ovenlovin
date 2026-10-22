@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  currentMondayWeekStart,
   keepLiveRecipeEntries,
   liveEntriesForPlanRead,
   mondayWeekDates,
@@ -105,6 +106,13 @@ describe("liveEntriesForPlanRead", () => {
       async (id) => id === "pesto"
     );
     expect(kept.map((item) => item.date)).toEqual(["2026-10-13", "2026-10-14"]);
+  });
+});
+
+describe("currentMondayWeekStart", () => {
+  it("returns the Monday of the week containing the given instant", () => {
+    expect(currentMondayWeekStart(new Date("2026-10-22T13:00:00.000Z"))).toBe("2026-10-19");
+    expect(currentMondayWeekStart(new Date("2026-10-19T00:00:00.000Z"))).toBe("2026-10-19");
   });
 });
 

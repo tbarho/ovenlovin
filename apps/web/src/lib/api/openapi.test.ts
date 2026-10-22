@@ -186,14 +186,18 @@ describe("generateOpenApiDocument", () => {
       patchBody?.content?.["application/json"]?.schema
     );
 
-    expect(postSchema.properties).toHaveProperty("entries");
-    expect(postSchema.properties).toHaveProperty("weekStart");
-    expect(postSchema.properties).toHaveProperty("cookFor");
+    const postProps = postSchema.properties as Record<string, unknown> | undefined;
+    const patchProps = patchSchema.properties as Record<string, unknown> | undefined;
+    expect(postProps).toHaveProperty("entries");
+    expect(postProps).toHaveProperty("weekStart");
+    expect(postProps).toHaveProperty("cookFor");
+    expect(JSON.stringify(postProps?.cookFor)).toMatch(/nullable|null/);
     expect(postSchema.additionalProperties).toBe(false);
 
-    expect(patchSchema.properties).toHaveProperty("entries");
-    expect(patchSchema.properties).toHaveProperty("status");
-    expect(patchSchema.properties).toHaveProperty("cookFor");
+    expect(patchProps).toHaveProperty("entries");
+    expect(patchProps).toHaveProperty("status");
+    expect(patchProps).toHaveProperty("cookFor");
+    expect(JSON.stringify(patchProps?.cookFor)).toMatch(/nullable|null/);
     expect(patchSchema.properties).toHaveProperty("entriesMode");
     expect(patchSchema.additionalProperties).toBe(false);
     expect(JSON.stringify(spec.paths?.["/meal-plans/{id}"]?.patch)).toMatch(/merge/);

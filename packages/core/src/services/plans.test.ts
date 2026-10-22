@@ -1,4 +1,7 @@
+import { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it, vi } from "vitest";
+import { previousMondayWeekStart } from "./plan-week-entries";
 import { PlanService } from "./plans";
 
 const GONE = "550e8400-e29b-41d4-a716-446655440099";
@@ -46,6 +49,36 @@ function entry(recipeId: string | null, date: string) {
     leftoverSourceId: null,
   };
 }
+
+function renderWhere(condition: unknown) {
+  return new PgDialect().sqlToQuery(condition as SQL);
+}
+
+describe("PlanService.markCurrentAndFuturePlansNeedRecheck", () => {
+  it("sets needsRecheck on current and future household plans", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    const update = vi.fn().mockReturnValue({ set });
+    const service = new PlanService({ update } as never);
+    await service.markCurrentAndFuturePlansNeedRecheck(HOUSEHOLD, "2026-10-20");
+    expect(update).toHaveBeenCalled();
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ needsRecheck: true }));
+    const rendered = renderWhere(where.mock.calls[0]?.[0]);
+    expect(rendered.params).toEqual(expect.arrayContaining([HOUSEHOLD, "2026-10-20"]));
+  });
+
+  it("defaults from the previous Monday so a US Sunday evening still flags this week", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    const update = vi.fn().mockReturnValue({ set });
+    const service = new PlanService({ update } as never);
+    await service.markCurrentAndFuturePlansNeedRecheck(HOUSEHOLD);
+    const rendered = renderWhere(where.mock.calls[0]?.[0]);
+    expect(rendered.params).toEqual(expect.arrayContaining([HOUSEHOLD, previousMondayWeekStart()]));
+    // 8pm CDT Sunday 2026-10-18 is 01:00 UTC Monday. Previous Monday is the in-progress week.
+    expect(previousMondayWeekStart(new Date("2026-10-19T01:00:00.000Z"))).toBe("2026-10-12");
+  });
+});
 
 describe("PlanService.getMealPlanWithEntries", () => {
   it("does not present a deleted recipe as a live dinner", async () => {

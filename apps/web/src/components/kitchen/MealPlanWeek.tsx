@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DefaultServingsMode } from "@ovenlovin/core";
-import {
-  cookForServingsLabel,
-  planEntryServings,
-  SERVINGS_HARD_MAX,
-} from "@ovenlovin/core/scaling";
+import { cookForServingsLabel, SERVINGS_HARD_MAX } from "@ovenlovin/core/scaling";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -334,6 +330,8 @@ export function MealPlanWeek({
   defaultServings = 4,
   defaultServingsMode = "family",
   familySize = 0,
+  householdCookFor = defaultServings,
+  followsHousehold = true,
 }: {
   days: WeekDay[];
   planId?: string | null;
@@ -343,11 +341,14 @@ export function MealPlanWeek({
   defaultServings?: number;
   defaultServingsMode?: DefaultServingsMode;
   familySize?: number;
+  householdCookFor?: number;
+  followsHousehold?: boolean;
 }) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [servings, setServings] = useState(defaultServings);
+  const [followingHousehold, setFollowingHousehold] = useState(followsHousehold);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createdPlanIdRef = useRef<string | null>(null);
@@ -378,8 +379,6 @@ export function MealPlanWeek({
 
   const selectedDay = daysView.find((day) => day.date === selectedDate);
   const persistQueue = useRef(Promise.resolve());
-  const servingsRef = useRef(servings);
-  servingsRef.current = servings;
   const dismissToast = useCallback(() => setToast(null), []);
   const dismissError = useCallback(() => {
     setError(null);
@@ -406,7 +405,7 @@ export function MealPlanWeek({
 
   async function persist(
     nextEntries: PlanEntryDraft[],
-    patch?: { entries?: Array<Record<string, unknown>>; cookFor?: number }
+    patch?: { entries?: Array<Record<string, unknown>>; cookFor?: number | null }
   ): Promise<boolean> {
     const run = async () => {
       setPending(true);
@@ -420,7 +419,7 @@ export function MealPlanWeek({
             body: JSON.stringify({
               weekStart: resolvedWeekStart,
               status: "draft",
-              cookFor: patch?.cookFor ?? servingsRef.current,
+              ...("cookFor" in (patch ?? {}) ? { cookFor: patch?.cookFor } : {}),
               entries: writes,
             }),
           });
@@ -456,17 +455,7 @@ export function MealPlanWeek({
     const previousDays = daysView;
     const previous = entriesView;
     const cleared = next.recipeId === null && next.freeformMeal === null;
-    const recipe = next.recipeId ? recipes.find((item) => item.id === next.recipeId) : undefined;
-    const nextServings =
-      next.servings ??
-      dinnerEntryForDate(entriesView, date)?.servings ??
-      (recipe
-        ? planEntryServings({
-            recipeServings: recipe.servings,
-            cookFor: servings,
-            mode: defaultServingsMode,
-          })
-        : servings);
+    const nextServings = next.servings ?? dinnerEntryForDate(entriesView, date)?.servings ?? null;
     const nextEntries = applyDinnerToEntries(entriesView, date, {
       ...next,
       servings: nextServings,
@@ -514,8 +503,14 @@ export function MealPlanWeek({
     void withDinner(selectedDay.date, { recipeId, freeformMeal: null });
   }
 
-  function applyServings(nextServings: number) {
-    servingsRef.current = nextServings;
+  function applyServings(nextServings: number | null) {
+    if (nextServings == null) {
+      setFollowingHousehold(true);
+      setServings(householdCookFor);
+      void persist(entriesView, { cookFor: null });
+      return;
+    }
+    setFollowingHousehold(false);
     setServings(nextServings);
     void persist(entriesView, { cookFor: nextServings });
   }
@@ -530,10 +525,14 @@ export function MealPlanWeek({
         <label className="week-servings">
           <span>Scale shopping and portions for</span>
           <select
-            value={servings}
+            value={followingHousehold ? "household" : String(servings)}
             disabled={pending}
-            onChange={(event) => applyServings(Number(event.target.value))}
+            onChange={(event) => {
+              const value = event.target.value;
+              applyServings(value === "household" ? null : Number(value));
+            }}
           >
+            <option value="household">Match household ({householdCookFor})</option>
             {Array.from({ length: SERVINGS_HARD_MAX }, (_, index) => index + 1).map((count) => (
               <option key={count} value={count}>
                 {count}
@@ -541,7 +540,10 @@ export function MealPlanWeek({
             ))}
           </select>
         </label>
-        {defaultServingsMode === "family" && familySize > 0 && servings !== familySize ? (
+        {defaultServingsMode === "family" &&
+        familySize > 0 &&
+        !followingHousehold &&
+        servings !== familySize ? (
           <p className="muted">
             This week is scaled for {servings}. Your household has {familySize} people.
           </p>
