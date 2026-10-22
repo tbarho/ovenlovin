@@ -4,6 +4,7 @@ import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
 import { clerkUnavailableCopy } from "@/lib/clerk-unavailable";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
+import { authRedirectOrigins } from "@/lib/auth-redirect-origins";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 
 export default async function SignInPage({
@@ -14,7 +15,10 @@ export default async function SignInPage({
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const demo = isDemoModeEnabled();
   const unavailable = clerkUnavailableCopy(demo);
-  const redirectUrl = safeAuthRedirect((await searchParams).redirect_url);
+  const redirectUrl = safeAuthRedirect(
+    (await searchParams).redirect_url,
+    await authRedirectOrigins()
+  );
 
   return (
     <div className="shell">

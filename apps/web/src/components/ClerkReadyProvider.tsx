@@ -2,6 +2,7 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { brandTokens } from "@/lib/brand-tokens";
+import { clerkUrls } from "@/lib/clerk-urls";
 
 const clerkAppearance = {
   variables: {
@@ -28,7 +29,7 @@ export function ClerkReadyProvider({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <ClerkProvider appearance={clerkAppearance} publishableKey={publishableKey}>
+    <ClerkProvider appearance={clerkAppearance} publishableKey={publishableKey} {...clerkUrls()}>
       {children}
     </ClerkProvider>
   );
