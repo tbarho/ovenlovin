@@ -86,6 +86,27 @@ describe("ShoppingList", () => {
     );
   });
 
+  it("puts as needed on the muted line, not in the name", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "broth",
+            name: "chicken broth",
+            displayQuantity: "as needed",
+            recipes: ["Soup"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+
+    const name = document.querySelector(".shop-item-body strong");
+    expect(name).toHaveTextContent("chicken broth");
+    expect(name).not.toHaveTextContent("as needed");
+    expect(document.querySelector(".shop-item-body .muted")).toHaveTextContent("as needed · Soup");
+  });
+
   it("pluralizes counted names over 1", () => {
     render(
       <ShoppingList

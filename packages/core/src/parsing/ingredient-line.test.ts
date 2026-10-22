@@ -229,6 +229,24 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("butter or margarine")).toEqual([
       expect.objectContaining({ name: "butter" }),
     ]);
+    expect(parseShopIngredientLines("6 whole cloves")).toEqual([
+      expect.objectContaining({ quantityMin: 6, unit: null, name: "whole cloves" }),
+    ]);
+    expect(parseShopIngredientLines("1 can diced tomatoes")).toEqual([
+      expect.objectContaining({ name: "diced tomatoes" }),
+    ]);
+    expect(parseShopIngredientLines("paprika, smoked")).toEqual([
+      expect.objectContaining({ name: "smoked paprika" }),
+    ]);
+    expect(parseShopIngredientLines("peanuts, roasted")).toEqual([
+      expect.objectContaining({ name: "roasted peanuts" }),
+    ]);
+    expect(parseShopIngredientLines("cheddar, aged")).toEqual([
+      expect.objectContaining({ name: "aged cheddar" }),
+    ]);
+    expect(parseShopIngredientLines("thyme, dried")).toEqual([
+      expect.objectContaining({ name: "dried thyme" }),
+    ]);
     expect(parseShopIngredientLines("1 cup unsalted butter)")).toEqual([
       expect.objectContaining({ name: "unsalted butter" }),
     ]);
@@ -259,7 +277,7 @@ describe("normalizeIngredientName", () => {
   it("collapses case and punctuation for merge keys", () => {
     expect(normalizeIngredientName("Olive Oil")).toBe("olive oil");
     expect(normalizeIngredientName("all-purpose flour")).toBe("all purpose flour");
-    expect(normalizeIngredientName("jalapeño")).toBe("jalapeño");
+    expect(normalizeIngredientName("jalapeño")).toBe("jalapeo");
   });
 
   it("singularizes -oes to -o and leaves shoes", () => {

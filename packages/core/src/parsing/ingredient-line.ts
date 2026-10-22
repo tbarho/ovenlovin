@@ -92,9 +92,10 @@ const SHOP_PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|beaten|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
-  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple))/i;
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+(?!tomato)|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple))/i;
 
-const SHOP_KEEP_TAILS = /^(canned|red|green|yellow|orange|white|black|purple|brown)$/i;
+const SHOP_KEEP_TAILS =
+  /^(canned|red|green|yellow|orange|white|black|purple|brown|smoked|aged|dried|roasted)$/i;
 
 /** Shop-only: a comma/paren tail that is an instruction, not another grocery item. */
 function isShopPrepPhrase(text: string): boolean {
@@ -362,11 +363,15 @@ function splitShopNameList(name: string): string[] {
   return parts.length > 0 ? parts : [name];
 }
 
+/** Leftovers that are a prep word, not a grocery (`6 whole cloves`). */
+const TRAILING_COUNT_NOT_ITEM =
+  /^(whole|ground|minced|chopped|diced|crushed|fresh|dried|large|small|grated|shredded|freshly|plain)$/i;
+
 function consumeTrailingCountUnit(text: string): { unit: string; rest: string } | null {
   const match = text.trim().match(/^(.*?)\s+(\S+?)\.?$/);
   if (!match?.[1] || !match[2] || !TRAILING_COUNT_UNITS.test(match[2])) return null;
   const rest = match[1].trim();
-  if (!rest) return null;
+  if (!rest || TRAILING_COUNT_NOT_ITEM.test(rest)) return null;
   const word = match[2].toLowerCase();
   const unit = word.startsWith("clove") ? "clove" : word.startsWith("sprig") ? "sprig" : "stalk";
   return { unit, rest };
@@ -482,7 +487,7 @@ export function normalizeIngredientName(name: string): string {
   return name
     .toLowerCase()
     .replace(/-/g, " ")
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/[^\w\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }

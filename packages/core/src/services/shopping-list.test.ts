@@ -1201,6 +1201,29 @@ describe("ShoppingListService", () => {
       lines: ["1 potato", "2 potatoes", "1 tomato", "2 tomatoes"],
       expectName: [/^potato$/i, /^tomato$/i],
       rows: 2,
+      quantities: { potato: 3, tomato: 3 },
+    },
+    {
+      name: "whole cloves stay",
+      lines: ["6 whole cloves"],
+      expectName: /^whole cloves$/i,
+      reject: /^whole$/i,
+      rows: 1,
+      quantity: 6,
+    },
+    {
+      name: "diced tomatoes stay diced",
+      lines: ["1 can diced tomatoes"],
+      expectName: /^diced tomatoes$/i,
+      reject: /^tomato$/i,
+      rows: 1,
+      aisles: { "diced tomatoes": "Canned goods" },
+    },
+    {
+      name: "smoked roasted keep tails",
+      lines: ["paprika, smoked", "peanuts, roasted"],
+      expectName: [/^smoked paprika$/i, /^roasted peanuts$/i],
+      rows: 2,
     },
     {
       name: "or substitutes no comma",
@@ -1211,7 +1234,18 @@ describe("ShoppingListService", () => {
     },
   ])(
     "UAT shop lines $name",
-    ({ lines, expectName, reject, rows, includeStaples, aisles, categories, quantity, unit }) => {
+    ({
+      lines,
+      expectName,
+      reject,
+      rows,
+      includeStaples,
+      aisles,
+      categories,
+      quantity,
+      unit,
+      quantities,
+    }) => {
       const list = build(
         [
           {
@@ -1245,6 +1279,11 @@ describe("ShoppingListService", () => {
       if (quantity != null) {
         expect(matched[0]?.quantity).toBe(quantity);
         if (unit) expect(matched[0]?.unit).toBe(unit);
+      }
+      if (quantities) {
+        for (const [itemName, amount] of Object.entries(quantities)) {
+          expect(list.ingredients.find((item) => item.name === itemName)?.quantity).toBe(amount);
+        }
       }
     }
   );

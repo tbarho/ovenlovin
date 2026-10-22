@@ -188,12 +188,20 @@ export function ShoppingList({
                     />
                     <span className="shop-item-body">
                       <strong>
-                        {[qty, shopItemDisplayName(item.name, item.quantity, item.unit)]
+                        {[
+                          qty === "as needed" ? null : qty,
+                          shopItemDisplayName(item.name, item.quantity, item.unit),
+                        ]
                           .filter(Boolean)
                           .join(" ")}
                       </strong>
                       <span className="muted">
-                        {item.recipes.length > 0 ? item.recipes.join(" · ") : null}
+                        {[
+                          qty === "as needed" ? "as needed" : null,
+                          item.recipes.length > 0 ? item.recipes.join(" · ") : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                       {uniqueWarnings(item.warnings).map((warning) => (
                         <span
