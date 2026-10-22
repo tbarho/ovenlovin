@@ -220,19 +220,19 @@ function DayEditor({
             </div>
             <div className="week-editor-actions">
               {current ? (
-                <button type="button" className="btn compact" onClick={onClear}>
+                <button type="button" className="btn compact hit44-y" onClick={onClear}>
                   Clear night
                 </button>
               ) : null}
               <button
                 type="button"
-                className="btn compact"
+                className="btn compact hit44-y"
                 disabled={current?.isNoCook}
                 onClick={onNoCook}
               >
                 No-cook night
               </button>
-              <button type="button" className="btn compact" onClick={onClose}>
+              <button type="button" className="btn compact hit44-y" onClick={onClose}>
                 Close
               </button>
             </div>
@@ -593,7 +593,7 @@ export function MealPlanWeek({
                   .filter((meal) => meal.href)
                   .map((meal) => (
                     <Link
-                      className="week-meal-open"
+                      className="week-meal-open hit44-y"
                       href={
                         meal.recipeId
                           ? planRecipeHref(meal.recipeId, servings)

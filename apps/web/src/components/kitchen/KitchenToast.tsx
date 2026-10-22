@@ -27,11 +27,11 @@ export function KitchenToast({
     <div className="kitchen-toast" role={actionLabel ? "alert" : "status"}>
       <span>{message}</span>
       {onUndo ? (
-        <button type="button" onClick={onUndo}>
+        <button type="button" className="hit44-y" onClick={onUndo}>
           {actionLabel ?? "Undo"}
         </button>
       ) : null}
-      <button type="button" onClick={onDismiss}>
+      <button type="button" className="hit44-y" onClick={onDismiss}>
         Dismiss
       </button>
     </div>

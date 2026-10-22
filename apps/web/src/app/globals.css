@@ -143,6 +143,32 @@ select {
   outline-offset: 2px;
 }
 
+.hit44,
+.hit44-y {
+  position: relative;
+}
+
+.hit44::after,
+.hit44-y::after {
+  content: "";
+  position: absolute;
+  pointer-events: auto;
+}
+
+.hit44::after {
+  inset: 50% auto auto 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.hit44-y::after {
+  inset: 50% 0 auto 0;
+  width: auto;
+  height: max(100%, 44px);
+  transform: translateY(-50%);
+}
+
 .shell {
   position: relative;
   z-index: 1;
@@ -1422,6 +1448,8 @@ select {
 
 .servings-card input[type="range"] {
   width: 100%;
+  height: 44px;
+  margin: 0;
   accent-color: var(--orange);
 }
 
@@ -3351,7 +3379,7 @@ select {
 
 .week-meal-open {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--orange-deep);
   font-size: 13px;
   font-weight: 650;
@@ -3392,7 +3420,7 @@ select {
 .week-editor-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .week-pick-list {
