@@ -6,6 +6,7 @@ const pages = [
   { name: "docs", path: "/docs" },
   { name: "connect-your-agent", path: "/docs/connect-your-agent" },
   { name: "sign-in", path: "/sign-in" },
+  { name: "sign-up", path: "/sign-up" },
   { name: "404", path: "/this-does-not-exist" },
 ] as const;
 const widths = [390, 1440] as const;
@@ -94,6 +95,15 @@ test.describe("public design sign-off", () => {
           ).toBeVisible();
           if (width <= 400) {
             await expect(page.locator('.nav-cta a[href="/docs"]')).toBeHidden();
+            const signIn = page.locator('.nav-cta a[href="/sign-in"]');
+            await expect(signIn).toBeVisible();
+            const signBox = await signIn.boundingBox();
+            const ctaBox = await page.locator(".nav-cta").boundingBox();
+            expect(signBox?.height ?? 0, "404 Sign in wrap").toBeLessThanOrEqual(44);
+            expect(signBox?.height ?? 0, "404 Sign in matches nav-cta").toBeCloseTo(
+              ctaBox?.height ?? 0,
+              0
+            );
           } else {
             await expect(page.getByRole("link", { name: "Docs" })).toBeVisible();
           }
@@ -117,6 +127,21 @@ test.describe("public design sign-off", () => {
           expect(footer, "footer").toBeGreaterThanOrEqual(4.5);
           await expect(page.locator(".hero .lead .nowrap")).toHaveText("Per-person");
           await expect(page.locator(".hero .lead")).toContainText("Always read the label.");
+          const homeType = await page.evaluate(() => {
+            const heading = document.querySelector("h1");
+            const pathBody = document.querySelector(".path-card p");
+            const foot = document.querySelector(".footer a");
+            return {
+              h1Weight: heading ? Number(getComputedStyle(heading).fontWeight) : 0,
+              pathSize: pathBody ? parseFloat(getComputedStyle(pathBody).fontSize) : 0,
+              pathLine: pathBody ? parseFloat(getComputedStyle(pathBody).lineHeight) : 0,
+              footerH: foot ? foot.getBoundingClientRect().height : 0,
+            };
+          });
+          expect(homeType.h1Weight, "h1 weight").toBe(600);
+          expect(homeType.pathSize, "path-card size").toBe(16);
+          expect(homeType.pathLine, "path-card line").toBe(24);
+          expect(homeType.footerH, "footer tap").toBeGreaterThanOrEqual(44);
           const heroBtns = page.locator(".hero-ctas .btn");
           await expect(heroBtns).toHaveCount(2);
           if (width === 390) {
@@ -179,6 +204,13 @@ test.describe("public design sign-off", () => {
           });
           expect(type.fontSize).toBeCloseTo(40, 0);
           expect(type.lineHeight / type.fontSize).toBeCloseTo(1.1, 1);
+        }
+        if (item.name === "sign-in" || item.name === "sign-up") {
+          const clerk = page.locator(".cl-rootBox");
+          if ((await clerk.count()) > 0) {
+            await expect(clerk.first()).toBeVisible();
+          }
+          await expect(page.locator("h1")).toHaveCount(1);
         }
         if (item.name === "docs" || item.name === "connect-your-agent") {
           await expect(page.locator(".intro").first()).toContainText("Always read the label.");
