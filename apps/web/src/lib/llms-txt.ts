@@ -68,7 +68,7 @@ export function buildLlmsTxt(origin: string): string {
     ``,
     `## Example`,
     ``,
-    `curl -H 'Authorization: ApiKey $KEY' ${YOUR_APP}/api/v1/recipes?limit=5`,
+    `curl -H "Authorization: ApiKey $KEY" "${YOUR_APP}/api/v1/recipes?limit=5"`,
     ``,
     `## MCP tools`,
     ``,

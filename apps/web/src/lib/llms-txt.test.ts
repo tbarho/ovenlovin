@@ -29,7 +29,9 @@ describe("buildLlmsTxt", () => {
     expect(text).toContain(
       "Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key at /api/demo/enter?format=json."
     );
-    expect(text).toContain("curl -H 'Authorization: ApiKey $KEY'");
+    expect(text).toContain(
+      'curl -H "Authorization: ApiKey $KEY" "https://<your-app>.vercel.app/api/v1/recipes?limit=5"'
+    );
     expect(text).toContain("There is no llms-full.txt");
     expect(text).toContain("Not medical advice");
     expect(text).toContain("problems/forbidden");
