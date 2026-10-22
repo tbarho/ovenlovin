@@ -31,17 +31,19 @@ export function keepLiveRecipeEntries<T extends { recipeId?: string | null }>(
   return entries.filter((entry) => !entry.recipeId || liveRecipeIds.has(entry.recipeId));
 }
 
+/* eslint-disable no-unused-vars -- call-signature parameter names */
+type LiveRecipeLookup = (recipeId: string) => Promise<unknown>;
+/* eslint-enable no-unused-vars */
+
 /** Plan reads: resolve live recipes, then drop deleted-recipe nights. */
 export async function liveEntriesForPlanRead<T extends { recipeId?: string | null }>(
   entries: T[],
-  isLiveRecipe: (recipeId: string) => Promise<unknown>
+  isLiveRecipe: LiveRecipeLookup
 ): Promise<T[]> {
   const liveRecipeIds = new Set<string>();
   await Promise.all(
     [
-      ...new Set(
-        entries.map((entry) => entry.recipeId).filter((id): id is string => Boolean(id))
-      ),
+      ...new Set(entries.map((entry) => entry.recipeId).filter((id): id is string => Boolean(id))),
     ].map(async (recipeId) => {
       if (await isLiveRecipe(recipeId)) liveRecipeIds.add(recipeId);
     })

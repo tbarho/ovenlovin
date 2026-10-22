@@ -309,9 +309,8 @@ export class PlanService extends BaseService {
   ): Promise<(MealPlan & { entries: MealPlanEntry[] }) | null> {
     const plan = await this.getMealPlan(id);
     if (!plan) return null;
-    const entries = await liveEntriesForPlanRead(
-      await this.getMealPlanEntries(id),
-      (recipeId) => this.getRecipeTitle(recipeId)
+    const entries = await liveEntriesForPlanRead(await this.getMealPlanEntries(id), (recipeId) =>
+      this.getRecipeTitle(recipeId)
     );
     return { ...plan, entries };
   }
