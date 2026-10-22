@@ -18,10 +18,14 @@ export function OverflowX({ className, children }: { className?: string; childre
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(sync);
     ro?.observe(host);
     if (scroll !== host) ro?.observe(scroll);
+    const mo = new MutationObserver(sync);
+    mo.observe(scroll, { subtree: true, childList: true, characterData: true });
     scroll.addEventListener("scroll", sync, { passive: true });
     window.addEventListener("resize", sync);
+    void document.fonts?.ready.then(sync);
     return () => {
       ro?.disconnect();
+      mo.disconnect();
       scroll.removeEventListener("scroll", sync);
       window.removeEventListener("resize", sync);
     };
