@@ -92,7 +92,11 @@ test.describe("public design sign-off", () => {
           await expect(
             page.getByRole("heading", { name: /couldn.t find that page/i })
           ).toBeVisible();
-          await expect(page.getByRole("link", { name: "Docs" })).toBeVisible();
+          if (width <= 400) {
+            await expect(page.locator('.nav-cta a[href="/docs"]')).toBeHidden();
+          } else {
+            await expect(page.getByRole("link", { name: "Docs" })).toBeVisible();
+          }
           await expect(page.getByRole("link", { name: "Recipes" })).toHaveCount(0);
         }
 
