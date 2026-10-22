@@ -215,7 +215,17 @@ All ids are UUIDs.
       },
       "affectedEntries": ["3e9a2b7c-6d5f-4b02-8d1e-4f0a9c8b7d6e"]
     }
-  ]
+  ],
+  "summary": {
+    "totalEntries": 1,
+    "totalPeople": 1,
+    "entriesWithBlocks": 1,
+    "entriesWithWarnings": 0,
+    "entriesWithPreferAvoid": 0,
+    "peopleWithBlocks": 1,
+    "peopleWithWarnings": 0,
+    "peopleWithPreferAvoid": 0
+  }
 }
 ```
 
