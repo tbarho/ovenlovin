@@ -52,9 +52,7 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "ok"
-            ]
+            "enum": ["ok"]
           },
           "version": {
             "type": "string"
@@ -64,11 +62,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "status",
-          "version",
-          "timestamp"
-        ]
+        "required": ["status", "version", "timestamp"]
       },
       "ConfigStatus": {
         "type": "object",
@@ -78,10 +72,7 @@
           },
           "mode": {
             "type": "string",
-            "enum": [
-              "demo",
-              "product"
-            ]
+            "enum": ["demo", "product"]
           },
           "commitSha": {
             "type": "string",
@@ -95,12 +86,7 @@
               "properties": {
                 "id": {
                   "type": "string",
-                  "enum": [
-                    "database",
-                    "clerk",
-                    "aiGateway",
-                    "blob"
-                  ]
+                  "enum": ["database", "clerk", "aiGateway", "blob"]
                 },
                 "label": {
                   "type": "string"
@@ -118,22 +104,11 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "id",
-                "label",
-                "configured",
-                "required",
-                "detail"
-              ]
+              "required": ["id", "label", "configured", "required", "detail"]
             }
           }
         },
-        "required": [
-          "ready",
-          "mode",
-          "commitSha",
-          "checks"
-        ]
+        "required": ["ready", "mode", "commitSha", "checks"]
       },
       "Recipe": {
         "type": "object",
@@ -189,11 +164,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "needs_review",
-              "published"
-            ]
+            "enum": ["draft", "needs_review", "published"]
           },
           "cuisine": {
             "type": "string",
@@ -220,14 +191,7 @@
             "minimum": 0
           }
         },
-        "required": [
-          "id",
-          "householdId",
-          "title",
-          "slug",
-          "images",
-          "status"
-        ]
+        "required": ["id", "householdId", "title", "slug", "images", "status"]
       },
       "RecipeDetails": {
         "allOf": [
@@ -271,16 +235,11 @@
                       "nullable": true
                     }
                   },
-                  "required": [
-                    "id",
-                    "rawText"
-                  ]
+                  "required": ["id", "rawText"]
                 }
               }
             },
-            "required": [
-              "displayServings"
-            ]
+            "required": ["displayServings"]
           }
         ]
       },
@@ -334,9 +293,7 @@
                   "nullable": true
                 }
               },
-              "required": [
-                "rawText"
-              ]
+              "required": ["rawText"]
             }
           },
           "steps": {
@@ -348,9 +305,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "text"
-              ]
+              "required": ["text"]
             }
           },
           "images": {
@@ -395,12 +350,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "ingredientText",
-                "allergenCode",
-                "allergenName",
-                "relation"
-              ]
+              "required": ["ingredientText", "allergenCode", "allergenName", "relation"]
             }
           }
         },
@@ -435,10 +385,7 @@
                 }
               }
             },
-            "required": [
-              "recipeCount",
-              "previewImages"
-            ]
+            "required": ["recipeCount", "previewImages"]
           }
         ]
       },
@@ -468,13 +415,7 @@
             "minimum": 0
           }
         },
-        "required": [
-          "id",
-          "householdId",
-          "name",
-          "slug",
-          "sortOrder"
-        ]
+        "required": ["id", "householdId", "name", "slug", "sortOrder"]
       },
       "Person": {
         "type": "object",
@@ -495,12 +436,7 @@
             "minimum": 0
           }
         },
-        "required": [
-          "id",
-          "householdId",
-          "displayName",
-          "sortOrder"
-        ]
+        "required": ["id", "householdId", "displayName", "sortOrder"]
       },
       "Preference": {
         "type": "object",
@@ -523,13 +459,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "personId",
-          "type",
-          "value",
-          "weight"
-        ]
+        "required": ["id", "personId", "type", "value", "weight"]
       },
       "PersonRule": {
         "type": "object",
@@ -544,38 +474,21 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "allergen",
-              "ingredient",
-              "ingredient_category",
-              "diet",
-              "tag",
-              "custom"
-            ]
+            "enum": ["allergen", "ingredient", "ingredient_category", "diet", "tag", "custom"]
           },
           "target": {
             "type": "string"
           },
           "severity": {
             "type": "string",
-            "enum": [
-              "block",
-              "warn",
-              "prefer_avoid"
-            ]
+            "enum": ["block", "warn", "prefer_avoid"]
           },
           "label": {
             "type": "string",
             "nullable": true
           }
         },
-        "required": [
-          "id",
-          "personId",
-          "kind",
-          "target",
-          "severity"
-        ]
+        "required": ["id", "personId", "kind", "target", "severity"]
       },
       "MealPlan": {
         "type": "object",
@@ -599,11 +512,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "approved",
-              "archived"
-            ]
+            "enum": ["draft", "approved", "archived"]
           },
           "needsRecheck": {
             "type": "boolean"
@@ -612,13 +521,7 @@
             "$ref": "#/components/schemas/ShoppingTripState"
           }
         },
-        "required": [
-          "id",
-          "householdId",
-          "weekStart",
-          "status",
-          "needsRecheck"
-        ]
+        "required": ["id", "householdId", "weekStart", "status", "needsRecheck"]
       },
       "ShoppingTripState": {
         "type": "object",
@@ -641,18 +544,12 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "key",
-                "name"
-              ],
+              "required": ["key", "name"],
               "additionalProperties": false
             }
           }
         },
-        "required": [
-          "checkedKeys",
-          "extras"
-        ],
+        "required": ["checkedKeys", "extras"],
         "additionalProperties": false
       },
       "MealPlanDetail": {
@@ -677,9 +574,7 @@
                 "description": "Nights this PATCH changed, as they were before the edit. Use to revert."
               }
             },
-            "required": [
-              "entries"
-            ]
+            "required": ["entries"]
           }
         ]
       },
@@ -723,12 +618,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "id",
-          "date",
-          "mealSlot",
-          "attendees"
-        ]
+        "required": ["id", "date", "mealSlot", "attendees"]
       },
       "ShoppingList": {
         "type": "object",
@@ -741,11 +631,7 @@
           },
           "groupBy": {
             "type": "string",
-            "enum": [
-              "aisle",
-              "recipe",
-              "category"
-            ]
+            "enum": ["aisle", "recipe", "category"]
           },
           "includeStaples": {
             "type": "boolean",
@@ -776,10 +662,7 @@
                   }
                 }
               },
-              "required": [
-                "name",
-                "items"
-              ]
+              "required": ["name", "items"]
             }
           },
           "itemCount": {
@@ -804,11 +687,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "ingredient",
-                "personName",
-                "note"
-              ]
+              "required": ["ingredient", "personName", "note"]
             }
           }
         },
@@ -882,33 +761,18 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "recipeId",
-                "recipeTitle"
-              ]
+              "required": ["recipeId", "recipeTitle"]
             }
           }
         },
-        "required": [
-          "key",
-          "name",
-          "aisle",
-          "category",
-          "isStaple",
-          "isPantryItem",
-          "recipes"
-        ]
+        "required": ["key", "name", "aisle", "category", "isStaple", "isPantryItem", "recipes"]
       },
       "HouseholdServingsSettings": {
         "type": "object",
         "properties": {
           "mode": {
             "type": "string",
-            "enum": [
-              "family",
-              "fixed",
-              "recipe"
-            ]
+            "enum": ["family", "fixed", "recipe"]
           },
           "servings": {
             "type": "integer",
@@ -926,12 +790,7 @@
             "maximum": 99
           }
         },
-        "required": [
-          "mode",
-          "servings",
-          "familySize",
-          "defaultCookFor"
-        ]
+        "required": ["mode", "servings", "familySize", "defaultCookFor"]
       },
       "HouseholdSchedule": {
         "type": "object",
@@ -954,11 +813,7 @@
                 },
                 "busyLevel": {
                   "type": "string",
-                  "enum": [
-                    "low",
-                    "medium",
-                    "high"
-                  ]
+                  "enum": ["low", "medium", "high"]
                 },
                 "timeBudgetMinutes": {
                   "type": "integer",
@@ -1008,18 +863,11 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "date",
-                "meal",
-                "note"
-              ]
+              "required": ["date", "meal", "note"]
             }
           }
         },
-        "required": [
-          "weeklyTemplate",
-          "overrides"
-        ]
+        "required": ["weeklyTemplate", "overrides"]
       },
       "KitchenMember": {
         "type": "object",
@@ -1048,23 +896,11 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "membershipId",
-          "userId",
-          "email",
-          "displayName",
-          "role",
-          "createdAt"
-        ]
+        "required": ["membershipId", "userId", "email", "displayName", "role", "createdAt"]
       },
       "MembershipRole": {
         "type": "string",
-        "enum": [
-          "owner",
-          "admin",
-          "member",
-          "viewer"
-        ]
+        "enum": ["owner", "admin", "member", "viewer"]
       },
       "KitchenInvite": {
         "type": "object",
@@ -1100,22 +936,11 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "householdId",
-          "token",
-          "role",
-          "expiresAt",
-          "createdAt"
-        ]
+        "required": ["id", "householdId", "token", "role", "expiresAt", "createdAt"]
       },
       "InviteRole": {
         "type": "string",
-        "enum": [
-          "admin",
-          "member",
-          "viewer"
-        ]
+        "enum": ["admin", "member", "viewer"]
       },
       "KitchenInvitePreview": {
         "type": "object",
@@ -1136,20 +961,10 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "pending",
-              "expired",
-              "revoked"
-            ]
+            "enum": ["pending", "expired", "revoked"]
           }
         },
-        "required": [
-          "householdId",
-          "householdName",
-          "role",
-          "expiresAt",
-          "status"
-        ]
+        "required": ["householdId", "householdName", "role", "expiresAt", "status"]
       }
     },
     "parameters": {},
@@ -1187,9 +1002,7 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Health check",
         "description": "API version is the same value as OpenAPI info.version and MCP serverInfo.version.",
         "security": [],
@@ -1209,9 +1022,7 @@
     },
     "/openapi.json": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "OpenAPI 3.1 document",
         "security": [],
         "responses": {
@@ -1223,9 +1034,7 @@
     },
     "/status": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Instance configuration and deploy SHA",
         "description": "Reports integration readiness and the Vercel git commit SHA (`VERCEL_GIT_COMMIT_SHA`). Unauthenticated.",
         "security": [],
@@ -1245,9 +1054,7 @@
     },
     "/recipes": {
       "get": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "List recipes",
         "description": "`images` is a thumbnail URL only. Photo imports never inline `data:` bytes here; fetch `GET /recipes/{id}/image` when Blob is not configured.",
         "parameters": [
@@ -1299,10 +1106,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
+              "enum": ["true", "false"]
             },
             "required": false,
             "name": "uncategorized",
@@ -1311,11 +1115,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "draft",
-                "needs_review",
-                "published"
-              ]
+              "enum": ["draft", "needs_review", "published"]
             },
             "required": false,
             "name": "status",
@@ -1386,28 +1186,15 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "personId",
-                                "personName",
-                                "ingredientName",
-                                "message"
-                              ]
+                              "required": ["personId", "personName", "ingredientName", "message"]
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "title",
-                          "reasons"
-                        ]
+                        "required": ["id", "title", "reasons"]
                       }
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor",
-                    "hasMore"
-                  ]
+                  "required": ["items", "nextCursor", "hasMore"]
                 }
               }
             }
@@ -1427,9 +1214,7 @@
         }
       },
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Create a recipe directly (title, ingredients, steps)",
         "requestBody": {
           "content": {
@@ -1471,11 +1256,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "draft",
-                      "needs_review",
-                      "published"
-                    ]
+                    "enum": ["draft", "needs_review", "published"]
                   },
                   "sourceUrl": {
                     "type": "string"
@@ -1536,9 +1317,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "rawText"
-                      ]
+                      "required": ["rawText"]
                     }
                   },
                   "steps": {
@@ -1550,9 +1329,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "text"
-                      ]
+                      "required": ["text"]
                     }
                   },
                   "cookbookId": {
@@ -1560,9 +1337,7 @@
                     "format": "uuid"
                   }
                 },
-                "required": [
-                  "title"
-                ]
+                "required": ["title"]
               }
             }
           }
@@ -1595,9 +1370,7 @@
     },
     "/recipes/{id}": {
       "get": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Get a recipe with ingredients, steps, times, notes, images, and source",
         "description": "displayServings applies kitchen Default servings (family = max(yield, People count)). Pass ?servings= to override. ingredients.displayText is scaled to displayServings; rawText is the stored import string.",
         "parameters": [
@@ -1647,9 +1420,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Update recipe metadata, ingredients, steps, images, or cookbook membership",
         "parameters": [
           {
@@ -1722,9 +1493,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "rawText"
-                      ]
+                      "required": ["rawText"]
                     }
                   },
                   "steps": {
@@ -1736,9 +1505,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "text"
-                      ]
+                      "required": ["text"]
                     }
                   }
                 }
@@ -1772,9 +1539,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Soft-delete a recipe",
         "parameters": [
           {
@@ -1808,9 +1573,7 @@
     },
     "/recipes/{id}/image": {
       "get": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Main recipe photo (thumbnail URL from list/search)",
         "description": "Returns the stored main photo. List and search never inline image bytes: they expose this URL (or a Blob URL) instead of data: URLs. Requires the same household auth as GET /recipes/{id}.",
         "parameters": [
@@ -1846,9 +1609,7 @@
         }
       },
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Store a compressed main photo (data URL, 700KB cap)",
         "parameters": [
           {
@@ -1872,9 +1633,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "image"
-                ]
+                "required": ["image"]
               }
             }
           }
@@ -1900,9 +1659,7 @@
     },
     "/recipes/{id}/restore": {
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Restore a soft-deleted recipe",
         "parameters": [
           {
@@ -1943,9 +1700,7 @@
     },
     "/recipes/import": {
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Import a recipe from a URL or pasted text",
         "description": "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send the previewed `draft` with `save=true` to persist without extracting again. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
         "requestBody": {
@@ -1956,10 +1711,7 @@
                 "properties": {
                   "source": {
                     "type": "string",
-                    "enum": [
-                      "url",
-                      "paste"
-                    ]
+                    "enum": ["url", "paste"]
                   },
                   "content": {
                     "type": "string"
@@ -1973,9 +1725,7 @@
                     "description": "When true, persist the recipe. Default is preview only."
                   }
                 },
-                "required": [
-                  "source"
-                ]
+                "required": ["source"]
               }
             }
           }
@@ -2024,9 +1774,7 @@
     },
     "/recipes/import/page": {
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Import a recipe from HTML or JSON-LD captured on the user's device (Safari shortcut or browser bookmark)",
         "requestBody": {
           "content": {
@@ -2045,9 +1793,7 @@
                     "nullable": true
                   }
                 },
-                "required": [
-                  "url"
-                ]
+                "required": ["url"]
               }
             }
           }
@@ -2083,9 +1829,7 @@
     },
     "/recipes/import/photo": {
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Extract a recipe from one or more photos (review by default). Persist only when save=true, same as POST /recipes/import. Exact SHA matches return 409 with the existing recipeId. Near-duplicate PNG photos (perceptual hash of PNG bytes only) are a warning: preview includes possibleDuplicate {recipeId,title}; save:true without allowDuplicate:true returns 409 with the same field. Send allowDuplicate:true to persist anyway. Send Idempotency-Key on save so retries do not create a second recipe.",
         "requestBody": {
           "content": {
@@ -2202,9 +1946,7 @@
                           "$ref": "#/components/schemas/Recipe"
                         }
                       },
-                      "required": [
-                        "recipe"
-                      ]
+                      "required": ["recipe"]
                     }
                   ]
                 }
@@ -2231,9 +1973,7 @@
     },
     "/cookbooks": {
       "get": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "List cookbooks",
         "responses": {
           "200": {
@@ -2250,9 +1990,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -2272,9 +2010,7 @@
         }
       },
       "post": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Create a cookbook",
         "requestBody": {
           "content": {
@@ -2289,9 +2025,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           }
@@ -2324,9 +2058,7 @@
     },
     "/cookbooks/{id}": {
       "get": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Get a cookbook and its recipes",
         "parameters": [
           {
@@ -2365,9 +2097,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Rename a cookbook",
         "parameters": [
           {
@@ -2424,9 +2154,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Delete a cookbook without deleting its recipes",
         "parameters": [
           {
@@ -2460,9 +2188,7 @@
     },
     "/cookbooks/{id}/recipes": {
       "post": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Add a recipe to a cookbook",
         "parameters": [
           {
@@ -2486,9 +2212,7 @@
                     "format": "uuid"
                   }
                 },
-                "required": [
-                  "recipeId"
-                ]
+                "required": ["recipeId"]
               }
             }
           }
@@ -2512,9 +2236,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "cookbooks"
-        ],
+        "tags": ["cookbooks"],
         "summary": "Remove a recipe from a cookbook",
         "parameters": [
           {
@@ -2557,9 +2279,7 @@
     },
     "/people/reorder": {
       "post": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Set the persistent household people order",
         "requestBody": {
           "content": {
@@ -2576,9 +2296,7 @@
                     "minItems": 1
                   }
                 },
-                "required": [
-                  "personIds"
-                ]
+                "required": ["personIds"]
               }
             }
           }
@@ -2598,9 +2316,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -2622,9 +2338,7 @@
     },
     "/people/{id}/preferences": {
       "get": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "List a person's preferences, including Loves",
         "parameters": [
           {
@@ -2674,9 +2388,7 @@
         }
       },
       "post": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Add a preference such as a Love (never filters recipes)",
         "parameters": [
           {
@@ -2705,9 +2417,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "value"
-                ]
+                "required": ["value"]
               }
             }
           }
@@ -2740,9 +2450,7 @@
     },
     "/people/{id}/preferences/{prefId}": {
       "get": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Get one preference",
         "parameters": [
           {
@@ -2790,9 +2498,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Remove a preference",
         "parameters": [
           {
@@ -2835,9 +2541,7 @@
     },
     "/uploads/images": {
       "post": {
-        "tags": [
-          "recipes"
-        ],
+        "tags": ["recipes"],
         "summary": "Upload or copy a recipe image into Vercel Blob",
         "responses": {
           "201": {
@@ -2851,9 +2555,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "url"
-                  ]
+                  "required": ["url"]
                 }
               }
             }
@@ -2875,9 +2577,7 @@
     },
     "/people": {
       "get": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "List people in the household",
         "responses": {
           "200": {
@@ -2894,9 +2594,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -2916,9 +2614,7 @@
         }
       },
       "post": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Create a person",
         "requestBody": {
           "content": {
@@ -2933,9 +2629,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "displayName"
-                ]
+                "required": ["displayName"]
               }
             }
           }
@@ -2968,9 +2662,7 @@
     },
     "/people/{id}": {
       "get": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Get a person",
         "parameters": [
           {
@@ -3009,9 +2701,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Update a person",
         "parameters": [
           {
@@ -3068,9 +2758,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Soft-delete a person",
         "parameters": [
           {
@@ -3104,9 +2792,7 @@
     },
     "/people/{id}/rules": {
       "get": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "List a person's Can't eat / Doesn't like rules",
         "parameters": [
           {
@@ -3148,9 +2834,7 @@
         }
       },
       "post": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Add a rule. Not medical advice - always check labels.",
         "parameters": [
           {
@@ -3185,21 +2869,13 @@
                   },
                   "severity": {
                     "type": "string",
-                    "enum": [
-                      "block",
-                      "warn",
-                      "prefer_avoid"
-                    ]
+                    "enum": ["block", "warn", "prefer_avoid"]
                   },
                   "label": {
                     "type": "string"
                   }
                 },
-                "required": [
-                  "kind",
-                  "target",
-                  "severity"
-                ]
+                "required": ["kind", "target", "severity"]
               }
             }
           }
@@ -3232,9 +2908,7 @@
     },
     "/people/{id}/rules/{ruleId}": {
       "get": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Get one rule",
         "parameters": [
           {
@@ -3282,9 +2956,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Update a rule",
         "parameters": [
           {
@@ -3328,11 +3000,7 @@
                   },
                   "severity": {
                     "type": "string",
-                    "enum": [
-                      "block",
-                      "warn",
-                      "prefer_avoid"
-                    ]
+                    "enum": ["block", "warn", "prefer_avoid"]
                   },
                   "note": {
                     "type": "string",
@@ -3372,9 +3040,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Remove a rule",
         "parameters": [
           {
@@ -3417,9 +3083,7 @@
     },
     "/meal-plans": {
       "get": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "List meal plans",
         "parameters": [
           {
@@ -3462,9 +3126,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -3484,9 +3146,7 @@
         }
       },
       "post": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Create a meal plan",
         "requestBody": {
           "content": {
@@ -3505,10 +3165,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "draft",
-                      "approved"
-                    ]
+                    "enum": ["draft", "approved"]
                   },
                   "entries": {
                     "type": "array",
@@ -3550,18 +3207,13 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "date",
-                        "meal"
-                      ],
+                      "required": ["date", "meal"],
                       "additionalProperties": false
                     },
                     "maxItems": 50
                   }
                 },
-                "required": [
-                  "weekStart"
-                ],
+                "required": ["weekStart"],
                 "additionalProperties": false
               }
             }
@@ -3595,9 +3247,7 @@
     },
     "/meal-plans/{id}": {
       "get": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Get a meal plan",
         "parameters": [
           {
@@ -3636,9 +3286,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Update a meal plan",
         "description": "`entries` default to **merge** by date+meal: send one night to set, swap, or `{ clear: true }` to remove it. Other nights are left alone. Pass `entriesMode: replace` to rewrite the whole week. The response includes `previousEntries` for the nights this request changed.",
         "parameters": [
@@ -3660,11 +3308,7 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "draft",
-                      "approved",
-                      "archived"
-                    ]
+                    "enum": ["draft", "approved", "archived"]
                   },
                   "cookFor": {
                     "type": "integer",
@@ -3721,20 +3365,14 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "date",
-                        "meal"
-                      ],
+                      "required": ["date", "meal"],
                       "additionalProperties": false
                     },
                     "maxItems": 50
                   },
                   "entriesMode": {
                     "type": "string",
-                    "enum": [
-                      "merge",
-                      "replace"
-                    ],
+                    "enum": ["merge", "replace"],
                     "description": "How `entries` are applied. Default `merge` upserts by date+meal (use clear:true to remove a night). `replace` rewrites the whole week."
                   },
                   "shoppingState": {
@@ -3765,18 +3403,12 @@
                               "maxLength": 255
                             }
                           },
-                          "required": [
-                            "key",
-                            "name"
-                          ]
+                          "required": ["key", "name"]
                         },
                         "maxItems": 100
                       }
                     },
-                    "required": [
-                      "checkedKeys",
-                      "extras"
-                    ]
+                    "required": ["checkedKeys", "extras"]
                   }
                 },
                 "additionalProperties": false
@@ -3810,9 +3442,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Soft-delete a meal plan",
         "parameters": [
           {
@@ -3846,9 +3476,7 @@
     },
     "/meal-plans/{id}/undo": {
       "post": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Undo the last entries edit",
         "description": "Restores the previous week snapshot recorded on merge/replace PATCH. Returns the plan plus previousEntries (the state that was undone).",
         "parameters": [
@@ -3883,9 +3511,7 @@
     },
     "/meal-plans/{id}/history": {
       "get": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "List recent meal-plan entry snapshots (newest first)",
         "parameters": [
           {
@@ -3919,9 +3545,7 @@
     },
     "/meal-plans/{id}/check": {
       "get": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Check a meal plan against per-person rules and schedule time budgets. Not medical advice.",
         "parameters": [
           {
@@ -3953,9 +3577,7 @@
         }
       },
       "post": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Recheck a meal plan, store the report, and clear needsRecheck. GET is a dry run.",
         "parameters": [
           {
@@ -3989,9 +3611,7 @@
     },
     "/meal-plans/{id}/shopping-list": {
       "get": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Export a shopping list for a meal plan",
         "parameters": [
           {
@@ -4006,12 +3626,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "json",
-                "csv",
-                "markdown",
-                "text"
-              ]
+              "enum": ["json", "csv", "markdown", "text"]
             },
             "required": false,
             "name": "format",
@@ -4020,11 +3635,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "aisle",
-                "recipe",
-                "category"
-              ]
+              "enum": ["aisle", "recipe", "category"]
             },
             "required": false,
             "name": "groupBy",
@@ -4091,9 +3702,7 @@
     },
     "/meal-plans/{id}/shopping-list/state": {
       "get": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Get saved check-offs and extras for this plan week",
         "parameters": [
           {
@@ -4132,9 +3741,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "meal-plans"
-        ],
+        "tags": ["meal-plans"],
         "summary": "Save check-offs and extras for this plan week",
         "parameters": [
           {
@@ -4184,9 +3791,7 @@
     },
     "/households": {
       "get": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Get the authenticated household",
         "responses": {
           "200": {
@@ -4207,9 +3812,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Rename the kitchen (owner)",
         "requestBody": {
           "content": {
@@ -4223,9 +3826,7 @@
                     "maxLength": 255
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           }
@@ -4251,9 +3852,7 @@
     },
     "/households/settings": {
       "get": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Get kitchen Default servings",
         "description": "family matches max(recipe yield, People count). fixed uses servings. recipe keeps the card yield.",
         "responses": {
@@ -4282,9 +3881,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Update kitchen Default servings",
         "requestBody": {
           "content": {
@@ -4294,11 +3891,7 @@
                 "properties": {
                   "mode": {
                     "type": "string",
-                    "enum": [
-                      "family",
-                      "fixed",
-                      "recipe"
-                    ]
+                    "enum": ["family", "fixed", "recipe"]
                   },
                   "servings": {
                     "type": "integer",
@@ -4307,9 +3900,7 @@
                     "maximum": 99
                   }
                 },
-                "required": [
-                  "mode"
-                ]
+                "required": ["mode"]
               }
             }
           }
@@ -4342,9 +3933,7 @@
     },
     "/households/schedule": {
       "get": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Get the household weekly availability and busy-night schedule",
         "responses": {
           "200": {
@@ -4372,9 +3961,7 @@
         }
       },
       "put": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Replace the household weekly availability and busy-night schedule",
         "requestBody": {
           "content": {
@@ -4397,11 +3984,7 @@
                         },
                         "busyLevel": {
                           "type": "string",
-                          "enum": [
-                            "low",
-                            "medium",
-                            "high"
-                          ]
+                          "enum": ["low", "medium", "high"]
                         },
                         "timeBudgetMinutes": {
                           "type": "integer",
@@ -4415,9 +3998,7 @@
                     }
                   }
                 },
-                "required": [
-                  "week"
-                ]
+                "required": ["week"]
               }
             }
           }
@@ -4450,9 +4031,7 @@
     },
     "/api-keys": {
       "get": {
-        "tags": [
-          "api-keys"
-        ],
+        "tags": ["api-keys"],
         "summary": "List API keys (hashes only)",
         "responses": {
           "200": {
@@ -4470,9 +4049,7 @@
         }
       },
       "post": {
-        "tags": [
-          "api-keys"
-        ],
+        "tags": ["api-keys"],
         "summary": "Create an API key. The plaintext is returned once. Omit scopes for full access.",
         "requestBody": {
           "content": {
@@ -4516,9 +4093,7 @@
     },
     "/api-keys/{id}": {
       "delete": {
-        "tags": [
-          "api-keys"
-        ],
+        "tags": ["api-keys"],
         "summary": "Revoke an API key",
         "parameters": [
           {
@@ -4552,9 +4127,7 @@
     },
     "/households/mine": {
       "get": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "List kitchens. Signed-in users see every kitchen they belong to. An API key sees only its own kitchen, read-only, with active: true.",
         "responses": {
           "200": {
@@ -4577,9 +4150,7 @@
     },
     "/households/select": {
       "post": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Switch the active kitchen for this browser session. Signed-in users only; API keys are bound to one kitchen.",
         "requestBody": {
           "content": {
@@ -4592,9 +4163,7 @@
                     "format": "uuid"
                   }
                 },
-                "required": [
-                  "householdId"
-                ]
+                "required": ["householdId"]
               }
             }
           }
@@ -4620,9 +4189,7 @@
     },
     "/households/members": {
       "get": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "List kitchen members (signed-in users, not People)",
         "responses": {
           "200": {
@@ -4639,9 +4206,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -4663,9 +4228,7 @@
     },
     "/households/members/{userId}": {
       "patch": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Change a kitchen member role (owner only)",
         "parameters": [
           {
@@ -4688,9 +4251,7 @@
                     "$ref": "#/components/schemas/MembershipRole"
                   }
                 },
-                "required": [
-                  "role"
-                ]
+                "required": ["role"]
               }
             }
           }
@@ -4714,9 +4275,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Remove a kitchen member (owner only)",
         "parameters": [
           {
@@ -4750,9 +4309,7 @@
     },
     "/households/leave": {
       "post": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Leave the active kitchen",
         "responses": {
           "200": {
@@ -4775,9 +4332,7 @@
     },
     "/households/invites": {
       "get": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "List pending kitchen invite links (owner, admin, or API key)",
         "responses": {
           "200": {
@@ -4794,9 +4349,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "items"
-                  ]
+                  "required": ["items"]
                 }
               }
             }
@@ -4816,9 +4369,7 @@
         }
       },
       "post": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Create a shareable kitchen invite link (owner, admin, or API key)",
         "requestBody": {
           "content": {
@@ -4860,9 +4411,7 @@
     },
     "/households/invites/{id}": {
       "delete": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Revoke a kitchen invite link (owner, admin, or API key)",
         "parameters": [
           {
@@ -4896,9 +4445,7 @@
     },
     "/invites/{token}": {
       "get": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Preview a kitchen invite link (no auth)",
         "security": [],
         "parameters": [
@@ -4936,9 +4483,7 @@
     },
     "/invites/{token}/accept": {
       "post": {
-        "tags": [
-          "households"
-        ],
+        "tags": ["households"],
         "summary": "Accept a kitchen invite for the signed-in user. API keys cannot join another kitchen; the error names the /invite/{token} link a person must open.",
         "parameters": [
           {
