@@ -271,21 +271,19 @@ export function RecipeDetail({
               >
                 −
               </button>
-              <span className="hit44-y">
-                <input
-                  type="range"
-                  min={1}
-                  max={servingsMax}
-                  value={servings}
-                  aria-valuemin={1}
-                  aria-valuemax={servingsMax}
-                  aria-valuenow={servings}
-                  aria-label="Servings"
-                  onChange={(event) =>
-                    setServings(clampServings(Number(event.target.value), 1, servingsMax))
-                  }
-                />
-              </span>
+              <input
+                type="range"
+                min={1}
+                max={servingsMax}
+                value={servings}
+                aria-valuemin={1}
+                aria-valuemax={servingsMax}
+                aria-valuenow={servings}
+                aria-label="Servings"
+                onChange={(event) =>
+                  setServings(clampServings(Number(event.target.value), 1, servingsMax))
+                }
+              />
               <button
                 type="button"
                 className="btn compact"
