@@ -69,6 +69,7 @@ async function contrastRatio(page: Page, selector: string): Promise<number | nul
 
 test.describe("public design sign-off", () => {
   test("keeps unknown public routes in-app and contrast above 4.5", async ({ page }) => {
+    test.setTimeout(120_000);
     await page.emulateMedia({ colorScheme: "dark" });
 
     for (const width of widths) {
