@@ -221,22 +221,51 @@ test.describe("public design sign-off", () => {
         }
         if (item.name === "sign-in") {
           const viewport = page.viewportSize();
-          const brandBox = await page.locator(".auth-screen .brand").boundingBox();
           const heading = page.locator(".auth-screen h1");
+          const screenBox = await page.locator(".auth-screen").boundingBox();
+          const brandBox = await page.locator(".auth-screen .brand").boundingBox();
           const headingBox = await heading.boundingBox();
           const btnBox = await page.locator(".auth-screen .btn").first().boundingBox();
-          const clerkCard = page.locator(".auth-screen .cl-cardBox").first();
-          const cardBox = (await clerkCard.count()) > 0 ? await clerkCard.boundingBox() : null;
-          expect(viewport && brandBox && headingBox && btnBox).toBeTruthy();
-          if (viewport && brandBox && headingBox && btnBox) {
+          expect(viewport && screenBox && brandBox && headingBox && btnBox).toBeTruthy();
+          if (viewport && screenBox && brandBox && headingBox && btnBox) {
+            if (width === 390) {
+              const oldWrap = await page.addStyleTag({
+                content:
+                  ".auth-screen { width: min(1080px, calc(100% - 48px)) !important; margin: 0 auto !important; padding: 48px 0 80px !important; }",
+              });
+              const oldBox = await page.locator(".auth-screen").boundingBox();
+              expect(oldBox, "old wrap box").toBeTruthy();
+              if (oldBox) {
+                expect(oldBox.x, "old wrap left can fail").toBeGreaterThan(8);
+                expect(oldBox.width, "old wrap width can fail").toBeLessThan(viewport.width - 8);
+              }
+              await oldWrap.evaluate((el) => el.remove());
+
+              const overflowCanFail = await page.evaluate(() => {
+                const el = document.createElement("div");
+                el.style.cssText = "position:absolute;left:0;top:0;width:500px;height:1px";
+                document.body.appendChild(el);
+                const scroll = document.documentElement.scrollWidth;
+                el.remove();
+                return scroll > window.innerWidth;
+              });
+              expect(overflowCanFail, "page overflow can fail").toBe(true);
+
+              const pageWidth = await page.evaluate(() => ({
+                scroll: document.documentElement.scrollWidth,
+                inner: window.innerWidth,
+              }));
+              expect(pageWidth.scroll, "sign-in page overflow").toBeLessThanOrEqual(
+                pageWidth.inner
+              );
+            }
+            expect(screenBox.x, "auth-screen left").toBeLessThanOrEqual(1);
+            expect(screenBox.width, "auth-screen width").toBeGreaterThanOrEqual(viewport.width - 1);
             const mid = (box: { x: number; width: number }) => box.x + box.width / 2;
             const center = viewport.width / 2;
             expect(Math.abs(mid(brandBox) - center), "brand center").toBeLessThan(2);
             expect(Math.abs(mid(headingBox) - center), "heading center").toBeLessThan(2);
             expect(Math.abs(mid(btnBox) - center), "button center").toBeLessThan(2);
-            if (cardBox) {
-              expect(Math.abs(mid(cardBox) - center), "sign-in card center").toBeLessThan(2);
-            }
           }
           const type = await heading.evaluate((el) => {
             const style = getComputedStyle(el);
