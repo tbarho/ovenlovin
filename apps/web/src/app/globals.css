@@ -3379,7 +3379,7 @@ select {
 
 .week-meal-open {
   display: inline-block;
-  margin-top: 24px;
+  margin-top: 12px;
   color: var(--orange-deep);
   font-size: 13px;
   font-weight: 650;

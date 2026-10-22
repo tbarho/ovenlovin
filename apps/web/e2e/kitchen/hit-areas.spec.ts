@@ -75,12 +75,15 @@ test("kitchen hit areas are at least 44px at 390", async ({ page }) => {
   await expect(recipeActions).toBeVisible();
   await expectHit44(recipeActions, "recipe actions", "both");
 
-  const pesto = page.getByRole("link", { name: /weeknight pesto pasta/i });
-  const pestoHref = await pesto.getAttribute("href");
-  expect(pestoHref, "pesto recipe href").toBeTruthy();
+  const pestoHref = await page
+    .getByRole("link", { name: /weeknight pesto pasta/i })
+    .getAttribute("href");
+  expect(pestoHref).toBeTruthy();
   await page.goto(pestoHref!);
-  await expect(page).toHaveURL(/\/recipes\/[^/?]+/);
-  await expect(page.getByRole("heading", { level: 1, name: /pesto pasta/i })).toBeVisible();
+  await expect(
+    page.locator(".recipe-layout").getByRole("heading", { name: /pesto pasta/i })
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/recipes\/[^/]+/);
   const slider = page.locator(".servings-stepper input[type='range']");
   await expect(slider).toBeVisible();
   await slider.scrollIntoViewIfNeeded();
