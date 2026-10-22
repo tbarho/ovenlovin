@@ -1187,6 +1187,28 @@ describe("ShoppingListService", () => {
       reject: /^red$/i,
       rows: 1,
     },
+    {
+      name: "garlic cloves trailing unit",
+      lines: ["3 garlic cloves", "2 cloves garlic"],
+      expectName: /^garlic$/i,
+      reject: /cloves/i,
+      rows: 1,
+      quantity: 5,
+      unit: "clove",
+    },
+    {
+      name: "potato tomato oes",
+      lines: ["1 potato", "2 potatoes", "1 tomato", "2 tomatoes"],
+      expectName: [/^potato$/i, /^tomato$/i],
+      rows: 2,
+    },
+    {
+      name: "or substitutes no comma",
+      lines: ["chicken broth or water", "butter or margarine"],
+      expectName: [/broth/i, /^butter$/i],
+      reject: /water|margarine/i,
+      rows: 2,
+    },
   ])(
     "UAT shop lines $name",
     ({ lines, expectName, reject, rows, includeStaples, aisles, categories, quantity, unit }) => {

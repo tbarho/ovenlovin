@@ -5,6 +5,7 @@ import {
   normalizeIngredientName,
   parseIngredientLine,
   parseShopIngredientLines,
+  singularizeShopOes,
   splitLeadingUnit,
 } from "./ingredient-line";
 
@@ -213,6 +214,21 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("olive oil for drizzling")).toEqual([
       expect.objectContaining({ name: "olive oil" }),
     ]);
+    expect(parseShopIngredientLines("3 garlic cloves")).toEqual([
+      expect.objectContaining({ quantityMin: 3, unit: "clove", name: "garlic" }),
+    ]);
+    expect(parseShopIngredientLines("2 thyme sprigs")).toEqual([
+      expect.objectContaining({ quantityMin: 2, unit: "sprig", name: "thyme" }),
+    ]);
+    expect(parseShopIngredientLines("3 celery stalks")).toEqual([
+      expect.objectContaining({ quantityMin: 3, unit: "stalk", name: "celery" }),
+    ]);
+    expect(parseShopIngredientLines("chicken broth or water")).toEqual([
+      expect.objectContaining({ name: "chicken broth" }),
+    ]);
+    expect(parseShopIngredientLines("butter or margarine")).toEqual([
+      expect.objectContaining({ name: "butter" }),
+    ]);
     expect(parseShopIngredientLines("1 cup unsalted butter)")).toEqual([
       expect.objectContaining({ name: "unsalted butter" }),
     ]);
@@ -244,6 +260,12 @@ describe("normalizeIngredientName", () => {
     expect(normalizeIngredientName("Olive Oil")).toBe("olive oil");
     expect(normalizeIngredientName("all-purpose flour")).toBe("all purpose flour");
     expect(normalizeIngredientName("jalapeño")).toBe("jalapeño");
+  });
+
+  it("singularizes -oes to -o and leaves shoes", () => {
+    expect(singularizeShopOes("potatoes")).toBe("potato");
+    expect(singularizeShopOes("tomatoes")).toBe("tomato");
+    expect(singularizeShopOes("shoes")).toBe("shoes");
   });
 });
 

@@ -61,6 +61,9 @@ const UNIT_ALIASES: Array<{ match: string; unit: string }> = [
   { match: "sprig", unit: "sprig" },
 ];
 
+/** Count units that also appear after the item (`3 garlic cloves`). */
+const TRAILING_COUNT_UNITS = /^(cloves?|sprigs?|stalks?)$/i;
+
 const UNICODE_FRACTIONS: Record<string, number> = {
   "¼": 0.25,
   "½": 0.5,
@@ -318,6 +321,7 @@ function cleanShopItemName(rest: string): string {
       .replace(/,?\s+or$/i, "")
       .replace(/\s+to taste$/i, "")
       .replace(/\s+for\s+(drizzling|serving|garnish|greasing|frying)\b.*$/i, "")
+      .replace(/\s+or\s+(water|stock|broth|margarine|oil|milk)\b.*$/i, "")
       .replace(
         /,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i,
         ""
@@ -356,6 +360,16 @@ function splitShopNameList(name: string): string[] {
     .map((part) => part.replace(LEADING_PREP, "").trim())
     .filter(Boolean);
   return parts.length > 0 ? parts : [name];
+}
+
+function consumeTrailingCountUnit(text: string): { unit: string; rest: string } | null {
+  const match = text.trim().match(/^(.*?)\s+(\S+?)\.?$/);
+  if (!match?.[1] || !match[2] || !TRAILING_COUNT_UNITS.test(match[2])) return null;
+  const rest = match[1].trim();
+  if (!rest) return null;
+  const word = match[2].toLowerCase();
+  const unit = word.startsWith("clove") ? "clove" : word.startsWith("sprig") ? "sprig" : "stalk";
+  return { unit, rest };
 }
 
 function consumeTrailingMeasure(text: string): {
@@ -438,12 +452,21 @@ function parseShopIngredientLine(rawText: string): ParsedIngredientLine {
     }
   }
 
+  let name = cleanShopItemName(unit.rest);
+  if (!unit.unit) {
+    const trailing = consumeTrailingCountUnit(name);
+    if (trailing) {
+      unit = { unit: trailing.unit, rest: trailing.rest };
+      name = trailing.rest;
+    }
+  }
+
   return {
     rawText: original,
     quantityMin: quantity.min,
     quantityMax: quantity.max,
     unit: unit.unit,
-    name: cleanShopItemName(unit.rest),
+    name,
   };
 }
 
@@ -462,6 +485,11 @@ export function normalizeIngredientName(name: string): string {
     .replace(/[^\p{L}\p{N}\s]/gu, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** Shop merge only: potatoes/tomatoes → potato/tomato. Leave shoes. */
+export function singularizeShopOes(name: string): string {
+  return name.replace(/\b(?!shoes\b)(\p{L}+?)oes\b/gu, "$1o");
 }
 
 /**

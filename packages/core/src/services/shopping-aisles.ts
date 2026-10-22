@@ -1,4 +1,4 @@
-import { normalizeIngredientName } from "../parsing/ingredient-line";
+import { normalizeIngredientName, singularizeShopOes } from "../parsing/ingredient-line";
 
 /** Food taxonomy for `groupBy=category` - not grocery-store aisles. */
 export const SHOPPING_LIST_CATEGORIES = [
@@ -491,7 +491,7 @@ const COMPILED_ALIASES: CompiledAlias[] = AISLE_RULES.flatMap((rule) => {
 }).sort((a, b) => b.alias.length - a.alias.length);
 
 function findRule(name: string): CompiledAlias | undefined {
-  const normalized = normalizeIngredientName(name);
+  const normalized = singularizeShopOes(normalizeIngredientName(name));
   if (!normalized) return undefined;
   return COMPILED_ALIASES.find(
     (rule) =>
@@ -527,13 +527,13 @@ const GENERIC_FLOUR_NAMES = new Set([
 ]);
 
 function descriptorlessName(name: string): string {
-  let n = normalizeIngredientName(name);
+  let n = singularizeShopOes(normalizeIngredientName(name));
   if (/\bbutter\b/.test(n)) n = n.replace(/\b(unsalted|salted)\b/g, " ");
   return n.replace(MERGE_DESCRIPTORS, " ").replace(/\s+/g, " ").trim();
 }
 
 function canonicalNameFor(name: string, match: CompiledAlias): string {
-  const normalized = normalizeIngredientName(name);
+  const normalized = singularizeShopOes(normalizeIngredientName(name));
   if (match.canonical === "all purpose flour") {
     if (GENERIC_FLOUR_NAMES.has(normalized) || GENERIC_FLOUR_NAMES.has(descriptorlessName(name))) {
       return "all purpose flour";

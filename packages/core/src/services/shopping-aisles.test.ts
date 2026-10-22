@@ -135,6 +135,10 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("unsalted peanuts")).toBe("unsalted peanuts");
     expect(canonicalShopName("fresh thyme")).toBe("fresh thyme");
     expect(canonicalShopName("dried thyme")).toBe("dried thyme");
+    expect(canonicalShopName("potato")).toBe("potato");
+    expect(canonicalShopName("potatoes")).toBe("potato");
+    expect(canonicalShopName("tomato")).toBe("tomato");
+    expect(canonicalShopName("tomatoes")).toBe("tomato");
     expect(assignAisle("fresh thyme").aisle).toBe("Produce");
     expect(assignAisle("dried thyme").aisle).toBe("Spices");
   });
