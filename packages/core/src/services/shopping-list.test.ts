@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MealPlanEntry } from "../schemas/plans";
 import { DECIMAL_TWO_THIRDS_CELERY } from "../scaling/quantity-display.fixture";
+import { weekCookFor } from "../scaling/default-servings";
 import {
   KITCHEN_STAPLES_SECTION,
   ShoppingListService,
@@ -634,6 +635,29 @@ describe("ShoppingListService", () => {
     expect(service.exportAsMarkdown(list)).toContain("For 8 people");
     expect(service.exportAsMarkdown(list)).not.toContain("some recipes scaled differently");
     expect(service.exportAsMarkdown(list)).not.toContain("For 5 people");
+  });
+
+  it("changes For N people on a following plan after a person is added, not on a hand-set plan", () => {
+    const sources = [
+      {
+        entry: entry({ recipeId: "pesto", servings: null }),
+        recipeTitle: "Pesto pasta",
+        recipeServings: 4,
+        ingredients: [{ rawText: "1 cup basil" }],
+      },
+    ];
+    const householdAfterAdd = 6;
+    const following = build(sources, {
+      defaultCookFor: weekCookFor({ planCookFor: null, householdCookFor: householdAfterAdd }),
+    });
+    const handSet = build(sources, {
+      defaultCookFor: weekCookFor({ planCookFor: 5, householdCookFor: householdAfterAdd }),
+    });
+    expect(following.scaledFor).toBe(6);
+    expect(handSet.scaledFor).toBe(5);
+    expect(service.exportAsMarkdown(following)).toContain("For 6 people");
+    expect(service.exportAsMarkdown(handSet)).toContain("For 5 people");
+    expect(service.exportAsMarkdown(handSet)).not.toContain("For 6 people");
   });
 
   it("names the heading from the week cook-for, not a leftover per-night servings stamp", () => {

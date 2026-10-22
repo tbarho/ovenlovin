@@ -80,6 +80,16 @@ describe("weekDefaultServings and planEntryServings", () => {
     expect(planEntryServings({ recipeServings: 10, cookFor: 8, mode: "recipe" })).toBe(10);
   });
 
+  it("rescales a following plan when people are added, and leaves a hand-set plan alone", () => {
+    const afterAdd = 6;
+    const following = weekCookFor({ planCookFor: null, householdCookFor: afterAdd });
+    const handSet = weekCookFor({ planCookFor: 5, householdCookFor: afterAdd });
+    expect(following).toBe(6);
+    expect(handSet).toBe(5);
+    expect(cookForPeopleLabel(following)).toBe("For 6 people");
+    expect(cookForPeopleLabel(handSet)).toBe("For 5 people");
+  });
+
   it("keeps the chosen week cook-for after a reload, not household size or recipe yield", () => {
     expect(weekCookFor({ planCookFor: 8, householdCookFor: 5 })).toBe(8);
     expect(weekCookFor({ planCookFor: null, householdCookFor: 5 })).toBe(5);
