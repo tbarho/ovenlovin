@@ -370,8 +370,8 @@ function matchShopDisplayCase(source: string, next: string): string {
 }
 
 export function shopItemDisplayName(name: string, quantity?: number, unit?: string | null): string {
-  if (unit?.trim() || quantity == null || quantity <= 1) return name;
   const trimmed = name.trim();
+  if (unit?.trim() || quantity == null || quantity <= 1) return trimmed;
   if (/^eggs?$/i.test(trimmed)) return matchShopDisplayCase(trimmed, "eggs");
   return trimmed
     .replace(/\bpotato(?:es)?$/i, (word) => matchShopDisplayCase(word, "potatoes"))
