@@ -115,14 +115,9 @@ export function LandingPage({
                   Sign in
                 </Link>
               ) : (
-                <a
-                  className="btn"
-                  href="https://tbarho.github.io/ovenlovin/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <Link className="btn" href="/docs">
                   Read the docs
-                </a>
+                </Link>
               )}
             </div>
             {signedIn ? <VercelBand deploy={deploy} /> : null}
@@ -140,16 +135,11 @@ export function LandingPage({
                   : "Create your household on first sign\u2011in, then import recipes and set people rules."}
               </p>
             </Link>
-            <a
-              className="path-card"
-              href="https://tbarho.github.io/ovenlovin/"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <Link className="path-card" href="/docs">
               <span className="kicker">02</span>
               <h2>Read the docs</h2>
               <p>Self-hosting, MCP tools, importers, and the safety-critical rule checker.</p>
-            </a>
+            </Link>
             <a className="path-card" href="#connect">
               <span className="kicker">03</span>
               <h2>Connect an agent</h2>

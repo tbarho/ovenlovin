@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isKitchenNavActive, kitchenNavLinks } from "@/lib/kitchen-nav";
-import { kitchenNavIcons } from "./KitchenNavIcons";
+import { isKitchenNavActive, kitchenDocsLink, kitchenNavLinks } from "@/lib/kitchen-nav";
+import { DocsIcon, kitchenNavIcons } from "./KitchenNavIcons";
 
 export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar" }) {
   const pathname = usePathname();
@@ -24,6 +24,17 @@ export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar
               </li>
             );
           })}
+          <li>
+            <Link
+              href={kitchenDocsLink.href}
+              aria-current={
+                isKitchenNavActive(pathname, kitchenDocsLink.match) ? "page" : undefined
+              }
+            >
+              <DocsIcon />
+              <span>{kitchenDocsLink.label}</span>
+            </Link>
+          </li>
         </ul>
       </nav>
     );
@@ -41,6 +52,14 @@ export function KitchenNav({ variant = "links" }: { variant?: "links" | "sidebar
           </li>
         );
       })}
+      <li>
+        <Link
+          href={kitchenDocsLink.href}
+          aria-current={isKitchenNavActive(pathname, kitchenDocsLink.match) ? "page" : undefined}
+        >
+          {kitchenDocsLink.label}
+        </Link>
+      </li>
     </ul>
   );
 }

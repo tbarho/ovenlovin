@@ -549,6 +549,10 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
           },
         },
       },
+      409: {
+        description:
+          "Exact SHA match or near-duplicate PNG without allowDuplicate. Includes recipeId and title.",
+      },
       503: importAiUnavailable,
     },
   });

@@ -62,6 +62,12 @@ describe("LandingPage", () => {
     expect(screen.queryByRole("link", { name: "Try the demo" })).not.toBeInTheDocument();
     expect(screen.getByText(/Always read the label/)).toBeInTheDocument();
     expect(document.querySelectorAll(".hero-ctas .btn")).toHaveLength(2);
+    expect(
+      screen
+        .getAllByRole("link", { name: /Read the docs/ })
+        .every((link) => link.getAttribute("href") === "/docs")
+    ).toBe(true);
+    expect(screen.getByRole("link", { name: "Docs" })).toHaveAttribute("href", "/docs");
   });
 
   it("shows the public demo CTA when a demo URL is configured", () => {

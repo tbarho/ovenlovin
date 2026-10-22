@@ -27,13 +27,15 @@ describe("middleware", () => {
     expect(clerkOptions).toEqual({ signInUrl: "/sign-in", signUpUrl: "/sign-up" });
   });
 
-  it("sends signed-out /settings to sign-in and back", async () => {
-    const req = new NextRequest("http://localhost/settings");
-    const result = await clerkHandler!(async () => ({ userId: null }), req);
-    expect(result).toBeInstanceOf(NextResponse);
-    const location = (result as NextResponse).headers.get("location") ?? "";
-    expect(location).toContain("/sign-in");
-    expect(location).toContain("redirect_url=%2Fsettings");
+  it("sends signed-out kitchen pages to sign-in and back", async () => {
+    for (const path of ["/settings", "/recipes", "/plans", "/list"]) {
+      const req = new NextRequest(`http://localhost${path}`);
+      const result = await clerkHandler!(async () => ({ userId: null }), req);
+      expect(result).toBeInstanceOf(NextResponse);
+      const location = (result as NextResponse).headers.get("location") ?? "";
+      expect(location).toContain("/sign-in");
+      expect(location).toContain(`redirect_url=${encodeURIComponent(path)}`);
+    }
   });
 
   it("lets a signed-in user through /settings", async () => {

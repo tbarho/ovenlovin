@@ -28,17 +28,13 @@ const clerkOptions = clerkUrls();
 const clerk = clerkMiddleware(async (auth, req) => {
   if (!isClerkProtectedPath(req.nextUrl.pathname)) return;
   const path = req.nextUrl.pathname;
-  if (path === "/settings" || path.startsWith("/settings/")) {
-    const session = await auth();
-    if (!session.userId) {
-      const signIn = req.nextUrl.clone();
-      signIn.pathname = "/sign-in";
-      signIn.search = `?redirect_url=${encodeURIComponent(`${path}${req.nextUrl.search}`)}`;
-      return NextResponse.redirect(signIn);
-    }
-    return;
+  const session = await auth();
+  if (!session.userId) {
+    const signIn = req.nextUrl.clone();
+    signIn.pathname = "/sign-in";
+    signIn.search = `?redirect_url=${encodeURIComponent(`${path}${req.nextUrl.search}`)}`;
+    return NextResponse.redirect(signIn);
   }
-  await auth.protect();
 }, clerkOptions);
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
