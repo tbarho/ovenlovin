@@ -89,13 +89,13 @@ const PREP_NOTES =
   /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const SHOP_PREP_NOTES =
-  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|beaten|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
+  /^(minced|chopped|diced|cubed|sliced|grated|shredded|crushed|juiced|zested|beaten|optional|divided|softened|melted|trimmed|peeled|seeded|halved|quartered|drained|rinsed|thawed|cooked|toasted|chilled|crumbled|room temperature|to taste|for serving|stems and seeds removed|(very\s+)?(finely|thinly|roughly|freshly|coarsely)\s+[\w\s]+)$/i;
 
 const LEADING_PREP =
-  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+(?!tomato)|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple))/i;
+  /^(optional:\s*|freshly\s+|fresh\s+|chopped\s+|minced\s+|diced\s+(?!tomato)|sliced\s+|grated\s+|shredded\s+|crushed\s+(?!tomato|pineapple)|cooked\s+|toasted\s+|chilled\s+)/i;
 
 const SHOP_KEEP_TAILS =
-  /^(canned|red|green|yellow|orange|white|black|purple|brown|smoked|aged|dried|roasted)$/i;
+  /^(canned|red|green|yellow|orange|white|black|purple|brown|smoked|aged|dried|roasted|evaporated|condensed|refried|sun-dried|powdered|seasoned|sweetened|unsweetened|pickled|salted)$/i;
 
 /** Shop-only: a comma/paren tail that is an instruction, not another grocery item. */
 function isShopPrepPhrase(text: string): boolean {
@@ -104,7 +104,6 @@ function isShopPrepPhrase(text: string): boolean {
   if (SHOP_KEEP_TAILS.test(t)) return false;
   if (SHOP_PREP_NOTES.test(t) || /^(or|and)$/i.test(t)) return true;
   if (/^(otherwise|if|into|for|with|in|or|plus|cut\s+into)\b/i.test(t)) return true;
-  if (t.length > 4 && /^[\p{L}'-]+ed$/iu.test(t) && !/^canned$/i.test(t)) return true;
   if (/^[\p{L}'-]+ed\s+(ahead|into|if|first|for|with|in)\b/iu.test(t)) return true;
   const parts = t
     .split(/\s*(?:,|&|\band\b|\bor\b)\s*/)
@@ -370,7 +369,10 @@ const TRAILING_COUNT_NOT_ITEM =
 function consumeTrailingCountUnit(text: string): { unit: string; rest: string } | null {
   const match = text.trim().match(/^(.*?)\s+(\S+?)\.?$/);
   if (!match?.[1] || !match[2] || !TRAILING_COUNT_UNITS.test(match[2])) return null;
-  const rest = match[1].trim();
+  const rest = match[1]
+    .trim()
+    .replace(/^(large|small|medium|whole)\s+/i, "")
+    .trim();
   if (!rest || TRAILING_COUNT_NOT_ITEM.test(rest)) return null;
   const word = match[2].toLowerCase();
   const unit = word.startsWith("clove") ? "clove" : word.startsWith("sprig") ? "sprig" : "stalk";

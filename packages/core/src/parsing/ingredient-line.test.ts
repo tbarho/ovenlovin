@@ -232,6 +232,36 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("6 whole cloves")).toEqual([
       expect.objectContaining({ quantityMin: 6, unit: null, name: "whole cloves" }),
     ]);
+    expect(parseShopIngredientLines("4 large garlic cloves")).toEqual([
+      expect.objectContaining({ quantityMin: 4, unit: "clove", name: "garlic" }),
+    ]);
+    expect(parseShopIngredientLines("evaporated milk")).toEqual([
+      expect.objectContaining({ name: "evaporated milk" }),
+    ]);
+    expect(parseShopIngredientLines("milk, evaporated")).toEqual([
+      expect.objectContaining({ name: "evaporated milk" }),
+    ]);
+    expect(parseShopIngredientLines("condensed milk, sweetened")).toEqual([
+      expect.objectContaining({ name: "sweetened condensed milk" }),
+    ]);
+    expect(parseShopIngredientLines("beans, refried")).toEqual([
+      expect.objectContaining({ name: "refried beans" }),
+    ]);
+    expect(parseShopIngredientLines("tomatoes, sun-dried")).toEqual([
+      expect.objectContaining({ name: "sun-dried tomatoes" }),
+    ]);
+    expect(parseShopIngredientLines("sweetened condensed milk")).toEqual([
+      expect.objectContaining({ name: "sweetened condensed milk" }),
+    ]);
+    expect(parseShopIngredientLines("refried beans")).toEqual([
+      expect.objectContaining({ name: "refried beans" }),
+    ]);
+    expect(parseShopIngredientLines("sun-dried tomatoes")).toEqual([
+      expect.objectContaining({ name: "sun-dried tomatoes" }),
+    ]);
+    expect(parseShopIngredientLines("1 cup cooked rice")).toEqual([
+      expect.objectContaining({ quantityMin: 1, unit: "cup", name: "rice" }),
+    ]);
     expect(parseShopIngredientLines("1 can diced tomatoes")).toEqual([
       expect.objectContaining({ name: "diced tomatoes" }),
     ]);

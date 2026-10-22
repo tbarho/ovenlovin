@@ -107,6 +107,44 @@ describe("ShoppingList", () => {
     expect(document.querySelector(".shop-item-body .muted")).toHaveTextContent("as needed · Soup");
   });
 
+  it("pluralizes simple count names over 1", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "potato",
+            name: "potato",
+            quantity: 3,
+            displayQuantity: "3",
+            recipes: ["Roast"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+    expect(screen.getByRole("listitem")).toHaveTextContent("3 potatoes");
+  });
+
+  it("keeps a measured cherry tomato name as written", () => {
+    render(
+      <ShoppingList
+        items={[
+          {
+            key: "cherry tomatoes",
+            name: "cherry tomatoes",
+            quantity: 1,
+            unit: "cup",
+            displayQuantity: "1",
+            displayUnit: "cup",
+            recipes: ["Salad"],
+            warnings: [],
+          },
+        ]}
+      />
+    );
+    expect(screen.getByRole("listitem")).toHaveTextContent("1 cup cherry tomatoes");
+  });
+
   it("pluralizes counted names over 1", () => {
     render(
       <ShoppingList

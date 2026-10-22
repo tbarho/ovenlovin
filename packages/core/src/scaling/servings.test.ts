@@ -311,7 +311,12 @@ describe("countable shopping amounts", () => {
     expect(shopItemDisplayName("egg", 1)).toBe("egg");
     expect(shopItemDisplayName("garlic", 3)).toBe("garlic");
     expect(shopItemDisplayName("celery", 3)).toBe("celery");
-    expect(shopItemDisplayName("strawberry", 3)).toBe("strawberry");
+    expect(shopItemDisplayName("strawberry", 3)).toBe("strawberries");
+    expect(shopItemDisplayName("potato", 3)).toBe("potatoes");
+    expect(shopItemDisplayName("tomato", 3)).toBe("tomatoes");
+    expect(shopItemDisplayName("lemon", 3)).toBe("lemons");
+    expect(shopItemDisplayName("cherry tomatoes", 1, "cup")).toBe("cherry tomatoes");
+    expect(shopItemDisplayName("cherry tomato", 1, "cup")).toBe("cherry tomato");
     expect(shopItemDisplayName("cilantro", 3)).toBe("cilantro");
     expect(shopItemDisplayName("leaf", 3)).toBe("leaf");
     expect(shopItemDisplayName("loaf bread", 3)).toBe("loaf bread");

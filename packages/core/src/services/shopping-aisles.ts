@@ -527,13 +527,13 @@ const GENERIC_FLOUR_NAMES = new Set([
 ]);
 
 function descriptorlessName(name: string): string {
-  let n = singularizeShopOes(normalizeIngredientName(name));
+  let n = normalizeIngredientName(name);
   if (/\bbutter\b/.test(n)) n = n.replace(/\b(unsalted|salted)\b/g, " ");
   return n.replace(MERGE_DESCRIPTORS, " ").replace(/\s+/g, " ").trim();
 }
 
 function canonicalNameFor(name: string, match: CompiledAlias): string {
-  const normalized = singularizeShopOes(normalizeIngredientName(name));
+  const normalized = normalizeIngredientName(name);
   if (match.canonical === "all purpose flour") {
     if (GENERIC_FLOUR_NAMES.has(normalized) || GENERIC_FLOUR_NAMES.has(descriptorlessName(name))) {
       return "all purpose flour";

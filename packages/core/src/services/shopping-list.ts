@@ -1,4 +1,8 @@
-import { parseShopIngredientLines, normalizeIngredientName } from "../parsing/ingredient-line";
+import {
+  parseShopIngredientLines,
+  normalizeIngredientName,
+  singularizeShopOes,
+} from "../parsing/ingredient-line";
 import type { MealPlanEntry } from "../schemas/plans";
 import { shopItemKey, type ShoppingExtra } from "../schemas/shopping-trip";
 import type { DefaultServingsMode } from "../schemas/households";
@@ -187,7 +191,7 @@ function addQuantities(
 }
 
 function mergeKey(name: string, recipeKey: string): string {
-  return `${recipeKey}|${normalizeIngredientName(name)}`;
+  return `${recipeKey}|${singularizeShopOes(normalizeIngredientName(name))}`;
 }
 
 function sectionForItem(
