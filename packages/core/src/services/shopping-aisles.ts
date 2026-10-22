@@ -1,4 +1,4 @@
-import { normalizeIngredientName } from "../parsing/ingredient-line";
+import { normalizeIngredientName, singularizeShopOes } from "../parsing/ingredient-line";
 
 /** Food taxonomy for `groupBy=category` - not grocery-store aisles. */
 export const SHOPPING_LIST_CATEGORIES = [
@@ -142,18 +142,19 @@ const AISLE_RULES: AisleRule[] = [
     category: "spices",
   },
   {
+    aliases: ["all-purpose flour", "all purpose flour", "flour"],
+    aisle: "Baking",
+    category: "pantry",
+    canonical: "all purpose flour",
+  },
+  {
     aliases: [
-      "all-purpose flour",
-      "all purpose flour",
       "bread flour",
       "brown sugar",
       "powdered sugar",
       "baking soda",
       "baking powder",
       "chocolate chips",
-      "vanilla extract",
-      "vanilla",
-      "flour",
       "sugar",
       "cocoa",
     ],
@@ -161,8 +162,25 @@ const AISLE_RULES: AisleRule[] = [
     category: "pantry",
   },
   {
+    aliases: ["pure vanilla extract", "vanilla extract", "vanilla"],
+    aisle: "Baking",
+    category: "pantry",
+    canonical: "vanilla",
+  },
+  {
+    aliases: ["crushed tomatoes", "crushed tomato"],
+    aisle: "Canned goods",
+    category: "pantry",
+    canonical: "crushed tomatoes",
+  },
+  {
+    aliases: ["crushed pineapple", "crushed pineapples"],
+    aisle: "Canned goods",
+    category: "pantry",
+    canonical: "crushed pineapple",
+  },
+  {
     aliases: [
-      "crushed tomatoes",
       "diced tomatoes",
       "tomato sauce",
       "tomato paste",
@@ -290,6 +308,12 @@ const AISLE_RULES: AisleRule[] = [
     canonical: "garlic",
   },
   {
+    aliases: ["parmigiano reggiano", "parmesan cheese", "parmesan"],
+    aisle: "Dairy",
+    category: "dairy",
+    canonical: "parmesan",
+  },
+  {
     aliases: [
       "sour cream",
       "cottage cheese",
@@ -349,6 +373,11 @@ const AISLE_RULES: AisleRule[] = [
     aisle: "Seafood",
     category: "protein",
     canonical: "salmon",
+  },
+  {
+    aliases: ["oat milk", "almond milk", "soy milk"],
+    aisle: "Refrigerated",
+    category: "other",
   },
   {
     aliases: ["tofu", "tempeh", "seitan", "extra-firm tofu", "firm tofu", "silken tofu"],
@@ -462,7 +491,7 @@ const COMPILED_ALIASES: CompiledAlias[] = AISLE_RULES.flatMap((rule) => {
 }).sort((a, b) => b.alias.length - a.alias.length);
 
 function findRule(name: string): CompiledAlias | undefined {
-  const normalized = normalizeIngredientName(name);
+  const normalized = singularizeShopOes(normalizeIngredientName(name));
   if (!normalized) return undefined;
   return COMPILED_ALIASES.find(
     (rule) =>
@@ -488,23 +517,57 @@ export function isPantryStaple(name: string): boolean {
   });
 }
 
+const MERGE_DESCRIPTORS = /\b(plain|all purpose|grated|shredded|freshly|large|small|low sodium)\b/g;
+
+const GENERIC_FLOUR_NAMES = new Set([
+  "flour",
+  "all purpose flour",
+  "plain flour",
+  "plain all purpose flour",
+]);
+
+function descriptorlessName(name: string): string {
+  let n = normalizeIngredientName(name);
+  if (/\bbutter\b/.test(n)) n = n.replace(/\b(unsalted|salted)\b/g, " ");
+  return n.replace(MERGE_DESCRIPTORS, " ").replace(/\s+/g, " ").trim();
+}
+
 function canonicalNameFor(name: string, match: CompiledAlias): string {
-  if (match.canonical) return match.canonical;
   const normalized = normalizeIngredientName(name);
-  if (normalized === match.alias || normalized === `${match.alias}s`) return match.alias;
+  if (match.canonical === "all purpose flour") {
+    if (GENERIC_FLOUR_NAMES.has(normalized) || GENERIC_FLOUR_NAMES.has(descriptorlessName(name))) {
+      return "all purpose flour";
+    }
+    return name;
+  }
+  const stripped = descriptorlessName(name);
+  const strippedMatch = stripped ? findRule(stripped) : undefined;
+  const use = strippedMatch ?? match;
+  const alias = use.canonical ?? use.alias;
+  if (stripped === use.alias || stripped === `${use.alias}s` || stripped === alias) return alias;
+  if (normalized === match.alias || normalized === `${match.alias}s`) {
+    return match.canonical ?? match.alias;
+  }
   return name;
 }
 
-export function assignAisle(name: string): AisleAssignment {
+export function assignAisle(name: string, unit?: string | null): AisleAssignment {
   const match = findRule(name);
-  if (!match) {
-    return { aisle: "Other", category: "other", canonicalName: name };
+  const placement = match
+    ? {
+        aisle: match.aisle,
+        category: match.category,
+        canonicalName: canonicalNameFor(name, match),
+      }
+    : { aisle: "Other", category: "other" as const, canonicalName: name };
+  // shortcut: a can / canned label is the canned-goods aisle, not produce
+  if (unit?.trim().toLowerCase() === "can" || /\bcanned\b/.test(normalizeIngredientName(name))) {
+    return { ...placement, aisle: "Canned goods", category: "pantry" };
   }
-  return {
-    aisle: match.aisle,
-    category: match.category,
-    canonicalName: canonicalNameFor(name, match),
-  };
+  if (/\bextract\b/.test(normalizeIngredientName(name))) {
+    return { ...placement, aisle: "Baking", category: "pantry" };
+  }
+  return placement;
 }
 
 /** Merge key for the shopping list: "lemons" and "lemon" share "lemon". */

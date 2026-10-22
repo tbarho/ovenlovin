@@ -23,7 +23,7 @@ export default async function SignUpPage({
 
   return (
     <div className="shell">
-      <div className="wrap page-narrow" style={{ display: "grid", justifyItems: "center" }}>
+      <div className="wrap auth-screen">
         <Link href="/" className="brand">
           <Image src={brandPublicPath.mark} alt="" width={40} height={40} unoptimized />
           OvenLovin

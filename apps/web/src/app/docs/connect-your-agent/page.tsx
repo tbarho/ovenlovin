@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ConnectAgent } from "@/components/landing/ConnectAgent";
+import { OverflowX } from "@/components/landing/OverflowX";
 import { DocsChrome } from "@/components/docs/DocsChrome";
 import { OVENLOVIN_PITCH } from "@/lib/llms-txt";
 import { resolveOrigin } from "@/lib/origin";
@@ -18,27 +19,23 @@ export default async function ConnectYourAgentPage() {
       <p className="eyebrow">Agents</p>
       <h1>Connect your agent</h1>
       <p className="lead">
-        Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key,
-        and copy the <code>plaintext</code> value (shown once). Call{" "}
-        <code>{"https://<your-app>.vercel.app/api/v1"}</code> with{" "}
-        <code>Authorization: ApiKey rkapi_...</code> and connect MCP at{" "}
-        <code>{"https://<your-app>.vercel.app/mcp"}</code>.
+        Point Claude, ChatGPT, or Grok at this instance. Auth is{" "}
+        <code>Authorization: ApiKey rkapi_…</code> (Bearer + the same key also works).
       </p>
       <p className="intro">
-        Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key
-        at /api/demo/enter?format=json.
-      </p>
-      <p className="intro">
-        Bearer plus the same key also works. Allergen findings name the person and the ingredient -
-        not medical advice. Always check labels.
+        Copy the API key from Settings (the public demo already shows a sandbox key), then paste it
+        into the snippet. Allergen findings name the person and the ingredient - not medical advice.
+        Always read the label.
       </p>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>
       <p className="intro">Remote HTTP is the supported path. After you have a key:</p>
-      <pre className="copy-pre">
-        {`claude mcp add --transport http ovenlovin ${origin}/mcp \\
+      <OverflowX className="copy-pre">
+        <pre data-scroll tabIndex={0} role="region" aria-label="Claude Code command">
+          {`claude mcp add --transport http ovenlovin ${origin}/mcp \\
   --header "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY"`}
-      </pre>
+        </pre>
+      </OverflowX>
       <h2>Safety</h2>
       <p className="intro">
         Call <code>check_meal_plan</code> before <code>save_meal_plan</code>. If checking cannot

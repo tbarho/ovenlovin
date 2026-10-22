@@ -362,6 +362,26 @@ export function isCountableShopItem(unit?: string | null): boolean {
   return !MEASURED_SHOP_UNITS.has(normalized);
 }
 
+function matchShopDisplayCase(source: string, next: string): string {
+  if (source.length > 1 && source === source.toUpperCase()) return next.toUpperCase();
+  const first = source[0];
+  if (first && first === first.toUpperCase()) return next[0]!.toUpperCase() + next.slice(1);
+  return next;
+}
+
+export function shopItemDisplayName(name: string, quantity?: number, unit?: string | null): string {
+  if (unit?.trim() || quantity == null || quantity <= 1) return name;
+  const trimmed = name.trim();
+  if (/^eggs?$/i.test(trimmed)) return matchShopDisplayCase(trimmed, "eggs");
+  return trimmed
+    .replace(/\bpotato(?:es)?$/i, (word) => matchShopDisplayCase(word, "potatoes"))
+    .replace(/\btomato(?:es)?$/i, (word) => matchShopDisplayCase(word, "tomatoes"))
+    .replace(/\blemons?$/i, (word) => matchShopDisplayCase(word, "lemons"))
+    .replace(/\b(\w*berry)$/i, (word) =>
+      /ies$/i.test(word) ? word : matchShopDisplayCase(word, word.replace(/y$/i, "ies"))
+    );
+}
+
 /** Round countable grocery amounts up to a whole unit so the list never asks for 2/3 can. */
 export function wholeShopQuantity(quantity: number): number {
   if (!Number.isFinite(quantity) || quantity <= 0) return quantity;

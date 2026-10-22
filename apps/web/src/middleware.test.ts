@@ -35,4 +35,22 @@ describe("middleware", () => {
     expect(location).toContain("/sign-in");
     expect(location).toContain("redirect_url=%2Fsettings");
   });
+
+  it("lets a signed-in user through /settings", async () => {
+    const req = new NextRequest("http://localhost/settings");
+    const result = await clerkHandler!(async () => ({ userId: "user_1" }), req);
+    expect(result).toBeUndefined();
+  });
+
+  it("does not send an unknown public path to Clerk", async () => {
+    const protect = vi.fn();
+    const auth = Object.assign(
+      vi.fn(async () => ({ userId: null })),
+      { protect }
+    );
+    const result = await clerkHandler!(auth, new NextRequest("http://localhost/nope"));
+    expect(result).toBeUndefined();
+    expect(auth).not.toHaveBeenCalled();
+    expect(protect).not.toHaveBeenCalled();
+  });
 });

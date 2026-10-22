@@ -19,16 +19,9 @@ export default async function DocsIndexPage() {
       <h1>OvenLovin for humans and agents</h1>
       <p className="lead">{OVENLOVIN_PITCH}</p>
       <p className="intro">
-        Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key,
-        and copy the <code>plaintext</code> value (shown once). Call{" "}
-        <code>{"https://<your-app>.vercel.app/api/v1"}</code> with{" "}
-        <code>Authorization: ApiKey rkapi_...</code> and connect MCP at{" "}
-        <code>{"https://<your-app>.vercel.app/mcp"}</code>.
-      </p>
-      <p className="intro">
-        Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key
-        at /api/demo/enter?format=json. This host is <code>{origin}</code>. Allergen checks are
-        deterministic and per-person - not medical advice. Always check labels.
+        This instance is <code>{origin}</code>. Open Settings to copy the sandbox key, or sign in on
+        a full kitchen to mint one. Allergen checks are deterministic and{" "}
+        <span className="nowrap">per-person</span>. Not medical advice. Always read the label.
       </p>
       <ul className="yours-row">
         <li>
@@ -46,7 +39,11 @@ export default async function DocsIndexPage() {
         <li>
           <span>OpenAPI</span>
           <b>
-            <code>{origin}/api/v1/openapi.json</code>
+            <code>
+              {`${origin}/api/v1/openapi.json`
+                .split("/")
+                .flatMap((part, i) => (i === 0 ? [part] : [<wbr key={i} />, `/${part}`]))}
+            </code>
           </b>
         </li>
       </ul>
@@ -63,9 +60,7 @@ export default async function DocsIndexPage() {
       </div>
       <h2>Start here</h2>
       <ol>
-        <li>
-          Create a key under Settings, then API keys, and copy the plaintext value (shown once).
-        </li>
+        <li>Copy the API key from Settings. The public demo already has a sandbox key.</li>
         <li>
           Paste the snippet from <Link href="/docs/connect-your-agent">Connect your agent</Link>{" "}
           into Claude Code, Claude Desktop, ChatGPT, or Grok.

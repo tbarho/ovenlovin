@@ -29,14 +29,14 @@ function aisleRank(aisle: string): number {
   return index === -1 ? AISLE_ORDER.length : index;
 }
 
-export function aisleForItem(name: string): string {
-  return assignAisle(name).aisle;
+export function aisleForItem(name: string, unit?: string): string {
+  return assignAisle(name, unit).aisle;
 }
 
 export function groupShopItemsByAisle(items: ShopItem[]): ShopAisleGroup[] {
   const groups = new Map<string, ShopItem[]>();
   for (const item of items) {
-    const aisle = aisleForItem(item.name);
+    const aisle = aisleForItem(item.name, item.unit);
     const list = groups.get(aisle) ?? [];
     list.push(item);
     groups.set(aisle, list);

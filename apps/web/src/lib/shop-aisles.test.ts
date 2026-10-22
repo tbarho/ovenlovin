@@ -60,6 +60,16 @@ describe("shopItemQuantity", () => {
     ).toBe("2/3 cup");
   });
 
+  it("files a can of tomatoes under canned goods", () => {
+    const groups = groupShopItemsByAisle([
+      { key: "toms", name: "tomatoes", unit: "can", recipes: [], warnings: [] },
+      { key: "oat", name: "oat milk", recipes: [], warnings: [] },
+    ]);
+    expect(groups.find((group) => group.aisle === "Canned goods")?.items[0]?.name).toBe("tomatoes");
+    expect(groups.find((group) => group.aisle === "Dairy")).toBeUndefined();
+    expect(groups.find((group) => group.aisle === "Refrigerated")?.items[0]?.name).toBe("oat milk");
+  });
+
   it("rounds a countable fallback quantity up to a whole unit", () => {
     expect(
       shopItemQuantity({

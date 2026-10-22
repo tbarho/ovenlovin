@@ -41,7 +41,7 @@ export function DocsChrome({
             </li>
           </ul>
           <div className="nav-cta">
-            <Link className="btn primary" href="/#connect">
+            <Link className={current === "connect" ? "btn primary" : "btn"} href="/#connect">
               Get an API key
             </Link>
           </div>

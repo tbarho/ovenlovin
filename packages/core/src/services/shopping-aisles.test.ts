@@ -96,6 +96,96 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("goat cheese")).toBe("goat cheese");
     expect(canonicalShopName("beef short ribs")).toBe("beef short ribs");
   });
+
+  it("merges plain flour with all purpose flour", () => {
+    expect(canonicalShopName("flour")).toBe("all purpose flour");
+    expect(canonicalShopName("all-purpose flour")).toBe("all purpose flour");
+    expect(canonicalShopName("plain all purpose flour")).toBe("all purpose flour");
+    expect(canonicalShopName("bread flour")).toBe("bread flour");
+    expect(canonicalShopName("almond flour")).toBe("almond flour");
+    expect(canonicalShopName("rice flour")).toBe("rice flour");
+    expect(canonicalShopName("whole wheat flour")).toBe("whole wheat flour");
+  });
+
+  it("merges descriptor variants of the same grocery", () => {
+    expect(canonicalShopName("unsalted butter")).toBe("butter");
+    expect(canonicalShopName("salted butter")).toBe("butter");
+    expect(canonicalShopName("Parmesan cheese")).toBe("parmesan");
+    expect(canonicalShopName("parmigiano reggiano")).toBe("parmesan");
+    expect(canonicalShopName("vanilla extract")).toBe("vanilla");
+    expect(canonicalShopName("pure vanilla extract")).toBe("vanilla");
+    expect(canonicalShopName("goat cheese")).toBe("goat cheese");
+    expect(canonicalShopName("vegan butter")).toBe("vegan butter");
+    expect(canonicalShopName("cream cheese")).toBe("cream cheese");
+    expect(canonicalShopName("cream")).toBe("cream");
+    expect(canonicalShopName("lemon extract")).toBe("lemon extract");
+    expect(assignAisle("lemon extract")).toMatchObject({
+      aisle: "Baking",
+      category: "pantry",
+    });
+    expect(canonicalShopName("lemon")).toBe("lemon");
+    expect(canonicalShopName("mint extract")).toBe("mint extract");
+    expect(assignAisle("mint extract")).toMatchObject({
+      aisle: "Baking",
+      category: "pantry",
+    });
+    expect(canonicalShopName("fresh mint")).toBe("fresh mint");
+    expect(canonicalShopName("whole chicken")).toBe("whole chicken");
+    expect(canonicalShopName("salted peanuts")).toBe("salted peanuts");
+    expect(canonicalShopName("unsalted peanuts")).toBe("unsalted peanuts");
+    expect(canonicalShopName("fresh thyme")).toBe("fresh thyme");
+    expect(canonicalShopName("dried thyme")).toBe("dried thyme");
+    expect(canonicalShopName("potato")).toBe("potato");
+    expect(canonicalShopName("potatoes")).toBe("potatoes");
+    expect(canonicalShopName("tomato")).toBe("tomato");
+    expect(canonicalShopName("tomatoes")).toBe("tomatoes");
+    expect(canonicalShopName("cherry tomatoes")).toBe("cherry tomatoes");
+    expect(assignAisle("fresh thyme").aisle).toBe("Produce");
+    expect(assignAisle("dried thyme").aisle).toBe("Spices");
+  });
+});
+
+describe("canned and plant-milk aisles", () => {
+  it("files cans and crushed tomatoes as canned goods", () => {
+    expect(assignAisle("crushed tomatoes")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+      canonicalName: "crushed tomatoes",
+    });
+    expect(assignAisle("crushed tomato")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+      canonicalName: "crushed tomatoes",
+    });
+    expect(assignAisle("crushed pineapple")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+      canonicalName: "crushed pineapple",
+    });
+    expect(assignAisle("tomatoes", "can")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
+    expect(assignAisle("canned beans")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
+    expect(assignAisle("canned tomatoes")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
+    expect(assignAisle("tomato")).toMatchObject({ aisle: "Produce" });
+    expect(assignAisle("red pepper flakes").aisle).not.toBe("Canned goods");
+    expect(assignAisle("graham crackers").aisle).not.toBe("Canned goods");
+    expect(assignAisle("garlic").aisle).not.toBe("Canned goods");
+  });
+
+  it("keeps oat, almond, and soy milk out of Dairy", () => {
+    expect(assignAisle("oat milk").aisle).not.toBe("Dairy");
+    expect(assignAisle("almond milk").aisle).not.toBe("Dairy");
+    expect(assignAisle("soy milk").aisle).not.toBe("Dairy");
+    expect(assignAisle("milk")).toMatchObject({ aisle: "Dairy" });
+  });
 });
 
 describe("isPantryStaple", () => {
