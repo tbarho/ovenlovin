@@ -67,7 +67,7 @@ export function mondayWeekDates(weekStart: string): string[] {
   });
 }
 
-/** Monday of the week containing `now` (UTC date). Current and future plans use this. */
+/** Monday of the week containing `now` (UTC date). */
 export function currentMondayWeekStart(now = new Date()): string {
   const iso = now.toISOString().slice(0, 10);
   const { year, month, day } = splitIsoDate(iso);
@@ -76,6 +76,13 @@ export function currentMondayWeekStart(now = new Date()): string {
   const offset = weekday === 0 ? -6 : 1 - weekday;
   date.setUTCDate(date.getUTCDate() + offset);
   return date.toISOString().slice(0, 10);
+}
+
+/** One week before `currentMondayWeekStart`. Recheck from here so a US Sunday evening still flags the in-progress week. */
+export function previousMondayWeekStart(now = new Date()): string {
+  const monday = currentMondayWeekStart(now);
+  const { year, month, day } = splitIsoDate(monday);
+  return new Date(Date.UTC(year, month, day - 7)).toISOString().slice(0, 10);
 }
 
 /**

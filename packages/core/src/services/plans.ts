@@ -15,7 +15,7 @@ import type { PaginatedResponse, Pagination } from "../schemas/common";
 import { backfillParsedIngredient } from "../parsing/ingredient-line";
 import { scaleFactorForPlanEntry } from "../scaling/servings";
 import { BaseService } from "./base";
-import { currentMondayWeekStart, liveEntriesForPlanRead } from "./plan-week-entries";
+import { liveEntriesForPlanRead, previousMondayWeekStart } from "./plan-week-entries";
 
 export class PlanService extends BaseService {
   async getMealPlan(id: string): Promise<MealPlan | null> {
@@ -306,7 +306,7 @@ export class PlanService extends BaseService {
 
   async markCurrentAndFuturePlansNeedRecheck(
     householdId: string,
-    fromWeekStart = currentMondayWeekStart()
+    fromWeekStart = previousMondayWeekStart()
   ): Promise<void> {
     await this._db
       .update(mealPlan)
