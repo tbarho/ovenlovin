@@ -508,7 +508,8 @@
             "type": "integer",
             "nullable": true,
             "minimum": 1,
-            "maximum": 99
+            "maximum": 99,
+            "description": "Week cook-for. Null follows the household."
           },
           "status": {
             "type": "string",
@@ -3163,8 +3164,10 @@
                   },
                   "cookFor": {
                     "type": "integer",
+                    "nullable": true,
                     "minimum": 1,
-                    "maximum": 99
+                    "maximum": 99,
+                    "description": "Week cook-for. Omit or null to follow the household. A number is a hand-set count."
                   },
                   "status": {
                     "type": "string",
@@ -3315,8 +3318,10 @@
                   },
                   "cookFor": {
                     "type": "integer",
+                    "nullable": true,
                     "minimum": 1,
-                    "maximum": 99
+                    "maximum": 99,
+                    "description": "Week cook-for. Null follows the household. Omit to leave the stored value."
                   },
                   "acknowledgedWarnings": {
                     "type": "array",

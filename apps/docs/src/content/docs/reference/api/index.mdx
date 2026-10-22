@@ -133,8 +133,8 @@ There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GE
 ### Meal plans
 
 - `GET /meal-plans` - `limit`, `cursor`, `status`, `weekStart`, `weekEnd`
-- `POST /meal-plans` - `{ weekStart, status?, entries? }`. `201` with the plan and `entries`. Entries come back with `mealSlot` (the `meal` you sent), `freeformMeal`, `scaleFactor`, and `attendees`.
-- `GET /meal-plans/{id}` / `PATCH` / `DELETE` (`204`)
+- `POST /meal-plans` - `{ weekStart, status?, cookFor?, entries? }`. Omit or `cookFor: null` to follow the household. A number is a hand-set count. `201` with the plan and `entries`. Entries come back with `mealSlot` (the `meal` you sent), `freeformMeal`, `scaleFactor`, and `attendees`.
+- `GET /meal-plans/{id}` / `PATCH` / `DELETE` (`204`). PATCH `cookFor: null` returns the plan to following the household. Omit `cookFor` to leave it.
 - `GET /meal-plans/{id}/check` - Run check (dry run; does not persist)
 - `POST /meal-plans/{id}/check` - Run and persist (write). No body. Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe.
 - `POST /meal-plans/{id}/undo` / `GET /meal-plans/{id}/history`
