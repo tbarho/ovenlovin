@@ -229,6 +229,88 @@ describe("MCP Tool Schemas", () => {
     });
   });
 
+  describe("get_meal_plan", () => {
+    it("does not present a deleted recipe as a live dinner", async () => {
+      const planId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+      const householdId = "22222222-2222-4222-8222-222222222222";
+      const gone = "550e8400-e29b-41d4-a716-446655440099";
+      const pesto = "550e8400-e29b-41d4-a716-446655440010";
+      const plan = {
+        id: planId,
+        createdAt: "2026-10-12T00:00:00.000Z",
+        updatedAt: "2026-10-12T00:00:00.000Z",
+        deletedAt: null,
+        createdBy: "user-1",
+        householdId,
+        weekStart: "2026-10-12",
+        cookFor: 4,
+        status: "draft" as const,
+        generator: null,
+        generatorModel: null,
+        latestCheckReport: null,
+        checkedAt: null,
+        contentHash: null,
+        acknowledgedWarnings: [],
+        needsRecheck: false,
+        createdByApiKeyId: null,
+      };
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(PlanService.prototype, "getMealPlan").mockResolvedValue(plan);
+      vi.spyOn(PlanService.prototype, "getMealPlanEntries").mockResolvedValue([
+        {
+          id: "ghost",
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+          deletedAt: null,
+          mealPlanId: planId,
+          date: "2026-10-13",
+          mealSlot: "dinner",
+          recipeId: gone,
+          freeformMeal: null,
+          servings: 4,
+          attendees: [],
+          scaleFactor: 1,
+          prepAheadNotes: null,
+          leftoverSourceId: null,
+        },
+        {
+          id: "live",
+          createdAt: plan.createdAt,
+          updatedAt: plan.updatedAt,
+          deletedAt: null,
+          mealPlanId: planId,
+          date: "2026-10-15",
+          mealSlot: "dinner",
+          recipeId: pesto,
+          freeformMeal: null,
+          servings: 4,
+          attendees: [],
+          scaleFactor: 1,
+          prepAheadNotes: null,
+          leftoverSourceId: null,
+        },
+      ]);
+      vi.spyOn(RecipeService.prototype, "getRecipe").mockImplementation(async (id) =>
+        id === pesto
+          ? ({
+              id: pesto,
+              title: "Pesto pasta",
+              prepTimeMinutes: 10,
+              cookTimeMinutes: 15,
+            } as never)
+          : null
+      );
+
+      const result = await getMealPlanTool.handler(
+        { planId },
+        { householdId, membershipRole: "owner", scopes: [] }
+      );
+
+      expect(result.entries.map((row) => row.recipe?.id ?? null)).toEqual([pesto]);
+      expect(result.entries.some((row) => row.recipe?.id === gone)).toBe(false);
+    });
+  });
+
   describe("save_meal_plan", () => {
     it("validates correct input", () => {
       const result = saveMealPlanTool.inputSchema.safeParse({

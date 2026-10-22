@@ -6,7 +6,13 @@
 
 import { z } from "zod";
 import type { AuthContext } from "../auth/index";
-import { PeopleService, pickPlanForWeek, PlanService, RecipeService } from "@ovenlovin/core";
+import {
+  PeopleService,
+  liveEntriesForPlanRead,
+  pickPlanForWeek,
+  PlanService,
+  RecipeService,
+} from "@ovenlovin/core";
 import { createDbClient } from "@ovenlovin/db";
 
 export const getMealPlanSchema = z
@@ -72,24 +78,28 @@ async function handler(input: GetMealPlanInput, context: AuthContext): Promise<G
     throw new Error("Meal plan not found");
   }
 
-  // Load entries
-  const entries = await planService.getMealPlanEntries(plan.id);
+  const recipeById = new Map<string, Awaited<ReturnType<RecipeService["getRecipe"]>>>();
+  const entries = await liveEntriesForPlanRead(
+    await planService.getMealPlanEntries(plan.id),
+    async (recipeId) => {
+      const recipeData = await recipeService.getRecipe(recipeId);
+      if (recipeData) recipeById.set(recipeId, recipeData);
+      return recipeData;
+    }
+  );
 
   // Enrich entries with recipe and attendee details
   const enrichedEntries = await Promise.all(
     entries.map(async (entry) => {
-      let recipe = null;
-      if (entry.recipeId) {
-        const recipeData = await recipeService.getRecipe(entry.recipeId);
-        if (recipeData) {
-          recipe = {
+      const recipeData = entry.recipeId ? (recipeById.get(entry.recipeId) ?? null) : null;
+      const recipe = recipeData
+        ? {
             id: recipeData.id,
             title: recipeData.title,
             prepTimeMinutes: recipeData.prepTimeMinutes ?? undefined,
             cookTimeMinutes: recipeData.cookTimeMinutes ?? undefined,
-          };
-        }
-      }
+          }
+        : null;
 
       const attendeeDetails = await Promise.all(
         entry.attendees.map(async (personId) => {
