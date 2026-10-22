@@ -269,9 +269,80 @@ test.describe("public design sign-off", () => {
               leadType.clientWidth
             );
           }
-          const startHere = page.getByRole("heading", { name: "Start here" }).locator("+ ol");
-          await expect(startHere).toContainText("plaintext");
-          await expect(startHere).toContainText("Deploy button");
+        }
+        if (item.name === "docs") {
+          const startHere = page.locator("#start-here");
+          await expect(startHere).toBeVisible();
+          const startList = startHere.locator("+ ol");
+          await expect(startList).toContainText("plaintext");
+          await expect(startList).toContainText("Deploy button");
+          if (width === 390) {
+            const squeeze = await page.addStyleTag({
+              content: "#start-here + ol li code { white-space: nowrap; font-size: 42px; }",
+            });
+            const rightCanFail = await page.locator("#start-here + ol li code").evaluateAll((els) =>
+              els.some((el) => {
+                const ol = el.closest("ol");
+                return Boolean(
+                  ol && el.getBoundingClientRect().right > ol.getBoundingClientRect().right + 1
+                );
+              })
+            );
+            expect(rightCanFail, "li code right can fail").toBe(true);
+            await squeeze.evaluate((el) => el.remove());
+
+            const overflowCanFail = await page.evaluate(() => {
+              const el = document.createElement("div");
+              el.style.cssText = "position:absolute;left:0;top:0;width:500px;height:1px";
+              document.body.appendChild(el);
+              const scroll = document.documentElement.scrollWidth;
+              el.remove();
+              return scroll > window.innerWidth;
+            });
+            expect(overflowCanFail, "docs page overflow can fail").toBe(true);
+
+            const codes = await page.locator("#start-here + ol li code").evaluateAll((els) =>
+              els.map((el) => {
+                const style = getComputedStyle(el);
+                const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize);
+                const breaks = el.querySelectorAll("wbr").length;
+                const ol = el.closest("ol");
+                const box = el.getBoundingClientRect();
+                return {
+                  height: box.height,
+                  line,
+                  breaks,
+                  right: box.right,
+                  olRight: ol?.getBoundingClientRect().right ?? 0,
+                };
+              })
+            );
+            for (const code of codes) {
+              expect(code.height, "li code lines").toBeLessThanOrEqual(
+                code.line * (code.breaks + 1) + 2
+              );
+              expect(code.right, "li code right").toBeLessThanOrEqual(code.olRight + 1);
+            }
+            const pageWidth = await page.evaluate(() => ({
+              scroll: document.documentElement.scrollWidth,
+              inner: window.innerWidth,
+            }));
+            expect(pageWidth.scroll, "docs page overflow").toBeLessThanOrEqual(pageWidth.inner);
+          }
+        }
+        if (item.name === "connect-your-agent") {
+          await page.evaluate(() => {
+            const heading = document.createElement("h2");
+            heading.id = "start-here";
+            document.body.appendChild(heading);
+          });
+          await expect(page.locator("#start-here"), "start-here can fail").toHaveCount(1);
+          await page.evaluate(() => document.getElementById("start-here")?.remove());
+          await expect(page.locator("#start-here")).toHaveCount(0);
+          await expect(page.getByRole("link", { name: "Start here" })).toHaveAttribute(
+            "href",
+            "/docs#start-here"
+          );
         }
         if (item.name === "home" || item.name === "connect-your-agent") {
           const box = page.locator(".copy-scroll").first();
