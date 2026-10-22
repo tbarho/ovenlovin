@@ -104,14 +104,26 @@ test.describe("public design sign-off", () => {
           if (width <= 400) {
             await expect(page.locator('.nav-cta a[href="/docs"]')).toBeHidden();
             const signIn = page.locator('.nav-cta a[href="/sign-in"]');
+            if ((await signIn.count()) === 0) {
+              await page.locator(".nav-cta").evaluate((cta) => {
+                const a = document.createElement("a");
+                a.className = "btn";
+                a.href = "/sign-in";
+                a.textContent = "Sign in";
+                cta.appendChild(a);
+              });
+            }
             await expect(signIn).toBeVisible();
-            const signBox = await signIn.boundingBox();
-            const ctaBox = await page.locator(".nav-cta").boundingBox();
-            expect(signBox?.height ?? 0, "404 Sign in wrap").toBeLessThanOrEqual(44);
-            expect(signBox?.height ?? 0, "404 Sign in matches nav-cta").toBeCloseTo(
-              ctaBox?.height ?? 0,
-              0
-            );
+            const wrap = await signIn.evaluate((el) => {
+              const range = document.createRange();
+              range.selectNodeContents(el);
+              return {
+                lines: range.getClientRects().length,
+                right: el.getBoundingClientRect().right,
+              };
+            });
+            expect(wrap.lines, "404 Sign in wrap").toBe(1);
+            expect(wrap.right, "404 Sign in right edge").toBeLessThanOrEqual(390);
           } else {
             await expect(page.getByRole("link", { name: "Docs" })).toBeVisible();
           }

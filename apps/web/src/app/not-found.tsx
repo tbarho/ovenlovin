@@ -26,15 +26,17 @@ export default async function NotFound() {
             <Link className="btn" href="/docs">
               Docs
             </Link>
-            {signedIn ? (
-              <Link className="btn" href="/recipes">
-                Open kitchen
-              </Link>
-            ) : (
-              <Link className="btn" href="/sign-in">
-                Sign in
-              </Link>
-            )}
+            {clerkEnabled ? (
+              signedIn ? (
+                <Link className="btn" href="/recipes">
+                  Open kitchen
+                </Link>
+              ) : (
+                <Link className="btn" href="/sign-in">
+                  Sign in
+                </Link>
+              )
+            ) : null}
           </div>
         </div>
       </header>

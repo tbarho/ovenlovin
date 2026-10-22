@@ -1237,7 +1237,7 @@ select {
   margin-bottom: 24px;
 }
 
-.auth-screen h1 {
+.auth-screen > h1 {
   margin: 0;
   font-size: 40px;
   line-height: 1.1;

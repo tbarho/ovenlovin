@@ -19,6 +19,7 @@ export default async function SignUpPage({
     (await searchParams).redirect_url,
     await authRedirectOrigins()
   );
+  const joiningKitchen = redirectUrl.startsWith("/invite/");
   return (
     <div className="shell">
       <div className="wrap auth-screen">
@@ -27,7 +28,10 @@ export default async function SignUpPage({
           OvenLovin
         </Link>
         {clerkEnabled && !demo ? (
-          <SignUp fallbackRedirectUrl={redirectUrl} />
+          <>
+            {joiningKitchen ? <p className="empty-note">Join this kitchen</p> : null}
+            <SignUp fallbackRedirectUrl={redirectUrl} />
+          </>
         ) : (
           <>
             <h1>{unavailable.title}</h1>
