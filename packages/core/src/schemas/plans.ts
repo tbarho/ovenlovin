@@ -97,7 +97,16 @@ export const mealPlanEntryPatchSchema = z
 export const createMealPlanBodySchema = z
   .object({
     weekStart: z.string().date(),
-    cookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional(),
+    cookFor: z
+      .number()
+      .int()
+      .min(1)
+      .max(SERVINGS_HARD_MAX)
+      .nullable()
+      .optional()
+      .describe(
+        "Week cook-for. Omit or null to follow the household. A number is a hand-set count."
+      ),
     status: z.enum(["draft", "approved"]).optional(),
     entries: z.array(mealPlanEntryWriteSchema).max(50).optional(),
   })
@@ -106,7 +115,14 @@ export const createMealPlanBodySchema = z
 export const updateMealPlanBodySchema = z
   .object({
     status: mealPlanStatusSchema.optional(),
-    cookFor: z.number().int().min(1).max(SERVINGS_HARD_MAX).optional(),
+    cookFor: z
+      .number()
+      .int()
+      .min(1)
+      .max(SERVINGS_HARD_MAX)
+      .nullable()
+      .optional()
+      .describe("Week cook-for. Null follows the household. Omit to leave the stored value."),
     acknowledgedWarnings: z.array(z.string().max(500)).max(100).optional(),
     entries: z.array(mealPlanEntryPatchSchema).max(50).optional(),
     entriesMode: z

@@ -357,6 +357,19 @@ describe("MCP Tool Schemas", () => {
       }
     });
 
+    it("accepts cookFor null to follow the household", () => {
+      const result = saveMealPlanTool.inputSchema.safeParse({
+        weekStart: "2026-10-13",
+        cookFor: null,
+        entries: [],
+        checkReportJson: {},
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cookFor).toBeNull();
+      }
+    });
+
     it("rejects cookFor above the hard max", () => {
       const result = saveMealPlanTool.inputSchema.safeParse({
         weekStart: "2026-10-13",
@@ -490,6 +503,126 @@ describe("MCP Tool Schemas", () => {
       expect(replace).toHaveBeenCalledWith(existing.id, []);
       expect(saved.planId).toBe(existing.id);
       expect(update.mock.calls[0]?.[1]).toMatchObject({ cookFor: 8 });
+    });
+
+    it("creates a following plan when cookFor is omitted, even if nights agree", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockResolvedValue();
+      vi.spyOn(PeopleService.prototype, "requireOwnedPersonIds").mockResolvedValue();
+      vi.spyOn(PlanService.prototype, "listMealPlans").mockResolvedValue({
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+      });
+      const create = vi.spyOn(PlanService.prototype, "createMealPlan").mockResolvedValue({
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        createdAt: "2027-02-08T00:00:00.000Z",
+        updatedAt: "2027-02-08T00:00:00.000Z",
+        deletedAt: null,
+        createdBy: "user-1",
+        householdId: "22222222-2222-4222-8222-222222222222",
+        weekStart: "2027-02-08",
+        cookFor: null,
+        status: "draft",
+        generator: null,
+        generatorModel: null,
+        latestCheckReport: { status: "complete" },
+        checkedAt: "2027-02-08T00:00:00.000Z",
+        contentHash: null,
+        acknowledgedWarnings: [],
+        needsRecheck: false,
+        createdByApiKeyId: null,
+      });
+      vi.spyOn(PlanService.prototype, "createMealPlanEntry").mockResolvedValue({
+        id: "entry-1",
+        createdAt: "2027-02-08T00:00:00.000Z",
+        updatedAt: "2027-02-08T00:00:00.000Z",
+        deletedAt: null,
+        mealPlanId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        date: "2027-02-08",
+        mealSlot: "dinner",
+        recipeId: "550e8400-e29b-41d4-a716-446655440000",
+        freeformMeal: null,
+        servings: 8,
+        attendees: [],
+        scaleFactor: 1,
+        prepAheadNotes: null,
+        leftoverSourceId: null,
+      });
+
+      await saveMealPlanTool.handler(
+        {
+          weekStart: "2027-02-08",
+          entries: [
+            {
+              date: "2027-02-08",
+              meal: "dinner",
+              recipeId: "550e8400-e29b-41d4-a716-446655440000",
+              servings: 8,
+              attendees: [],
+            },
+          ],
+          checkReportJson: { status: "complete" },
+          status: "draft",
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          userId: "550e8400-e29b-41d4-a716-446655440000",
+          scopes: [],
+        }
+      );
+
+      expect(create.mock.calls[0]?.[0]).toMatchObject({ cookFor: null });
+    });
+
+    it("does not overwrite a hand-set cookFor when save omits it", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "requireOwnedRecipeIds").mockResolvedValue();
+      vi.spyOn(PeopleService.prototype, "requireOwnedPersonIds").mockResolvedValue();
+      const existing = {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        createdAt: "2027-02-08T00:00:00.000Z",
+        updatedAt: "2027-02-08T00:00:00.000Z",
+        deletedAt: null,
+        createdBy: "user-1",
+        householdId: "22222222-2222-4222-8222-222222222222",
+        weekStart: "2027-02-08",
+        cookFor: 5,
+        status: "draft" as const,
+        generator: null,
+        generatorModel: null,
+        latestCheckReport: null,
+        checkedAt: null,
+        contentHash: null,
+        acknowledgedWarnings: [],
+        needsRecheck: false,
+        createdByApiKeyId: null,
+      };
+      vi.spyOn(PlanService.prototype, "listMealPlans").mockResolvedValue({
+        items: [existing],
+        nextCursor: null,
+        hasMore: false,
+      });
+      const update = vi.spyOn(PlanService.prototype, "updateMealPlan").mockResolvedValue(existing);
+      vi.spyOn(PlanService.prototype, "replaceMealPlanEntries").mockResolvedValue([]);
+
+      await saveMealPlanTool.handler(
+        {
+          weekStart: "2027-02-08",
+          entries: [],
+          checkReportJson: { status: "complete" },
+          status: "draft",
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          userId: "550e8400-e29b-41d4-a716-446655440000",
+          scopes: [],
+        }
+      );
+
+      expect(update.mock.calls[0]?.[1]).not.toHaveProperty("cookFor");
     });
   });
 

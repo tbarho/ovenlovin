@@ -50,6 +50,13 @@ describe("plans schemas", () => {
       expect(body.cookFor).toBe(8);
     });
 
+    it("accepts omitted or null cookFor to follow the household", () => {
+      const omitted = createMealPlanBodySchema.parse({ weekStart: "2026-11-02" });
+      expect(omitted.cookFor).toBeUndefined();
+      const follows = createMealPlanBodySchema.parse({ weekStart: "2026-11-02", cookFor: null });
+      expect(follows.cookFor).toBeNull();
+    });
+
     it("rejects unknown fields instead of dropping them", () => {
       const result = createMealPlanBodySchema.safeParse({
         weekStart: "2026-11-02",
@@ -60,6 +67,11 @@ describe("plans schemas", () => {
   });
 
   describe("updateMealPlanBodySchema", () => {
+    it("accepts cookFor null so a plan can follow the household again", () => {
+      const body = updateMealPlanBodySchema.parse({ cookFor: null });
+      expect(body.cookFor).toBeNull();
+    });
+
     it("accepts entries, status, and cookFor", () => {
       const body = updateMealPlanBodySchema.parse({
         status: "approved",

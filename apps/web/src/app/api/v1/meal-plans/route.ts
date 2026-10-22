@@ -8,7 +8,6 @@ import {
   getIdempotencyKey,
 } from "@/lib/api/middleware";
 import {
-  agreedEntryCookFor,
   createMealPlanBodySchema,
   PeopleService,
   PlanService,
@@ -78,8 +77,7 @@ export async function POST(request: NextRequest) {
     const plan = await service.createMealPlan({
       householdId,
       weekStart: body.weekStart,
-      cookFor:
-        body.cookFor ?? agreedEntryCookFor(body.entries?.map((entry) => entry.servings) ?? []),
+      cookFor: body.cookFor ?? null,
       status: body.status ?? "draft",
       acknowledgedWarnings: [],
       needsRecheck: false,
