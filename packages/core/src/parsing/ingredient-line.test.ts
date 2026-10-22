@@ -210,6 +210,9 @@ describe("parseShopIngredientLines", () => {
     expect(parseShopIngredientLines("1 can crushed pineapple")).toEqual([
       expect.objectContaining({ name: "crushed pineapple" }),
     ]);
+    expect(parseShopIngredientLines("olive oil for drizzling")).toEqual([
+      expect.objectContaining({ name: "olive oil" }),
+    ]);
     expect(parseShopIngredientLines("1 cup unsalted butter)")).toEqual([
       expect.objectContaining({ name: "unsalted butter" }),
     ]);

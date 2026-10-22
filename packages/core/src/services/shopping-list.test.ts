@@ -1084,6 +1084,7 @@ describe("ShoppingListService", () => {
       expectName: [/lemon extract/i, /^lemon$/i],
       rows: 2,
       aisles: { "lemon extract": "Baking", lemon: "Produce" },
+      categories: { "lemon extract": "pantry", lemon: "produce" },
     },
     {
       name: "mint extract + fresh mint",
@@ -1091,6 +1092,7 @@ describe("ShoppingListService", () => {
       expectName: [/mint extract/i, /^mint$/i],
       rows: 2,
       aisles: { "mint extract": "Baking", mint: "Produce" },
+      categories: { "mint extract": "pantry", mint: "produce" },
     },
     {
       name: "salt/pepper",
@@ -1160,6 +1162,23 @@ describe("ShoppingListService", () => {
       reject: /^tomatoes$/i,
       rows: 1,
       aisles: { "canned tomatoes": "Canned goods" },
+      categories: { "canned tomatoes": "pantry" },
+    },
+    {
+      name: "crushed tomato cup",
+      lines: ["1 cup crushed tomato"],
+      expectName: /^crushed tomatoes$/i,
+      rows: 1,
+      aisles: { "crushed tomatoes": "Canned goods" },
+      categories: { "crushed tomatoes": "pantry" },
+    },
+    {
+      name: "crushed pineapple cup",
+      lines: ["1 cup crushed pineapple"],
+      expectName: /^crushed pineapple$/i,
+      rows: 1,
+      aisles: { "crushed pineapple": "Canned goods" },
+      categories: { "crushed pineapple": "pantry" },
     },
     {
       name: "bell pepper red",
@@ -1170,7 +1189,7 @@ describe("ShoppingListService", () => {
     },
   ])(
     "UAT shop lines $name",
-    ({ lines, expectName, reject, rows, includeStaples, aisles, quantity, unit }) => {
+    ({ lines, expectName, reject, rows, includeStaples, aisles, categories, quantity, unit }) => {
       const list = build(
         [
           {
@@ -1194,6 +1213,11 @@ describe("ShoppingListService", () => {
       if (aisles) {
         for (const [itemName, aisle] of Object.entries(aisles)) {
           expect(list.ingredients.find((item) => item.name === itemName)?.aisle).toBe(aisle);
+        }
+      }
+      if (categories) {
+        for (const [itemName, category] of Object.entries(categories)) {
+          expect(list.ingredients.find((item) => item.name === itemName)?.category).toBe(category);
         }
       }
       if (quantity != null) {

@@ -317,6 +317,7 @@ function cleanShopItemName(rest: string): string {
       .replace(/\bplain\s*\/\s*all[\s-]?purpose\b/gi, "plain all purpose")
       .replace(/,?\s+or$/i, "")
       .replace(/\s+to taste$/i, "")
+      .replace(/\s+for\s+(drizzling|serving|garnish|greasing|frying)\b.*$/i, "")
       .replace(
         /,?\s+((tossed|dressed|drizzled)\s+)?(with|in)\s+.*\b(oil|vinegar|dressing)\b.*$/i,
         ""

@@ -168,8 +168,19 @@ const AISLE_RULES: AisleRule[] = [
     canonical: "vanilla",
   },
   {
+    aliases: ["crushed tomatoes", "crushed tomato"],
+    aisle: "Canned goods",
+    category: "pantry",
+    canonical: "crushed tomatoes",
+  },
+  {
+    aliases: ["crushed pineapple", "crushed pineapples"],
+    aisle: "Canned goods",
+    category: "pantry",
+    canonical: "crushed pineapple",
+  },
+  {
     aliases: [
-      "crushed tomatoes",
       "diced tomatoes",
       "tomato sauce",
       "tomato paste",
@@ -551,10 +562,10 @@ export function assignAisle(name: string, unit?: string | null): AisleAssignment
     : { aisle: "Other", category: "other" as const, canonicalName: name };
   // shortcut: a can / canned label is the canned-goods aisle, not produce
   if (unit?.trim().toLowerCase() === "can" || /\bcanned\b/.test(normalizeIngredientName(name))) {
-    return { ...placement, aisle: "Canned goods" };
+    return { ...placement, aisle: "Canned goods", category: "pantry" };
   }
   if (/\bextract\b/.test(normalizeIngredientName(name))) {
-    return { ...placement, aisle: "Baking" };
+    return { ...placement, aisle: "Baking", category: "pantry" };
   }
   return placement;
 }

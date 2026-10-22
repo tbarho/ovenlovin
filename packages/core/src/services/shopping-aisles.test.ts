@@ -119,10 +119,16 @@ describe("canonicalIngredientName", () => {
     expect(canonicalShopName("cream cheese")).toBe("cream cheese");
     expect(canonicalShopName("cream")).toBe("cream");
     expect(canonicalShopName("lemon extract")).toBe("lemon extract");
-    expect(assignAisle("lemon extract").aisle).toBe("Baking");
+    expect(assignAisle("lemon extract")).toMatchObject({
+      aisle: "Baking",
+      category: "pantry",
+    });
     expect(canonicalShopName("lemon")).toBe("lemon");
     expect(canonicalShopName("mint extract")).toBe("mint extract");
-    expect(assignAisle("mint extract").aisle).toBe("Baking");
+    expect(assignAisle("mint extract")).toMatchObject({
+      aisle: "Baking",
+      category: "pantry",
+    });
     expect(canonicalShopName("fresh mint")).toBe("fresh mint");
     expect(canonicalShopName("whole chicken")).toBe("whole chicken");
     expect(canonicalShopName("salted peanuts")).toBe("salted peanuts");
@@ -138,11 +144,31 @@ describe("canned and plant-milk aisles", () => {
   it("files cans and crushed tomatoes as canned goods", () => {
     expect(assignAisle("crushed tomatoes")).toMatchObject({
       aisle: "Canned goods",
+      category: "pantry",
       canonicalName: "crushed tomatoes",
     });
-    expect(assignAisle("tomatoes", "can")).toMatchObject({ aisle: "Canned goods" });
-    expect(assignAisle("canned beans")).toMatchObject({ aisle: "Canned goods" });
-    expect(assignAisle("canned tomatoes")).toMatchObject({ aisle: "Canned goods" });
+    expect(assignAisle("crushed tomato")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+      canonicalName: "crushed tomatoes",
+    });
+    expect(assignAisle("crushed pineapple")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+      canonicalName: "crushed pineapple",
+    });
+    expect(assignAisle("tomatoes", "can")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
+    expect(assignAisle("canned beans")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
+    expect(assignAisle("canned tomatoes")).toMatchObject({
+      aisle: "Canned goods",
+      category: "pantry",
+    });
     expect(assignAisle("tomato")).toMatchObject({ aisle: "Produce" });
     expect(assignAisle("red pepper flakes").aisle).not.toBe("Canned goods");
     expect(assignAisle("graham crackers").aisle).not.toBe("Canned goods");
