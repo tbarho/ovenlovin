@@ -176,7 +176,7 @@ test.describe("public design sign-off", () => {
             const pre = el.querySelector("pre");
             const after = getComputedStyle(el, "::after");
             return {
-              overflows: Boolean(pre && pre.scrollWidth > pre.clientWidth + 1),
+              overflows: Boolean(pre && pre.scrollLeft + pre.clientWidth < pre.scrollWidth - 1),
               marked: el.hasAttribute("data-overflow"),
               width: parseFloat(after.width),
               image: after.backgroundImage,
@@ -197,7 +197,7 @@ test.describe("public design sign-off", () => {
               const row = el.querySelector("[data-scroll]");
               const style = row ? getComputedStyle(row) : null;
               return {
-                overflows: Boolean(row && row.scrollWidth > row.clientWidth + 1),
+                overflows: Boolean(row && row.scrollLeft + row.clientWidth < row.scrollWidth - 1),
                 marked: el.hasAttribute("data-overflow"),
                 mask: style?.webkitMaskImage || style?.maskImage || "",
               };
@@ -212,7 +212,7 @@ test.describe("public design sign-off", () => {
             const pre = el.querySelector("pre");
             const after = getComputedStyle(el, "::after");
             return {
-              overflows: Boolean(pre && pre.scrollWidth > pre.clientWidth + 1),
+              overflows: Boolean(pre && pre.scrollLeft + pre.clientWidth < pre.scrollWidth - 1),
               marked: el.hasAttribute("data-overflow"),
               width: parseFloat(after.width),
               image: after.backgroundImage,

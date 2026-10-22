@@ -31,7 +31,7 @@ export default async function ConnectYourAgentPage() {
       <h2>Claude Code</h2>
       <p className="intro">Remote HTTP is the supported path. After you have a key:</p>
       <OverflowX className="copy-pre">
-        <pre data-scroll tabIndex={0} aria-label="Claude Code command">
+        <pre data-scroll tabIndex={0} role="region" aria-label="Claude Code command">
           {`claude mcp add --transport http ovenlovin ${origin}/mcp \\
   --header "Authorization: ApiKey YOUR_OVENLOVIN_API_KEY"`}
         </pre>

@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isClerkProtectExempt, isClerkProtectedPath } from "./clerk-protect";
 
-// Pages and non-api routes outside this set must be kitchen-protected.
+// Pages and routes outside this set must be kitchen-protected or a self-auth API.
 const publicTops = new Set([
   "sign-in",
   "sign-up",
@@ -15,10 +15,15 @@ const publicTops = new Set([
   "mcp",
 ]);
 
+const selfAuthApi = ["/api", "/api/v1", "/api/cron", "/api/demo"] as const;
+
+function isSelfAuthApi(pathname: string): boolean {
+  return selfAuthApi.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 function listAppRoutes(dir: string, prefix = ""): string[] {
   const routes: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "api") continue;
     const next = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       const segment = entry.name.startsWith("(") ? "" : `/${entry.name}`;
@@ -31,10 +36,14 @@ function listAppRoutes(dir: string, prefix = ""): string[] {
 }
 
 describe("isClerkProtectedPath", () => {
-  it("protects every App Router page and non-api route that is not a known public root", () => {
+  it("protects every App Router page and route that is not a known public root", () => {
     const appDir = path.resolve(__dirname, "../app");
     for (const route of listAppRoutes(appDir)) {
       if (route === "/") continue;
+      if (route === "/api" || route.startsWith("/api/")) {
+        expect(isSelfAuthApi(route) || isClerkProtectedPath(route), route).toBe(true);
+        continue;
+      }
       const top =
         route
           .split("/")

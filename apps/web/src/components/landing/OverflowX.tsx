@@ -2,8 +2,8 @@
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-export function overflowsX(node: Pick<HTMLElement, "scrollWidth" | "clientWidth">) {
-  return node.scrollWidth > node.clientWidth + 1;
+export function overflowsX(node: Pick<HTMLElement, "scrollWidth" | "clientWidth" | "scrollLeft">) {
+  return node.scrollLeft + node.clientWidth < node.scrollWidth - 1;
 }
 
 export function OverflowX({ className, children }: { className?: string; children: ReactNode }) {
