@@ -232,7 +232,7 @@ Response:
 
 **Check Meal Plan**
 
-Findings are grouped two ways: `byEntry` (per meal) and `byPerson`. Each has `findings.block`, `findings.warn`, `findings.prefer_avoid`. If `status` is `incomplete`, do not treat the plan as safe. POST saves the report; GET only reads.
+Findings are grouped two ways: `byEntry` (per meal) and `byPerson`. Each has `findings.block`, `findings.warn`, `findings.prefer_avoid`. If `status` is `incomplete`, do not treat the plan as safe. `POST` runs the check and stores the report. `GET` runs the same check without saving.
 
 ```bash
 curl -X POST \

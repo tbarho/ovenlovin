@@ -135,7 +135,7 @@ There is no `POST /recipes/{id}/check`. To check one recipe for people, call `GE
 - `GET /meal-plans` - `limit`, `cursor`, `status`, `weekStart`, `weekEnd`
 - `POST /meal-plans` - `{ weekStart, status?, entries? }`. `201` with the plan and `entries`. Entries come back with `mealSlot` (the `meal` you sent), `freeformMeal`, `scaleFactor`, and `attendees`.
 - `GET /meal-plans/{id}` / `PATCH` / `DELETE` (`204`)
-- `GET /meal-plans/{id}/check` - Run check (read only)
+- `GET /meal-plans/{id}/check` - Run check (dry run; does not persist)
 - `POST /meal-plans/{id}/check` - Run and persist (write). No body. Findings are `byEntry` and `byPerson`. If `status` is `incomplete`, do not treat the plan as safe.
 - `POST /meal-plans/{id}/undo` / `GET /meal-plans/{id}/history`
 - `GET /meal-plans/{id}/shopping-list` - `format`, `groupBy`, `includeStaples`, `timeZone`. JSON is `ShoppingListData` (`mealPlanId`, `weekStart`, `groupBy`, `includeStaples`, `includePantryItems`, `ingredients`, `sections`, `itemCount`, `generatedAt`, `warnings`, `scaledFor`, `scaledForMixed`). Section items use `key`, `name`, `quantity`, `unit`, `displayQuantity`, `displayUnit`, `aisle`, `category`, `isStaple`, `isPantryItem`, `recipes[]`, `checked`. Warnings are listed once in top-level `warnings`. A bad `timeZone` is `400`.
