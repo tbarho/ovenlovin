@@ -137,7 +137,7 @@ export function LandingPage({
               <p>
                 {signedIn
                   ? "Recipes, this week’s plan, the shopping list, and people rules - on this household."
-                  : "Create your household on first sign-in, then import recipes and set people rules."}
+                  : "Create your household on first sign\u2011in, then import recipes and set people rules."}
               </p>
             </Link>
             <a

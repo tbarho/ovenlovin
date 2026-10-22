@@ -4,7 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { brandTokens } from "@/lib/brand-tokens";
 import { clerkUrls } from "@/lib/clerk-urls";
 
-const clerkAppearance = {
+export const clerkAppearance = {
   variables: {
     colorPrimary: brandTokens.orangePress,
     colorBackground: brandTokens.bg,
@@ -16,10 +16,20 @@ const clerkAppearance = {
     borderRadius: "8px",
   },
   elements: {
-    card: {
+    cardBox: {
       boxShadow: "none",
       border: "1px solid var(--border)",
       borderRadius: "8px",
+    },
+    card: {
+      boxShadow: "none",
+      border: "none",
+      borderRadius: "0",
+    },
+    headerTitle: {
+      fontSize: "20px",
+      fontWeight: 600,
+      lineHeight: "28px",
     },
     formButtonPrimary: { height: "44px", minHeight: "44px" },
     formFieldInput: { height: "44px", minHeight: "44px" },

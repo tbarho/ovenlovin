@@ -19,20 +19,39 @@ export default async function ConnectYourAgentPage() {
       <p className="eyebrow">Agents</p>
       <h1>Connect your agent</h1>
       <p className="lead">
-        Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key,
-        and copy the <code>plaintext</code> value (shown once). Call{" "}
-        <code>{"https://<your-app>.vercel.app/api/v1"}</code> with{" "}
-        <code>Authorization: ApiKey rkapi_...</code> and connect MCP at{" "}
-        <code>{"https://<your-app>.vercel.app/mcp"}</code>.
+        You deploy your own copy, and the public demo at{" "}
+        <code>https://ovenlovin-demo.vercel.app</code> is optional.
       </p>
       <p className="intro">
         Bearer plus the same key also works. Allergen findings name the person and the ingredient -
         not medical advice. Always read the label.
       </p>
-      <p className="intro">
-        Just looking? The public demo at https://ovenlovin-demo.vercel.app issues a 24h sandbox key
-        at /api/demo/enter?format=json.
-      </p>
+      <h2>Start here</h2>
+      <ol>
+        <li>
+          Deploy your own copy (Deploy button), sign in, open Settings, then API keys, create a key,
+          and copy the <code>plaintext</code> value (shown once).
+        </li>
+        <li>
+          Call{" "}
+          <code>
+            {"https://<your-app>.vercel.app"}
+            <wbr />
+            /api/v1
+          </code>{" "}
+          with <code>Authorization: ApiKey rkapi_...</code> and connect MCP at{" "}
+          <code>
+            {"https://<your-app>.vercel.app"}
+            <wbr />
+            /mcp
+          </code>
+          .
+        </li>
+        <li>
+          Just looking? The public demo at <code>https://ovenlovin-demo.vercel.app</code> issues a
+          24h sandbox key at <code>/api/demo/enter?format=json</code>.
+        </li>
+      </ol>
       <ConnectAgent origin={origin} />
       <h2>Claude Code</h2>
       <p className="intro">Remote HTTP is the supported path. After you have a key:</p>

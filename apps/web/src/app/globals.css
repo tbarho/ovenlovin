@@ -837,6 +837,7 @@ select {
   font-size: 16px;
   line-height: 24px;
   flex: 1;
+  text-wrap: pretty;
 }
 
 .section {
@@ -915,6 +916,10 @@ select {
   line-height: 1.5;
 }
 
+.lead code {
+  white-space: nowrap;
+}
+
 .docs-page .yours-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -946,6 +951,10 @@ select {
 .docs-page code {
   font-family: var(--mono);
   font-size: 0.92em;
+}
+
+.docs-page ol code {
+  white-space: nowrap;
 }
 
 .docs-page .copy-pre {
@@ -1208,9 +1217,16 @@ select {
   font-family: var(--mono);
   font-size: 14px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.footer > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .footer a {
