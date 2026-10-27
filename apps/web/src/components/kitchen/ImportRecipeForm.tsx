@@ -436,7 +436,7 @@ export function ImportRecipeForm({
             </div>
             {pending ? (
               <div data-testid="import-progress">
-                <PhotoImportProgress phase="reading" percent={0} previewUrl={null} />
+                <PhotoImportProgress phase="reading" percent={100} previewUrl={null} />
                 <div className="sheet-actions">
                   <button type="button" className="btn compact" onClick={cancelPreview}>
                     Cancel
