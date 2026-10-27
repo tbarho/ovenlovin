@@ -2,6 +2,7 @@
 
 import type { PhotoImportPreview } from "./photo-import";
 import {
+  PHOTO_IMPORT_STILL_BLURRY,
   extractPhotoPreviewFromFiles,
   photoCopyForPages,
   photoImportErrorKind,
@@ -17,6 +18,10 @@ export type PhotoImportJobSnapshot = {
   phase: PhotoImportPhase;
   percent: number;
   readingStartedAt: number | null;
+  /** Last read was the sharper read; never offered again for this job. */
+  enhanced: boolean;
+  /** Set when a sharper read from review failed and the first read came back. */
+  notice: string | null;
   errorKind: PhotoImportErrorKind | null;
   errorMessage: string | null;
   preview: PhotoImportPreview | null;
@@ -52,12 +57,20 @@ function patch(next: Partial<PhotoImportJobSnapshot>) {
   emit();
 }
 
-function runExtract(files: File[]) {
+function failureMessage(error: unknown, files: File[], enhanced: boolean): string {
+  const kind = photoImportErrorKind(error);
+  const message =
+    enhanced && kind === "blurry" ? PHOTO_IMPORT_STILL_BLURRY : photoImportErrorMessage(error);
+  return photoCopyForPages(message, files.length);
+}
+
+function runExtract(files: File[], enhanced: boolean, fallback: PhotoImportPreview | null) {
   abort?.abort();
   const controller = new AbortController();
   abort = controller;
   void extractPhotoPreviewFromFiles(files, {
     signal: controller.signal,
+    enhanced,
     onPhase: (phase) => {
       if (controller.signal.aborted) return;
       if (phase === "reading") {
@@ -77,11 +90,12 @@ function runExtract(files: File[]) {
     })
     .catch((error: unknown) => {
       if (controller.signal.aborted) return;
-      patch({
-        phase: "error",
-        errorKind: photoImportErrorKind(error),
-        errorMessage: photoCopyForPages(photoImportErrorMessage(error), files.length),
-      });
+      const message = failureMessage(error, files, enhanced);
+      if (fallback && photoImportErrorKind(error) !== "cancelled") {
+        patch({ phase: "review", preview: fallback, notice: message });
+        return;
+      }
+      patch({ phase: "error", errorKind: photoImportErrorKind(error), errorMessage: message });
     });
 }
 
@@ -106,26 +120,35 @@ export function startPhotoImportJob(files: File[]): PhotoImportJobSnapshot {
     phase: "uploading",
     percent: 0,
     readingStartedAt: null,
+    enhanced: false,
+    notice: null,
     errorKind: null,
     errorMessage: null,
     preview: null,
   };
   emit();
-  runExtract(nextFiles);
+  runExtract(nextFiles, false, null);
   return job;
 }
 
-export function retryPhotoImportJob(): PhotoImportJobSnapshot | null {
+/** `enhanced` re-reads the same original pages through the sharper-read path. */
+export function retryPhotoImportJob(
+  options: { enhanced?: boolean } = {}
+): PhotoImportJobSnapshot | null {
   if (!job || job.files.length === 0) return job;
+  const enhanced = Boolean(options.enhanced);
+  const fallback = enhanced && job.phase === "review" ? job.preview : null;
   patch({
     phase: "uploading",
     percent: 0,
     readingStartedAt: null,
+    enhanced,
+    notice: null,
     errorKind: null,
     errorMessage: null,
     preview: null,
   });
-  runExtract(job.files);
+  runExtract(job.files, enhanced, fallback);
   return job;
 }
 

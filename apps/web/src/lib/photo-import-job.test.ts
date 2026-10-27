@@ -18,6 +18,11 @@ vi.mock("./photo-import-client", async (importOriginal) => ({
 }));
 
 import {
+  PHOTO_IMPORT_BLURRY_MESSAGE,
+  PHOTO_IMPORT_STILL_BLURRY,
+  shouldOfferSharperRead,
+} from "./photo-import-client";
+import {
   cancelPhotoImportJob,
   getPhotoImportJob,
   retryPhotoImportJob,
@@ -68,10 +73,43 @@ describe("photo import job", () => {
       new File(["a"], "a.jpg", { type: "image/jpeg" }),
       new File(["b"], "b.jpg", { type: "image/jpeg" }),
     ]);
-    extract.reject(new Error("This photo is too blurry to read. Try a sharper shot."));
+    extract.reject(new Error("This photo is too blurry to read."));
     await vi.waitFor(() => expect(getPhotoImportJob()?.phase).toBe("error"));
     expect(getPhotoImportJob()?.errorMessage).toBe(
-      "These pages are too blurry to read. Try a sharper shot, or type or paste it."
+      "These pages are hard to read. Try a sharper read, or retake it in good light."
     );
+  });
+
+  it("runs one sharper read on the same pages and stops there", async () => {
+    vi.stubGlobal("URL", { ...URL, createObjectURL: () => "blob:x", revokeObjectURL: vi.fn() });
+    const files = [new File(["a"], "a.jpg", { type: "image/jpeg" })];
+    startPhotoImportJob(files);
+    expect(extract.options.enhanced).toBe(false);
+    extract.reject(new Error(PHOTO_IMPORT_BLURRY_MESSAGE));
+    await vi.waitFor(() => expect(getPhotoImportJob()?.errorKind).toBe("blurry"));
+    retryPhotoImportJob({ enhanced: true });
+    expect(extract.options.enhanced).toBe(true);
+    expect(getPhotoImportJob()).toMatchObject({ phase: "uploading", enhanced: true });
+    expect(getPhotoImportJob()?.files).toEqual(files);
+    extract.reject(new Error(PHOTO_IMPORT_BLURRY_MESSAGE));
+    await vi.waitFor(() => expect(getPhotoImportJob()?.phase).toBe("error"));
+    expect(getPhotoImportJob()?.errorMessage).toBe(PHOTO_IMPORT_STILL_BLURRY);
+    expect(shouldOfferSharperRead(getPhotoImportJob()!)).toBe(false);
+  });
+
+  it("returns to the first read when a sharper read from review fails", async () => {
+    vi.stubGlobal("URL", { ...URL, createObjectURL: () => "blob:x", revokeObjectURL: vi.fn() });
+    startPhotoImportJob([new File(["a"], "a.jpg", { type: "image/jpeg" })]);
+    const first = { title: "Card", uncertainFields: ["steps"] };
+    extract.resolve(first);
+    await vi.waitFor(() => expect(getPhotoImportJob()?.phase).toBe("review"));
+    retryPhotoImportJob({ enhanced: true });
+    extract.reject(new Error(PHOTO_IMPORT_BLURRY_MESSAGE));
+    await vi.waitFor(() => expect(getPhotoImportJob()?.phase).toBe("review"));
+    expect(getPhotoImportJob()).toMatchObject({
+      preview: first,
+      notice: PHOTO_IMPORT_STILL_BLURRY,
+      enhanced: true,
+    });
   });
 });

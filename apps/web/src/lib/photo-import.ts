@@ -256,22 +256,52 @@ export function photoImportPerceptualHash(blobs: string[]): string | undefined {
   return perceptualHashFromImageBlob(blobs[0]!) ?? undefined;
 }
 
+function inlineImageBytes(blobs: string[]): number {
+  return blobs.reduce((sum, blob) => {
+    if (!blob.startsWith("data:")) return sum;
+    return sum + Math.floor(((blob.split(",")[1] ?? "").length * 3) / 4);
+  }, 0);
+}
+
 export async function extractPhotoPreview(
   images: PhotoImageInput[],
   options: {
     householdId: string;
     isHandwritten?: boolean;
+    enhanced?: boolean;
     put?: StoredImagePut;
     abortSignal?: AbortSignal;
   }
 ): Promise<PhotoImportPreview> {
   assertAllowedRecipeImageUrls(images.map((image) => image.blob));
+  const enhanced = Boolean(options.enhanced);
+  const startedAt = Date.now();
   const extracted = await runPhotoImport(
     { images, isHandwritten: options.isHandwritten },
     {
       abortSignal: options.abortSignal,
+      // blank falls through to RK_MODEL_VISION
+      visionModelId: enhanced ? process.env.RK_MODEL_VISION_ENHANCED : undefined,
     }
   );
+  const raw = extracted.draft.source.rawExtractionJson ?? {};
+  console.info(
+    "photo_import",
+    JSON.stringify({
+      enhanced,
+      image_count: images.length,
+      total_bytes: inlineImageBytes(images.map((image) => image.blob)),
+      vision_ms: Date.now() - startedAt,
+      ocrQuality: typeof raw.ocrQuality === "string" ? raw.ocrQuality : "unknown",
+      model: extracted.draft.source.modelUsed,
+    })
+  );
+  if (enhanced) {
+    extracted.draft.source = {
+      ...extracted.draft.source,
+      rawExtractionJson: { ...raw, enhanced: true },
+    };
+  }
   const hero = recipeHeroFromPhotoDraft(
     extracted.draft.images,
     images.map((image) => image.blob)

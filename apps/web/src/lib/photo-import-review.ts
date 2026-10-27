@@ -68,6 +68,10 @@ export function reviewDraftFromPreview(preview: PhotoImportPreview): PhotoReview
   };
 }
 
+export function isReviewDraftEdited(draft: PhotoReviewDraft, preview: PhotoImportPreview): boolean {
+  return JSON.stringify(draft) !== JSON.stringify(reviewDraftFromPreview(preview));
+}
+
 export function remoteRecipeImages(images: string[] | null | undefined): string[] {
   return keepMainRecipeImages(images).filter((image) => /^https?:\/\//i.test(image));
 }

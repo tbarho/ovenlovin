@@ -67,4 +67,58 @@ describe("ImportReviewForm", () => {
       "Ready to review. Read from 3 pages. Page 1 is kept as the recipe photo."
     );
   });
+
+  const base = {
+    heroSrc: null,
+    pending: false,
+    error: null,
+    existingRecipeUrl: null,
+    possibleDuplicate: null,
+    savedRecipeId: null,
+    onOpenSaved: () => {},
+    onChange: () => {},
+    onSave: () => {},
+  };
+
+  it("offers a sharper read inline only when asked to", async () => {
+    const user = userEvent.setup();
+    const onSharperRead = vi.fn();
+    const hard = { ...draft, ingredientsText: "1 cup flour", uncertainFields: ["steps"] };
+    const { rerender } = render(
+      <ImportReviewForm {...base} draft={hard} onSharperRead={onSharperRead} />
+    );
+    await user.click(screen.getByRole("button", { name: "Try a sharper read" }));
+    expect(onSharperRead).toHaveBeenCalled();
+    rerender(<ImportReviewForm {...base} draft={hard} />);
+    expect(screen.queryByRole("button", { name: "Try a sharper read" })).toBeNull();
+  });
+
+  it("asks before replacing edits with the new read", async () => {
+    const user = userEvent.setup();
+    const onKeep = vi.fn();
+    render(
+      <ImportReviewForm
+        {...base}
+        draft={{ ...draft, ingredientsText: "1 cup flour" }}
+        replacePrompt={{ onReplace: () => {}, onKeep }}
+      />
+    );
+    expect(screen.getByText("Replace your edits with the new read?")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Replace" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Keep mine" }));
+    expect(onKeep).toHaveBeenCalled();
+  });
+
+  it("shows the still-hard-to-read notice in place of the warn line", () => {
+    render(
+      <ImportReviewForm
+        {...base}
+        draft={{ ...draft, ingredientsText: "1 cup flour", uncertainFields: ["steps"] }}
+        notice="Still hard to read. Retake it closer, flat, in good light, or type it in."
+        onSharperRead={undefined}
+      />
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Still hard to read.");
+    expect(screen.queryByRole("button", { name: "Try a sharper read" })).toBeNull();
+  });
 });

@@ -24,7 +24,14 @@ export const PHOTO_IMPORT_IN_PROGRESS = "Import in progress";
 export const PHOTO_IMPORT_TIMEOUT_MESSAGE =
   "That photo took too long to read. Try again, or type or paste it.";
 export const PHOTO_IMPORT_BLURRY_MESSAGE =
-  "This photo is too blurry to read. Try a sharper shot, or type or paste it.";
+  "This photo is hard to read. Try a sharper read, or retake it in good light.";
+export const PHOTO_IMPORT_SHARPER = "Try a sharper read";
+export const PHOTO_IMPORT_SHARPER_ANNOUNCEMENT = "Trying a sharper read.";
+export const PHOTO_IMPORT_STILL_BLURRY =
+  "Still hard to read. Retake it closer, flat, in good light, or type it in.";
+export const PHOTO_IMPORT_REPLACE_EDITS = "Replace your edits with the new read?";
+export const PHOTO_IMPORT_ENHANCE_MAX_EDGE = 2400;
+export const PHOTO_IMPORT_ENHANCE_QUALITY = 0.9;
 export const PHOTO_IMPORT_NOT_RECIPE_MESSAGE =
   "That does not look like a recipe. Type or paste it instead.";
 export const PHOTO_IMPORT_NETWORK_MESSAGE = "Connection lost. Check your network and try again.";
@@ -78,7 +85,9 @@ export function photoImportStepState(
 export function classifyPhotoImportProblem(problem: PhotoImportProblem): PhotoImportErrorKind {
   const code = (problem.code ?? "").toLowerCase();
   const text = `${problem.detail ?? ""} ${problem.title ?? ""}`.toLowerCase();
-  if (code === "photo_blurry" || text.includes("blurry")) return "blurry";
+  if (code === "photo_blurry" || text.includes("blurry") || text.includes("hard to read")) {
+    return "blurry";
+  }
   if (
     code === "photo_not_recipe" ||
     code === "import_not_a_recipe" ||
@@ -166,7 +175,21 @@ export function movePhotoPage<T>(items: T[], from: number, to: number): T[] {
   return next;
 }
 
-export function readingStepLabel(pages = 1): string {
+/** Offered only on a poor read, and never after a sharper read already ran. */
+export function shouldOfferSharperRead(job: {
+  enhanced?: boolean;
+  errorKind?: PhotoImportErrorKind | null;
+  preview?: { uncertainFields?: string[]; source?: { rawExtractionJson?: any } } | null;
+}): boolean {
+  if (job.enhanced) return false;
+  if (job.errorKind === "blurry") return true;
+  if (!job.preview?.uncertainFields?.length) return false;
+  const quality = job.preview.source?.rawExtractionJson?.ocrQuality;
+  return quality === "poor" || quality === "fair";
+}
+
+export function readingStepLabel(pages = 1, enhanced = false): string {
+  if (enhanced) return "Sharper read";
   return pages > 1 ? `Reading ${pages} pages` : "Reading";
 }
 
@@ -178,11 +201,17 @@ export function elapsedLabel(elapsedMs: number): string {
 /** Changes only at transitions so the live region never ticks. */
 export function photoImportAnnouncement(
   phase: PhotoImportPhase,
-  options: { elapsedMs?: number; pages?: number; errorMessage?: string | null } = {}
+  options: {
+    elapsedMs?: number;
+    pages?: number;
+    errorMessage?: string | null;
+    enhanced?: boolean;
+  } = {}
 ): string {
   const elapsedMs = options.elapsedMs ?? 0;
   const pages = options.pages ?? 1;
-  if (phase === "uploading") return "Uploading.";
+  if (phase === "uploading")
+    return options.enhanced ? PHOTO_IMPORT_SHARPER_ANNOUNCEMENT : "Uploading.";
   if (phase === "review") return "Ready to review.";
   if (phase === "error") return options.errorMessage?.trim() || "Could not read that photo";
   if (elapsedMs >= PHOTO_IMPORT_NEAR_TIMEOUT_MS) return PHOTO_IMPORT_NEAR_TIMEOUT;
@@ -272,13 +301,29 @@ function totalBytes(files: File[]): number {
 
 type Resize = (file: File, options: { maxEdge: number; quality: number }) => Promise<File>;
 
-async function resizeEach(files: File[], quality: number, resize: Resize): Promise<File[]> {
+async function eachFile(
+  files: File[],
+  options: { maxEdge: number; quality: number },
+  transform: Resize
+): Promise<File[]> {
   const out: File[] = [];
   // one at a time: 6 x 12MP bitmaps at once can crash iOS Safari
   for (const file of files) {
-    out.push(await resize(file, { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality }).catch(() => file));
+    out.push(await transform(file, options).catch(() => file));
   }
   return out;
+}
+
+async function fitBudget(
+  files: File[],
+  attempts: Array<{ maxEdge: number; quality: number }>,
+  transform: Resize
+): Promise<File[]> {
+  for (const options of attempts) {
+    const out = await eachFile(files, options, transform);
+    if (totalBytes(out) <= PHOTO_IMPORT_BUDGET_BYTES) return out;
+  }
+  throw new Error(PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE);
 }
 
 /** Fits every page under the shared upload budget, or blocks before upload. */
@@ -287,11 +332,108 @@ export async function budgetPhotoFiles(
   resize: Resize = resizePhotoFile
 ): Promise<File[]> {
   if (totalBytes(files) <= PHOTO_IMPORT_BUDGET_BYTES) return files;
-  const resized = await resizeEach(files, PHOTO_IMPORT_QUALITY, resize);
-  if (totalBytes(resized) <= PHOTO_IMPORT_BUDGET_BYTES) return resized;
-  const smaller = await resizeEach(files, PHOTO_IMPORT_FALLBACK_QUALITY, resize);
-  if (totalBytes(smaller) <= PHOTO_IMPORT_BUDGET_BYTES) return smaller;
-  throw new Error(PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE);
+  return fitBudget(
+    files,
+    [
+      { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: PHOTO_IMPORT_QUALITY },
+      { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: PHOTO_IMPORT_FALLBACK_QUALITY },
+    ],
+    resize
+  );
+}
+
+function percentile(histogram: number[], total: number, fraction: number): number {
+  const target = total * fraction;
+  let seen = 0;
+  for (let level = 0; level < 256; level++) {
+    seen += histogram[level] ?? 0;
+    if (seen >= target) return level;
+  }
+  return 255;
+}
+
+/** Grayscale, 1-99% contrast stretch, then a light 3x3 unsharp mask. Mutates RGBA in place. */
+export function enhancePixels(data: Uint8ClampedArray, width: number, height: number) {
+  const count = width * height;
+  const gray = new Float32Array(count);
+  const histogram = new Array(256).fill(0);
+  for (let i = 0; i < count; i++) {
+    const o = i * 4;
+    const value = Math.round(0.299 * data[o]! + 0.587 * data[o + 1]! + 0.114 * data[o + 2]!);
+    gray[i] = value;
+    histogram[value]++;
+  }
+  const low = percentile(histogram, count, 0.01);
+  const high = Math.max(low + 1, percentile(histogram, count, 0.99));
+  const stretched = gray.map((value) => ((value - low) * 255) / (high - low));
+  const amount = 0.5;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x;
+      let sum = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const row = Math.min(height - 1, Math.max(0, y + dy)) * width;
+        for (let dx = -1; dx <= 1; dx++) {
+          sum += stretched[row + Math.min(width - 1, Math.max(0, x + dx))]!;
+        }
+      }
+      const value = stretched[i]! + amount * (stretched[i]! - sum / 9);
+      const o = i * 4;
+      data[o] = data[o + 1] = data[o + 2] = value;
+    }
+  }
+}
+
+/** Second read: from the original, grayscale + contrast + sharpen on canvas. Never generative. */
+export async function enhancePhotoFile(
+  file: File,
+  options: { maxEdge: number; quality: number } = {
+    maxEdge: PHOTO_IMPORT_ENHANCE_MAX_EDGE,
+    quality: PHOTO_IMPORT_ENHANCE_QUALITY,
+  }
+): Promise<File> {
+  if (typeof createImageBitmap !== "function") return file;
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() =>
+    createImageBitmap(file)
+  );
+  const edge = Math.max(bitmap.width, bitmap.height);
+  const scale = edge > options.maxEdge ? options.maxEdge / edge : 1;
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    bitmap.close();
+    return file;
+  }
+  context.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+  const pixels = context.getImageData(0, 0, width, height);
+  enhancePixels(pixels.data, width, height);
+  context.putImageData(pixels, 0, 0);
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", options.quality)
+  );
+  if (!blob) return file;
+  return new File([blob], file.name.replace(/\.[^.]+$/, "-sharper.jpg"), { type: "image/jpeg" });
+}
+
+/** Enhanced pages still share the multi-page upload budget. */
+export function enhancePhotoFiles(
+  files: File[],
+  enhance: Resize = enhancePhotoFile
+): Promise<File[]> {
+  return fitBudget(
+    files,
+    [
+      { maxEdge: PHOTO_IMPORT_ENHANCE_MAX_EDGE, quality: PHOTO_IMPORT_ENHANCE_QUALITY },
+      { maxEdge: 2000, quality: 0.85 },
+      { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: PHOTO_IMPORT_QUALITY },
+    ],
+    enhance
+  );
 }
 
 export function postPhotoImportForm(
@@ -390,6 +532,7 @@ export async function extractPhotoPreviewFromFiles(
   options: {
     signal?: AbortSignal;
     timeoutMs?: number;
+    enhanced?: boolean;
     onPhase?: (phase: Extract<PhotoImportPhase, "uploading" | "reading">) => void;
     onUploadProgress?: (percent: number) => void;
   } = {}
@@ -398,10 +541,13 @@ export async function extractPhotoPreviewFromFiles(
   options.onPhase?.("uploading");
   options.onUploadProgress?.(0);
 
-  const prepared = await budgetPhotoFiles(files);
+  const prepared = options.enhanced
+    ? await enhancePhotoFiles(files)
+    : await budgetPhotoFiles(files);
   if (options.signal?.aborted) throw abortError("cancelled");
   const data = new FormData();
   for (const file of prepared) data.append("image", file);
+  if (options.enhanced) data.append("enhanced", "1");
 
   return postPhotoImportForm(data, {
     signal: options.signal,

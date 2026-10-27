@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
       : await extractPhotoPreview(input.images, {
           householdId,
           isHandwritten: input.isHandwritten,
+          enhanced: input.enhanced,
           put: createVercelImagePut(),
           abortSignal: request.signal,
         });
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       const failure = classifyPhotoImportPreview(preview);
       if (failure === "blurry") {
         throw new BadRequestError(
-          "This photo is too blurry to read. Try a sharper shot, or type or paste it.",
+          "This photo is hard to read. Try a sharper read, or retake it in good light.",
           { code: "PHOTO_BLURRY" }
         );
       }
