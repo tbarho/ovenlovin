@@ -1289,6 +1289,12 @@ select {
   justify-self: center;
 }
 
+@media (max-width: 480px) {
+  .shell .auth-screen .cl-card {
+    padding-inline: var(--gut);
+  }
+}
+
 .auth-screen .brand {
   margin-bottom: 24px;
 }
@@ -2413,6 +2419,9 @@ select {
   }
 
   .kitchen-topbar .brand {
+    justify-content: center;
+    min-width: 44px;
+    margin-inline: -9px;
     gap: 8px;
     font-size: 17px;
   }
@@ -3328,12 +3337,15 @@ select {
 
 .week-servings {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   font-size: 14px;
 }
 
 .week-servings select {
+  flex: none;
+  max-width: 100%;
   min-width: 44px;
   min-height: 44px;
   padding: 0 12px;

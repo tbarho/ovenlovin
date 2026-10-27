@@ -24,8 +24,9 @@ export default async function ConnectYourAgentPage() {
         New here? <Link href="/docs#start-here">Start here</Link>.
       </p>
       <p className="intro">
-        Bearer plus the same key also works. Allergen findings name the person and the ingredient -
-        not medical advice. Always read the label.
+        Send your key as <code>Authorization: ApiKey YOUR_KEY</code>. <code>Bearer</code> works in
+        place of <code>ApiKey</code>. Allergen findings name the person and the ingredient - not
+        medical advice. Always read the label.
       </p>
       <p className="intro">
         Just looking? The public demo at <code>https://ovenlovin-demo.vercel.app</code> issues a 24h
