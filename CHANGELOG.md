@@ -21,11 +21,11 @@ Set how many you are cooking for once per week. Add or remove a person and it fo
 
 Cups and grams merge when we know the ingredient, three flour lines become one, and amounts come out in units you can actually buy.
 
-## 2026-10-21 - Imports you can trust
+## 2026-10-21 - Imports and food rules you can trust
 
 ### See it, then keep it
 
-URL and paste imports show a preview before anything is saved. Agents get the same preview-then-save flow over MCP, and duplicates are caught before we fetch the page.
+URL and paste imports show a preview before anything is saved. Agents get the same preview-then-save flow over MCP, and duplicates are caught. API keys only do what their scopes allow, on REST and MCP.
 
 ### When an import fails, you know why
 

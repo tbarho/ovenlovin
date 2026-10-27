@@ -39,6 +39,7 @@ describe("parseChangelog", () => {
   it("reads the repo CHANGELOG.md newest first", () => {
     const dates = loadChangelog().map((entry) => entry.date);
     expect(dates.length).toBeGreaterThan(0);
+    expect(dates).toContain("2026-10-14");
     expect([...dates].sort().reverse()).toEqual(dates);
   });
 });
