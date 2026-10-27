@@ -1266,6 +1266,103 @@ select {
   padding: 11px 0;
 }
 
+.footer-links {
+  display: inline-flex;
+  gap: 24px;
+}
+
+.changelog {
+  margin-top: 56px;
+}
+
+.changelog-entry {
+  display: grid;
+  gap: 12px;
+  padding: 48px 0;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 88px;
+}
+
+.changelog-date {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.changelog-date:hover {
+  color: var(--orange-press);
+}
+
+.changelog-version {
+  padding: 2px 8px;
+  border: 1px solid var(--orange);
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--orange-press);
+  font-size: 12px;
+  text-transform: none;
+}
+
+.changelog-body {
+  min-width: 0;
+  max-width: 64ch;
+}
+
+.docs-page .changelog-body h2 {
+  margin: 0 0 16px;
+  font-size: 32px;
+  text-wrap: balance;
+}
+
+.changelog-body h3 {
+  margin: 32px 0 8px;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.changelog-body ul {
+  padding-left: 1.2em;
+}
+
+.changelog-body p,
+.changelog-body ul {
+  margin: 0 0 12px;
+  line-height: 1.65;
+}
+
+.changelog-body h2 + p {
+  color: var(--muted);
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+.changelog-body code {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--cream);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 860px) {
+  .changelog-entry {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .changelog-date {
+    position: sticky;
+    top: 92px;
+  }
+}
+
 .page-narrow {
   padding: 48px 0 80px;
 }

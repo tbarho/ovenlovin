@@ -12,5 +12,10 @@ export const baseOptions: BaseLayoutProps = {
       text: "Documentation",
       url: "/docs",
     },
+    {
+      text: "Changelog",
+      url: "https://ovenlovin-demo.vercel.app/changelog",
+      external: true,
+    },
   ],
 };

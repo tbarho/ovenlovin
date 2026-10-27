@@ -188,13 +188,16 @@ export function LandingPage({
           {signedIn ? ` · ${deploy.instanceHost}` : ""}
           {deploy.github.commitShort ? ` · ${deploy.github.commitShort}` : ""}
         </span>
-        {deploy.github.repoUrl ? (
-          <a href={deploy.github.repoUrl} target="_blank" rel="noreferrer">
+        <nav className="footer-links">
+          <Link href="/changelog">Changelog</Link>
+          <a
+            href={deploy.github.repoUrl || "https://github.com/tbarho/ovenlovin"}
+            target="_blank"
+            rel="noreferrer"
+          >
             GitHub
           </a>
-        ) : (
-          <a href="https://github.com/tbarho/ovenlovin">GitHub</a>
-        )}
+        </nav>
       </footer>
     </div>
   );
