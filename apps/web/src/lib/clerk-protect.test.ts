@@ -8,6 +8,7 @@ const publicTops = new Set([
   "sign-in",
   "sign-up",
   "docs",
+  "changelog",
   "invite",
   "dev",
   "prototype",
@@ -99,6 +100,7 @@ describe("isClerkProtectExempt", () => {
     ).toBe(true);
     expect(isClerkProtectExempt("/mcp")).toBe(true);
     expect(isClerkProtectExempt("/docs")).toBe(true);
+    expect(isClerkProtectExempt("/changelog")).toBe(true);
     expect(isClerkProtectExempt("/docs/connect-your-agent")).toBe(true);
     expect(isClerkProtectExempt("/llms.txt")).toBe(true);
     expect(isClerkProtectExempt("/robots.txt")).toBe(true);

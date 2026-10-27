@@ -18,6 +18,7 @@ const PUBLIC_PREFIXES = [
   "/api",
   "/mcp",
   "/docs",
+  "/changelog",
   "/brand",
   "/sign-in",
   "/sign-up",

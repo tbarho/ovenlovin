@@ -33,6 +33,9 @@ export function SiteHeader({
           <li>
             <Link href="/docs">Docs</Link>
           </li>
+          <li>
+            <Link href="/changelog">Changelog</Link>
+          </li>
         </ul>
         <div className="nav-cta">
           {demoUrl ? (

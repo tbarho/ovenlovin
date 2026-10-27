@@ -7,7 +7,7 @@ export function DocsChrome({
   current,
 }: {
   children: React.ReactNode;
-  current: "index" | "connect";
+  current: "index" | "connect" | "changelog";
 }) {
   return (
     <div className="shell">
@@ -29,6 +29,11 @@ export function DocsChrome({
                 aria-current={current === "connect" ? "page" : undefined}
               >
                 Connect your agent
+              </Link>
+            </li>
+            <li>
+              <Link href="/changelog" aria-current={current === "changelog" ? "page" : undefined}>
+                Changelog
               </Link>
             </li>
             <li>
