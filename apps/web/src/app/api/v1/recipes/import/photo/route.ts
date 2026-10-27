@@ -1,11 +1,5 @@
 import { NextRequest } from "next/server";
-import {
-  CookbookService,
-  draftFromSavedPreview,
-  fingerprintImageBlob,
-  RecipeService,
-} from "@ovenlovin/core";
-import { perceptualHashFromImageBlob } from "@ovenlovin/core/photo-hash";
+import { CookbookService, draftFromSavedPreview, RecipeService } from "@ovenlovin/core";
 import { AI_GATEWAY_MISSING_MESSAGE, isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { getDatabase } from "@ovenlovin/db";
 import { BadRequestError, ConflictError, handleApiError } from "@/lib/api/errors";
@@ -22,6 +16,8 @@ import {
   classifyPhotoImportPreview,
   draftFromPhotoPreview,
   extractPhotoPreview,
+  photoImportFingerprint,
+  photoImportPerceptualHash,
   presentPhotoImportPreview,
 } from "@/lib/photo-import";
 import {
@@ -39,10 +35,10 @@ import { presentRecipeDetailsForApi, requestApiOrigin } from "@/lib/recipe-media
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-async function rejectExistingPhoto(householdId: string, blob: string | undefined): Promise<void> {
-  if (!blob) return;
+async function rejectExistingPhoto(householdId: string, blobs: string[]): Promise<void> {
+  const fingerprint = photoImportFingerprint(blobs);
+  if (!fingerprint) return;
   const service = new RecipeService(getDatabase());
-  const fingerprint = fingerprintImageBlob(blob);
   const exact = await service.findPhotoImportDuplicate(householdId, fingerprint);
   if (exact) {
     throw new ConflictError(importDuplicateDetail("photo", exact.title), {
@@ -69,10 +65,10 @@ export async function POST(request: NextRequest) {
     }
 
     const input = await readPhotoImportRequest(request);
-    await rejectExistingPhoto(householdId, input.images[0]?.blob);
+    const blobs = input.images.map((image) => image.blob);
+    await rejectExistingPhoto(householdId, blobs);
 
-    const first = input.images[0]?.blob;
-    const phash = first ? perceptualHashFromImageBlob(first) : null;
+    const phash = photoImportPerceptualHash(blobs);
     const near = phash
       ? await new RecipeService(getDatabase()).findPhotoNearDuplicate(householdId, phash)
       : null;

@@ -120,6 +120,11 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
         ? "\n\nIMPORTANT: This is a HANDWRITTEN recipe card. Handwriting recognition is challenging:\n- Mark ingredients/steps as 'illegible' if you cannot read them with high confidence\n- Mark as 'low' confidence for uncertain readings\n- Preserve exact text as written, including quirks\n- Note any legibility issues in handwrittenNotes"
         : "";
 
+      const pagesContext =
+        images.length > 1
+          ? `These ${images.length} images are pages of ONE recipe, in order. Page 1 is first. Merge them into a single recipe; do not duplicate ingredients that repeat across a page break.\n\n`
+          : "";
+
       let result;
       try {
         result = await generateImportObject(generate, visionModelId, {
@@ -130,7 +135,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
               content: [
                 {
                   type: "text",
-                  text: `Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
+                  text: `${pagesContext}Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
 
 Extract:
 - title, servings, prep/cook/total times

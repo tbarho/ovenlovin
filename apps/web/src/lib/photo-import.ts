@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   assertAllowedRecipeImageUrls,
   copyRemoteImages,
@@ -241,6 +242,20 @@ export function classifyPhotoImportPreview(
   return null;
 }
 
+/** Fingerprints every page in order; one page keeps the legacy single-image key. */
+export function photoImportFingerprint(blobs: string[]): string | null {
+  if (blobs.length === 0) return null;
+  if (blobs.length === 1) return fingerprintImageBlob(blobs[0]!);
+  const joined = blobs.map(fingerprintImageBlob).join("|");
+  return `pages:sha256:${createHash("sha256").update(joined).digest("hex")}`;
+}
+
+/** Near-match only single photos; page 1 alone can look like another recipe from the same book. */
+export function photoImportPerceptualHash(blobs: string[]): string | undefined {
+  if (blobs.length !== 1) return undefined;
+  return perceptualHashFromImageBlob(blobs[0]!) ?? undefined;
+}
+
 export async function extractPhotoPreview(
   images: PhotoImageInput[],
   options: {
@@ -269,14 +284,14 @@ export async function extractPhotoPreview(
           options.put
         )
       : [];
-  const first = images[0]?.blob;
-  if (first) {
+  const fingerprint = photoImportFingerprint(images.map((image) => image.blob));
+  if (fingerprint) {
     extracted.draft.source = {
       ...extracted.draft.source,
       rawExtractionJson: {
         ...(extracted.draft.source.rawExtractionJson ?? {}),
-        photoFingerprint: fingerprintImageBlob(first),
-        photoPerceptualHash: perceptualHashFromImageBlob(first) ?? undefined,
+        photoFingerprint: fingerprint,
+        photoPerceptualHash: photoImportPerceptualHash(images.map((image) => image.blob)),
       },
     };
   }

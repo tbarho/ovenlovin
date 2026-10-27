@@ -3004,32 +3004,125 @@ select {
   border: 0;
 }
 
-.photo-thumbs {
+.photo-pages {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.photo-thumbs li {
+.photo-page {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 6px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  font-size: 13px;
+  border-radius: var(--r-sm);
+  background: var(--panel);
 }
 
-.photo-thumbs img,
+.photo-page img,
+.photo-page .photo-thumb-fallback {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f3efe6;
+}
+
+.photo-page-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
+}
+
+.photo-page-actions {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.photo-page-actions .btn {
+  min-width: 32px;
+  padding-inline: 8px;
+}
+
+.photo-page-add {
+  padding: 0;
+  border: 1px dashed var(--line-2);
+  background: transparent;
+}
+
+.photo-page-add-target {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 12px 8px;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+label.photo-page-add-target:hover,
+label.photo-page-add-target:focus-visible {
+  color: var(--ink);
+  background: var(--cream);
+}
+
+.photo-page-add-target[aria-disabled="true"] {
+  color: var(--faint);
+  font-weight: 400;
+  cursor: default;
+}
+
 .photo-thumb-fallback {
   width: 56px;
   height: 56px;
   border-radius: 8px;
+  background: #f3efe6;
+}
+
+.photo-page-strip {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.photo-page-strip li {
+  position: relative;
+  flex: 0 0 72px;
+}
+
+.photo-page-strip img {
+  display: block;
+  width: 72px;
+  height: 96px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
   object-fit: cover;
   background: #f3efe6;
+}
+
+.photo-page-strip span {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
 }
 
 .photo-review-form {

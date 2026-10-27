@@ -103,7 +103,20 @@ describe("Photo Importer", () => {
       expect(result.sourceBlobs).toHaveLength(2);
       expect(result.rawData.imageCount).toBe(2);
 
-      expect(generateObject).toHaveBeenCalled();
+      const call = (generateObject as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0];
+      expect(call.messages[0].content[0].text).toMatch(
+        /^These 2 images are pages of ONE recipe, in order\. Page 1 is first\. Merge them into a single recipe; do not duplicate ingredients that repeat across a page break\./
+      );
+    });
+
+    it("does not add the pages prefix for one photo", async () => {
+      const { generateObject } = await import("ai");
+      (generateObject as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        object: handwrittenFixture,
+      });
+      await importer.extract({ images: [{ blob: imageDataUrl("printed-tomato-pasta.png") }] });
+      const call = (generateObject as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0];
+      expect(call.messages[0].content[0].text).toMatch(/^Extract a structured recipe/);
     });
 
     it("passes a combined abort signal so Cancel can stop the vision job", async () => {

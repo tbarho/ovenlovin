@@ -9,6 +9,8 @@ import {
   presentPhotoImportPreview,
   previewFromDraft,
   recipeHeroFromPhotoDraft,
+  photoImportFingerprint,
+  photoImportPerceptualHash,
 } from "./photo-import";
 import type { RecipeDraft } from "@ovenlovin/importers";
 
@@ -216,5 +218,23 @@ describe("persistMainPhoto", () => {
       persistMainPhoto([{ blob: "https://images.unsplash.com/photo-abc" }], "household-1", vi.fn())
     ).resolves.toEqual([]);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("photoImportFingerprint", () => {
+  const one = "data:image/jpeg;base64,AAAA";
+  const two = "data:image/jpeg;base64,BBBB";
+
+  it("keeps the single-photo fingerprint and covers every page in order", () => {
+    expect(photoImportFingerprint([])).toBeNull();
+    expect(photoImportFingerprint([one])).toMatch(/^sha256:/);
+    const pages = photoImportFingerprint([one, two]);
+    expect(pages).toMatch(/^pages:sha256:/);
+    expect(pages).not.toBe(photoImportFingerprint([one]));
+    expect(pages).not.toBe(photoImportFingerprint([two, one]));
+  });
+
+  it("skips the page 1 near-match for multi-page imports", () => {
+    expect(photoImportPerceptualHash([one, two])).toBeUndefined();
   });
 });

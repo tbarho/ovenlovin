@@ -5,7 +5,9 @@ import { api } from "@/lib/browser-api";
 import { BLOCKED_IMPORT_COPY, NOT_A_RECIPE_COPY, PAGE_GONE_COPY } from "@/lib/import-input";
 import {
   PHOTO_IMPORT_ESTIMATE,
+  PHOTO_IMPORT_MAX_PAGES,
   PHOTO_IMPORT_TIMEOUT_MESSAGE,
+  PHOTO_PICK_LEAD,
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
 } from "@/lib/photo-import-client";
 import { cancelPhotoImportJob } from "@/lib/photo-import-job";
@@ -97,7 +99,7 @@ describe("ImportRecipeForm photo import", () => {
     expect(screen.getByRole("tab", { name: "Photo" })).toBeVisible();
   });
 
-  it("starts reading as soon as a photo is chosen", async () => {
+  it("reads a photo after Import recipe", async () => {
     const xhr = mockXhr({ hang: true });
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
@@ -105,6 +107,7 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
     expect(screen.queryByRole("button", { name: "Read recipe" })).not.toBeInTheDocument();
     expect(await screen.findByText("Uploading 0%")).toBeVisible();
     expect(screen.getByText(`${PHOTO_IMPORT_ESTIMATE}.`)).toBeVisible();
@@ -122,12 +125,13 @@ describe("ImportRecipeForm photo import", () => {
     expect(meter).not.toHaveAttribute("aria-valuenow");
     expect(screen.getByText("Reading - 0:00")).toBeVisible();
     expect(screen.getByText("Uploading 100%").closest("li")).toHaveClass("is-done");
-    expect(screen.getByRole("status")).toHaveTextContent(
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("status")).toHaveTextContent(
       `Upload done. Reading 1 page. ${PHOTO_IMPORT_ESTIMATE}.`
     );
     xhr.onload?.();
     await waitFor(() => expect(screen.getByLabelText("Title")).toBeVisible());
-    expect(screen.getByRole("status")).toHaveTextContent(/Ready to review/);
+    expect(within(dialog).getByRole("status")).toHaveTextContent(/Ready to review/);
   });
 
   it("opens a review dialog after reading a photo, with a low-confidence warning", async () => {
@@ -143,7 +147,9 @@ describe("ImportRecipeForm photo import", () => {
     const inputs = document.querySelectorAll('input[type="file"]');
     const library = inputs[1] as HTMLInputElement;
     await user.upload(library, file);
-    expect(document.querySelector('.photo-thumbs img[src="blob:preview"]')).toBeTruthy();
+    expect(document.querySelector('.photo-pages img[src="blob:preview"]')).toBeTruthy();
+    expect(screen.getByText("Page 1")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("Import from photo");
@@ -165,6 +171,7 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
     expect(await screen.findByText(PHOTO_IMPORT_TIMEOUT_MESSAGE)).toBeVisible();
     expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Type or paste instead" })).toBeVisible();
@@ -182,6 +189,7 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -199,6 +207,7 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByRole("img", { name: /selected recipe photo/i })).toBeVisible();
     await user.click(within(dialog).getByRole("button", { name: "Close" }));
@@ -224,6 +233,7 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
     const dialog = await screen.findByRole("dialog");
     await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
     await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
@@ -252,6 +262,7 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
     const dialog = await screen.findByRole("dialog");
     await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
     await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
@@ -275,6 +286,55 @@ describe("ImportRecipeForm photo import", () => {
     expect(imageBody.image.length).toBeLessThan(50_000);
   });
 
+  it("numbers pages, reorders them, and imports them in order", async () => {
+    const xhr = mockXhr({ hang: true });
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    expect(screen.getByText(PHOTO_PICK_LEAD)).toBeVisible();
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    const pages = ["one.jpg", "two.jpg", "three.jpg"].map(
+      (name) => new File([name], name, { type: "image/jpeg" })
+    );
+    await user.upload(library, pages.slice(0, 2));
+    expect(screen.getByText("Pages 1 to 2 added.")).toBeInTheDocument();
+    const camera = document.querySelectorAll('input[type="file"]')[0] as HTMLInputElement;
+    await user.upload(camera, pages[2]!);
+    expect(screen.getByText("Page 3 added.")).toBeInTheDocument();
+    expect(screen.getByText("Page 3")).toBeVisible();
+    expect(screen.getByText("Add page")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Move page 3 earlier" }));
+    expect(screen.getByText("Page 3 moved to 2.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Remove page 1" }));
+    expect(screen.getByText("Page 1 removed.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Import 2 pages" }));
+    await waitFor(() => expect(xhr.send).toHaveBeenCalled());
+    const sent = ((xhr.send.mock.calls as any[])[0]?.[0] as FormData).getAll("image") as File[];
+    expect(sent.map((file) => file.name)).toEqual(["three.jpg", "two.jpg"]);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getAllByRole("img", { name: /Recipe page/ })).toHaveLength(2);
+  });
+
+  it("caps pages at the limit and disables Add page", async () => {
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
+    const files = Array.from(
+      { length: PHOTO_IMPORT_MAX_PAGES + 1 },
+      (_, index) => new File([`p${index}`], `p${index}.jpg`, { type: "image/jpeg" })
+    );
+    await user.upload(library, files);
+    expect(screen.getByText(`Page ${PHOTO_IMPORT_MAX_PAGES}`)).toBeVisible();
+    expect(screen.queryByText(`Page ${PHOTO_IMPORT_MAX_PAGES + 1}`)).not.toBeInTheDocument();
+    expect(screen.queryByText("Add page")).not.toBeInTheDocument();
+    expect(screen.getByText("Up to 6 pages")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText("Pages 1 to 6 added. Up to 6 pages.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: `Import ${PHOTO_IMPORT_MAX_PAGES} pages` })
+    ).toBeEnabled();
+  });
+
   it("says the recipe saved when the photo upload fails", async () => {
     mockXhr({ body: { ...preview, images: [] } });
     const user = userEvent.setup();
@@ -287,6 +347,7 @@ describe("ImportRecipeForm photo import", () => {
     const file = new File(["card"], "card.jpg", { type: "image/jpeg" });
     const library = document.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     await user.upload(library, file);
+    await user.click(screen.getByRole("button", { name: "Import recipe" }));
     const dialog = await screen.findByRole("dialog");
     await waitFor(() => expect(within(dialog).getByLabelText("Title")).toBeVisible());
     await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));

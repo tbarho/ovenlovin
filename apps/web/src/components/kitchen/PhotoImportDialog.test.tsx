@@ -46,4 +46,25 @@ describe("ImportReviewForm", () => {
     await user.click(screen.getByRole("button", { name: "Save recipe" }));
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  it("names the page count and kept photo for a multi-page review", () => {
+    render(
+      <ImportReviewForm
+        draft={{ ...draft, ingredientsText: "1 cup flour" }}
+        heroSrc={null}
+        pending={false}
+        error={null}
+        existingRecipeUrl={null}
+        possibleDuplicate={null}
+        savedRecipeId={null}
+        pages={3}
+        onOpenSaved={() => {}}
+        onChange={() => {}}
+        onSave={() => {}}
+      />
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Ready to review. Read from 3 pages. Page 1 is kept as the recipe photo."
+    );
+  });
 });

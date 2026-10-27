@@ -2,6 +2,15 @@ import type { PhotoImportPreview } from "./photo-import";
 
 export const PHOTO_IMPORT_TIMEOUT_MS = 60_000;
 export const PHOTO_IMPORT_MAX_EDGE = 1600;
+export const PHOTO_IMPORT_MAX_PAGES = 6;
+/** Total upload budget, with headroom under Vercel's 4.5MB body cap for multipart overhead. */
+export const PHOTO_IMPORT_BUDGET_BYTES = Math.round(3.8 * 1024 * 1024);
+export const PHOTO_IMPORT_QUALITY = 0.82;
+export const PHOTO_IMPORT_FALLBACK_QUALITY = 0.68;
+export const PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE =
+  "Too many pages for one import. Try 4 or fewer, or crop closer.";
+export const PHOTO_PICK_LEAD =
+  "Drop a recipe card, cookbook page, or screenshot here. Recipe on more than one page? Add each page.";
 /** Stay under Vercel's 4.5MB body limit after base64. Demo has no Blob. */
 export const PHOTO_SAVE_MAX_EDGE = 1280;
 export const PHOTO_SAVE_MAX_BYTES = 700_000;
@@ -122,6 +131,41 @@ export function photoImportLead(elapsedMs: number): string {
   return `${PHOTO_IMPORT_ESTIMATE}.`;
 }
 
+export function photoPageLabel(index: number): string {
+  return `Page ${index + 1}`;
+}
+
+export function photoImportButtonLabel(pages: number): string {
+  return pages > 1 ? `Import ${pages} pages` : "Import recipe";
+}
+
+export function photoPageLimitLabel(): string {
+  return `Up to ${PHOTO_IMPORT_MAX_PAGES} pages`;
+}
+
+/** Rewords single-photo copy for a set of pages. */
+export function photoCopyForPages(message: string, pages: number): string {
+  if (pages <= 1) return message;
+  return message
+    .replace(/\bThis photo is\b/g, "These pages are")
+    .replace(/\bThat photo is\b/g, "These pages are")
+    .replace(/\bThat photo\b/g, "These pages")
+    .replace(/\bthat photo\b/g, "these pages")
+    .replace(/\bThis photo was\b/g, "These pages were");
+}
+
+export function addPhotoPages(current: File[], next: File[]): File[] {
+  return [...current, ...next].slice(0, PHOTO_IMPORT_MAX_PAGES);
+}
+
+export function movePhotoPage<T>(items: T[], from: number, to: number): T[] {
+  if (from === to || to < 0 || to >= items.length) return items;
+  const next = items.slice();
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item as T);
+  return next;
+}
+
 export function readingStepLabel(pages = 1): string {
   return pages > 1 ? `Reading ${pages} pages` : "Reading";
 }
@@ -169,7 +213,9 @@ async function resizePhotoFile(
   options: { maxEdge: number; quality: number }
 ): Promise<File> {
   if (typeof createImageBitmap !== "function") return file;
-  const bitmap = await createImageBitmap(file);
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() =>
+    createImageBitmap(file)
+  );
   const edge = Math.max(bitmap.width, bitmap.height);
   const scale = edge > options.maxEdge ? options.maxEdge / edge : 1;
   const width = Math.max(1, Math.round(bitmap.width * scale));
@@ -220,14 +266,32 @@ export async function compressPhotoForSave(file: File): Promise<string> {
   return dataUrl;
 }
 
-export async function preparePhotoFile(file: File): Promise<File> {
-  // shortcut: skip under 4MB so typical cards stay fast; Vercel 413s above 4.5MB
-  if (file.size <= 4 * 1024 * 1024) return file;
-  try {
-    return await resizePhotoFile(file, { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality: 0.82 });
-  } catch {
-    return file;
+function totalBytes(files: File[]): number {
+  return files.reduce((sum, file) => sum + file.size, 0);
+}
+
+type Resize = (file: File, options: { maxEdge: number; quality: number }) => Promise<File>;
+
+async function resizeEach(files: File[], quality: number, resize: Resize): Promise<File[]> {
+  const out: File[] = [];
+  // one at a time: 6 x 12MP bitmaps at once can crash iOS Safari
+  for (const file of files) {
+    out.push(await resize(file, { maxEdge: PHOTO_IMPORT_MAX_EDGE, quality }).catch(() => file));
   }
+  return out;
+}
+
+/** Fits every page under the shared upload budget, or blocks before upload. */
+export async function budgetPhotoFiles(
+  files: File[],
+  resize: Resize = resizePhotoFile
+): Promise<File[]> {
+  if (totalBytes(files) <= PHOTO_IMPORT_BUDGET_BYTES) return files;
+  const resized = await resizeEach(files, PHOTO_IMPORT_QUALITY, resize);
+  if (totalBytes(resized) <= PHOTO_IMPORT_BUDGET_BYTES) return resized;
+  const smaller = await resizeEach(files, PHOTO_IMPORT_FALLBACK_QUALITY, resize);
+  if (totalBytes(smaller) <= PHOTO_IMPORT_BUDGET_BYTES) return smaller;
+  throw new Error(PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE);
 }
 
 export function postPhotoImportForm(
@@ -334,11 +398,10 @@ export async function extractPhotoPreviewFromFiles(
   options.onPhase?.("uploading");
   options.onUploadProgress?.(0);
 
+  const prepared = await budgetPhotoFiles(files);
+  if (options.signal?.aborted) throw abortError("cancelled");
   const data = new FormData();
-  for (const file of await Promise.all(files.map(preparePhotoFile))) {
-    if (options.signal?.aborted) throw abortError("cancelled");
-    data.append("image", file);
-  }
+  for (const file of prepared) data.append("image", file);
 
   return postPhotoImportForm(data, {
     signal: options.signal,

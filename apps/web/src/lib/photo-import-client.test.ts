@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PHOTO_IMPORT_BLURRY_MESSAGE,
+  PHOTO_IMPORT_BUDGET_BYTES,
+  PHOTO_IMPORT_FALLBACK_QUALITY,
+  PHOTO_IMPORT_MAX_PAGES,
+  PHOTO_IMPORT_QUALITY,
+  PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE,
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_NEAR_TIMEOUT,
   PHOTO_IMPORT_NETWORK_MESSAGE,
@@ -10,11 +15,16 @@ import {
   PHOTO_IMPORT_TIMEOUT_MS,
   PHOTO_IMPORT_TOO_LARGE_MESSAGE,
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
+  addPhotoPages,
+  budgetPhotoFiles,
   classifyPhotoImportProblem,
   dataUrlPayloadBytes,
   elapsedLabel,
   extractPhotoPreviewFromFiles,
+  movePhotoPage,
+  photoCopyForPages,
   photoImportAnnouncement,
+  photoImportButtonLabel,
   photoImportErrorMessage,
   photoImportLead,
   photoImportStepState,
@@ -303,5 +313,102 @@ describe("extractPhotoPreviewFromFiles", () => {
     await expect(
       extractPhotoPreviewFromFiles([new File(["card"], "card.jpg", { type: "image/jpeg" })])
     ).rejects.toMatchObject({ message: PHOTO_IMPORT_BLURRY_MESSAGE });
+  });
+});
+
+const MB = 1024 * 1024;
+
+function sized(name: string, bytes: number): File {
+  return new File([new Uint8Array(bytes)], name, { type: "image/jpeg" });
+}
+
+describe("budgetPhotoFiles", () => {
+  it("leaves pages alone when the total fits", async () => {
+    const resize = vi.fn();
+    const files = [sized("a.jpg", 1 * MB), sized("b.jpg", 2 * MB)];
+    await expect(budgetPhotoFiles(files, resize)).resolves.toBe(files);
+    expect(resize).not.toHaveBeenCalled();
+  });
+
+  it("resizes every page, one at a time, when the total is over budget", async () => {
+    let active = 0;
+    const resize = vi.fn(async (file: File, _options: { quality: number }) => {
+      active += 1;
+      expect(active).toBe(1);
+      await Promise.resolve();
+      active -= 1;
+      return sized(file.name, 400_000);
+    });
+    const files = [sized("a.jpg", 3 * MB), sized("b.jpg", 3 * MB), sized("c.jpg", 3 * MB)];
+    const out = await budgetPhotoFiles(files, resize);
+    expect(out.map((file) => file.name)).toEqual(["a.jpg", "b.jpg", "c.jpg"]);
+    expect(out.reduce((sum, file) => sum + file.size, 0)).toBeLessThanOrEqual(
+      PHOTO_IMPORT_BUDGET_BYTES
+    );
+    expect(resize).toHaveBeenCalledTimes(3);
+    expect(resize.mock.calls[0]?.[1]).toMatchObject({ quality: PHOTO_IMPORT_QUALITY });
+  });
+
+  it("steps quality down once before giving up", async () => {
+    const resize = vi.fn(async (file: File, options: { quality: number }) =>
+      sized(file.name, options.quality === PHOTO_IMPORT_QUALITY ? 1.5 * MB : 1 * MB)
+    );
+    const files = [sized("a.jpg", 3 * MB), sized("b.jpg", 3 * MB), sized("c.jpg", 3 * MB)];
+    const out = await budgetPhotoFiles(files, resize);
+    expect(out.every((file) => file.size === 1 * MB)).toBe(true);
+    expect(resize.mock.calls.at(-1)?.[1]).toMatchObject({
+      quality: PHOTO_IMPORT_FALLBACK_QUALITY,
+    });
+  });
+
+  it("blocks before upload when pages still do not fit", async () => {
+    const resize = vi.fn(async (file: File) => sized(file.name, 1 * MB));
+    const files = Array.from({ length: 6 }, (_, index) => sized(`${index}.jpg`, 3 * MB));
+    await expect(budgetPhotoFiles(files, resize)).rejects.toThrow(
+      PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE
+    );
+    expect(resize).toHaveBeenCalledTimes(12);
+  });
+
+  it("never uploads when the budget blocks", async () => {
+    vi.stubGlobal("createImageBitmap", undefined);
+    const xhr = mockXhr();
+    const files = [sized("a.jpg", 2 * MB), sized("b.jpg", 2 * MB)];
+    await expect(extractPhotoPreviewFromFiles(files)).rejects.toThrow(
+      PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE
+    );
+    expect(xhr.send).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("photo page helpers", () => {
+  it("caps added pages", () => {
+    const files = Array.from({ length: 8 }, (_, index) => sized(`${index}.jpg`, 1));
+    expect(addPhotoPages(files.slice(0, 4), files.slice(4))).toHaveLength(PHOTO_IMPORT_MAX_PAGES);
+  });
+
+  it("moves a page and ignores moves off the ends", () => {
+    expect(movePhotoPage(["a", "b", "c"], 2, 1)).toEqual(["a", "c", "b"]);
+    expect(movePhotoPage(["a", "b", "c"], 0, 1)).toEqual(["b", "a", "c"]);
+    const items = ["a", "b"];
+    expect(movePhotoPage(items, 0, -1)).toBe(items);
+    expect(movePhotoPage(items, 1, 2)).toBe(items);
+  });
+
+  it("labels the import button by page count", () => {
+    expect(photoImportButtonLabel(1)).toBe("Import recipe");
+    expect(photoImportButtonLabel(3)).toBe("Import 3 pages");
+  });
+
+  it("rewords single-photo errors for a set of pages", () => {
+    expect(photoCopyForPages(PHOTO_IMPORT_TIMEOUT_MESSAGE, 1)).toBe(PHOTO_IMPORT_TIMEOUT_MESSAGE);
+    expect(photoCopyForPages(PHOTO_IMPORT_TIMEOUT_MESSAGE, 2)).toBe(
+      "These pages took too long to read. Try again, or type or paste it."
+    );
+    expect(photoCopyForPages(PHOTO_IMPORT_TOO_LARGE_MESSAGE, 2)).toBe(
+      "These pages are too large. Try a closer crop."
+    );
+    expect(photoCopyForPages("Could not read that photo", 3)).toBe("Could not read these pages");
   });
 });
