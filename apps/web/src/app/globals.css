@@ -980,6 +980,13 @@ select {
   white-space: nowrap;
 }
 
+.docs-page p a,
+.docs-page li a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
 .docs-page .copy-pre {
   position: relative;
   min-width: 0;
