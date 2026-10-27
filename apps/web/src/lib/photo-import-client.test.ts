@@ -15,8 +15,15 @@ import {
   PHOTO_IMPORT_TIMEOUT_MS,
   PHOTO_IMPORT_TOO_LARGE_MESSAGE,
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
+  PHOTO_IMPORT_ENHANCE_MAX_EDGE,
+  PHOTO_IMPORT_ENHANCE_QUALITY,
+  PHOTO_IMPORT_SHARPER_ANNOUNCEMENT,
+  PHOTO_IMPORT_STILL_BLURRY,
   addPhotoPages,
   budgetPhotoFiles,
+  enhancePhotoFiles,
+  enhancePixels,
+  shouldOfferSharperRead,
   classifyPhotoImportProblem,
   dataUrlPayloadBytes,
   elapsedLabel,
@@ -114,6 +121,7 @@ describe("photo import copy helpers", () => {
     expect(uploadingStepLabel(32)).toBe("Uploading 32%");
     expect(readingStepLabel(1)).toBe("Reading");
     expect(readingStepLabel(2)).toBe("Reading 2 pages");
+    expect(readingStepLabel(2, true)).toBe("Sharper read");
     expect(elapsedLabel(12_400)).toBe("0:12");
     expect(elapsedLabel(65_000)).toBe("1:05");
   });
@@ -127,6 +135,9 @@ describe("photo import copy helpers", () => {
 
   it("announces only transitions, not percent or seconds", () => {
     expect(photoImportAnnouncement("uploading")).toBe("Uploading.");
+    expect(photoImportAnnouncement("uploading", { enhanced: true })).toBe(
+      PHOTO_IMPORT_SHARPER_ANNOUNCEMENT
+    );
     expect(photoImportAnnouncement("reading", { elapsedMs: 1_000 })).toBe(
       `Upload done. Reading 1 page. ${PHOTO_IMPORT_ESTIMATE}.`
     );
@@ -410,5 +421,135 @@ describe("photo page helpers", () => {
       "These pages are too large. Try a closer crop."
     );
     expect(photoCopyForPages("Could not read that photo", 3)).toBe("Could not read these pages");
+  });
+});
+
+function rgba(pixels: number[][]): Uint8ClampedArray {
+  return new Uint8ClampedArray(pixels.flatMap(([r, g, b]) => [r!, g!, b!, 255]));
+}
+
+describe("enhancePixels", () => {
+  it("turns color to gray and stretches a dim range to full contrast", () => {
+    const data = rgba([
+      [100, 90, 80],
+      [100, 90, 80],
+      [140, 130, 120],
+      [140, 130, 120],
+    ]);
+    enhancePixels(data, 2, 2);
+    for (let i = 0; i < 16; i += 4) {
+      expect(data[i]).toBe(data[i + 1]);
+      expect(data[i + 1]).toBe(data[i + 2]);
+      expect(data[i + 3]).toBe(255);
+    }
+    expect(data[0]).toBe(0);
+    expect(data[8]).toBe(255);
+  });
+
+  it("leaves a flat page flat, so it cannot invent strokes", () => {
+    const data = rgba(Array.from({ length: 9 }, () => [200, 200, 200]));
+    enhancePixels(data, 3, 3);
+    const values = new Set(Array.from(data).filter((_, index) => index % 4 === 0));
+    expect(values.size).toBe(1);
+  });
+
+  it("sharpens an edge without moving it", () => {
+    const row = [40, 40, 40, 220, 220, 220];
+    const data = rgba(row.map((v) => [v, v, v]));
+    enhancePixels(data, 6, 1);
+    const out = Array.from({ length: 6 }, (_, i) => data[i * 4]!);
+    expect(out[2]!).toBeLessThanOrEqual(out[1]!);
+    expect(out[3]!).toBeGreaterThanOrEqual(out[4]!);
+    expect(out[2]!).toBeLessThan(128);
+    expect(out[3]!).toBeGreaterThan(128);
+  });
+});
+
+describe("enhancePhotoFiles", () => {
+  it("enhances every original page one at a time at the sharper-read size", async () => {
+    let active = 0;
+    const enhance = vi.fn(async (file: File, _options: { maxEdge: number; quality: number }) => {
+      active += 1;
+      expect(active).toBe(1);
+      await Promise.resolve();
+      active -= 1;
+      return sized(file.name, 500_000);
+    });
+    const files = [sized("a.jpg", 100), sized("b.jpg", 100)];
+    const out = await enhancePhotoFiles(files, enhance);
+    expect(out).toHaveLength(2);
+    expect(enhance.mock.calls[0]?.[1]).toEqual({
+      maxEdge: PHOTO_IMPORT_ENHANCE_MAX_EDGE,
+      quality: PHOTO_IMPORT_ENHANCE_QUALITY,
+    });
+  });
+
+  it("steps down until the pages fit the shared budget", async () => {
+    const enhance = vi.fn(async (file: File, options: { maxEdge: number }) =>
+      sized(file.name, options.maxEdge === PHOTO_IMPORT_ENHANCE_MAX_EDGE ? 2 * MB : 1 * MB)
+    );
+    const files = [sized("a.jpg", 100), sized("b.jpg", 100), sized("c.jpg", 100)];
+    const out = await enhancePhotoFiles(files, enhance);
+    expect(out.reduce((sum, file) => sum + file.size, 0)).toBeLessThanOrEqual(
+      PHOTO_IMPORT_BUDGET_BYTES
+    );
+  });
+
+  it("blocks when enhanced pages never fit", async () => {
+    const enhance = vi.fn(async (file: File) => sized(file.name, 2 * MB));
+    await expect(
+      enhancePhotoFiles([sized("a.jpg", 1), sized("b.jpg", 1)], enhance)
+    ).rejects.toThrow(PHOTO_IMPORT_TOO_MANY_PAGES_MESSAGE);
+  });
+
+  it("sends enhanced=1 with the enhanced pages", async () => {
+    vi.stubGlobal("createImageBitmap", undefined);
+    const xhr = mockXhr();
+    await extractPhotoPreviewFromFiles([sized("a.jpg", 100)], { enhanced: true });
+    const form = xhr.send.mock.calls[0]?.[0] as FormData;
+    expect(form.get("enhanced")).toBe("1");
+    vi.unstubAllGlobals();
+  });
+
+  it("does not flag a normal read", async () => {
+    const xhr = mockXhr();
+    await extractPhotoPreviewFromFiles([sized("a.jpg", 100)]);
+    expect((xhr.send.mock.calls[0]?.[0] as FormData).get("enhanced")).toBeNull();
+  });
+});
+
+describe("shouldOfferSharperRead", () => {
+  const read = (ocrQuality: string, uncertainFields: string[]) => ({
+    uncertainFields,
+    source: { rawExtractionJson: { ocrQuality } },
+  });
+
+  it("offers on a blurry error", () => {
+    expect(shouldOfferSharperRead({ errorKind: "blurry" })).toBe(true);
+  });
+
+  it("offers on a poor or fair review with uncertain fields", () => {
+    expect(shouldOfferSharperRead({ preview: read("poor", ["steps"]) })).toBe(true);
+    expect(shouldOfferSharperRead({ preview: read("fair", ["ingredients"]) })).toBe(true);
+  });
+
+  it("never offers on a good read or one with nothing uncertain", () => {
+    expect(shouldOfferSharperRead({ preview: read("good", ["steps"]) })).toBe(false);
+    expect(shouldOfferSharperRead({ preview: read("excellent", []) })).toBe(false);
+    expect(shouldOfferSharperRead({ preview: read("poor", []) })).toBe(false);
+    expect(shouldOfferSharperRead({ errorKind: "timeout" })).toBe(false);
+    expect(shouldOfferSharperRead({ errorKind: "not_recipe" })).toBe(false);
+  });
+
+  it("never offers a third read", () => {
+    expect(shouldOfferSharperRead({ enhanced: true, errorKind: "blurry" })).toBe(false);
+    expect(shouldOfferSharperRead({ enhanced: true, preview: read("poor", ["steps"]) })).toBe(
+      false
+    );
+  });
+
+  it("classifies the still-blurry copy as blurry", () => {
+    expect(classifyPhotoImportProblem({ detail: PHOTO_IMPORT_STILL_BLURRY })).toBe("blurry");
+    expect(classifyPhotoImportProblem({ detail: PHOTO_IMPORT_BLURRY_MESSAGE })).toBe("blurry");
   });
 });

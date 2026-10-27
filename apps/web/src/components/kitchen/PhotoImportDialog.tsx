@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import {
+  PHOTO_IMPORT_REPLACE_EDITS,
+  PHOTO_IMPORT_SHARPER,
   PHOTO_IMPORT_STEPS,
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
   compressPhotoForSave,
@@ -15,6 +17,7 @@ import {
   photoImportStepState,
   photoPageLabel,
   readingStepLabel,
+  shouldOfferSharperRead,
   uploadingStepLabel,
   type PhotoImportPhase,
 } from "@/lib/photo-import-client";
@@ -25,6 +28,7 @@ import {
   type PhotoImportJobSnapshot,
 } from "@/lib/photo-import-job";
 import {
+  isReviewDraftEdited,
   isUncertainReviewField,
   recipeCreateBodyFromReview,
   reviewDraftFromPreview,
@@ -89,12 +93,14 @@ export function PhotoImportProgress({
   previewUrls,
   readingStartedAt = null,
   pages = 1,
+  enhanced = false,
 }: {
   phase: Extract<PhotoImportPhase, "uploading" | "reading">;
   percent: number;
   previewUrls: string[];
   readingStartedAt?: number | null;
   pages?: number;
+  enhanced?: boolean;
 }) {
   const elapsedMs = useElapsed(phase, readingStartedAt);
   const reading = phase === "reading";
@@ -130,12 +136,12 @@ export function PhotoImportProgress({
       )}
       {reading ? (
         <p className="photo-import-timer">
-          {readingStepLabel(pages)} - {elapsedLabel(elapsedMs)}
+          {readingStepLabel(pages, enhanced)} - {elapsedLabel(elapsedMs)}
         </p>
       ) : null}
       <p className="sheet-lead">{photoImportLead(reading ? elapsedMs : 0)}</p>
       <p className="sr-only" role="status" aria-live="polite">
-        {photoImportAnnouncement(phase, { elapsedMs, pages })}
+        {photoImportAnnouncement(phase, { elapsedMs, pages, enhanced })}
       </p>
     </div>
   );
@@ -151,6 +157,9 @@ export function ImportReviewForm({
   savedRecipeId,
   showPhotoChrome = true,
   pages = 1,
+  notice = null,
+  replacePrompt = null,
+  onSharperRead,
   onOpenSaved,
   onChange,
   onSave,
@@ -164,6 +173,9 @@ export function ImportReviewForm({
   savedRecipeId: string | null;
   showPhotoChrome?: boolean;
   pages?: number;
+  notice?: string | null;
+  replacePrompt?: { onReplace: () => void; onKeep: () => void } | null;
+  onSharperRead?: () => void;
   onOpenSaved: () => void;
   onChange: (next: PhotoReviewDraft) => void;
   onSave: (event: React.FormEvent) => void;
@@ -205,11 +217,33 @@ export function ImportReviewForm({
           will keep both recipes.
         </p>
       ) : null}
-      {uncertain.length > 0 ? (
+      {replacePrompt ? (
+        <div className="import-warn photo-sharper" role="group" aria-label="New read">
+          <span>{PHOTO_IMPORT_REPLACE_EDITS}</span>
+          <button type="button" className="btn primary compact" onClick={replacePrompt.onReplace}>
+            Replace
+          </button>
+          <button type="button" className="btn compact" onClick={replacePrompt.onKeep}>
+            Keep mine
+          </button>
+        </div>
+      ) : null}
+      {notice ? (
         <p className="import-warn" role="status" aria-live="polite">
-          {photoCopyForPages("Ready to review. This photo was hard to read.", pages)} Check{" "}
-          {uncertain.join(", ")}.
+          {notice}
         </p>
+      ) : uncertain.length > 0 ? (
+        <div className="import-warn photo-sharper">
+          <span role="status" aria-live="polite">
+            {photoCopyForPages("Ready to review. This photo was hard to read.", pages)} Check{" "}
+            {uncertain.join(", ")}.
+          </span>
+          {onSharperRead ? (
+            <button type="button" className="btn compact" onClick={onSharperRead}>
+              {PHOTO_IMPORT_SHARPER}
+            </button>
+          ) : null}
+        </div>
       ) : (
         <p className="sheet-lead" role="status" aria-live="polite">
           {reviewLead(showPhotoChrome, pages)}
@@ -398,21 +432,35 @@ export function PhotoImportDialog({
     title?: string;
     servings?: number;
   } | null>(null);
+  const [mine, setMine] = useState<PhotoReviewDraft | null>(null);
   const saveKeyRef = useRef("");
+  const keptRef = useRef<PhotoReviewDraft | null>(null);
 
   useEffect(() => subscribePhotoImportJob(setJob), []);
 
   useEffect(() => {
     if (job?.phase === "review" && job.preview) {
       const preview = job.preview;
-      setDraft((current) => current ?? reviewDraftFromPreview(preview));
+      const kept = keptRef.current;
+      keptRef.current = null;
+      if (kept && !job.notice) setMine(kept);
+      setDraft(
+        (current) => current ?? (kept && job.notice ? kept : reviewDraftFromPreview(preview))
+      );
     }
     if (job?.phase !== "review") {
       setDraft(null);
+      setMine(null);
       setSavedRecipe(null);
       saveKeyRef.current = "";
     }
   }, [job]);
+
+  function sharperRead() {
+    keptRef.current =
+      draft && job?.preview && isReviewDraftEdited(draft, job.preview) ? draft : null;
+    retryPhotoImportJob({ enhanced: true });
+  }
 
   function cancelImport() {
     cancelPhotoImportJob();
@@ -475,6 +523,7 @@ export function PhotoImportDialog({
   }
 
   const phase = job?.phase ?? "uploading";
+  const offerSharper = job ? shouldOfferSharperRead(job) : false;
 
   return (
     <BottomSheet open={open} title="Import from photo" onClose={onClose}>
@@ -486,6 +535,7 @@ export function PhotoImportDialog({
             previewUrls={job?.previewUrls ?? []}
             readingStartedAt={job?.readingStartedAt ?? null}
             pages={job?.files.length ?? 1}
+            enhanced={job?.enhanced ?? false}
           />
           <div className="sheet-actions">
             <button type="button" className="btn compact" onClick={cancelImport}>
@@ -500,21 +550,41 @@ export function PhotoImportDialog({
           <p className="import-warn" role="status" aria-live="polite">
             {job?.errorMessage}
           </p>
-          <div className="sheet-actions photo-import-error-actions">
-            <button type="button" className="btn compact" onClick={onTypeOrPaste}>
-              Type or paste instead
-            </button>
-            <button type="button" className="btn compact" onClick={cancelImport}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn primary compact"
-              onClick={() => retryPhotoImportJob()}
-            >
-              {job?.errorMessage === IMPORT_AI_UNAVAILABLE_MESSAGE ? "Try again" : "Retry"}
-            </button>
-          </div>
+          {job?.errorKind === "blurry" ? (
+            <div className="sheet-actions photo-import-error-actions">
+              <button type="button" className="btn compact" onClick={onTypeOrPaste}>
+                Type or paste instead
+              </button>
+              <button
+                type="button"
+                className={offerSharper ? "btn compact" : "btn primary compact"}
+                onClick={cancelImport}
+              >
+                Retake photo
+              </button>
+              {offerSharper ? (
+                <button type="button" className="btn primary compact" onClick={sharperRead}>
+                  {PHOTO_IMPORT_SHARPER}
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="sheet-actions photo-import-error-actions">
+              <button type="button" className="btn compact" onClick={onTypeOrPaste}>
+                Type or paste instead
+              </button>
+              <button type="button" className="btn compact" onClick={cancelImport}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn primary compact"
+                onClick={() => retryPhotoImportJob({ enhanced: job?.enhanced })}
+              >
+                {job?.errorMessage === IMPORT_AI_UNAVAILABLE_MESSAGE ? "Try again" : "Retry"}
+              </button>
+            </div>
+          )}
         </div>
       ) : null}
       {phase === "review" && draft ? (
@@ -533,6 +603,19 @@ export function PhotoImportDialog({
           possibleDuplicate={job?.preview?.possibleDuplicate ?? null}
           savedRecipeId={savedRecipe?.id ?? null}
           pages={job?.files.length ?? 1}
+          notice={job?.notice ?? null}
+          replacePrompt={
+            mine
+              ? {
+                  onReplace: () => setMine(null),
+                  onKeep: () => {
+                    setDraft(mine);
+                    setMine(null);
+                  },
+                }
+              : null
+          }
+          onSharperRead={offerSharper && !savedRecipe ? sharperRead : undefined}
           onOpenSaved={() => savedRecipe && finishSaved(savedRecipe)}
           onChange={setDraft}
           onSave={saveReview}

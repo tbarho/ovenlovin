@@ -3301,6 +3301,17 @@ label.photo-page-add-target:focus-visible {
   font-size: 13px;
 }
 
+.photo-sharper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.photo-sharper > span {
+  flex: 1 1 200px;
+}
+
 @media (max-width: 719px) {
   .photo-review-meta {
     grid-template-columns: 1fr;

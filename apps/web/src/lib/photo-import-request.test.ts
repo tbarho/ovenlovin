@@ -30,6 +30,7 @@ describe("readPhotoImportRequest", () => {
     form.append("save", "true");
     form.append("allowDuplicate", "true");
     form.append("isHandwritten", "1");
+    form.append("enhanced", "1");
 
     const request = new Request("http://localhost/api/v1/recipes/import/photo", {
       method: "POST",
@@ -40,6 +41,7 @@ describe("readPhotoImportRequest", () => {
     expect(parsed.save).toBe(true);
     expect(parsed.allowDuplicate).toBe(true);
     expect(parsed.isHandwritten).toBe(true);
+    expect(parsed.enhanced).toBe(true);
     expect(parsed.images).toHaveLength(1);
     expect(parsed.images[0]?.blob).toMatch(/^data:image\/png;base64,/);
   });

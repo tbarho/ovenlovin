@@ -12,6 +12,7 @@ import {
 export type PhotoImportRequest = {
   images: PhotoImageInput[];
   isHandwritten: boolean;
+  enhanced: boolean;
   save: boolean;
   allowDuplicate: boolean;
   cookbookId?: string;
@@ -69,6 +70,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
     return {
       images,
       isHandwritten: asBoolean(form.get("isHandwritten")),
+      enhanced: asBoolean(form.get("enhanced")),
       save: asBoolean(form.get("save")),
       allowDuplicate: asBoolean(form.get("allowDuplicate")),
       cookbookId:
@@ -102,6 +104,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
         .max(20)
         .optional(),
       isHandwritten: z.boolean().optional(),
+      enhanced: z.union([z.boolean(), z.string(), z.number()]).optional(),
       save: z.union([z.boolean(), z.string(), z.number()]).optional(),
       allowDuplicate: z.union([z.boolean(), z.string(), z.number()]).optional(),
       cookbookId: z.string().uuid().optional(),
@@ -120,6 +123,7 @@ export async function readPhotoImportRequest(request: Request): Promise<PhotoImp
   return {
     images,
     isHandwritten: Boolean(body.isHandwritten),
+    enhanced: asBoolean(body.enhanced),
     save: asBoolean(body.save),
     allowDuplicate: asBoolean(body.allowDuplicate),
     cookbookId: body.cookbookId,
