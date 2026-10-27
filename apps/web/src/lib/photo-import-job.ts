@@ -3,6 +3,7 @@
 import type { PhotoImportPreview } from "./photo-import";
 import {
   extractPhotoPreviewFromFiles,
+  photoCopyForPages,
   photoImportErrorKind,
   photoImportErrorMessage,
   type PhotoImportErrorKind,
@@ -12,7 +13,7 @@ import {
 export type PhotoImportJobSnapshot = {
   id: string;
   files: File[];
-  previewUrl: string | null;
+  previewUrls: string[];
   phase: PhotoImportPhase;
   percent: number;
   readingStartedAt: number | null;
@@ -25,7 +26,7 @@ type Listener = (job: PhotoImportJobSnapshot | null) => void;
 
 let job: PhotoImportJobSnapshot | null = null;
 let abort: AbortController | null = null;
-let objectUrl: string | null = null;
+let objectUrls: string[] = [];
 const listeners = new Set<Listener>();
 
 function emit() {
@@ -33,18 +34,16 @@ function emit() {
 }
 
 function revokePreview() {
-  if (objectUrl && typeof URL.revokeObjectURL === "function") {
-    URL.revokeObjectURL(objectUrl);
+  if (typeof URL.revokeObjectURL === "function") {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
   }
-  objectUrl = null;
+  objectUrls = [];
 }
 
-function previewUrlFor(files: File[]): string | null {
+function previewUrlsFor(files: File[]): string[] {
   revokePreview();
-  const file = files[0];
-  if (!file) return null;
-  objectUrl = URL.createObjectURL(file);
-  return objectUrl;
+  objectUrls = files.map((file) => URL.createObjectURL(file));
+  return objectUrls;
 }
 
 function patch(next: Partial<PhotoImportJobSnapshot>) {
@@ -81,7 +80,7 @@ function runExtract(files: File[]) {
       patch({
         phase: "error",
         errorKind: photoImportErrorKind(error),
-        errorMessage: photoImportErrorMessage(error),
+        errorMessage: photoCopyForPages(photoImportErrorMessage(error), files.length),
       });
     });
 }
@@ -103,7 +102,7 @@ export function startPhotoImportJob(files: File[]): PhotoImportJobSnapshot {
   job = {
     id: `${Date.now()}-${nextFiles.map((file) => `${file.name}:${file.size}`).join("|")}`,
     files: nextFiles,
-    previewUrl: previewUrlFor(nextFiles),
+    previewUrls: previewUrlsFor(nextFiles),
     phase: "uploading",
     percent: 0,
     readingStartedAt: null,

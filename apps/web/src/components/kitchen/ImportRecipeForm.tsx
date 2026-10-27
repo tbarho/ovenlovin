@@ -13,6 +13,13 @@ import {
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_IN_PROGRESS,
+  PHOTO_IMPORT_MAX_PAGES,
+  PHOTO_PICK_LEAD,
+  addPhotoPages,
+  movePhotoPage,
+  photoImportButtonLabel,
+  photoPageLabel,
+  photoPageLimitLabel,
   readingStepLabel,
   uploadingStepLabel,
 } from "@/lib/photo-import-client";
@@ -33,8 +40,21 @@ import {
   type PhotoReviewDraft,
 } from "@/lib/photo-import-review";
 
-function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
+function PhotoTile({
+  file,
+  index,
+  count,
+  onMove,
+  onRemove,
+}: {
+  file: File;
+  index: number;
+  count: number;
+  onMove: (to: number) => void;
+  onRemove: () => void;
+}) {
   const [src, setSrc] = useState<string | null>(null);
+  const page = index + 1;
 
   useEffect(() => {
     if (typeof URL.createObjectURL === "function") {
@@ -51,37 +71,80 @@ function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
   }, [file]);
 
   return (
-    <li>
+    <li className="photo-page">
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" />
       ) : (
         <span className="photo-thumb-fallback" aria-hidden="true" />
       )}
-      <span>{file.name}</span>
-      <button type="button" className="btn" onClick={onRemove}>
-        Remove
-      </button>
+      <span className="photo-page-label">{photoPageLabel(index)}</span>
+      <div className="photo-page-actions">
+        {count > 1 ? (
+          <>
+            <button
+              type="button"
+              className="btn compact"
+              aria-label={`Move page ${page} earlier`}
+              disabled={index === 0}
+              onClick={() => onMove(index - 1)}
+            >
+              <span aria-hidden="true">←</span>
+            </button>
+            <button
+              type="button"
+              className="btn compact"
+              aria-label={`Move page ${page} later`}
+              disabled={index === count - 1}
+              onClick={() => onMove(index + 1)}
+            >
+              <span aria-hidden="true">→</span>
+            </button>
+          </>
+        ) : null}
+        <button
+          type="button"
+          className="btn compact"
+          aria-label={`Remove page ${page}`}
+          onClick={onRemove}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
     </li>
   );
 }
 
-function PhotoPick({
-  files,
-  onAdd,
-  onRemove,
-}: {
-  files: File[];
-  onAdd: (next: File[]) => void;
-  onRemove: (index: number) => void;
-}) {
+function addedAnnouncement(before: number, after: number, asked: number): string {
+  if (after === before) return `${photoPageLimitLabel()}.`;
+  const added =
+    after - before === 1 ? `Page ${after} added.` : `Pages ${before + 1} to ${after} added.`;
+  return asked > after - before ? `${added} ${photoPageLimitLabel()}.` : added;
+}
+
+function PhotoPick({ files, onChange }: { files: File[]; onChange: (next: File[]) => void }) {
   const cameraId = useId();
   const libraryId = useId();
   const [over, setOver] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const full = files.length >= PHOTO_IMPORT_MAX_PAGES;
 
   function takeFiles(list: FileList | null) {
-    if (!list) return;
-    onAdd(Array.from(list).filter(isImageFile));
+    const picked = Array.from(list ?? []).filter(isImageFile);
+    if (picked.length === 0) return;
+    const next = addPhotoPages(files, picked);
+    setAnnouncement(addedAnnouncement(files.length, next.length, picked.length));
+    onChange(next);
+  }
+
+  function move(from: number, to: number) {
+    setAnnouncement(`Page ${from + 1} moved to ${to + 1}.`);
+    onChange(movePhotoPage(files, from, to));
+  }
+
+  function remove(index: number) {
+    setAnnouncement(`Page ${index + 1} removed.`);
+    onChange(files.filter((_, itemIndex) => itemIndex !== index));
   }
 
   return (
@@ -103,21 +166,24 @@ function PhotoPick({
           takeFiles(event.dataTransfer.files);
         }}
       >
-        <p>Drop a recipe card, cookbook page, or screenshot here.</p>
-        <div className="photo-pick-actions">
-          <label className="btn" htmlFor={cameraId}>
-            Take photo
-          </label>
-          <label className="btn" htmlFor={libraryId}>
-            Choose photos
-          </label>
-        </div>
+        <p>{PHOTO_PICK_LEAD}</p>
+        {files.length === 0 ? (
+          <div className="photo-pick-actions">
+            <label className="btn" htmlFor={cameraId}>
+              Take photo
+            </label>
+            <label className="btn" htmlFor={libraryId}>
+              Choose photos
+            </label>
+          </div>
+        ) : null}
         <input
           id={cameraId}
           className="photo-file-input"
           type="file"
           accept="image/*"
           capture="environment"
+          disabled={full}
           onChange={(event) => {
             takeFiles(event.target.files);
             event.target.value = "";
@@ -129,6 +195,7 @@ function PhotoPick({
           type="file"
           accept="image/*"
           multiple
+          disabled={full}
           onChange={(event) => {
             takeFiles(event.target.files);
             event.target.value = "";
@@ -136,16 +203,33 @@ function PhotoPick({
         />
       </div>
       {files.length > 0 ? (
-        <ul className="photo-thumbs">
+        <ol className="photo-pages">
           {files.map((file, index) => (
-            <PhotoThumb
+            <PhotoTile
               key={`${file.name}-${file.size}-${file.lastModified}`}
               file={file}
-              onRemove={() => onRemove(index)}
+              index={index}
+              count={files.length}
+              onMove={(to) => move(index, to)}
+              onRemove={() => remove(index)}
             />
           ))}
-        </ul>
+          <li className="photo-page photo-page-add">
+            {full ? (
+              <span className="photo-page-add-target" aria-disabled="true">
+                {photoPageLimitLabel()}
+              </span>
+            ) : (
+              <label className="photo-page-add-target" htmlFor={cameraId}>
+                <span aria-hidden="true">+</span> Add page
+              </label>
+            )}
+          </li>
+        </ol>
       ) : null}
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
     </div>
   );
 }
@@ -204,15 +288,9 @@ export function ImportRecipeForm({
     []
   );
 
-  const addPhotos = useCallback((next: File[]) => {
-    if (next.length === 0) return;
-    setPhotoFiles((current) => {
-      const files = [...current, ...next];
-      startPhotoImportJob(files);
-      return files;
-    });
+  const changePhotos = useCallback((next: File[]) => {
+    setPhotoFiles(next);
     setError(null);
-    setPhotoOpen(true);
   }, []);
 
   const closePhoto = useCallback(() => setPhotoOpen(false), []);
@@ -230,6 +308,7 @@ export function ImportRecipeForm({
         setError("Add a photo first");
         return;
       }
+      startPhotoImportJob(photoFiles);
       setPhotoOpen(true);
       return;
     }
@@ -371,9 +450,9 @@ export function ImportRecipeForm({
         </div>
         {photoJob && jobBusy && !photoOpen ? (
           <div className="photo-import-banner" data-testid="photo-import-progress">
-            {photoJob.previewUrl ? (
+            {photoJob.previewUrls[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoJob.previewUrl} alt="Selected recipe photo" />
+              <img src={photoJob.previewUrls[0]} alt="Selected recipe photo" />
             ) : (
               <span className="photo-thumb-fallback" aria-hidden="true" />
             )}
@@ -397,13 +476,16 @@ export function ImportRecipeForm({
           </div>
         ) : null}
         {source === "photo" ? (
-          <PhotoPick
-            files={photoFiles}
-            onAdd={addPhotos}
-            onRemove={(index) =>
-              setPhotoFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))
-            }
-          />
+          <>
+            <PhotoPick files={photoFiles} onChange={changePhotos} />
+            <button
+              className="btn primary import-submit"
+              type="submit"
+              disabled={!canSubmit || jobBusy}
+            >
+              {photoImportButtonLabel(photoFiles.length)}
+            </button>
+          </>
         ) : (
           <div className="import-row">
             <div className="import-field">
@@ -436,7 +518,7 @@ export function ImportRecipeForm({
             </div>
             {pending ? (
               <div data-testid="import-progress">
-                <PhotoImportProgress phase="reading" percent={100} previewUrl={null} />
+                <PhotoImportProgress phase="reading" percent={100} previewUrls={[]} />
                 <div className="sheet-actions">
                   <button type="button" className="btn compact" onClick={cancelPreview}>
                     Cancel

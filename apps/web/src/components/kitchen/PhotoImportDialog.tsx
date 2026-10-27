@@ -9,9 +9,11 @@ import {
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
   compressPhotoForSave,
   elapsedLabel,
+  photoCopyForPages,
   photoImportAnnouncement,
   photoImportLead,
   photoImportStepState,
+  photoPageLabel,
   readingStepLabel,
   uploadingStepLabel,
   type PhotoImportPhase,
@@ -36,6 +38,15 @@ function stepLabel(stepId: (typeof PHOTO_IMPORT_STEPS)[number]["id"], percent: n
   return PHOTO_IMPORT_STEPS.find((step) => step.id === stepId)?.label ?? stepId;
 }
 
+function reviewLead(photo: boolean, pages: number): string {
+  if (photo && pages > 1) {
+    return `Ready to review. Read from ${pages} pages. Page 1 is kept as the recipe photo.`;
+  }
+  if (photo)
+    return "Ready to review. Fix anything that looks off, then save. One main photo is kept.";
+  return "Ready to review. Fix anything that looks off, then save.";
+}
+
 const STEP_CLASS = { done: "is-done", current: "is-current", todo: undefined };
 
 function useElapsed(phase: PhotoImportPhase, readingStartedAt: number | null) {
@@ -52,16 +63,36 @@ function useElapsed(phase: PhotoImportPhase, readingStartedAt: number | null) {
   return Math.max(0, now - started);
 }
 
+/** One hero for a single photo, a numbered strip for several pages. */
+export function PhotoPages({ urls }: { urls: string[] }) {
+  if (urls.length === 0) return null;
+  if (urls.length === 1) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img className="photo-review-hero" src={urls[0]} alt="Selected recipe photo" />;
+  }
+  return (
+    <ol className="photo-page-strip" aria-label={`${urls.length} pages`}>
+      {urls.map((url, index) => (
+        <li key={`${index}-${url}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={`Recipe ${photoPageLabel(index).toLowerCase()}`} />
+          <span>{index + 1}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function PhotoImportProgress({
   phase,
   percent,
-  previewUrl,
+  previewUrls,
   readingStartedAt = null,
   pages = 1,
 }: {
   phase: Extract<PhotoImportPhase, "uploading" | "reading">;
   percent: number;
-  previewUrl: string | null;
+  previewUrls: string[];
   readingStartedAt?: number | null;
   pages?: number;
 }) {
@@ -69,10 +100,7 @@ export function PhotoImportProgress({
   const reading = phase === "reading";
   return (
     <div className="sheet-stack">
-      {previewUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="photo-review-hero" src={previewUrl} alt="Selected recipe photo" />
-      ) : null}
+      <PhotoPages urls={previewUrls} />
       <ol className="sheet-steps">
         {PHOTO_IMPORT_STEPS.map((step) => (
           <li key={step.id} className={STEP_CLASS[photoImportStepState(step.id, phase)]}>
@@ -122,6 +150,7 @@ export function ImportReviewForm({
   possibleDuplicate,
   savedRecipeId,
   showPhotoChrome = true,
+  pages = 1,
   onOpenSaved,
   onChange,
   onSave,
@@ -134,6 +163,7 @@ export function ImportReviewForm({
   possibleDuplicate: { recipeId: string; title: string } | null;
   savedRecipeId: string | null;
   showPhotoChrome?: boolean;
+  pages?: number;
   onOpenSaved: () => void;
   onChange: (next: PhotoReviewDraft) => void;
   onSave: (event: React.FormEvent) => void;
@@ -177,12 +207,12 @@ export function ImportReviewForm({
       ) : null}
       {uncertain.length > 0 ? (
         <p className="import-warn" role="status" aria-live="polite">
-          Ready to review. This photo was hard to read. Check {uncertain.join(", ")}.
+          {photoCopyForPages("Ready to review. This photo was hard to read.", pages)} Check{" "}
+          {uncertain.join(", ")}.
         </p>
       ) : (
         <p className="sheet-lead" role="status" aria-live="polite">
-          Ready to review. Fix anything that looks off, then save
-          {showPhotoChrome ? ". One main photo is kept." : "."}
+          {reviewLead(showPhotoChrome, pages)}
         </p>
       )}
       {heroSrc ? (
@@ -453,7 +483,7 @@ export function PhotoImportDialog({
           <PhotoImportProgress
             phase={phase}
             percent={job?.percent ?? 0}
-            previewUrl={job?.previewUrl ?? null}
+            previewUrls={job?.previewUrls ?? []}
             readingStartedAt={job?.readingStartedAt ?? null}
             pages={job?.files.length ?? 1}
           />
@@ -466,10 +496,7 @@ export function PhotoImportDialog({
       ) : null}
       {phase === "error" ? (
         <div className="sheet-stack">
-          {job?.previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className="photo-review-hero" src={job.previewUrl} alt="Selected recipe photo" />
-          ) : null}
+          <PhotoPages urls={job?.previewUrls ?? []} />
           <p className="import-warn" role="status" aria-live="polite">
             {job?.errorMessage}
           </p>
@@ -494,7 +521,7 @@ export function PhotoImportDialog({
         <ImportReviewForm
           draft={draft}
           heroSrc={
-            job?.previewUrl ||
+            job?.previewUrls[0] ||
             (draft.images[0]?.startsWith("data:") || draft.images[0]?.startsWith("blob:")
               ? draft.images[0]
               : null) ||
@@ -505,6 +532,7 @@ export function PhotoImportDialog({
           existingRecipeUrl={existingRecipeUrl}
           possibleDuplicate={job?.preview?.possibleDuplicate ?? null}
           savedRecipeId={savedRecipe?.id ?? null}
+          pages={job?.files.length ?? 1}
           onOpenSaved={() => savedRecipe && finishSaved(savedRecipe)}
           onChange={setDraft}
           onSave={saveReview}
