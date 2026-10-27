@@ -15,6 +15,7 @@ export type PhotoImportJobSnapshot = {
   previewUrl: string | null;
   phase: PhotoImportPhase;
   percent: number;
+  readingStartedAt: number | null;
   errorKind: PhotoImportErrorKind | null;
   errorMessage: string | null;
   preview: PhotoImportPreview | null;
@@ -60,7 +61,11 @@ function runExtract(files: File[]) {
     signal: controller.signal,
     onPhase: (phase) => {
       if (controller.signal.aborted) return;
-      patch({ phase, percent: phase === "reading" ? 100 : (job?.percent ?? 0) });
+      if (phase === "reading") {
+        patch({ phase, readingStartedAt: Date.now() });
+        return;
+      }
+      patch({ phase, readingStartedAt: null });
     },
     onUploadProgress: (percent) => {
       if (controller.signal.aborted) return;
@@ -69,7 +74,7 @@ function runExtract(files: File[]) {
   })
     .then((preview) => {
       if (controller.signal.aborted) return;
-      patch({ phase: "review", percent: 100, preview, errorKind: null, errorMessage: null });
+      patch({ phase: "review", preview, errorKind: null, errorMessage: null });
     })
     .catch((error: unknown) => {
       if (controller.signal.aborted) return;
@@ -101,6 +106,7 @@ export function startPhotoImportJob(files: File[]): PhotoImportJobSnapshot {
     previewUrl: previewUrlFor(nextFiles),
     phase: "uploading",
     percent: 0,
+    readingStartedAt: null,
     errorKind: null,
     errorMessage: null,
     preview: null,
@@ -115,6 +121,7 @@ export function retryPhotoImportJob(): PhotoImportJobSnapshot | null {
   patch({
     phase: "uploading",
     percent: 0,
+    readingStartedAt: null,
     errorKind: null,
     errorMessage: null,
     preview: null,

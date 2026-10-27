@@ -117,6 +117,14 @@ describe("ImportRecipeForm photo import", () => {
     expect(await screen.findByText("Uploading 32%")).toBeVisible();
     xhr.upload.onload?.();
     expect(await screen.findByText("Reading")).toBeVisible();
+    const meter = screen.getByRole("progressbar", { name: "Reading" });
+    expect(meter).toHaveClass("is-indeterminate");
+    expect(meter).not.toHaveAttribute("aria-valuenow");
+    expect(screen.getByText("Reading - 0:00")).toBeVisible();
+    expect(screen.getByText("Uploading 100%").closest("li")).toHaveClass("is-done");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      `Upload done. Reading 1 page. ${PHOTO_IMPORT_ESTIMATE}.`
+    );
     xhr.onload?.();
     await waitFor(() => expect(screen.getByLabelText("Title")).toBeVisible());
     expect(screen.getByRole("status")).toHaveTextContent(/Ready to review/);

@@ -2,18 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PHOTO_IMPORT_BLURRY_MESSAGE,
   PHOTO_IMPORT_ESTIMATE,
+  PHOTO_IMPORT_NEAR_TIMEOUT,
   PHOTO_IMPORT_NETWORK_MESSAGE,
   PHOTO_IMPORT_NOT_RECIPE_MESSAGE,
+  PHOTO_IMPORT_SLOW,
   PHOTO_IMPORT_TIMEOUT_MESSAGE,
   PHOTO_IMPORT_TIMEOUT_MS,
   PHOTO_IMPORT_TOO_LARGE_MESSAGE,
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
   classifyPhotoImportProblem,
   dataUrlPayloadBytes,
+  elapsedLabel,
   extractPhotoPreviewFromFiles,
   photoImportAnnouncement,
   photoImportErrorMessage,
-  photoImportStepReached,
+  photoImportLead,
+  photoImportStepState,
+  readingStepLabel,
   uploadingStepLabel,
 } from "./photo-import-client";
 
@@ -76,23 +81,55 @@ function mockXhr(init?: (xhr: MockXhr) => void) {
   return xhr;
 }
 
-describe("photoImportStepReached", () => {
-  it("marks Uploading through Ready to review in order", () => {
-    expect(photoImportStepReached("uploading", "uploading")).toBe(true);
-    expect(photoImportStepReached("reading", "uploading")).toBe(false);
-    expect(photoImportStepReached("reading", "reading")).toBe(true);
-    expect(photoImportStepReached("review", "reading")).toBe(false);
-    expect(photoImportStepReached("review", "review")).toBe(true);
+describe("photoImportStepState", () => {
+  it("marks earlier steps done, the active step current, and later steps todo", () => {
+    expect(photoImportStepState("uploading", "uploading")).toBe("current");
+    expect(photoImportStepState("reading", "uploading")).toBe("todo");
+    expect(photoImportStepState("uploading", "reading")).toBe("done");
+    expect(photoImportStepState("reading", "reading")).toBe("current");
+    expect(photoImportStepState("review", "reading")).toBe("todo");
+    expect(photoImportStepState("reading", "error")).toBe("current");
+    expect(photoImportStepState("review", "review")).toBe("done");
+    expect(photoImportStepState("uploading", "review")).toBe("done");
   });
 });
 
 describe("photo import copy helpers", () => {
-  it("names Uploading with a percent and announces the 15 second estimate", () => {
+  it("promises under a minute, not a fixed short estimate", () => {
+    expect(PHOTO_IMPORT_ESTIMATE).toBe("Usually under a minute");
+    expect(PHOTO_IMPORT_ESTIMATE).not.toMatch(/15/);
+  });
+
+  it("labels steps and the reading timer", () => {
     expect(uploadingStepLabel(32)).toBe("Uploading 32%");
-    expect(photoImportAnnouncement("uploading", 32)).toContain("32%");
-    expect(photoImportAnnouncement("uploading", 32)).toContain(PHOTO_IMPORT_ESTIMATE);
-    expect(photoImportAnnouncement("reading", 100)).toBe(`Reading. ${PHOTO_IMPORT_ESTIMATE}.`);
-    expect(photoImportAnnouncement("review", 100)).toBe("Ready to review.");
+    expect(readingStepLabel(1)).toBe("Reading");
+    expect(readingStepLabel(2)).toBe("Reading 2 pages");
+    expect(elapsedLabel(12_400)).toBe("0:12");
+    expect(elapsedLabel(65_000)).toBe("1:05");
+  });
+
+  it("changes the lead line at 30s and near the timeout", () => {
+    expect(photoImportLead(0)).toBe(`${PHOTO_IMPORT_ESTIMATE}.`);
+    expect(photoImportLead(29_999)).toBe(`${PHOTO_IMPORT_ESTIMATE}.`);
+    expect(photoImportLead(30_000)).toBe(PHOTO_IMPORT_SLOW);
+    expect(photoImportLead(50_000)).toBe(PHOTO_IMPORT_NEAR_TIMEOUT);
+  });
+
+  it("announces only transitions, not percent or seconds", () => {
+    expect(photoImportAnnouncement("uploading")).toBe("Uploading.");
+    expect(photoImportAnnouncement("reading", { elapsedMs: 1_000 })).toBe(
+      `Upload done. Reading 1 page. ${PHOTO_IMPORT_ESTIMATE}.`
+    );
+    expect(photoImportAnnouncement("reading", { elapsedMs: 12_000, pages: 2 })).toBe(
+      `Upload done. Reading 2 pages. ${PHOTO_IMPORT_ESTIMATE}.`
+    );
+    expect(photoImportAnnouncement("reading", { elapsedMs: 31_000 })).toBe("Still reading.");
+    expect(photoImportAnnouncement("reading", { elapsedMs: 44_000 })).toBe("Still reading.");
+    expect(photoImportAnnouncement("reading", { elapsedMs: 51_000 })).toBe(
+      PHOTO_IMPORT_NEAR_TIMEOUT
+    );
+    expect(photoImportAnnouncement("review")).toBe("Ready to review.");
+    expect(photoImportAnnouncement("error", { errorMessage: "Nope" })).toBe("Nope");
   });
 
   it("maps blurry, not a recipe, and network problems to their own messages", () => {

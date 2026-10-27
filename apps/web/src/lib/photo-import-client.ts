@@ -5,7 +5,12 @@ export const PHOTO_IMPORT_MAX_EDGE = 1600;
 /** Stay under Vercel's 4.5MB body limit after base64. Demo has no Blob. */
 export const PHOTO_SAVE_MAX_EDGE = 1280;
 export const PHOTO_SAVE_MAX_BYTES = 700_000;
-export const PHOTO_IMPORT_ESTIMATE = "Usually about 15 seconds";
+export const PHOTO_IMPORT_ESTIMATE = "Usually under a minute";
+export const PHOTO_IMPORT_SLOW = "Still reading. Handwriting and extra pages take longer.";
+export const PHOTO_IMPORT_NEAR_TIMEOUT =
+  "Almost out of time. If this fails, you can retry or type it in.";
+export const PHOTO_IMPORT_SLOW_MS = 30_000;
+export const PHOTO_IMPORT_NEAR_TIMEOUT_MS = 50_000;
 export const PHOTO_IMPORT_IN_PROGRESS = "Import in progress";
 export const PHOTO_IMPORT_TIMEOUT_MESSAGE =
   "That photo took too long to read. Try again, or type or paste it.";
@@ -46,17 +51,19 @@ function abortError(kind: "timeout" | "cancelled"): Error {
   return error;
 }
 
-export function photoImportStepReached(
+export type PhotoImportStepState = "done" | "current" | "todo";
+
+export function photoImportStepState(
   step: (typeof PHOTO_IMPORT_STEPS)[number]["id"],
   phase: PhotoImportPhase
-): boolean {
-  const order: Array<(typeof PHOTO_IMPORT_STEPS)[number]["id"]> = [
-    "uploading",
-    "reading",
-    "review",
-  ];
-  const current = phase === "error" ? "reading" : phase;
-  return order.indexOf(step) <= order.indexOf(current);
+): PhotoImportStepState {
+  if (phase === "review") return "done";
+  const order = PHOTO_IMPORT_STEPS.map((item) => item.id);
+  const current = order.indexOf(phase === "error" ? "reading" : phase);
+  const index = order.indexOf(step);
+  if (index < current) return "done";
+  if (index === current) return "current";
+  return "todo";
 }
 
 export function classifyPhotoImportProblem(problem: PhotoImportProblem): PhotoImportErrorKind {
@@ -109,17 +116,34 @@ export function photoImportErrorMessage(error: unknown): string {
   return "Could not read that photo";
 }
 
+export function photoImportLead(elapsedMs: number): string {
+  if (elapsedMs >= PHOTO_IMPORT_NEAR_TIMEOUT_MS) return PHOTO_IMPORT_NEAR_TIMEOUT;
+  if (elapsedMs >= PHOTO_IMPORT_SLOW_MS) return PHOTO_IMPORT_SLOW;
+  return `${PHOTO_IMPORT_ESTIMATE}.`;
+}
+
+export function readingStepLabel(pages = 1): string {
+  return pages > 1 ? `Reading ${pages} pages` : "Reading";
+}
+
+export function elapsedLabel(elapsedMs: number): string {
+  const seconds = Math.max(0, Math.floor(elapsedMs / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+/** Changes only at transitions so the live region never ticks. */
 export function photoImportAnnouncement(
   phase: PhotoImportPhase,
-  percent: number,
-  errorMessage?: string | null
+  options: { elapsedMs?: number; pages?: number; errorMessage?: string | null } = {}
 ): string {
-  if (phase === "uploading") {
-    return `Uploading ${Math.max(0, Math.min(100, percent))}%. ${PHOTO_IMPORT_ESTIMATE}.`;
-  }
-  if (phase === "reading") return `Reading. ${PHOTO_IMPORT_ESTIMATE}.`;
+  const elapsedMs = options.elapsedMs ?? 0;
+  const pages = options.pages ?? 1;
+  if (phase === "uploading") return "Uploading.";
   if (phase === "review") return "Ready to review.";
-  return errorMessage?.trim() || "Could not read that photo";
+  if (phase === "error") return options.errorMessage?.trim() || "Could not read that photo";
+  if (elapsedMs >= PHOTO_IMPORT_NEAR_TIMEOUT_MS) return PHOTO_IMPORT_NEAR_TIMEOUT;
+  if (elapsedMs >= PHOTO_IMPORT_SLOW_MS) return "Still reading.";
+  return `Upload done. Reading ${pages} ${pages > 1 ? "pages" : "page"}. ${PHOTO_IMPORT_ESTIMATE}.`;
 }
 
 export function uploadingStepLabel(percent: number): string {
