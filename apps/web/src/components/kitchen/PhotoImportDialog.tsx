@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import {
-  PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_STEPS,
   PHOTO_SAVE_NO_IMAGE_MESSAGE,
   compressPhotoForSave,
+  elapsedLabel,
   photoImportAnnouncement,
-  photoImportStepReached,
+  photoImportLead,
+  photoImportStepState,
+  readingStepLabel,
   uploadingStepLabel,
   type PhotoImportPhase,
 } from "@/lib/photo-import-client";
@@ -34,16 +36,37 @@ function stepLabel(stepId: (typeof PHOTO_IMPORT_STEPS)[number]["id"], percent: n
   return PHOTO_IMPORT_STEPS.find((step) => step.id === stepId)?.label ?? stepId;
 }
 
+const STEP_CLASS = { done: "is-done", current: "is-current", todo: undefined };
+
+function useElapsed(phase: PhotoImportPhase, readingStartedAt: number | null) {
+  const [fallbackStart, setFallbackStart] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (phase !== "reading") return;
+    setFallbackStart((current) => current ?? Date.now());
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [phase]);
+  const started = readingStartedAt ?? fallbackStart ?? now;
+  return Math.max(0, now - started);
+}
+
 export function PhotoImportProgress({
   phase,
   percent,
   previewUrl,
+  readingStartedAt = null,
+  pages = 1,
 }: {
   phase: Extract<PhotoImportPhase, "uploading" | "reading">;
   percent: number;
   previewUrl: string | null;
+  readingStartedAt?: number | null;
+  pages?: number;
 }) {
-  const announcement = photoImportAnnouncement(phase, percent);
+  const elapsedMs = useElapsed(phase, readingStartedAt);
+  const reading = phase === "reading";
   return (
     <div className="sheet-stack">
       {previewUrl ? (
@@ -52,27 +75,39 @@ export function PhotoImportProgress({
       ) : null}
       <ol className="sheet-steps">
         {PHOTO_IMPORT_STEPS.map((step) => (
-          <li
-            key={step.id}
-            className={photoImportStepReached(step.id, phase) ? "is-current" : undefined}
-          >
+          <li key={step.id} className={STEP_CLASS[photoImportStepState(step.id, phase)]}>
             {stepLabel(step.id, percent)}
           </li>
         ))}
       </ol>
-      <div
-        className="photo-import-meter"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={phase === "uploading" ? percent : 100}
-        aria-label={phase === "uploading" ? "Upload" : "Reading"}
-      >
-        <span style={{ width: `${phase === "uploading" ? percent : 100}%` }} />
-      </div>
-      <p className="sheet-lead">{PHOTO_IMPORT_ESTIMATE}.</p>
+      {reading ? (
+        <div
+          className="photo-import-meter is-indeterminate"
+          role="progressbar"
+          aria-label="Reading"
+        >
+          <span />
+        </div>
+      ) : (
+        <div
+          className="photo-import-meter"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          aria-label="Upload"
+        >
+          <span style={{ width: `${percent}%` }} />
+        </div>
+      )}
+      {reading ? (
+        <p className="photo-import-timer">
+          {readingStepLabel(pages)} - {elapsedLabel(elapsedMs)}
+        </p>
+      ) : null}
+      <p className="sheet-lead">{photoImportLead(reading ? elapsedMs : 0)}</p>
       <p className="sr-only" role="status" aria-live="polite">
-        {announcement}
+        {photoImportAnnouncement(phase, { elapsedMs, pages })}
       </p>
     </div>
   );
@@ -127,7 +162,7 @@ export function ImportReviewForm({
       {showPhotoChrome ? (
         <ol className="sheet-steps">
           {PHOTO_IMPORT_STEPS.map((step) => (
-            <li key={step.id} className="is-current">
+            <li key={step.id} className="is-done">
               {step.label}
             </li>
           ))}
@@ -419,6 +454,8 @@ export function PhotoImportDialog({
             phase={phase}
             percent={job?.percent ?? 0}
             previewUrl={job?.previewUrl ?? null}
+            readingStartedAt={job?.readingStartedAt ?? null}
+            pages={job?.files.length ?? 1}
           />
           <div className="sheet-actions">
             <button type="button" className="btn compact" onClick={cancelImport}>

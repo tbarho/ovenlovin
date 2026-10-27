@@ -431,9 +431,31 @@ select {
   text-transform: uppercase;
 }
 
+.sheet-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .sheet-steps .is-current {
   color: var(--ink);
   font-weight: 650;
+}
+
+.sheet-steps .is-current::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--orange);
+}
+
+.sheet-steps .is-done {
+  color: var(--ink);
+}
+
+.sheet-steps .is-done::before {
+  content: "\2713";
 }
 
 .sheet-actions {
@@ -3033,6 +3055,40 @@ select {
   display: block;
   height: 100%;
   background: var(--orange);
+}
+
+.photo-import-meter.is-indeterminate {
+  background: var(--cream);
+}
+
+.photo-import-meter.is-indeterminate span {
+  width: 30%;
+  opacity: 0.7;
+  animation: photo-import-sweep 1.8s ease-in-out infinite;
+}
+
+@keyframes photo-import-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-import-meter.is-indeterminate span {
+    animation: none;
+    background: var(--line-2);
+    opacity: 1;
+  }
+}
+
+.photo-import-timer {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .photo-review-form label.is-uncertain input,

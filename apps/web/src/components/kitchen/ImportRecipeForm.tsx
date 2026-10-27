@@ -13,7 +13,8 @@ import {
 import {
   PHOTO_IMPORT_ESTIMATE,
   PHOTO_IMPORT_IN_PROGRESS,
-  photoImportAnnouncement,
+  readingStepLabel,
+  uploadingStepLabel,
 } from "@/lib/photo-import-client";
 import {
   cancelPhotoImportJob,
@@ -378,7 +379,11 @@ export function ImportRecipeForm({
             )}
             <div>
               <strong>{PHOTO_IMPORT_IN_PROGRESS}</strong>
-              <p>{photoImportAnnouncement(photoJob.phase, photoJob.percent)}</p>
+              <p>
+                {photoJob.phase === "uploading"
+                  ? uploadingStepLabel(photoJob.percent)
+                  : readingStepLabel(photoJob.files.length)}
+              </p>
               <p className="muted">{PHOTO_IMPORT_ESTIMATE}.</p>
             </div>
             <div className="photo-import-banner-actions">
@@ -431,7 +436,7 @@ export function ImportRecipeForm({
             </div>
             {pending ? (
               <div data-testid="import-progress">
-                <PhotoImportProgress phase="reading" percent={100} previewUrl={null} />
+                <PhotoImportProgress phase="reading" percent={0} previewUrl={null} />
                 <div className="sheet-actions">
                   <button type="button" className="btn compact" onClick={cancelPreview}>
                     Cancel
