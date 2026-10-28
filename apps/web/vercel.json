@@ -10,7 +10,8 @@
       "maxDuration": 60
     },
     "src/app/api/cron/jobs-worker/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "memory": 2048
     }
   },
   "crons": [

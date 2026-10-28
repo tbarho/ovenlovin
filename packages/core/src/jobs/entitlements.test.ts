@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { bookLimits, checkBookLimits } from "./entitlements";
+import { bookLimits, checkBookLimits, checkPdfLimits } from "./entitlements";
+
+describe("checkPdfLimits", () => {
+  it("allows a PDF under the limits", () => {
+    expect(checkPdfLimits({ activeJobs: 1, jobsThisMonth: 59 })).toEqual({ ok: true });
+  });
+
+  it("refuses while two are running, or past the month", () => {
+    expect(checkPdfLimits({ activeJobs: 2, jobsThisMonth: 0 }).ok).toBe(false);
+    expect(checkPdfLimits({ activeJobs: 0, jobsThisMonth: 60 }).ok).toBe(false);
+    expect(
+      checkPdfLimits(
+        { activeJobs: 0, jobsThisMonth: 60 },
+        { maxConcurrentJobs: 2, maxPdfsPerMonth: 100 }
+      )
+    ).toEqual({ ok: true });
+  });
+});
 
 describe("checkBookLimits", () => {
   const fresh = { activeJobs: 0, jobsThisMonth: 0 };

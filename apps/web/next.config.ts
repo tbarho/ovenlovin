@@ -8,7 +8,15 @@ assertDemoModeSafeForBuild();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ["pdfjs-dist"],
+  serverExternalPackages: ["pdfjs-dist", "pdf-lib", "playwright-core", "@sparticuz/chromium"],
+  // The serverless Chromium binary is read from disk at runtime, so tracing cannot see it.
+  outputFileTracingIncludes: {
+    "/api/cron/jobs-worker": [
+      "../../node_modules/@sparticuz/chromium/bin/**",
+      "../../node_modules/.pnpm/@sparticuz+chromium@*/node_modules/@sparticuz/chromium/bin/**",
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
+  },
   async redirects() {
     return [...PLAN_PATH_REDIRECTS];
   },

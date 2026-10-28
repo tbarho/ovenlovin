@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "@playwright/test";
+import { chromium, defineConfig, devices } from "@playwright/test";
 
 const port = process.env.E2E_KITCHEN_PORT || "3100";
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${port}`;
@@ -26,6 +26,8 @@ export default defineConfig({
           ...process.env,
           E2E_AUTH_BYPASS: "1",
           OVENLOVIN_BOOKS: "1",
+          // The PDF worker prints with the same Chromium the tests drive.
+          CHROMIUM_PATH: chromium.executablePath(),
           PORT: port,
         },
       },
