@@ -7,29 +7,31 @@ export type JobHandlers = Partial<Record<JobKind, JobHandler>>;
 
 export type RunResult =
   | { status: "idle" }
-  | { status: "done" | "pending" | "failed" | "lost"; item: ClaimedItem };
-
-const message = (error: any) => (error instanceof Error ? error.message : String(error));
+  | { status: "done"; itemId: string; result: any }
+  | { status: "failed"; itemId: string; error: string };
 
 /**
- * One unit of work: claim an item, run its handler, write the result.
- * Substrate-agnostic: a Vercel route, a Lambda, or a spot box can call this
- * in a loop. Handlers must be idempotent per item; a retry may repeat work.
+ * Claims one item, runs its handler, and records the outcome. Returns idle when
+ * the queue is empty. Safe to call from many workers at once.
  */
-export async function runNext(queue: JobQueue, handlers: JobHandlers): Promise<RunResult> {
-  await queue.park();
-  const item = await queue.claim();
+export async function runNext(queue: JobQueue, handlers: JobHandlers, now = new Date()): Promise<RunResult> {
+  const item = await queue.claim(now);
   if (!item) return { status: "idle" };
 
   const handler = handlers[item.kind];
   if (!handler) {
-    return { status: await queue.fail(item, `No handler for ${item.kind}`), item };
+    const error = `No handler registered for job kind "${item.kind}"`;
+    await queue.fail(item.id, item.attempts, error, now);
+    return { status: "failed", itemId: item.id, error };
   }
 
   try {
     const result = await handler(item);
-    return { status: (await queue.complete(item, result)) ? "done" : "lost", item };
+    await queue.complete(item.id, item.attempts, result ?? {}, now);
+    return { status: "done", itemId: item.id, result: result ?? {} };
   } catch (error) {
-    return { status: await queue.fail(item, message(error)), item };
+    const message = error instanceof Error ? error.message : String(error);
+    await queue.fail(item.id, item.attempts, message, now);
+    return { status: "failed", itemId: item.id, error: message };
   }
 }
