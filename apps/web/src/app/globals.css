@@ -4276,3 +4276,446 @@ label.photo-page-add-target:focus-visible {
   margin: 10px 0 0;
   font-size: 14px;
 }
+
+/* Book reader /cookbooks/[id]/book */
+
+.book-reader {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--bg-soft);
+}
+
+.book-reader-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px var(--gut);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.book-reader-head .back-link {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.book-reader-stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px;
+}
+
+/* page-flip measures this element to pick landscape vs portrait, so it must
+   span the stage: shrunk to the book width it would always read as portrait. */
+.book-flip {
+  width: 100%;
+}
+
+.book-reader-foot {
+  display: flex;
+  justify-content: center;
+  padding: 10px var(--gut) calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.book-reader-foot p {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.book-reader-total {
+  color: var(--faint);
+}
+
+.book-arrow {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 5;
+  width: 44px;
+  height: 64px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
+}
+
+.book-arrow:hover:not(:disabled) {
+  background: var(--cream);
+  border-color: var(--orange);
+}
+
+.book-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.book-arrow-prev {
+  left: max(8px, env(safe-area-inset-left));
+}
+
+.book-arrow-next {
+  right: max(8px, env(safe-area-inset-right));
+}
+
+/* One laid-out page. Font size scales with the page, everything inside is em-based. */
+
+.book-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 2px;
+}
+
+.book-page-number {
+  position: absolute;
+  bottom: 0.6em;
+  left: 50%;
+  translate: -50% 0;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.55em;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+}
+
+.book-body {
+  flex: 1;
+  padding: 2.2em 2.4em 2em;
+  font-size: 0.72em;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.book-heading {
+  margin: 0 0 1.2em;
+  font-family: var(--mono);
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.book-centered {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+  padding: 2.5em;
+  text-align: center;
+}
+
+.book-kicker {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.5em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.book-cover {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.book-cover-photo {
+  flex: 1;
+  width: 100%;
+  object-fit: cover;
+  min-height: 0;
+  filter: grayscale(0.15) contrast(1.02);
+}
+
+.book-cover-type {
+  padding: 2em 1.6em 2.4em;
+  text-align: center;
+}
+
+.book-cover-type h1 {
+  margin: 0.3em 0 0;
+  font-family: var(--display);
+  font-size: 1.6em;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.book-cover-subtitle {
+  margin: 0.6em 0 0;
+  font-size: 0.6em;
+  color: var(--muted);
+}
+
+.book-dedication {
+  margin: 0;
+  max-width: 22em;
+  font-size: 0.9em;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.book-toc,
+.book-index {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85em;
+}
+
+.book-toc li,
+.book-index li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  padding: 0.35em 0;
+}
+
+.book-toc-section .book-toc-title {
+  font-weight: 600;
+}
+
+.book-toc-title {
+  overflow-wrap: anywhere;
+}
+
+.book-toc-dots {
+  flex: 1;
+  border-bottom: 1px dotted var(--line-2);
+  translate: 0 -0.2em;
+}
+
+.book-toc-page {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.book-section-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.4em;
+  font-weight: 400;
+}
+
+/* Photo pages: the caption bar is a sibling below the photo, never an overlay. */
+
+.book-photo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.book-photo-frame {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.book-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.book-photo-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8em;
+  padding: 0.9em 1.4em;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.book-photo-caption a {
+  font-size: 0.62em;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.book-photo-caption a:hover {
+  text-decoration: underline;
+}
+
+.book-photo-caption-page {
+  font-family: var(--mono);
+  font-size: 0.5em;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.book-photo-typographic {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7em;
+  padding: 1.5em;
+  text-align: center;
+}
+
+.book-photo-typographic h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.1em;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.book-words {
+  margin: 0;
+  max-width: 24em;
+  font-size: 0.6em;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.book-recipe-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7em;
+}
+
+.book-recipe-header h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.05em;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.book-recipe-meta {
+  margin: 0.45em 0 0;
+  font-family: var(--mono);
+  font-size: 0.5em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.book-headnote {
+  margin: 0;
+  font-size: 0.85em;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.book-subheading {
+  margin: 0.4em 0 0;
+  font-family: var(--mono);
+  font-size: 0.55em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.book-group-name {
+  margin: 0.3em 0 0;
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.book-ingredients {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.4em;
+  row-gap: 0.3em;
+  font-size: 0.85em;
+}
+
+.book-step {
+  margin: 0;
+  font-size: 0.85em;
+  line-height: 1.5;
+  text-indent: -1.4em;
+  padding-left: 1.4em;
+}
+
+.book-step-n {
+  font-family: var(--mono);
+  font-size: 0.75em;
+  color: var(--faint);
+  margin-right: 0.5em;
+}
+
+.book-spacer {
+  height: 4em;
+}
+
+.book-rules {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 78%;
+}
+
+.book-rules span {
+  border-bottom: 1px solid var(--line);
+}
+
+.book-colophon-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.2em;
+  font-weight: 400;
+}
+
+.book-colophon-line {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.5em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.book-colophon-brand {
+  margin: 0;
+  font-size: 0.55em;
+  color: var(--faint);
+}
+
+.book-reader-empty {
+  margin: 48px auto;
+  max-width: 420px;
+}

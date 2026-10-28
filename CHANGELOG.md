@@ -13,6 +13,10 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 
 For a book you can hold, photograph the contents or index pages. You get the same list of recipes to pick from, then a shot list with page numbers ("p. 112 Short ribs") so you know what to photograph next. Photograph each pick with the usual page photo import and it files into the book's cookbook, credited to its page.
 
+### Read a cookbook as a book
+
+Open a cookbook and tap Open book to page through it like the real thing: cover, contents, photos with the recipe name under them, and the index at the back. Turn pages by the edge arrows, the arrow keys, or a swipe, and on a phone it reads one page at a time.
+
 ### Pick recipes from a cookbook's contents page
 
 Drop in a cookbook PDF and see its recipes listed by section with their page numbers, all picked. Search, select all or none, and your picks are saved for when the recipes come in.

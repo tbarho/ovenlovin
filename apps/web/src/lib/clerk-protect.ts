@@ -1,10 +1,12 @@
 import { kitchenNavLinks } from "./kitchen-nav";
 
-/** Kitchen pages only. Unknown public URLs must 404 in-app, not bounce to Clerk. */
+/**
+ * Kitchen pages only. Unknown public URLs must 404 in-app, not bounce to Clerk.
+ * `/cookbooks` holds only the book reader, which needs the kitchen session.
+ */
 export function isClerkProtectedPath(pathname: string): boolean {
-  return kitchenNavLinks.some(
-    (link) => pathname === link.match || pathname.startsWith(`${link.match}/`)
-  );
+  const prefixes = [...kitchenNavLinks.map((link) => link.match), "/cookbooks"];
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 /**

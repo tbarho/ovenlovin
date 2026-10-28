@@ -31,6 +31,7 @@ export default async function RecipesPage({
     peopleService.getRulesForPeople(personIds),
   ]);
   const lovePeople = householdLovePeople(people.items, preferences);
+  const booksEnabled = isBooksEnabled();
 
   if (cookbookId) {
     const cookbook = await cookbooks.getCookbook(cookbookId);
@@ -56,11 +57,11 @@ export default async function RecipesPage({
         booksByRecipe={booksByRecipe}
         lovePeople={lovePeople}
         safetyByRecipe={safetyByRecipe}
+        booksEnabled={booksEnabled}
       />
     );
   }
 
-  const booksEnabled = isBooksEnabled();
   const [cards, uncategorized, all, importQuota, bookImports] = await Promise.all([
     cookbooks.listCookbookCards(householdId),
     recipes.listRecipes(householdId, { uncategorized: true, pagination: { limit: 40 } }),
