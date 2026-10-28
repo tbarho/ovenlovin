@@ -6,8 +6,7 @@ export type JobHandler = (item: ClaimedItem) => Promise<any>;
 export type JobHandlers = Partial<Record<JobKind, JobHandler>>;
 
 export type RunResult =
-  | { status: "idle" }
-  | { status: "done" | "pending" | "failed" | "lost"; item: ClaimedItem };
+  { status: "idle" } | { status: "done" | "pending" | "failed" | "lost"; item: ClaimedItem };
 
 const message = (error: any) => (error instanceof Error ? error.message : String(error));
 

@@ -20,7 +20,11 @@ describe.skipIf(!url)("JobQueue on Postgres", () => {
     db = createDbClient(url!);
     const [row] = await db
       .insert(household)
-      .values({ name: "Job spine test", slug: `job-spine-${randomUUID()}`, createdBy: randomUUID() })
+      .values({
+        name: "Job spine test",
+        slug: `job-spine-${randomUUID()}`,
+        createdBy: randomUUID(),
+      })
       .returning({ id: household.id });
     householdId = row!.id;
   });
