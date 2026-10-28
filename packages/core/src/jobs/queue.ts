@@ -143,7 +143,7 @@ export class JobQueue extends BaseService {
     return row.status as "pending" | "failed";
   }
 
-  /** Parks the item as failed now — for errors that will never succeed on retry. */
+  /** Parks the item as failed now - for errors that will never succeed on retry. */
   async failPermanent(item: ClaimedItem, error: string, now = new Date()) {
     const [row] = await this.rows(sql`
       update job_item set
