@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { groupCandidates, searchCandidates } from "@ovenlovin/core/contents-map";
 import { api } from "@/lib/browser-api";
 import type { BookContentsView } from "@/lib/book-import-view";
+import { BookTriage } from "./BookTriage";
 
 const POLL_MS = 3000;
 
@@ -19,11 +20,13 @@ export function BookContents({ initial }: { initial: BookContentsView }) {
   const [picks, setPicks] = useState(initial.picks);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [starting, setStarting] = useState(false);
   const saves = useRef(Promise.resolve());
   const path = `/api/v1/books/imports/${view.jobId}`;
+  const triaging = view.triage.summary.total > 0;
 
   useEffect(() => {
-    if (view.status !== "reading") return;
+    if (view.status !== "reading" && view.triage.summary.pulling === 0) return;
     const timer = setTimeout(async () => {
       const next = await api<BookContentsView>(path).catch(() => null);
       if (!next) return;
@@ -55,6 +58,19 @@ export function BookContents({ initial }: { initial: BookContentsView }) {
   const all = () => save(candidates.map((candidate) => candidate.id));
   const none = () => save([]);
 
+  async function pull() {
+    setStarting(true);
+    await saves.current;
+    const started = await api(path, { method: "POST" }).catch(() => null);
+    const next = started ? await api<BookContentsView>(path).catch(() => null) : null;
+    setStarting(false);
+    if (!next) {
+      setSaving("error");
+      return;
+    }
+    setView(next);
+  }
+
   return (
     <div className="book-contents">
       <div className="kitchen-head">
@@ -64,9 +80,11 @@ export function BookContents({ initial }: { initial: BookContentsView }) {
           </Link>
           <h1>{view.name.replace(/\.pdf$/i, "")}</h1>
           <p className="muted">
-            {view.map
-              ? `${picks.length} of ${candidates.length} recipes picked.`
-              : `${view.pages || "Some"} pages.`}
+            {triaging
+              ? `${view.triage.summary.total} recipes picked.`
+              : view.map
+                ? `${picks.length} of ${candidates.length} recipes picked.`
+                : `${view.pages || "Some"} pages.`}
           </p>
         </div>
       </div>
@@ -98,7 +116,9 @@ export function BookContents({ initial }: { initial: BookContentsView }) {
         </p>
       ) : null}
 
-      {view.map && candidates.length > 0 ? (
+      {triaging ? <BookTriage view={view} onChange={setView} /> : null}
+
+      {!triaging && view.map && candidates.length > 0 ? (
         <div className="recipe-picker">
           {scannedNote(view.map.scannedPages.length) ? (
             <p className="muted">{scannedNote(view.map.scannedPages.length)}</p>
@@ -125,6 +145,16 @@ export function BookContents({ initial }: { initial: BookContentsView }) {
               {saving === "error" ? "Could not save. Try again." : null}
             </span>
           </div>
+          <button
+            className="btn primary"
+            type="button"
+            disabled={picks.length === 0 || starting}
+            onClick={pull}
+          >
+            {starting
+              ? "Starting"
+              : `Pull ${picks.length} ${picks.length === 1 ? "recipe" : "recipes"}`}
+          </button>
           {groups.length === 0 ? <p className="muted">No recipes match that search.</p> : null}
           {groups.map((group) => (
             <section key={group.name} className="book-contents-group" aria-label={group.name}>

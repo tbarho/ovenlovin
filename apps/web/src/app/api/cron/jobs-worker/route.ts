@@ -1,7 +1,8 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { runNext } from "@ovenlovin/core/jobs";
 import { cronAuthorized } from "@/lib/cron-auth";
-import { isBooksEnabled, jobHandlers, jobQueue, kickWorker } from "@/lib/jobs";
+import { jobHandlers } from "@/lib/job-handlers";
+import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
 /** Answers at once, runs one item after the response, then chains itself while work remains. */
 export async function POST(request: NextRequest) {

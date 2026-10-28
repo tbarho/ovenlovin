@@ -41,6 +41,7 @@ export const REST_SCOPE_TABLE = [
   { method: "GET", path: "/books/imports/{id}", scope: "recipes:read" },
   { method: "PATCH", path: "/books/imports/{id}", scope: "recipes:write" },
   { method: "POST", path: "/books/imports/{id}", scope: "recipes:write" },
+  { method: "POST", path: "/books/imports/{id}/recipes", scope: "recipes:write" },
   { method: "POST", path: "/uploads/images", scope: "recipes:write" },
 
   { method: "GET", path: "/meal-plans", scope: "plans:read" },

@@ -40,6 +40,13 @@ import { WhoCanEat } from "./WhoCanEat";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 
+/** "From *Book*, p. N" for recipes pulled from a cookbook PDF. */
+export function bookAttribution(source: any): { title: string; page: number | null } | null {
+  if (!source?.bookTitle) return null;
+  const page = Number(source.rawExtractionJson?.bookPage ?? source.pageStart);
+  return { title: source.bookTitle, page: Number.isFinite(page) && page > 0 ? page : null };
+}
+
 function sourceHost(url: string): string {
   try {
     return new URL(url).host.replace(/^www\./, "");
@@ -115,6 +122,7 @@ export function RecipeDetail({
 
   const mainImage = recipeMainImage(recipe.images);
   const sourceUrl = recipe.source?.canonicalUrl || recipe.source?.url || null;
+  const fromBook = bookAttribution(recipe.source);
   const checkIngredients = recipe.ingredients.map((ingredient) => ({
     id: ingredient.id,
     name: ingredient.rawText,
@@ -229,6 +237,12 @@ export function RecipeDetail({
                   Cookbooks
                 </button>
               </div>
+              {fromBook ? (
+                <p className="book-attribution muted">
+                  From <em>{fromBook.title}</em>
+                  {fromBook.page ? `, p. ${fromBook.page}` : null}
+                </p>
+              ) : null}
               {sourceUrl ? (
                 <a className="source-link" href={sourceUrl} target="_blank" rel="noreferrer">
                   View original on {sourceHost(sourceUrl)}

@@ -229,6 +229,17 @@ export class JobQueue extends BaseService {
     return (row?.id as string | undefined) ?? null;
   }
 
+  /** The household's most recent jobs of one kind, newest first. */
+  async recent(householdId: string, kind: JobKind, limit = 20) {
+    const rows = await this.rows(sql`
+      select id from job
+      where household_id = ${householdId} and kind = ${kind} and status <> 'failed'
+      order by created_at desc
+      limit ${limit}
+    `);
+    return rows.map((row) => row.id as string);
+  }
+
   async get(jobId: string) {
     const [row] = await this._db.select().from(job).where(eq(job.id, jobId));
     return row ?? null;

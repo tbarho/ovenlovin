@@ -5,7 +5,8 @@ import { CookbookRecipes } from "@/components/kitchen/CookbookRecipes";
 import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { householdLovePeople, sortRecipesByLoves } from "@/lib/household-loves";
 import { demoImportQuota } from "@/lib/import-save";
-import { isBooksEnabled } from "@/lib/jobs";
+import { listBookImportTiles } from "@/lib/book-import-view";
+import { isBooksEnabled, jobQueue } from "@/lib/jobs";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadRecipeSafetyById } from "@/lib/load-recipe-safety";
 
@@ -58,11 +59,13 @@ export default async function RecipesPage({
     );
   }
 
-  const [cards, uncategorized, all, importQuota] = await Promise.all([
+  const booksEnabled = isBooksEnabled();
+  const [cards, uncategorized, all, importQuota, bookImports] = await Promise.all([
     cookbooks.listCookbookCards(householdId),
     recipes.listRecipes(householdId, { uncategorized: true, pagination: { limit: 40 } }),
     recipes.listRecipes(householdId, { pagination: { limit: 40 } }),
     demoImportQuota(householdId),
+    booksEnabled ? listBookImportTiles(jobQueue(), householdId) : [],
   ]);
 
   const safetyByRecipe = await loadRecipeSafetyById(
@@ -80,7 +83,8 @@ export default async function RecipesPage({
       safetyByRecipe={safetyByRecipe}
       remainingImports={importQuota?.remainingImports}
       importLimit={importQuota?.importLimit}
-      booksEnabled={isBooksEnabled()}
+      booksEnabled={booksEnabled}
+      bookImports={bookImports}
     />
   );
 }

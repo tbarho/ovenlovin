@@ -16,6 +16,7 @@ import { BottomSheet } from "./BottomSheet";
 import { KitchenToast } from "./KitchenToast";
 import { KitchenTour } from "./KitchenTour";
 import { RecipeCardSafety } from "./RecipeCardSafety";
+import type { BookImportTile } from "@/lib/book-import-view";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 
@@ -98,6 +99,7 @@ export function RecipesKitchen({
   remainingImports,
   importLimit,
   booksEnabled = false,
+  bookImports = [],
 }: {
   cookbooks: CookbookCard[];
   uncategorized: Recipe[];
@@ -107,6 +109,7 @@ export function RecipesKitchen({
   remainingImports?: number;
   importLimit?: number;
   booksEnabled?: boolean;
+  bookImports?: BookImportTile[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -213,10 +216,28 @@ export function RecipesKitchen({
         </div>
       )}
 
-      {cookbooks.length > 0 ? (
+      {cookbooks.length > 0 || bookImports.length > 0 ? (
         <>
           <p className="section-label">Cookbooks</p>
           <div className="cookbook-grid cookbook-shelf">
+            {bookImports.map((book) => (
+              <Link
+                className="cookbook-card book-import-card"
+                key={book.jobId}
+                href={`/recipes/books/${book.jobId}`}
+              >
+                <div className="mosaic" aria-hidden="true">
+                  <span>{book.name.slice(0, 1)}</span>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div>
+                  <h2>{book.name}</h2>
+                  <p className="muted">{book.line}</p>
+                </div>
+              </Link>
+            ))}
             {cookbooks.map((cookbook) => (
               <Link
                 className="cookbook-card"
