@@ -173,6 +173,7 @@ export const collection = pgTable("collection", {
   description: text("description"),
   visibility: recipeVisibilityEnum("visibility").notNull().default("private"),
   sortOrder: integer("sort_order").notNull().default(0),
+  bookSettings: jsonb("book_settings").$type<Record<string, unknown>>(),
 });
 
 export const collectionRecipe = pgTable("collection_recipe", {
