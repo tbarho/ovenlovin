@@ -138,7 +138,12 @@ export function fit(units: any[], capacity = BOOK_METRICS.bodyLines) {
     [{ units: [], used: 0 }]
   );
   return chunks.map((chunk: any) =>
-    chunk.units.map(({ lines: _lines, keepWithNext: _keep, ...block }: any) => block)
+    chunk.units.map((unit: any) => {
+      const block = { ...unit };
+      delete block.lines;
+      delete block.keepWithNext;
+      return block;
+    })
   );
 }
 
@@ -184,7 +189,11 @@ function sectionsOf(recipes: any[]) {
   }, []);
 }
 
-function chunkByLines(entries: any[], capacity: number, measure: (entry: any) => number) {
+/* eslint-disable no-unused-vars -- call-signature parameter names */
+type MeasureFn = (value: any) => number;
+/* eslint-enable no-unused-vars */
+
+function chunkByLines(entries: any[], capacity: number, measure: MeasureFn) {
   return entries.reduce(
     (memo: any[], entry) => {
       const page = memo[memo.length - 1];
