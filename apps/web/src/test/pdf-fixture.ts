@@ -9,7 +9,8 @@ export const pdfBytes = (text: string) => new Uint8Array(Buffer.from(text, "lati
 export const pageObjects = (count: number, first = 3) =>
   Array.from(
     { length: count },
-    (_, index) => `${first + index} 0 obj\n<< /Type /Page /Parent 2 0 R >>\nendobj\n`
+    (_, index) =>
+      `${first + index} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\nendobj\n`
   ).join("");
 
 export function plainPdf(pages: number) {
@@ -22,17 +23,21 @@ export function plainPdf(pages: number) {
   );
 }
 
-/** Classic xref table + startxref so disk page-count can resolve the root. */
+/** Classic xref table + startxref with one offset per object (pdf.js happy). */
 export function xrefPdf(pages: number) {
   const kids = Array.from({ length: pages }, (_, index) => `${3 + index} 0 R`).join(" ");
-  const objects = [
+  const objectBodies = [
     `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`,
-    `2 0 obj\n<< /Kids [${kids}] /Count ${pages} /Type /Pages >>\nendobj\n`,
-    pageObjects(pages),
+    `2 0 obj\n<< /Type /Pages /Kids [${kids}] /Count ${pages} >>\nendobj\n`,
+    ...Array.from({ length: pages }, (_, index) => {
+      const n = 3 + index;
+      return `${n} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\nendobj\n`;
+    }),
   ];
+
   let body = `%PDF-1.4\n`;
   const offsets: number[] = [0];
-  for (const object of objects) {
+  for (const object of objectBodies) {
     offsets.push(Buffer.byteLength(body, "latin1"));
     body += object;
   }
@@ -56,11 +61,11 @@ export function packedPdf(pages: number) {
   ];
   const header = packed
     .reduce(
-      (memo: { parts: string[]; offset: number }, body, index) => ({
-        parts: [...memo.parts, `${index + 1} ${memo.offset}`],
+      (memo: { parts: string[]; offset: number }, body) => ({
+        parts: [...memo.parts, `${memo.parts.length + 1} ${memo.offset}`],
         offset: memo.offset + body.length + 1,
       }),
-      { parts: [], offset: 0 }
+      { parts: [] as string[], offset: 0 }
     )
     .parts.join(" ");
   const content = `${header}\n${packed.join("\n")}\n`;
