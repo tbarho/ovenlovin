@@ -129,6 +129,10 @@ export async function countPdfPagesOnDisk(path: string) {
   }
 
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  // Static import so Next's file tracer ships the worker with the function.
+  const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+  (globalThis as { pdfjsWorker?: unknown }).pdfjsWorker = worker;
+
   const task = pdfjs.getDocument({
     url: pathToFileURL(path).href,
     isEvalSupported: false,
@@ -138,15 +142,10 @@ export async function countPdfPagesOnDisk(path: string) {
   } as never);
   try {
     const doc = await task.promise;
-    const pages = Number(doc.numPages) || 0;
-    return pages;
+    return Number(doc.numPages) || 0;
   } catch (error) {
     const name = error instanceof Error ? error.name : "";
-    if (
-      name === "InvalidPDFException" ||
-      name === "MissingPDFException" ||
-      name === "UnexpectedResponseException"
-    ) {
+    if (name === "InvalidPDFException" || name === "FormatError") {
       return 0;
     }
     if (name === "PasswordException") {
