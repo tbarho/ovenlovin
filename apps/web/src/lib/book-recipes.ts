@@ -36,10 +36,8 @@ export type SpanPage = { page: number; lines: string[] };
 export type SpanRead = {
   book: { title: string; author?: string };
   pages: SpanPage[];
-  /** Largest embedded image on a text page. */
-  hero: Pixels | null;
-  /** Page scans for pages with no text layer, by page number. */
-  scans: Record<number, Pixels>;
+  /** Largest embedded image per page: always on textless pages, hero-sized ones on text pages. */
+  images: Record<number, Pixels>;
 };
 
 const imageArea = (args: any[]) => Number(args[1]) * Number(args[2]);
@@ -67,9 +65,9 @@ async function largestImage(page: any, ops: any, paint: number) {
 const fileTitle = (name: string) => name.replace(/\.pdf$/i, "").trim() || "Cookbook";
 
 /**
- * Reads only the span's pages: text lines for each, the page scan for pages
- * with no text layer (a scanned book page is one full-page image), and the
- * largest real photo on the text pages as the hero candidate.
+ * Reads only the span's pages: text lines for each, plus the largest image on
+ * each page. A textless page is a scan or a photo plate; which one depends on
+ * the rest of the span (see planSpan).
  */
 export async function readSpan(
   source: string,
@@ -90,8 +88,7 @@ export async function readSpan(
         author: String(info.Author ?? "").trim() || undefined,
       },
       pages: [],
-      hero: null,
-      scans: {},
+      images: {},
     };
     return numbers.reduce(async (memo: Promise<SpanRead>, number) => {
       const done = await memo;
@@ -100,18 +97,50 @@ export async function readSpan(
       const image = await largestImage(page, await page.getOperatorList(), paint);
       const next = { ...done, pages: [...done.pages, { page: number, lines }] };
       if (!image) return next;
-      if (lines.length === 0) {
-        const scan = await image.pixels();
-        return scan ? { ...next, scans: { ...next.scans, [number]: scan } } : next;
-      }
       const [, width, height] = image.args;
-      const bigger = !done.hero || width * height > done.hero.width * done.hero.height;
-      if (Math.min(width, height) < MIN_HERO_SIDE || !bigger) return next;
-      return { ...next, hero: (await image.pixels()) ?? done.hero };
+      if (lines.length > 0 && Math.min(width, height) < MIN_HERO_SIDE) return next;
+      const pixels = await image.pixels();
+      return pixels ? { ...next, images: { ...next.images, [number]: pixels } } : next;
     }, Promise.resolve(empty));
   });
   if (!read) throw new UnreadablePdfError();
   return read;
+}
+
+const isText = (page: SpanPage) => page.lines.length > 0;
+const area = (pixels: Pixels) => pixels.width * pixels.height;
+
+/**
+ * Splits a span into the pages to read, the scans for vision, and the hero.
+ * No text layer anywhere: every page image is a scan. Any text: textless
+ * image pages are photo plates, so they are hero candidates, never scans. A
+ * plate right before the next recipe is that recipe's photo (an opposite
+ * page), so it is dropped here and picked up by the next span as `before`.
+ * The hero only comes from pages that survive the trim.
+ */
+export function planSpan(
+  read: Pick<SpanRead, "pages" | "images">,
+  span: { nextGroup: string | null; nextTitle: string | null },
+  before?: SpanPage
+) {
+  const trimmed = trimSpan(read.pages, span.nextGroup);
+  if (!trimmed.some(isText)) {
+    const scans = trimmed.flatMap((page) =>
+      read.images[page.page] ? [read.images[page.page]!] : []
+    );
+    return { pages: trimmed, scans, hero: null };
+  }
+  const lastText = trimmed.reduce((memo, page, at) => (isText(page) ? at : memo), 0);
+  const pages = span.nextTitle ? trimmed.slice(0, lastText + 1) : trimmed;
+  const plate = before && !isText(before) ? [before] : [];
+  const hero = [...plate, ...pages]
+    .flatMap((page) => (read.images[page.page] ? [read.images[page.page]!] : []))
+    .filter((pixels) => Math.min(pixels.width, pixels.height) >= MIN_HERO_SIDE)
+    .reduce(
+      (memo: Pixels | null, pixels) => (!memo || area(pixels) > area(memo) ? pixels : memo),
+      null
+    );
+  return { pages, scans: [], hero };
 }
 
 const png = (pixels: Pixels, max: number) => {
@@ -170,21 +199,27 @@ export async function extractBookRecipe(
   }
   const span = item.payload as RecipeItemPayload;
 
+  // One page back: a photo plate opposite the recipe's first page.
+  const lead = span.pageStart > 1 ? 1 : 0;
   let read: SpanRead;
   try {
-    read = await (deps.read ?? readSpan)(input.blobUrl, span.pageStart, span.pageEnd, input.name);
+    read = await (deps.read ?? readSpan)(
+      input.blobUrl,
+      span.pageStart - lead,
+      span.pageEnd,
+      input.name
+    );
   } catch (error) {
     if (error instanceof UnreadablePdfError) throw new PermanentJobError(error.message);
     throw error;
   }
 
-  const pages = trimSpan(read.pages, span.nextGroup);
-  const textPages = pages.filter((page) => page.lines.length > 0);
-  const text = mergeSpanLines(textPages, span.title, span.nextTitle).join("\n");
-  const images = pages.flatMap((page) =>
-    read.scans[page.page] ? [dataUrl(png(read.scans[page.page]!, SCAN_MAX_SIDE))] : []
-  );
-  const scanned = textPages.length < pages.length;
+  const before = read.pages.find((page) => page.page < span.pageStart);
+  const own = { ...read, pages: read.pages.filter((page) => page.page >= span.pageStart) };
+  const { pages, scans, hero } = planSpan(own, span, before);
+  const text = mergeSpanLines(pages.filter(isText), span.title, span.nextTitle).join("\n");
+  const images = scans.map((scan) => dataUrl(png(scan, SCAN_MAX_SIDE)));
+  const scanned = !pages.some(isText);
   if (scanned ? images.length === 0 : !text.trim()) {
     throw new PermanentJobError(`We could not find "${span.title}" on its pages.`);
   }
@@ -208,7 +243,7 @@ export async function extractBookRecipe(
   }
 
   const put = "put" in deps ? deps.put : createVercelImagePut();
-  const heroBytes = read.hero && put ? png(read.hero, HERO_MAX_SIDE) : null;
+  const heroBytes = hero && put ? png(hero, HERO_MAX_SIDE) : null;
   const heroUrl = heroBytes
     ? await put!({
         pathname: `recipes/${item.householdId}/book/${item.jobId}/${span.candidateId}.png`,
@@ -217,9 +252,7 @@ export async function extractBookRecipe(
       })
     : null;
   const hash =
-    heroUrl && read.hero
-      ? averageHashFromRgba(read.hero.width, read.hero.height, read.hero.rgba)
-      : undefined;
+    heroUrl && hero ? averageHashFromRgba(hero.width, hero.height, hero.rgba) : undefined;
 
   const draft = {
     ...extracted.draft,

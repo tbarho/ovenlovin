@@ -96,3 +96,20 @@ export const PHOTO_BOOK = {
     },
   ],
 };
+
+/**
+ * A text book with full-page photo plates: Lemon Bars' plate faces its recipe
+ * page (PDF page 3 is the plate, 4 the recipe), and Shortbread, the last
+ * recipe, has its plate after the text.
+ */
+export const PLATE_BOOK = {
+  info: { title: "A Synthetic Kitchen", author: "Author A" },
+  pages: [
+    ["Contents", "Ginger Snaps ........ 2", "Lemon Bars ........ 4", "Shortbread ........ 5"],
+    recipe("Ginger Snaps", 2, ["2 cups flour", "1 tbsp ginger", "1/2 cup molasses"]),
+    { lines: [], images: [{ width: 400, height: 520, x: 0, y: 0 }] },
+    recipe("Lemon Bars", 4, ["1 cup flour", "2 lemons", "3 eggs"]),
+    recipe("Shortbread", 5, ["2 cups flour", "1 cup butter", "1/2 cup sugar"]),
+    { lines: [], images: [{ width: 360, height: 480, x: 0, y: 0 }] },
+  ],
+};

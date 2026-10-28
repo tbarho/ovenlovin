@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { planRecipeItems, PermanentJobError } from "@ovenlovin/core/jobs";
 import { runPdfSpanImport, type PdfSpanInput } from "@ovenlovin/importers";
-import { PHOTO_BOOK } from "@/test/book-fixtures";
+import { PHOTO_BOOK, PLATE_BOOK } from "@/test/book-fixtures";
 import { textPdf } from "@/test/pdf-fixture";
 import { mapPdf } from "@/lib/book-contents";
-import { extractBookRecipe, readSpan } from "@/lib/book-recipes";
+import { extractBookRecipe, planSpan, readSpan } from "@/lib/book-recipes";
 
 vi.mock("@ovenlovin/db", () => ({ getDatabase: () => ({}) }));
 vi.mock("@ai-sdk/gateway", () => ({ gateway: (id: string) => id }));
@@ -236,6 +236,106 @@ describe("readSpan over http", () => {
   it("reads the span straight from the blob URL", async () => {
     const read = await readSpan(url, 2, 3);
     expect(read.pages.map((page) => page.page)).toEqual([2, 3]);
-    expect(read.hero).toMatchObject({ width: 300, height: 220 });
+    expect(read.images[2]).toMatchObject({ width: 300, height: 220 });
+  });
+});
+
+describe("photo plates in a text book", () => {
+  let platePath = "";
+
+  beforeAll(async () => {
+    platePath = join(dir, "plates.pdf");
+    await writeFile(platePath, textPdf(PLATE_BOOK.pages, PLATE_BOOK.info));
+  });
+
+  it("reads text pages with the text model and uses the facing plate as the hero", async () => {
+    const map = await mapPdf(platePath);
+    const items = planRecipeItems(
+      map,
+      map.candidates.map((candidate) => candidate.id),
+      6
+    );
+    const sent: PdfSpanInput[] = [];
+    const put = vi.fn(async ({ pathname }: any) => `https://blob.example/${pathname}`);
+    const results = await items.reduce(
+      async (memo: Promise<any[]>, payload, at) => [
+        ...(await memo),
+        await extractBookRecipe(
+          queue(),
+          { id: `item-${at}`, jobId: "job-1", householdId: HOUSEHOLD, payload } as any,
+          {
+            read: (_source, start, end, name) => readSpan(platePath, start, end, name),
+            extract: (input) => {
+              sent.push(input);
+              return runPdfSpanImport(input, {
+                generate,
+                modelId: "text-model",
+                visionModelId: "vision-model",
+              });
+            },
+            put,
+            recipes: {
+              findImportDuplicate: vi.fn(async () => null),
+              findPhotoNearDuplicate: vi.fn(async () => null),
+            } as any,
+          }
+        ),
+      ],
+      Promise.resolve([])
+    );
+
+    expect(items.map(({ title, pageStart, pageEnd }) => [title, pageStart, pageEnd])).toEqual([
+      ["Ginger Snaps", 2, 3],
+      ["Lemon Bars", 4, 4],
+      ["Shortbread", 5, 6],
+    ]);
+    expect(results.map((result) => result.route)).toEqual(["text", "text", "text"]);
+    expect(sent.every((input) => input.images === undefined)).toBe(true);
+    // Ginger Snaps ends before the plate that faces Lemon Bars.
+    expect(results[0].draft).toMatchObject({ images: [], source: { pageEnd: 2 } });
+    expect(results[1].draft.images).toEqual([expect.stringContaining("4-lemon-bars")]);
+    expect(results[2].draft).toMatchObject({ source: { pageEnd: 6 } });
+    expect(results[2].draft.images).toEqual([expect.stringContaining("5-shortbread")]);
+    // Each recipe got its own plate: stored PNG widths are 400 (Lemon Bars) and 360 (Shortbread).
+    const widths = put.mock.calls.map(([call]: any) => new DataView(call.body).getUint32(16));
+    expect(widths).toEqual([400, 360]);
+  });
+});
+
+describe("planSpan", () => {
+  const pixels = (width: number, height: number) => ({ width, height, rgba: new Uint8Array(4) });
+  const text = (page: number, lines = ["Soup", "2 cups stock"]) => ({ page, lines });
+
+  it("treats a plate between text pages as the hero, not a scan", () => {
+    const plan = planSpan(
+      { pages: [text(2), { page: 3, lines: [] }, text(4)], images: { 3: pixels(400, 500) } },
+      { nextGroup: null, nextTitle: "Bread" }
+    );
+    expect(plan).toMatchObject({ scans: [], hero: { width: 400 } });
+    expect(plan.pages.map((page) => page.page)).toEqual([2, 3, 4]);
+  });
+
+  it("keeps scans for a span with no text layer", () => {
+    const plan = planSpan(
+      {
+        pages: [
+          { page: 2, lines: [] },
+          { page: 3, lines: [] },
+        ],
+        images: { 2: pixels(800, 1000), 3: pixels(800, 1000) },
+      },
+      { nextGroup: null, nextTitle: null }
+    );
+    expect(plan).toMatchObject({ hero: null });
+    expect(plan.scans).toHaveLength(2);
+  });
+
+  it("drops a hero that sat on a trimmed divider page", () => {
+    const plan = planSpan(
+      { pages: [text(2), { page: 3, lines: ["Suppers"] }], images: { 3: pixels(600, 600) } },
+      { nextGroup: "Suppers", nextTitle: "Soup" }
+    );
+    expect(plan).toMatchObject({ hero: null });
+    expect(plan.pages.map((page) => page.page)).toEqual([2]);
   });
 });
