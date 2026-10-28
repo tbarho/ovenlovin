@@ -120,15 +120,7 @@ function RecipeTitle({
 }
 
 /** Photo opener. The caption bar sits below the photo, never on top of it. */
-function Photo({
-  page,
-  bookId,
-  print,
-}: {
-  page: any;
-  bookId: string | null;
-  print: boolean;
-}) {
+function Photo({ page, bookId, print }: { page: any; bookId: string | null; print: boolean }) {
   return (
     <div className="book-photo">
       <div className="book-photo-frame">
