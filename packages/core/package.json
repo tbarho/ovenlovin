@@ -16,7 +16,8 @@
     "./scaling": "./src/scaling/index.ts",
     "./aisles": "./src/services/shopping-aisles.ts",
     "./people-order": "./src/services/people-order.ts",
-    "./jobs": "./src/jobs/index.ts"
+    "./jobs": "./src/jobs/index.ts",
+    "./book": "./src/book/index.ts"
   },
   "scripts": {
     "test": "vitest run",
