@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 import { assertDemoModeSafeForBuild } from "./src/lib/demo/mode";
 import { assertE2eAuthBypassSafeForBuild } from "./src/lib/e2e-auth";
 import { PLAN_PATH_REDIRECTS } from "./src/lib/plan-path-redirects";
@@ -8,15 +9,11 @@ assertDemoModeSafeForBuild();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // pnpm nests packages behind symlinks; tracing from apps/web alone breaks
+  // Vercel ("invalid deployment package" / symlinked directories) once Chromium
+  // is in the tree. Root the NFT at the workspace so realpaths stay real.
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   serverExternalPackages: ["pdfjs-dist", "pdf-lib", "playwright-core", "@sparticuz/chromium"],
-  // The serverless Chromium binary is read from disk at runtime, so tracing cannot see it.
-  outputFileTracingIncludes: {
-    "/api/cron/jobs-worker": [
-      "../../node_modules/@sparticuz/chromium/bin/**",
-      "../../node_modules/.pnpm/@sparticuz+chromium@*/node_modules/@sparticuz/chromium/bin/**",
-      "./node_modules/@sparticuz/chromium/bin/**",
-    ],
-  },
   async redirects() {
     return [...PLAN_PATH_REDIRECTS];
   },

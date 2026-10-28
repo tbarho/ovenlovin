@@ -4,7 +4,9 @@ import { PRINT_SPEC, printSheet, type PrintMode } from "@ovenlovin/core/book";
 /** Points per inch in PDF space. */
 const PT = 72;
 
-export type LowRes = { page: number; dpi: number };
+import type { LowRes } from "@/lib/book-pdf-types";
+
+export type { LowRes } from "@/lib/book-pdf-types";
 export type RenderedChunk = { bytes: Uint8Array; sha: string; lowRes: LowRes[] };
 
 /**

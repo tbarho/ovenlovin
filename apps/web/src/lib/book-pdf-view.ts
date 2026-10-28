@@ -2,7 +2,7 @@ import { printChunks, type PrintMode } from "@ovenlovin/core/book";
 import { checkPdfLimits, type JobQueue } from "@ovenlovin/core/jobs";
 import { z } from "zod";
 import { NotFoundError } from "@/lib/api/errors";
-import type { LowRes } from "@/lib/book-pdf";
+import type { LowRes } from "@/lib/book-pdf-types";
 import { bookFingerprint, loadPrintBook } from "@/lib/book-print";
 import { isBooksEnabled } from "@/lib/jobs";
 

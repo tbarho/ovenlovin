@@ -1,3 +1,4 @@
+import "@sparticuz/chromium";
 import { PermanentJobError, type ClaimedItem, type JobQueue } from "@ovenlovin/core/jobs";
 import {
   launchChromium,
