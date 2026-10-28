@@ -110,6 +110,7 @@ export function CookbookRecipes({
   booksByRecipe = {},
   lovePeople = EMPTY_LOVE_PEOPLE,
   safetyByRecipe = {},
+  booksEnabled = false,
 }: {
   cookbook: Cookbook;
   recipes: Recipe[];
@@ -117,6 +118,7 @@ export function CookbookRecipes({
   booksByRecipe?: Record<string, string[]>;
   lovePeople?: PersonLove[];
   safetyByRecipe?: Record<string, RecipeSafetySummary>;
+  booksEnabled?: boolean;
 }) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
@@ -214,7 +216,12 @@ export function CookbookRecipes({
           </p>
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
-          <button className="btn primary" type="button" onClick={() => setAddOpen(true)}>
+          {booksEnabled ? (
+            <Link className="btn primary" href={`/cookbooks/${cookbook.id}/book`}>
+              Open book
+            </Link>
+          ) : null}
+          <button className="btn" type="button" onClick={() => setAddOpen(true)}>
             Add recipes
           </button>
           <button className="btn" type="button" onClick={() => setRenameOpen(true)}>
