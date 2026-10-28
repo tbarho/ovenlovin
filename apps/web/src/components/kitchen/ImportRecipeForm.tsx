@@ -32,6 +32,7 @@ import {
 } from "@/lib/photo-import-job";
 import { isImageFile } from "@/lib/photo-import-review";
 import { ImportReviewForm, PhotoImportDialog, PhotoImportProgress } from "./PhotoImportDialog";
+import { BookImportDoor } from "./BookImportDoor";
 import { ImportFromDevice } from "./ImportFromDevice";
 import { BottomSheet } from "./BottomSheet";
 import {
@@ -237,9 +238,11 @@ function PhotoPick({ files, onChange }: { files: File[]; onChange: (next: File[]
 export function ImportRecipeForm({
   remainingImports,
   importLimit,
+  booksEnabled = false,
 }: {
   remainingImports?: number;
   importLimit?: number;
+  booksEnabled?: boolean;
 } = {}) {
   const router = useRouter();
   const [source, setSource] = useState<"url" | "paste" | "photo">("url");
@@ -609,6 +612,7 @@ export function ImportRecipeForm({
         ) : null}
       </BottomSheet>
       <PhotoImportDialog open={photoOpen} onClose={closePhoto} onTypeOrPaste={typeOrPaste} />
+      {booksEnabled ? <BookImportDoor /> : null}
       <ImportFromDevice />
     </>
   );

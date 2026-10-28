@@ -124,6 +124,19 @@ describe.skipIf(!url)("JobQueue on Postgres", () => {
     expect(item).toMatchObject({ status: "failed", error: "Timed out after 1 attempts" });
   });
 
+  it("finds the live job for a file fingerprint so re-uploads resume", async () => {
+    const queue = new JobQueue(db);
+    const sha256 = "b".repeat(64);
+    const jobId = await queue.enqueue(householdId, "book_import", { sha256 });
+
+    expect(await queue.findBySha(householdId, "book_import", sha256)).toBe(jobId);
+    expect(await queue.findBySha(householdId, "book_import", "c".repeat(64))).toBeNull();
+    expect(await queue.findBySha(randomUUID(), "book_import", sha256)).toBeNull();
+
+    await db.execute(sql`update job set status = 'failed' where id = ${jobId}`);
+    expect(await queue.findBySha(householdId, "book_import", sha256)).toBeNull();
+  });
+
   it("counts open jobs and jobs this month for entitlement checks", async () => {
     const queue = new JobQueue(db);
     await queue.enqueue(householdId, "book_import", {}, payloads(1));

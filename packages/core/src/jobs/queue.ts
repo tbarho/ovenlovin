@@ -143,6 +143,23 @@ export class JobQueue extends BaseService {
     return row.status as "pending" | "failed";
   }
 
+  /** Parks the item as failed now - for errors that will never succeed on retry. */
+  async failPermanent(item: ClaimedItem, error: string, now = new Date()) {
+    const [row] = await this.rows(sql`
+      update job_item set
+        status = 'failed',
+        attempts = ${this.maxAttempts},
+        error = ${error},
+        lease_until = null,
+        updated_at = ${ts(now)}
+      where id = ${item.id} and status = 'running' and attempts = ${item.attempts}
+      returning status
+    `);
+    if (!row) return "lost" as const;
+    await this.refresh([item.jobId], now);
+    return "failed" as const;
+  }
+
   /** Parks items whose last allowed lease expired (the worker died mid-item). */
   async park(now = new Date()) {
     const rows = await this.rows(sql`
@@ -181,9 +198,31 @@ export class JobQueue extends BaseService {
     return { activeJobs: Number(row.active), jobsThisMonth: Number(row.month) };
   }
 
+  /** The household's live job for this file, so the same upload resumes instead of starting over. */
+  async findBySha(householdId: string, kind: JobKind, sha256: string) {
+    const [row] = await this.rows(sql`
+      select id from job
+      where household_id = ${householdId} and kind = ${kind}
+        and input->>'sha256' = ${sha256} and status <> 'failed'
+      order by created_at desc
+      limit 1
+    `);
+    return (row?.id as string | undefined) ?? null;
+  }
+
   async get(jobId: string) {
     const [row] = await this._db.select().from(job).where(eq(job.id, jobId));
     return row ?? null;
+  }
+
+  /** Merges fields into job.input (used after the verify step finishes). */
+  async patchInput(jobId: string, patch: Record<string, unknown>, now = new Date()) {
+    await this._db.execute(sql`
+      update job set
+        input = coalesce(input, '{}'::jsonb) || ${JSON.stringify(patch)}::jsonb,
+        updated_at = ${ts(now)}
+      where id = ${jobId}
+    `);
   }
 
   async items(jobId: string) {

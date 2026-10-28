@@ -8,6 +8,7 @@ assertDemoModeSafeForBuild();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["pdfjs-dist"],
   async redirects() {
     return [...PLAN_PATH_REDIRECTS];
   },

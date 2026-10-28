@@ -97,6 +97,7 @@ export function RecipesKitchen({
   safetyByRecipe = {},
   remainingImports,
   importLimit,
+  booksEnabled = false,
 }: {
   cookbooks: CookbookCard[];
   uncategorized: Recipe[];
@@ -105,6 +106,7 @@ export function RecipesKitchen({
   safetyByRecipe?: Record<string, RecipeSafetySummary>;
   remainingImports?: number;
   importLimit?: number;
+  booksEnabled?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -168,7 +170,11 @@ export function RecipesKitchen({
       </div>
       {showImport ? (
         <div id="add-recipe-panel">
-          <ImportRecipeForm remainingImports={remainingImports} importLimit={importLimit} />
+          <ImportRecipeForm
+            remainingImports={remainingImports}
+            importLimit={importLimit}
+            booksEnabled={booksEnabled}
+          />
         </div>
       ) : null}
 
