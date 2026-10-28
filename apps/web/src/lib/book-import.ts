@@ -105,6 +105,13 @@ export class PasswordProtectedPdfError extends Error {
   }
 }
 
+export class UnreadablePdfError extends Error {
+  constructor(message = "We could not read this PDF. Try exporting or printing it to PDF again.") {
+    super(message);
+    this.name = "UnreadablePdfError";
+  }
+}
+
 /**
  * Page count from a PDF on disk via pdf.js. Range fetches only what it needs
  * (`disableStream` + `disableAutoFetch`) so a 500MB book does not get copied
@@ -150,6 +157,9 @@ export async function countPdfPagesOnDisk(path: string) {
     }
     if (name === "PasswordException") {
       throw new PasswordProtectedPdfError();
+    }
+    if (name === "UnknownErrorException") {
+      throw new UnreadablePdfError();
     }
     throw error;
   } finally {

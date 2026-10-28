@@ -11,7 +11,12 @@ import {
   type ClaimedItem,
   type JobQueue,
 } from "@ovenlovin/core/jobs";
-import { countPdfPagesOnDisk, isBookBlobUrl, PasswordProtectedPdfError } from "@/lib/book-import";
+import {
+  countPdfPagesOnDisk,
+  isBookBlobUrl,
+  PasswordProtectedPdfError,
+  UnreadablePdfError,
+} from "@/lib/book-import";
 
 async function streamToTemp(url: string, path: string) {
   const response = await fetch(url);
@@ -70,6 +75,10 @@ export async function verifyBookImport(queue: JobQueue, item: ClaimedItem) {
     } catch (error) {
       if (error instanceof PasswordProtectedPdfError) {
         await del(input.blobUrl).catch(() => undefined);
+        throw new PermanentJobError(error.message);
+      }
+      if (error instanceof UnreadablePdfError) {
+        // Keep the blob for a later sweep; the file may be recoverable.
         throw new PermanentJobError(error.message);
       }
       throw error;
