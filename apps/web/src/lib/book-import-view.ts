@@ -1,4 +1,5 @@
 import {
+  planRecipeItems,
   recipeProgress,
   resolvePicks,
   type RecipeProgress,
@@ -46,4 +47,16 @@ export async function loadBookContents(
     picks: map ? resolvePicks(map.candidates, input.picks) : [],
     progress: recipeProgress(items),
   };
+}
+
+/**
+ * Confirms the picks: one `recipe` item per picked recipe, in book order.
+ * Safe to repeat; recipes already queued are skipped, newly picked ones added.
+ */
+export async function startRecipeExtraction(queue: JobQueue, jobId: string, householdId: string) {
+  const view = await loadBookContents(queue, jobId, householdId);
+  if (!view?.map) return null;
+  const payloads = planRecipeItems(view.map, view.picks, view.pages);
+  const added = await queue.addItems(jobId, payloads, new Date(), "candidateId");
+  return { added, progress: recipeProgress(await queue.items(jobId)) };
 }

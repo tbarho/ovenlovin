@@ -1,8 +1,6 @@
 import {
   mergeSpanLines,
-  planRecipeItems,
   PermanentJobError,
-  recipeProgress,
   trimSpan,
   type BookImportInput,
   type ClaimedItem,
@@ -22,7 +20,6 @@ import { runPdfSpanImport } from "@ovenlovin/importers";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { itemsToLines } from "@/lib/book-contents";
 import { isBookBlobUrl, UnreadablePdfError, withPdf } from "@/lib/book-import";
-import { loadBookContents } from "@/lib/book-import-view";
 
 /** Ornaments and spot art are small; a hero photo is at least this big on its short side. */
 const MIN_HERO_SIDE = 200;
@@ -276,16 +273,4 @@ export async function extractBookRecipe(
     draft,
     duplicate: await findDuplicate(recipes, item.householdId, draft, hash),
   };
-}
-
-/**
- * Confirms the picks: one `recipe` item per picked recipe, in book order.
- * Safe to repeat; recipes already queued are skipped, newly picked ones added.
- */
-export async function startRecipeExtraction(queue: JobQueue, jobId: string, householdId: string) {
-  const view = await loadBookContents(queue, jobId, householdId);
-  if (!view?.map) return null;
-  const payloads = planRecipeItems(view.map, view.picks, view.pages);
-  const added = await queue.addItems(jobId, payloads, new Date(), "candidateId");
-  return { added, progress: recipeProgress(await queue.items(jobId)) };
 }

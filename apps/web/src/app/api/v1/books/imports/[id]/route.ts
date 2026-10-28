@@ -9,8 +9,7 @@ import {
 } from "@/lib/api/middleware";
 import { readJsonBody } from "@/lib/api/read-json";
 import { jsonResponse } from "@/lib/api/response";
-import { loadBookContents } from "@/lib/book-import-view";
-import { startRecipeExtraction } from "@/lib/book-recipes";
+import { loadBookContents, startRecipeExtraction } from "@/lib/book-import-view";
 import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
 const body = z.object({ picks: z.array(z.string().max(200)).max(5000) });

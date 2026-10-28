@@ -112,6 +112,19 @@ export class UnreadablePdfError extends Error {
   }
 }
 
+/** pdf.js 6 calls ArrayBuffer#transferToFixedLength (Node 22+); copy semantics on older Node. */
+function ensureTransferToFixedLength() {
+  const proto = ArrayBuffer.prototype as any;
+  if (typeof proto.transferToFixedLength === "function") return;
+  proto.transferToFixedLength = function transferToFixedLength(this: ArrayBuffer, length?: number) {
+    const size = length ?? this.byteLength;
+    if (size <= this.byteLength) return this.slice(0, size);
+    const next = new ArrayBuffer(size);
+    new Uint8Array(next).set(new Uint8Array(this));
+    return next;
+  };
+}
+
 function ensurePromiseWithResolvers() {
   if (typeof (Promise as { withResolvers?: unknown }).withResolvers === "function") return;
   (
@@ -166,6 +179,7 @@ export async function countPdfPagesOnDisk(path: string) {
  */
 export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): Promise<T | 0> {
   ensurePromiseWithResolvers();
+  ensureTransferToFixedLength();
   const { pathToFileURL } = await import("node:url");
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   // Static import so Next's file tracer ships the worker with the function.
