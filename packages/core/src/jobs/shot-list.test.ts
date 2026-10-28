@@ -40,13 +40,8 @@ describe("buildPhotoContentsMap", () => {
   });
 
   it("spots an index photo with no heading by its comma lines", () => {
-    const map = buildPhotoContentsMap(
-      photos([["Plum jam, 210", "Pork chops, 98", "Rice, 4, 9"]])
-    );
-    expect(map.candidates.map((candidate) => candidate.title)).toEqual([
-      "Pork chops",
-      "Plum jam",
-    ]);
+    const map = buildPhotoContentsMap(photos([["Plum jam, 210", "Pork chops, 98", "Rice, 4, 9"]]));
+    expect(map.candidates.map((candidate) => candidate.title)).toEqual(["Pork chops", "Plum jam"]);
   });
 
   it("adds index-only recipes after the contents, without repeating titles", () => {

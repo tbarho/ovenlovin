@@ -52,7 +52,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const householdId = requireWritableHousehold(context);
     const shot = await loadShot(id, householdId);
     if (shot) {
-      if (!shot.map) throw new BadRequestError("The contents are still being read. Try again soon.");
+      if (!shot.map)
+        throw new BadRequestError("The contents are still being read. Try again soon.");
       const input = await readJsonBody(request, body);
       const picks = resolvePicks(shot.map.candidates, input.picks);
       await jobQueue().patchInput(id, { picks });
@@ -81,7 +82,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     const householdId = requireWritableHousehold(context);
     const shot = await loadShot(id, householdId);
     if (shot) {
-      if (!shot.map) throw new BadRequestError("The contents are still being read. Try again soon.");
+      if (!shot.map)
+        throw new BadRequestError("The contents are still being read. Try again soon.");
       if (shot.picks.length === 0) throw new BadRequestError("Pick at least one recipe first.");
       await jobQueue().patchInput(id, { shooting: true });
       return jsonResponse({ started: true, view: { ...shot } }, 202);
