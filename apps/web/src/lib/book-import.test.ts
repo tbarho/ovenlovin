@@ -41,6 +41,18 @@ describe("countPdfPagesOnDisk", () => {
     dir = "";
   });
 
+  it("does not trust a fake Linearization /N over the xref root", async () => {
+    dir = await mkdtemp(join(tmpdir(), "ovenlovin-pdf-"));
+    const path = join(dir, "book.pdf");
+    const real = Buffer.from(xrefPdf(7)).toString("latin1");
+    const spoof =
+      "%PDF-1.4\n" +
+      "<< /Linearized 1 /N 1 /O 3 /E 100 /L 1000 /H [0 0] >>\n" +
+      real.slice(real.indexOf("\n") + 1);
+    await writeFile(path, Buffer.from(spoof, "latin1"));
+    expect(await countPdfPagesOnDisk(path)).toBe(7);
+  });
+
   it("resolves Count through a classic xref root", async () => {
     dir = await mkdtemp(join(tmpdir(), "ovenlovin-pdf-"));
     const path = join(dir, "book.pdf");
