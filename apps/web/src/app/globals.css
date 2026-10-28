@@ -4494,12 +4494,18 @@ label.photo-page-add-target:focus-visible {
   font-size: 0.85em;
 }
 
+.book-index {
+  column-count: 2;
+  column-gap: 1.5em;
+}
+
 .book-toc li,
 .book-index li {
   display: flex;
   align-items: baseline;
   gap: 0.5em;
   padding: 0.35em 0;
+  break-inside: avoid;
 }
 
 .book-toc-section .book-toc-title {

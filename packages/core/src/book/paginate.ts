@@ -17,7 +17,7 @@ export const BOOK_METRICS = {
   contLines: 2,
   notesLines: 6,
   contentsLines: 36,
-  indexLines: 88,
+  indexLines: 70,
   indexChars: 34,
   wordsChars: 420,
   notesPages: 2,
