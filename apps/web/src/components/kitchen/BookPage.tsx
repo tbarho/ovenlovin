@@ -31,7 +31,7 @@ const CAPTIONED = new Set(["photo", "original-card"]);
  */
 export const BookPage = forwardRef<
   HTMLDivElement,
-  { page: any; size: { w: number; h: number }; bookId: string; print?: boolean }
+  { page: any; size: { w: number; h: number }; bookId: string | null; print?: boolean }
 >(function BookPage({ page, size, bookId, print = false }, ref) {
   const style = { width: size.w, height: size.h, fontSize: `${size.h / 56}px` };
 
@@ -105,22 +105,22 @@ function Section({ page }: { page: any }) {
   );
 }
 
-/** Paper has no links: in print the title is plain text. */
-function Caption({ page, bookId, print }: { page: any; bookId: string; print: boolean }) {
-  return (
-    <div className="book-photo-caption">
-      {print ? (
-        <span className="book-photo-caption-title">{page.title}</span>
-      ) : (
-        <Link href={`/recipes/${page.recipeId}?fromCookbook=${bookId}`}>{page.title}</Link>
-      )}
-      <span className="book-photo-caption-page">p. {page.number}</span>
-    </div>
-  );
+/** Links into the kitchen recipe. Paper has no links; shared books (null bookId) have no kitchen to link to. */
+function RecipeTitle({
+  page,
+  bookId,
+  print,
+}: {
+  page: any;
+  bookId: string | null;
+  print: boolean;
+}) {
+  if (print || !bookId) return <span>{page.title}</span>;
+  return <Link href={`/recipes/${page.recipeId}?fromCookbook=${bookId}`}>{page.title}</Link>;
 }
 
 /** Photo opener. The caption bar sits below the photo, never on top of it. */
-function Photo({ page, bookId, print }: { page: any; bookId: string; print: boolean }) {
+function Photo({ page, bookId, print }: { page: any; bookId: string | null; print: boolean }) {
   return (
     <div className="book-photo">
       <div className="book-photo-frame">
@@ -135,19 +135,33 @@ function Photo({ page, bookId, print }: { page: any; bookId: string; print: bool
           </div>
         )}
       </div>
-      <Caption page={page} bookId={bookId} print={print} />
+      <div className="book-photo-caption">
+        <RecipeTitle page={page} bookId={bookId} print={print} />
+        <span className="book-photo-caption-page">p. {page.number}</span>
+      </div>
     </div>
   );
 }
 
-function OriginalCard({ page, bookId, print }: { page: any; bookId: string; print: boolean }) {
+function OriginalCard({
+  page,
+  bookId,
+  print,
+}: {
+  page: any;
+  bookId: string | null;
+  print: boolean;
+}) {
   return (
     <div className="book-photo">
       <div className="book-photo-frame">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={page.image} alt={`Original card for ${page.title}`} />
       </div>
-      <Caption page={page} bookId={bookId} print={print} />
+      <div className="book-photo-caption">
+        <RecipeTitle page={page} bookId={bookId} print={print} />
+        <span className="book-photo-caption-page">p. {page.number}</span>
+      </div>
     </div>
   );
 }

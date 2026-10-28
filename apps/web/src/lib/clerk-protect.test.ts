@@ -11,6 +11,7 @@ const publicTops = new Set([
   "changelog",
   "invite",
   "print",
+  "read",
   "dev",
   "prototype",
   "llms.txt",

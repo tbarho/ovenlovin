@@ -13,6 +13,10 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 
 In the book reader, tap Print and choose where it's headed. At home gets you a US Letter PDF of exactly the pages you paged through. At a print shop gets the same pages with bleed, crop marks, and embedded fonts, plus a heads-up if a photo will print soft. Big books are made in the background with a progress bar, so you can close the sheet and come back to the download.
 
+### Share a cookbook with a link
+
+Tap Share on a cookbook to make a private link anyone can open to read it as a book, no account needed. They can page through it but not edit it or see the rest of your kitchen. Tap Stop sharing and the link stops working. A cookbook with recipes from a published cookbook stays in your kitchen and can't be shared, and the page tells you why.
+
 ### Add a paper cookbook from its contents pages
 
 For a book you can hold, photograph the contents or index pages. You get the same list of recipes to pick from, then a shot list with page numbers ("p. 112 Short ribs") so you know what to photograph next. Photograph each pick with the usual page photo import and it files into the book's cookbook, credited to its page.

@@ -228,4 +228,11 @@ describe("BookReader", () => {
       "/recipes?cookbook=00000000-0000-4000-8000-000000000020"
     );
   });
+
+  it("links nowhere into the kitchen when shared", async () => {
+    render(<BookReader book={bookFixture()} shared />);
+    await screen.findByTestId("flipbook");
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(screen.getByText("Lemon soup", { selector: ".book-photo-caption span" })).toBeVisible();
+  });
 });
