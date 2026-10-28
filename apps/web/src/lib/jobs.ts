@@ -1,5 +1,6 @@
 import { JobQueue, type JobHandlers } from "@ovenlovin/core/jobs";
 import { getDatabase } from "@ovenlovin/db";
+import { verifyBookImport } from "@/lib/book-import-verify";
 import { cronHeaders } from "@/lib/cron-auth";
 
 type EnvLike = Record<string, string | undefined>;
@@ -10,8 +11,14 @@ export function isBooksEnabled(env: EnvLike = process.env): boolean {
   return flag === "1" || flag === "true";
 }
 
-/** Filled in by the book import and book PDF slices. */
-export const jobHandlers: JobHandlers = {};
+export const jobHandlers: JobHandlers = {
+  book_import: async (item) => {
+    if (item.payload?.step === "verify") {
+      return verifyBookImport(jobQueue(), item);
+    }
+    throw new Error(`No book_import step for ${JSON.stringify(item.payload)}`);
+  },
+};
 
 export function jobQueue() {
   return new JobQueue(getDatabase());

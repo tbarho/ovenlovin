@@ -25,7 +25,10 @@ export function bookDoneLabel(result: BookImportResult) {
   if (result.status === "resumed") {
     return "You already added this book. We'll pick up where it left off.";
   }
-  return `Got it. ${result.pages} pages saved. Next we'll read the contents.`;
+  if (result.pages && result.pages > 0) {
+    return `Got it. ${result.pages} pages saved. Next we'll read the contents.`;
+  }
+  return "Got it. We're checking the file now. Next we'll read the contents.";
 }
 
 export function isPdf(file: File) {

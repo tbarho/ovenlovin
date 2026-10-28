@@ -7,12 +7,31 @@ export function bookUploadPath(householdId: string, sha256: string) {
   return `books/${householdId}/${sha256}.pdf`;
 }
 
-/** Only blobs this household uploaded through the book door, on Vercel Blob. */
-export function isBookBlobUrl(url: string, householdId: string) {
+/**
+ * Host for our Vercel Blob store. Prefer BLOB_STORE_HOST; otherwise derive
+ * from BLOB_READ_WRITE_TOKEN (vercel_blob_rw_<storeId>_...).
+ */
+export function bookBlobStoreHost(env: Record<string, string | undefined> = process.env) {
+  const configured = env.BLOB_STORE_HOST?.trim().toLowerCase();
+  if (configured) return configured;
+  const token = env.BLOB_READ_WRITE_TOKEN?.trim() ?? "";
+  const match = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
+  if (!match) return null;
+  return `${match[1]!.toLowerCase()}.public.blob.vercel-storage.com`;
+}
+
+/** Only blobs this household uploaded through the book door, on OUR Blob store. */
+export function isBookBlobUrl(
+  url: string,
+  householdId: string,
+  env: Record<string, string | undefined> = process.env
+) {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return false;
-    if (!parsed.hostname.endsWith(".blob.vercel-storage.com")) return false;
+    const host = bookBlobStoreHost(env);
+    if (!host) return false;
+    if (parsed.hostname.toLowerCase() !== host) return false;
     return parsed.pathname.startsWith(`/books/${householdId}/`);
   } catch {
     return false;

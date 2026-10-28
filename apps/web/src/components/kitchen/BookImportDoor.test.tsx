@@ -48,7 +48,7 @@ describe("BookImportDoor", () => {
     vi.mocked(api).mockImplementation(async (_path: string, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body));
       if (!body.blobUrl) return { status: "upload", pathname: `books/h/${SHA}.pdf` };
-      return { status: "started", jobId: "job-1", pages: 312 };
+      return { status: "started", jobId: "job-1" };
     });
 
     render(<BookImportDoor deps={{ upload, hash }} />);
@@ -71,7 +71,7 @@ describe("BookImportDoor", () => {
 
     finish({ url: "https://abc.public.blob.vercel-storage.com/books/h/x.pdf" });
     expect(
-      await screen.findByText("Got it. 312 pages saved. Next we'll read the contents.")
+      await screen.findByText("Got it. We're checking the file now. Next we'll read the contents.")
     ).toBeVisible();
     expect(vi.mocked(api).mock.calls[1]![1]!.body).toContain('"blobUrl"');
   });

@@ -11,6 +11,7 @@ export type BookImportInput = {
   bytes: number;
   pages: number;
   name: string;
+  verified?: boolean;
 };
 
 export type BookImportRequest = {

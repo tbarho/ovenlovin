@@ -198,6 +198,16 @@ export class JobQueue extends BaseService {
     return row ?? null;
   }
 
+  /** Merges fields into job.input (used after the verify step finishes). */
+  async patchInput(jobId: string, patch: Record<string, unknown>, now = new Date()) {
+    await this._db.execute(sql`
+      update job set
+        input = coalesce(input, '{}'::jsonb) || ${JSON.stringify(patch)}::jsonb,
+        updated_at = ${ts(now)}
+      where id = ${jobId}
+    `);
+  }
+
   async items(jobId: string) {
     return this._db.select().from(jobItem).where(eq(jobItem.jobId, jobId)).orderBy(jobItem.seq);
   }

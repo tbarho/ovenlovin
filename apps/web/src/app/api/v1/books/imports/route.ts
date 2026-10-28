@@ -6,9 +6,9 @@ import { BadRequestError, ForbiddenError, handleApiError, NotFoundError } from "
 import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 import { readJsonBody } from "@/lib/api/read-json";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
-import { bookUploadPath, countPdfPages, isBookBlobUrl, sha256Hex } from "@/lib/book-import";
+import { bookUploadPath, isBookBlobUrl } from "@/lib/book-import";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
-import { isBooksEnabled, jobQueue } from "@/lib/jobs";
+import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
 const body = z.object({
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
@@ -17,16 +17,11 @@ const body = z.object({
   blobUrl: z.string().url().max(2048).optional(),
 });
 
-async function download(url: string) {
-  const response = await fetch(url);
-  if (!response.ok) throw new BadRequestError("We could not find that upload. Try again.");
-  return new Uint8Array(await response.arrayBuffer());
-}
-
 /**
  * Two calls, one route. Without blobUrl it is the preflight: resume a known
  * file, refuse over-limit, or hand back the upload path. With blobUrl the file
- * is already in Blob: verify it, count pages, check limits again, create the job.
+ * is already in Blob: pin the URL, check size/concurrency caps, create the job.
+ * SHA and page count run in the worker so this request stays cheap.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -64,31 +59,25 @@ export async function POST(request: NextRequest) {
     if (!isBookBlobUrl(input.blobUrl, householdId)) {
       throw new BadRequestError("That upload is not one of yours");
     }
-    const file = await download(input.blobUrl);
-    const refuse = async (message: string, extensions?: Record<string, unknown>) => {
-      await del(input.blobUrl!).catch(() => undefined);
-      return new BadRequestError(message, extensions);
-    };
-    if (sha256Hex(file) !== input.sha256) {
-      throw await refuse("That upload did not match your file. Try again.");
-    }
-    const pages = countPdfPages(file);
-    if (pages === 0) {
-      throw await refuse("We could not read this PDF. Try exporting or printing it to PDF again.");
-    }
 
-    const plan = planBookImport({ ...input, bytes: file.byteLength, pages }, null, usage);
-    if (plan.action === "refuse") throw await refuse(plan.message, { breach: plan.breach });
+    // Pages are unknown until the worker verifies. Size and concurrency still apply.
+    const plan = planBookImport({ ...input, pages: undefined }, null, usage);
+    if (plan.action === "refuse") {
+      await del(input.blobUrl).catch(() => undefined);
+      throw new BadRequestError(plan.message, { breach: plan.breach });
+    }
 
     const jobInput: BookImportInput = {
       blobUrl: input.blobUrl,
       sha256: input.sha256,
-      bytes: file.byteLength,
-      pages,
+      bytes: input.bytes,
+      pages: 0,
       name: input.name,
+      verified: false,
     };
-    const jobId = await queue.enqueue(householdId, "book_import", jobInput);
-    return createdResponse({ status: "started", jobId, pages });
+    const jobId = await queue.enqueue(householdId, "book_import", jobInput, [{ step: "verify" }]);
+    await kickWorker(request.nextUrl.origin);
+    return createdResponse({ status: "started", jobId });
   } catch (error) {
     return handleApiError(error, request.url);
   }

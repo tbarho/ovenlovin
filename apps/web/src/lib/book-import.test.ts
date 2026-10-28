@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { packedPdf, pageObjects, pdfBytes, plainPdf } from "@/test/pdf-fixture";
-import { countPdfPages, isBookBlobUrl, sha256Hex } from "./book-import";
+import { bookBlobStoreHost, countPdfPages, isBookBlobUrl, sha256Hex } from "./book-import";
 
 const household = "22222222-2222-4222-8222-222222222222";
-const blob = (path: string) => `https://abc.public.blob.vercel-storage.com${path}`;
+const store = "abc.public.blob.vercel-storage.com";
+const blob = (path: string) => `https://${store}${path}`;
 
 describe("countPdfPages", () => {
   it("reads the page tree count", () => {
@@ -23,13 +24,37 @@ describe("countPdfPages", () => {
   });
 });
 
+describe("bookBlobStoreHost", () => {
+  it("prefers BLOB_STORE_HOST", () => {
+    expect(bookBlobStoreHost({ BLOB_STORE_HOST: "My.Public.Blob.Vercel-Storage.com" })).toBe(
+      "my.public.blob.vercel-storage.com"
+    );
+  });
+
+  it("derives the host from the read-write token", () => {
+    expect(bookBlobStoreHost({ BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_AbC123_secretpart" })).toBe(
+      "abc123.public.blob.vercel-storage.com"
+    );
+  });
+});
+
 describe("isBookBlobUrl", () => {
-  it("accepts this household's book uploads on Vercel Blob", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("accepts this household's book uploads on our store", () => {
+    vi.stubEnv("BLOB_STORE_HOST", store);
     expect(isBookBlobUrl(blob(`/books/${household}/x-Ab3.pdf`), household)).toBe(true);
   });
 
   it("rejects other hosts, other households, and other folders", () => {
+    vi.stubEnv("BLOB_STORE_HOST", store);
     expect(isBookBlobUrl(`https://evil.example/books/${household}/x.pdf`, household)).toBe(false);
+    expect(
+      isBookBlobUrl(
+        `https://evil.public.blob.vercel-storage.com/books/${household}/x.pdf`,
+        household
+      )
+    ).toBe(false);
     expect(isBookBlobUrl(blob("/books/someone-else/x.pdf"), household)).toBe(false);
     expect(isBookBlobUrl(blob(`/recipes/${household}/x.pdf`), household)).toBe(false);
     expect(isBookBlobUrl("not a url", household)).toBe(false);
