@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { groupCandidates, searchCandidates } from "@ovenlovin/core/jobs";
+// The contents-map subpath, not the jobs barrel: this is a client component.
+import { groupCandidates, searchCandidates } from "@ovenlovin/core/contents-map";
 import type { TriageRow } from "@ovenlovin/core/jobs";
 import { api } from "@/lib/browser-api";
 import type { BookShotView } from "@/lib/book-shot-view";
