@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- jsonb job payloads */
 import type { ClaimedItem, JobKind, JobQueue } from "./queue";
 
+/** Throw from a handler when retrying cannot help (bad upload, over limits, etc.). */
+export class PermanentJobError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PermanentJobError";
+  }
+}
+
 // eslint-disable-next-line no-unused-vars
 export type JobHandler = (item: ClaimedItem) => Promise<any>;
 export type JobHandlers = Partial<Record<JobKind, JobHandler>>;
@@ -29,6 +37,9 @@ export async function runNext(queue: JobQueue, handlers: JobHandlers): Promise<R
     const result = await handler(item);
     return { status: (await queue.complete(item, result)) ? "done" : "lost", item };
   } catch (error) {
+    if (error instanceof PermanentJobError || (error as any)?.name === "PermanentJobError") {
+      return { status: await queue.failPermanent(item, message(error)), item };
+    }
     return { status: await queue.fail(item, message(error)), item };
   }
 }

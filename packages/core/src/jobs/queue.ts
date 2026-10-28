@@ -143,6 +143,23 @@ export class JobQueue extends BaseService {
     return row.status as "pending" | "failed";
   }
 
+  /** Parks the item as failed now — for errors that will never succeed on retry. */
+  async failPermanent(item: ClaimedItem, error: string, now = new Date()) {
+    const [row] = await this.rows(sql`
+      update job_item set
+        status = 'failed',
+        attempts = ${this.maxAttempts},
+        error = ${error},
+        lease_until = null,
+        updated_at = ${ts(now)}
+      where id = ${item.id} and status = 'running' and attempts = ${item.attempts}
+      returning status
+    `);
+    if (!row) return "lost" as const;
+    await this.refresh([item.jobId], now);
+    return "failed" as const;
+  }
+
   /** Parks items whose last allowed lease expired (the worker died mid-item). */
   async park(now = new Date()) {
     const rows = await this.rows(sql`
