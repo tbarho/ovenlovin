@@ -97,3 +97,114 @@ export function countPdfPages(bytes: Uint8Array) {
 
   return objects.reduce((memo, body) => memo + (body.match(PAGE)?.length ?? 0), 0);
 }
+
+/** Full in-memory parse is only safe under this size on the Vercel worker. */
+export const PDF_FULL_PARSE_MAX_BYTES = 32 * 1024 * 1024;
+
+/**
+ * Page count from a file on disk without loading the whole PDF when possible.
+ * Order: Linearization /N in the first 1KB, classic trailer/xref /Root → /Pages
+ * /Count, then full parse only when the file is under PDF_FULL_PARSE_MAX_BYTES.
+ * Returns 0 when the count cannot be trusted.
+ */
+export async function countPdfPagesOnDisk(path: string) {
+  const { open } = await import("node:fs/promises");
+  const file = await open(path, "r");
+  try {
+    const size = (await file.stat()).size;
+    if (size < 8) return 0;
+
+    const head = Buffer.alloc(Math.min(size, 1024));
+    await file.read(head, 0, head.length, 0);
+    if (!head.toString("latin1").startsWith("%PDF-")) return 0;
+
+    const linear = head.toString("latin1").match(/\/Linearized\b[\s\S]{0,200}?\/N\s+(\d+)/);
+    if (linear) {
+      const n = Number(linear[1]);
+      if (n > 0) return n;
+    }
+
+    const fromXref = await countViaClassicXref(file, size);
+    if (fromXref > 0) return fromXref;
+
+    if (size > PDF_FULL_PARSE_MAX_BYTES) return 0;
+    const { readFile } = await import("node:fs/promises");
+    return countPdfPages(await readFile(path));
+  } finally {
+    await file.close();
+  }
+}
+
+async function countViaClassicXref(
+  file: {
+    read: (buf: Buffer, offset: number, length: number, position: number) => Promise<unknown>;
+  },
+  size: number
+) {
+  const tailSize = Math.min(size, 256 * 1024);
+  const tail = Buffer.alloc(tailSize);
+  await file.read(tail, 0, tailSize, size - tailSize);
+  const text = tail.toString("latin1");
+  const startMatch = [...text.matchAll(/startxref\s+(\d+)\s*%%EOF/g)].pop();
+  if (!startMatch) return 0;
+  const xrefOffset = Number(startMatch[1]);
+  if (!Number.isFinite(xrefOffset) || xrefOffset < 0 || xrefOffset >= size) return 0;
+
+  // Classic xref tables are small; reject offsets that look like xref streams we can't parse yet.
+  const window = Math.min(64 * 1024, size - xrefOffset);
+  const xrefBuf = Buffer.alloc(window);
+  await file.read(xrefBuf, 0, window, xrefOffset);
+  const xrefText = xrefBuf.toString("latin1");
+  if (!xrefText.startsWith("xref")) return 0;
+
+  const trailer = xrefText.match(/trailer\s*<<([\s\S]*?)>>/);
+  if (!trailer) return 0;
+  const rootRef = trailer[1]!.match(/\/Root\s+(\d+)\s+(\d+)\s+R/);
+  if (!rootRef) return 0;
+  const rootObj = Number(rootRef[1]);
+  const rootGen = Number(rootRef[2]);
+
+  const entries = parseClassicXrefEntries(xrefText);
+  const rootOffset = entries.get(`${rootObj}/${rootGen}`);
+  if (rootOffset == null) return 0;
+
+  const rootBuf = Buffer.alloc(Math.min(8 * 1024, size - rootOffset));
+  await file.read(rootBuf, 0, rootBuf.length, rootOffset);
+  const rootBody = rootBuf.toString("latin1");
+  const pagesRef = rootBody.match(/\/Pages\s+(\d+)\s+(\d+)\s+R/);
+  if (!pagesRef) return 0;
+  const pagesObj = Number(pagesRef[1]);
+  const pagesGen = Number(pagesRef[2]);
+  const pagesOffset = entries.get(`${pagesObj}/${pagesGen}`);
+  if (pagesOffset == null) return 0;
+
+  const pagesBuf = Buffer.alloc(Math.min(8 * 1024, size - pagesOffset));
+  await file.read(pagesBuf, 0, pagesBuf.length, pagesOffset);
+  const count = Number(
+    pagesBuf.toString("latin1").match(/\/Type\s*\/Pages\b[\s\S]{0,400}?\/Count\s+(\d+)/)?.[1] ?? 0
+  );
+  return count > 0 ? count : 0;
+}
+
+function parseClassicXrefEntries(xrefText: string) {
+  const entries = new Map<string, number>();
+  const section = [
+    ...xrefText.matchAll(/^(\d+)\s+(\d+)\s*\n((?:[0-9]{10}\s[0-9]{5}\s[nf]\s*\n?)+)/gm),
+  ];
+  for (const match of section) {
+    let obj = Number(match[1]);
+    const rows = match[3]!.trim().split(/\n/);
+    for (const row of rows) {
+      const parts = row.trim().split(/\s+/);
+      if (parts.length < 3) continue;
+      const offset = Number(parts[0]);
+      const gen = Number(parts[1]);
+      const flag = parts[2];
+      if (flag === "n" && Number.isFinite(offset)) {
+        entries.set(`${obj}/${gen}`, offset);
+      }
+      obj += 1;
+    }
+  }
+  return entries;
+}

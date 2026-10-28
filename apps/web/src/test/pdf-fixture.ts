@@ -22,6 +22,32 @@ export function plainPdf(pages: number) {
   );
 }
 
+/** Classic xref table + startxref so disk page-count can resolve the root. */
+export function xrefPdf(pages: number) {
+  const kids = Array.from({ length: pages }, (_, index) => `${3 + index} 0 R`).join(" ");
+  const objects = [
+    `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`,
+    `2 0 obj\n<< /Kids [${kids}] /Count ${pages} /Type /Pages >>\nendobj\n`,
+    pageObjects(pages),
+  ];
+  let body = `%PDF-1.4\n`;
+  const offsets: number[] = [0];
+  for (const object of objects) {
+    offsets.push(Buffer.byteLength(body, "latin1"));
+    body += object;
+  }
+  const xrefStart = Buffer.byteLength(body, "latin1");
+  const rows = offsets
+    .map((offset, index) =>
+      index === 0 ? `0000000000 65535 f \n` : `${String(offset).padStart(10, "0")} 00000 n \n`
+    )
+    .join("");
+  body += `xref\n0 ${offsets.length}\n${rows}`;
+  body += `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\n`;
+  body += `startxref\n${xrefStart}\n%%EOF\n`;
+  return pdfBytes(body);
+}
+
 /** PDF 1.5 style: the page tree lives inside a compressed object stream. */
 export function packedPdf(pages: number) {
   const packed = [

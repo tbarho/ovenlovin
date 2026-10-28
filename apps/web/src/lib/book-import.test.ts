@@ -1,6 +1,15 @@
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { packedPdf, pageObjects, pdfBytes, plainPdf } from "@/test/pdf-fixture";
-import { bookBlobStoreHost, countPdfPages, isBookBlobUrl, sha256Hex } from "./book-import";
+import { packedPdf, pageObjects, pdfBytes, plainPdf, xrefPdf } from "@/test/pdf-fixture";
+import {
+  bookBlobStoreHost,
+  countPdfPages,
+  countPdfPagesOnDisk,
+  isBookBlobUrl,
+  sha256Hex,
+} from "./book-import";
 
 const household = "22222222-2222-4222-8222-222222222222";
 const store = "abc.public.blob.vercel-storage.com";
@@ -21,6 +30,29 @@ describe("countPdfPages", () => {
 
   it("returns 0 for a file that is not a PDF", () => {
     expect(countPdfPages(pdfBytes("PK\u0003\u0004 epub"))).toBe(0);
+  });
+});
+
+describe("countPdfPagesOnDisk", () => {
+  let dir = "";
+
+  afterEach(async () => {
+    if (dir) await rm(dir, { recursive: true, force: true });
+    dir = "";
+  });
+
+  it("resolves Count through a classic xref root", async () => {
+    dir = await mkdtemp(join(tmpdir(), "ovenlovin-pdf-"));
+    const path = join(dir, "book.pdf");
+    await writeFile(path, xrefPdf(7));
+    expect(await countPdfPagesOnDisk(path)).toBe(7);
+  });
+
+  it("falls back to full parse for small plain PDFs without xref", async () => {
+    dir = await mkdtemp(join(tmpdir(), "ovenlovin-pdf-"));
+    const path = join(dir, "book.pdf");
+    await writeFile(path, plainPdf(3));
+    expect(await countPdfPagesOnDisk(path)).toBe(3);
   });
 });
 
