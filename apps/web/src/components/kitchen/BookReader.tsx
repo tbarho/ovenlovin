@@ -42,7 +42,23 @@ export function spreadOf(page: number, total: number, single: boolean): number[]
   return [page, page + 1];
 }
 
-export function BookReader({ book }: { book: ReaderBook }) {
+function BookReaderHead({ book, shared }: { book: ReaderBook; shared: boolean }) {
+  return (
+    <div className="book-reader-head">
+      {shared ? (
+        <p className="back-link">{book.title}</p>
+      ) : (
+        <Link href={`/recipes?cookbook=${book.id}`} className="back-link">
+          ← {book.title}
+        </Link>
+      )}
+      {shared ? null : <BookPrint bookId={book.id} />}
+    </div>
+  );
+}
+
+/** `shared` is the signed-out reader: no links back into the kitchen. */
+export function BookReader({ book, shared = false }: { book: ReaderBook; shared?: boolean }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const flipRef = useRef<any>(null);
   const [size, setSize] = useState<BookSize | null>(null);
@@ -88,16 +104,14 @@ export function BookReader({ book }: { book: ReaderBook }) {
   if (total === 0) {
     return (
       <div className="book-reader">
-        <div className="book-reader-head">
-          <Link href={`/recipes?cookbook=${book.id}`} className="back-link">
-            ← {book.title}
-          </Link>
-        </div>
+        <BookReaderHead book={book} shared={shared} />
         <div className="empty-card book-reader-empty">
           <p>This book has no recipes yet.</p>
-          <Link className="btn primary" href={`/recipes?cookbook=${book.id}`}>
-            Add recipes
-          </Link>
+          {shared ? null : (
+            <Link className="btn primary" href={`/recipes?cookbook=${book.id}`}>
+              Add recipes
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -112,12 +126,7 @@ export function BookReader({ book }: { book: ReaderBook }) {
 
   return (
     <div className="book-reader">
-      <div className="book-reader-head">
-        <Link href={`/recipes?cookbook=${book.id}`} className="back-link">
-          ← {book.title}
-        </Link>
-        <BookPrint bookId={book.id} />
-      </div>
+      <BookReaderHead book={book} shared={shared} />
 
       <div className="book-reader-stage" ref={stageRef}>
         {size ? (
@@ -142,7 +151,7 @@ export function BookReader({ book }: { book: ReaderBook }) {
               } as any)}
             >
               {book.pages.map((pageData: any, i: number) => (
-                <BookPage key={i} page={pageData} size={size} bookId={book.id} />
+                <BookPage key={i} page={pageData} size={size} bookId={shared ? null : book.id} />
               ))}
             </FlipBook>
             <button

@@ -1,11 +1,17 @@
 import { redirect } from "next/navigation";
-import { CookbookService, PeopleService, RecipeService } from "@ovenlovin/core";
+import {
+  CookbookService,
+  CookbookShareService,
+  PeopleService,
+  RecipeService,
+} from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { CookbookRecipes } from "@/components/kitchen/CookbookRecipes";
 import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { householdLovePeople, sortRecipesByLoves } from "@/lib/household-loves";
 import { demoImportQuota } from "@/lib/import-save";
 import { listBookImportTiles } from "@/lib/book-import-view";
+import { presentShare } from "@/lib/cookbook-share";
 import { listShotBookTiles } from "@/lib/book-shot-view";
 import { isBooksEnabled, jobQueue } from "@/lib/jobs";
 import { requireKitchenContext } from "@/lib/kitchen-session";
@@ -36,13 +42,14 @@ export default async function RecipesPage({
   if (cookbookId) {
     const cookbook = await cookbooks.getCookbook(cookbookId);
     if (!cookbook || cookbook.householdId !== householdId) redirect("/recipes");
-    const [members, catalog, booksByRecipe] = await Promise.all([
+    const [members, catalog, booksByRecipe, share] = await Promise.all([
       recipes.listRecipes(householdId, {
         cookbookId,
         pagination: { limit: 80 },
       }),
       recipes.listRecipes(householdId, { pagination: { limit: 100 } }),
       cookbooks.listRecipeCookbookNames(householdId),
+      booksEnabled ? new CookbookShareService(db).getStatus(cookbookId).then(presentShare) : null,
     ]);
     const safetyByRecipe = await loadRecipeSafetyById(
       members.items.map((recipe) => recipe.id),
@@ -58,6 +65,7 @@ export default async function RecipesPage({
         lovePeople={lovePeople}
         safetyByRecipe={safetyByRecipe}
         booksEnabled={booksEnabled}
+        share={share}
       />
     );
   }

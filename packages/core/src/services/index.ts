@@ -7,6 +7,7 @@ export * from "./plans";
 export * from "./recipes";
 export * from "./import-dedupe";
 export * from "./cookbooks";
+export * from "./cookbook-share";
 export * from "./plans";
 export * from "./api-keys";
 export * from "./shopping-list";

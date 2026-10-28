@@ -14,6 +14,7 @@ import { CookbookRecipePicker } from "./CookbookRecipePicker";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { KitchenToast } from "./KitchenToast";
 import { RecipeCardSafety } from "./RecipeCardSafety";
+import { ShareCookbookSheet, type CookbookShare } from "./ShareCookbookSheet";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
 const EMPTY_RECIPES: Recipe[] = [];
@@ -111,6 +112,7 @@ export function CookbookRecipes({
   lovePeople = EMPTY_LOVE_PEOPLE,
   safetyByRecipe = {},
   booksEnabled = false,
+  share = null,
 }: {
   cookbook: Cookbook;
   recipes: Recipe[];
@@ -119,9 +121,14 @@ export function CookbookRecipes({
   lovePeople?: PersonLove[];
   safetyByRecipe?: Record<string, RecipeSafetySummary>;
   booksEnabled?: boolean;
+  share?: CookbookShare | null;
 }) {
   const router = useRouter();
   const [renameOpen, setRenameOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareState, setShareState] = useState(share);
+  const closeShare = useCallback(() => setShareOpen(false), []);
+  useEffect(() => setShareState(share), [share]);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -221,6 +228,17 @@ export function CookbookRecipes({
               Open book
             </Link>
           ) : null}
+          {shareState ? (
+            <button
+              className="btn"
+              type="button"
+              disabled={Boolean(shareState.blocked)}
+              aria-describedby={shareState.blocked ? "share-blocked" : undefined}
+              onClick={() => setShareOpen(true)}
+            >
+              Share
+            </button>
+          ) : null}
           <button className="btn" type="button" onClick={() => setAddOpen(true)}>
             Add recipes
           </button>
@@ -238,6 +256,11 @@ export function CookbookRecipes({
         </div>
       </div>
 
+      {shareState?.blocked ? (
+        <p className="muted" id="share-blocked">
+          Sharing is off: {shareState.blocked}
+        </p>
+      ) : null}
       {error ? <p className="muted">{error}</p> : null}
 
       {recipes.length === 0 ? (
@@ -278,6 +301,15 @@ export function CookbookRecipes({
       )}
 
       <RenameCookbookSheet cookbook={cookbook} open={renameOpen} onClose={closeRename} />
+      {shareState && !shareState.blocked ? (
+        <ShareCookbookSheet
+          cookbookId={cookbook.id}
+          share={shareState}
+          open={shareOpen}
+          onClose={closeShare}
+          onChange={setShareState}
+        />
+      ) : null}
       <CookbookRecipePicker
         open={addOpen}
         recipes={catalog}
