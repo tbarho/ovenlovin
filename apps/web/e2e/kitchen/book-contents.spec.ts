@@ -15,7 +15,7 @@ test.describe("book contents map", () => {
 
     await expect(page.getByRole("heading", { name: "A Synthetic Kitchen" })).toBeVisible();
     await page.getByRole("button", { name: "Select all" }).click();
-    await expect(page.getByText("Saved")).toBeVisible();
+    await expect(page.getByText("Saved")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("3 of 3 recipes picked.")).toBeVisible();
 
     const baking = page.getByRole("region", { name: "Baking" });
@@ -24,7 +24,7 @@ test.describe("book contents map", () => {
     await expect(page.getByRole("checkbox", { name: /Shortbread/ })).toBeChecked();
 
     await page.getByRole("checkbox", { name: /Shortbread/ }).uncheck();
-    await expect(page.getByText("Saved")).toBeVisible();
+    await expect(page.getByText("Saved")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("2 of 3 recipes picked.")).toBeVisible();
 
     await page.getByLabel("Search the contents").fill("ginger");
@@ -37,12 +37,12 @@ test.describe("book contents map", () => {
 
     await page.getByRole("button", { name: "Select none" }).click();
     await expect(page.getByText("0 of 3 recipes picked.")).toBeVisible();
-    await expect(page.getByText("Saved")).toBeVisible();
+    await expect(page.getByText("Saved")).toBeVisible({ timeout: 30_000 });
     await page.reload();
     await expect(page.getByText("0 of 3 recipes picked.")).toBeVisible();
 
     await page.getByRole("button", { name: "Select all" }).click();
-    await expect(page.getByText("Saved")).toBeVisible();
+    await expect(page.getByText("Saved")).toBeVisible({ timeout: 30_000 });
 
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });

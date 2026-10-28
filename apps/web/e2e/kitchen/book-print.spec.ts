@@ -4,6 +4,19 @@ import path from "node:path";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { PRINT_FIXTURE_ID } from "../../src/test/print-fixture";
 
+/** Node 20 CI lacks Promise.withResolvers; pdfjs-dist needs it. */
+if (typeof (Promise as any).withResolvers !== "function") {
+  (Promise as any).withResolvers = function <T>() {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+}
+
 /** Names of fonts whose files ride inside the PDF (FontFile, FontFile2, FontFile3). */
 async function embeddedFonts(bytes: Uint8Array) {
   const doc = await PDFDocument.load(bytes);
