@@ -1,5 +1,6 @@
 import { JobQueue, PermanentJobError, type JobHandlers } from "@ovenlovin/core/jobs";
 import { getDatabase } from "@ovenlovin/db";
+import { mapBookContents } from "@/lib/book-contents";
 import { verifyBookImport } from "@/lib/book-import-verify";
 import { cronHeaders } from "@/lib/cron-auth";
 
@@ -15,6 +16,9 @@ export const jobHandlers: JobHandlers = {
   book_import: async (item) => {
     if (item.payload?.step === "verify") {
       return verifyBookImport(jobQueue(), item);
+    }
+    if (item.payload?.step === "contents") {
+      return mapBookContents(jobQueue(), item);
     }
     throw new PermanentJobError(`No book_import step for ${JSON.stringify(item.payload)}`);
   },

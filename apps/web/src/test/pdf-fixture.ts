@@ -53,6 +53,42 @@ export function xrefPdf(pages: number) {
   return pdfBytes(body);
 }
 
+const escapePdf = (text: string) => text.replace(/([\\()])/g, "\\$1");
+
+/**
+ * Text-layer PDF: one array of lines per page, Helvetica, top to bottom.
+ * An empty array is a page with no text layer (a scanned page stub).
+ */
+export function textPdf(pages: string[][]) {
+  const pageIds = pages.map((_, index) => 4 + index * 2);
+  const objects = [
+    `<< /Type /Catalog /Pages 2 0 R >>`,
+    `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pages.length} >>`,
+    `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`,
+    ...pages.flatMap((lines, index) => {
+      const stream = lines
+        .map((line, row) => `BT /F1 12 Tf 72 ${720 - row * 18} Td (${escapePdf(line)}) Tj ET`)
+        .join("\n");
+      return [
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${pageIds[index]! + 1} 0 R >>`,
+        `<< /Length ${Buffer.byteLength(stream, "latin1")} >>\nstream\n${stream}\nendstream`,
+      ];
+    }),
+  ];
+
+  let body = `%PDF-1.4\n`;
+  const offsets = objects.map((object, index) => {
+    const offset = Buffer.byteLength(body, "latin1");
+    body += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    return offset;
+  });
+  const xrefStart = Buffer.byteLength(body, "latin1");
+  body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  body += offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
+  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
+  return pdfBytes(body);
+}
+
 /** PDF 1.5 style: the page tree lives inside a compressed object stream. */
 export function packedPdf(pages: number) {
   const packed = [

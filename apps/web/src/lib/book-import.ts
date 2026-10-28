@@ -143,9 +143,7 @@ function ensurePromiseWithResolvers() {
  * is not deleted.
  */
 export async function countPdfPagesOnDisk(path: string) {
-  ensurePromiseWithResolvers();
   const { open } = await import("node:fs/promises");
-  const { pathToFileURL } = await import("node:url");
   const file = await open(path, "r");
   try {
     const size = (await file.stat()).size;
@@ -157,6 +155,16 @@ export async function countPdfPagesOnDisk(path: string) {
     await file.close();
   }
 
+  return withPdf(path, async (doc) => Number(doc.numPages) || 0);
+}
+
+/**
+ * Opens a PDF on disk with pdf.js and hands the document to `run`. Unreadable
+ * PDFs return 0 (count) or rethrow as typed errors; infra errors rethrow as-is.
+ */
+export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): Promise<T | 0> {
+  ensurePromiseWithResolvers();
+  const { pathToFileURL } = await import("node:url");
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   // Static import so Next's file tracer ships the worker with the function.
   const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
@@ -170,8 +178,7 @@ export async function countPdfPagesOnDisk(path: string) {
     disableStream: true,
   } as never);
   try {
-    const doc = await task.promise;
-    return Number(doc.numPages) || 0;
+    return await run(await task.promise);
   } catch (error) {
     const name = error instanceof Error ? error.name : "";
     if (name === "InvalidPDFException" || name === "FormatError") {

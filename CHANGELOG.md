@@ -9,7 +9,9 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 
 ## [Unreleased]
 
-Nothing yet. Everything below is on `main`.
+### Pick recipes from a cookbook's contents page
+
+Drop in a cookbook PDF and see its recipes listed by section with their page numbers, all picked. Search, select all or none, and your picks are saved for when the recipes come in.
 
 ## 2026-10-22 - A week sized to your household
 

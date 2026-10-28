@@ -17,6 +17,7 @@
     "./aisles": "./src/services/shopping-aisles.ts",
     "./people-order": "./src/services/people-order.ts",
     "./jobs": "./src/jobs/index.ts",
+    "./contents-map": "./src/jobs/contents-map.ts",
     "./book": "./src/book/index.ts"
   },
   "scripts": {

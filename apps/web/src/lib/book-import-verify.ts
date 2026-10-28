@@ -18,7 +18,7 @@ import {
   UnreadablePdfError,
 } from "@/lib/book-import";
 
-async function streamToTemp(url: string, path: string) {
+export async function streamToTemp(url: string, path: string) {
   const response = await fetch(url);
   if (!response.ok || !response.body) {
     if (response.status === 404 || response.status === 403) {
@@ -99,6 +99,10 @@ export async function verifyBookImport(queue: JobQueue, item: ClaimedItem) {
       bytes: streamed.bytes,
       verified: true,
     });
+    const items = await queue.items(item.jobId);
+    if (!items.some((existing: any) => existing.payload?.step === "contents")) {
+      await queue.addItems(item.jobId, [{ step: "contents" }]);
+    }
     return { pages, bytes: streamed.bytes };
   } finally {
     await unlink(path).catch(() => undefined);

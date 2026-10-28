@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
   addBook,
@@ -83,9 +84,14 @@ export function BookImportDoor({ deps }: { deps?: Parameters<typeof addBook>[2] 
       >
         {step ? <BookProgress step={step} /> : null}
         {!step && result ? (
-          <p className="sheet-lead" role="status">
-            {bookDoneLabel(result)}
-          </p>
+          <div className="sheet-stack">
+            <p className="sheet-lead" role="status">
+              {bookDoneLabel(result)}
+            </p>
+            <Link className="btn primary" href={`/recipes/books/${result.jobId}`}>
+              Pick recipes
+            </Link>
+          </div>
         ) : null}
         {!step && !result ? (
           <div className="sheet-stack">
