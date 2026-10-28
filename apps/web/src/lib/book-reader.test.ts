@@ -41,11 +41,13 @@ const details = (id: string, title: string, overrides: Record<string, unknown> =
   ...overrides,
 });
 
-function setup(overrides: {
-  book?: Record<string, unknown> | null;
-  ids?: string[];
-  byId?: Record<string, any>;
-} = {}) {
+function setup(
+  overrides: {
+    book?: Record<string, unknown> | null;
+    ids?: string[];
+    byId?: Record<string, any>;
+  } = {}
+) {
   const book = overrides.book === undefined ? cookbook() : overrides.book;
   const ids = overrides.ids ?? ["r2", "r1"];
   const byId = overrides.byId ?? {

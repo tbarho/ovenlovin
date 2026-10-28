@@ -213,7 +213,14 @@ describe("BookReader", () => {
 
   it("offers to add recipes when the book is empty", () => {
     render(
-      <BookReader book={{ id: "00000000-0000-4000-8000-000000000020", title: "Empty", subtitle: null, pages: [] }} />
+      <BookReader
+        book={{
+          id: "00000000-0000-4000-8000-000000000020",
+          title: "Empty",
+          subtitle: null,
+          pages: [],
+        }}
+      />
     );
     expect(screen.getByText("This book has no recipes yet.")).toBeVisible();
     expect(screen.getByRole("link", { name: "Add recipes" })).toHaveAttribute(

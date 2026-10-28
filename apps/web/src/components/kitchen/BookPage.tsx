@@ -11,11 +11,12 @@ export function timeLabel(minutes: number) {
   return rest ? `${hours} hr ${rest} min` : `${hours} hr`;
 }
 
-/** "Serves 4 · 2 loaves · Prep 10 min · Cook 45 min" — only what the recipe knows. */
+/** "Serves 4 · 2 loaves · Prep 10 min · Cook 45 min" - only what the recipe knows. */
 export function metaLine(header: any) {
   const parts: string[] = [];
   if (header.servings) parts.push(`Serves ${header.servings}`);
-  if (header.yieldQuantity && header.yieldUnit) parts.push(`${header.yieldQuantity} ${header.yieldUnit}`);
+  if (header.yieldQuantity && header.yieldUnit)
+    parts.push(`${header.yieldQuantity} ${header.yieldUnit}`);
   if (header.prepTimeMinutes) parts.push(`Prep ${timeLabel(header.prepTimeMinutes)}`);
   if (header.cookTimeMinutes) parts.push(`Cook ${timeLabel(header.cookTimeMinutes)}`);
   if (header.totalTimeMinutes) parts.push(`Total ${timeLabel(header.totalTimeMinutes)}`);
@@ -28,28 +29,29 @@ const CAPTIONED = new Set(["photo", "original-card"]);
  * One laid-out book page. The caption bar under photos is a flex row at the
  * bottom of the page, never an overlay on top of the photo.
  */
-export const BookPage = forwardRef<HTMLDivElement, { page: any; size: { w: number; h: number }; bookId: string }>(
-  function BookPage({ page, size, bookId }, ref) {
-    const style = { width: size.w, height: size.h, fontSize: `${size.h / 56}px` };
+export const BookPage = forwardRef<
+  HTMLDivElement,
+  { page: any; size: { w: number; h: number }; bookId: string }
+>(function BookPage({ page, size, bookId }, ref) {
+  const style = { width: size.w, height: size.h, fontSize: `${size.h / 56}px` };
 
-    return (
-      <div ref={ref} className={`book-page book-page--${page.kind}`} style={style}>
-        {page.kind === "cover" ? <Cover page={page} /> : null}
-        {page.kind === "dedication" ? <Dedication page={page} /> : null}
-        {page.kind === "contents" ? <Contents page={page} /> : null}
-        {page.kind === "section" ? <Section page={page} /> : null}
-        {page.kind === "photo" ? <Photo page={page} bookId={bookId} /> : null}
-        {page.kind === "original-card" ? <OriginalCard page={page} bookId={bookId} /> : null}
-        {page.kind === "recipe" || page.kind === "recipe-cont" ? <Recipe page={page} /> : null}
-        {page.kind === "index" ? <Index page={page} /> : null}
-        {page.kind === "notes" ? <Notes /> : null}
-        {page.kind === "colophon" ? <Colophon page={page} /> : null}
+  return (
+    <div ref={ref} className={`book-page book-page--${page.kind}`} style={style}>
+      {page.kind === "cover" ? <Cover page={page} /> : null}
+      {page.kind === "dedication" ? <Dedication page={page} /> : null}
+      {page.kind === "contents" ? <Contents page={page} /> : null}
+      {page.kind === "section" ? <Section page={page} /> : null}
+      {page.kind === "photo" ? <Photo page={page} bookId={bookId} /> : null}
+      {page.kind === "original-card" ? <OriginalCard page={page} bookId={bookId} /> : null}
+      {page.kind === "recipe" || page.kind === "recipe-cont" ? <Recipe page={page} /> : null}
+      {page.kind === "index" ? <Index page={page} /> : null}
+      {page.kind === "notes" ? <Notes /> : null}
+      {page.kind === "colophon" ? <Colophon page={page} /> : null}
 
-        {CAPTIONED.has(page.kind) ? null : <p className="book-page-number">{page.number}</p>}
-      </div>
-    );
-  }
-);
+      {CAPTIONED.has(page.kind) ? null : <p className="book-page-number">{page.number}</p>}
+    </div>
+  );
+});
 
 function Cover({ page }: { page: any }) {
   return (
