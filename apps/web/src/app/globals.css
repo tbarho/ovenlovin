@@ -4529,6 +4529,13 @@ label.photo-page-add-target:focus-visible {
   white-space: nowrap;
 }
 
+.book-index .book-toc-page {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: right;
+  max-width: 45%;
+}
+
 .book-section-title {
   margin: 0;
   font-family: var(--display);

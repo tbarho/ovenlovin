@@ -88,7 +88,7 @@ async function pdfText(bytes: Uint8Array) {
       })
     );
   } finally {
-    await doc.destroy();
+    if (typeof doc.destroy === "function") await doc.destroy();
   }
 }
 
