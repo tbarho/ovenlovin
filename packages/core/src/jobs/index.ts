@@ -3,3 +3,4 @@ export * from "./run";
 export * from "./entitlements";
 export * from "./book-import";
 export * from "./contents-map";
+export * from "./recipe-spans";

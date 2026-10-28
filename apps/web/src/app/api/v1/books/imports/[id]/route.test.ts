@@ -11,12 +11,16 @@ const queue = {
   get: vi.fn(),
   items: vi.fn(),
   patchInput: vi.fn(),
+  addItems: vi.fn(
+    async (_id: string, payloads: unknown[], _now?: Date, _uniqueBy?: string) => payloads.length
+  ),
 };
+const kickWorker = vi.fn(async (_origin: string) => undefined);
 
 vi.mock("@ovenlovin/db", () => ({ getDatabase: () => ({}) }));
 vi.mock("@/lib/jobs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/jobs")>();
-  return { ...actual, jobQueue: () => queue };
+  return { ...actual, jobQueue: () => queue, kickWorker: (origin: string) => kickWorker(origin) };
 });
 vi.mock("@/lib/api/middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/middleware")>();
@@ -30,7 +34,7 @@ vi.mock("@/lib/api/middleware", async (importOriginal) => {
   };
 });
 
-import { GET, PATCH } from "./route";
+import { GET, PATCH, POST } from "./route";
 
 const params = (id = JOB) => ({ params: Promise.resolve({ id }) });
 const request = (method: string, body?: object) =>
@@ -110,5 +114,43 @@ describe("/books/imports/{id}", () => {
     queue.items.mockResolvedValue([]);
     expect((await PATCH(request("PATCH", { picks: [] }), params())).status).toBe(400);
     expect(queue.patchInput).not.toHaveBeenCalled();
+  });
+
+  it("confirms picks: one recipe item per pick, in book order, then kicks the worker", async () => {
+    queue.get.mockResolvedValue(job({ picks: ["3-ginger-snaps", "1-lemon-bars"] }));
+    const response = await POST(request("POST"), params());
+    expect(response.status).toBe(202);
+    const [id, payloads, , uniqueBy] = queue.addItems.mock.calls[0]!;
+    expect(id).toBe(JOB);
+    expect(uniqueBy).toBe("candidateId");
+    expect(
+      (payloads as any[]).map(({ candidateId, pageStart, pageEnd }) => ({
+        candidateId,
+        pageStart,
+        pageEnd,
+      }))
+    ).toEqual([
+      { candidateId: "1-lemon-bars", pageStart: 4, pageEnd: 4 },
+      { candidateId: "3-ginger-snaps", pageStart: 6, pageEnd: 6 },
+    ]);
+    expect(kickWorker).toHaveBeenCalled();
+  });
+
+  it("reports recipe progress on the view", async () => {
+    queue.items.mockResolvedValue([
+      { payload: { step: "verify" }, status: "done" },
+      { payload: { step: "contents" }, status: "done", result: map },
+      { payload: { step: "recipe" }, status: "done" },
+      { payload: { step: "recipe" }, status: "failed", error: "Not a recipe" },
+      { payload: { step: "recipe" }, status: "pending" },
+    ]);
+    const body = await (await GET(request("GET"), params())).json();
+    expect(body).toMatchObject({ status: "ready", progress: { total: 3, done: 1, failed: 1 } });
+  });
+
+  it("refuses to start with nothing picked", async () => {
+    queue.get.mockResolvedValue(job({ picks: [] }));
+    expect((await POST(request("POST"), params())).status).toBe(400);
+    expect(queue.addItems).not.toHaveBeenCalled();
   });
 });

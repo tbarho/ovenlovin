@@ -122,6 +122,9 @@ export const recipeSourceSchema = baseEntitySchema.extend({
   canonicalUrl: z.string().max(2048).nullable().optional(),
   author: z.string().max(255).nullable().optional(),
   attribution: z.string().nullable().optional(),
+  bookTitle: z.string().max(500).nullable().optional(),
+  pageStart: z.number().int().nullable().optional(),
+  pageEnd: z.number().int().nullable().optional(),
   blobRefs: z.array(z.string()).default([]),
   importerName: z.string().max(100).nullable().optional(),
   importerVersion: z.string().max(50).nullable().optional(),
@@ -319,6 +322,10 @@ export type RecipeImportDraft = {
     canonicalUrl?: string;
     author?: string;
     attribution?: string;
+    /** PDF book imports: book title and the PDF pages the recipe spans. */
+    bookTitle?: string;
+    pageStart?: number;
+    pageEnd?: number;
     blobRefs?: string[];
     importerName: string;
     importerVersion: string;

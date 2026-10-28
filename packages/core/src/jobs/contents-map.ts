@@ -188,7 +188,7 @@ function withIds(candidates: Omit<ContentsCandidate, "id">[]) {
   }, []);
 }
 
-const isIngredient = (line: string) => INGREDIENT.test(line) && line.length <= 80;
+export const isIngredient = (line: string) => INGREDIENT.test(line) && line.length <= 80;
 
 /** No contents or index: a page with a title near the top and three or more ingredient lines. */
 export function detectRecipePages(pages: PdfPageText[]) {

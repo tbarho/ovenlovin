@@ -80,7 +80,7 @@ export function createPasteImporter(config: ImporterConfig = {}): Importer<Paste
         result = await generateImportObject(generate, modelId, {
           schema: recipeSchema,
           abortSignal: AbortSignal.timeout(IMPORT_GENERATE_TIMEOUT_MS),
-          prompt: `Extract recipe data from this text. Preserve exact ingredient text. If this is not a recipe (a greeting, note, or random paragraph), set isRecipe to false and omit the rest. If information is unclear or missing, omit it rather than guessing.
+          prompt: `Extract recipe data from this text. Preserve exact ingredient text. If this is not a recipe (a greeting, note, or random paragraph), set isRecipe to false and omit the rest. If information is unclear or missing, omit it rather than guessing.${input.context ? `\n\n${input.context}` : ""}
 
 Text:
 ${input.text}`,

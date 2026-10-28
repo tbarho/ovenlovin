@@ -159,8 +159,10 @@ export async function countPdfPagesOnDisk(path: string) {
 }
 
 /**
- * Opens a PDF on disk with pdf.js and hands the document to `run`. Unreadable
- * PDFs return 0 (count) or rethrow as typed errors; infra errors rethrow as-is.
+ * Opens a PDF with pdf.js and hands the document to `run`. `path` is a file on
+ * disk or an http(s) URL; a URL is read with range requests, so only the bytes
+ * for the pages touched come over the wire. Unreadable PDFs return 0 (count)
+ * or rethrow as typed errors; infra errors rethrow as-is.
  */
 export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): Promise<T | 0> {
   ensurePromiseWithResolvers();
@@ -171,7 +173,7 @@ export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): P
   (globalThis as { pdfjsWorker?: unknown }).pdfjsWorker = worker;
 
   const task = pdfjs.getDocument({
-    url: pathToFileURL(path).href,
+    url: /^https?:\/\//i.test(path) ? path : pathToFileURL(path).href,
     isEvalSupported: false,
     useSystemFonts: true,
     disableAutoFetch: true,
