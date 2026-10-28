@@ -10,3 +10,4 @@ export * from "./importers/paste";
 export * from "./importers/photo";
 export * from "./photo-pipeline";
 export * from "./importers/pdf";
+export * from "./importers/contents-photo";

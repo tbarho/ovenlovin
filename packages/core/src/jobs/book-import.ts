@@ -12,6 +12,11 @@ export type BookImportInput = {
   pages: number;
   name: string;
   verified?: boolean;
+  /** `photos`: a paper book. No file; the contents were read from photos of its pages. */
+  source?: "pdf" | "photos";
+  contentsPages?: { page: number; lines: string[] }[];
+  /** Paper book: picks confirmed, the shot list is out. */
+  shooting?: boolean;
 };
 
 export type BookImportRequest = {
