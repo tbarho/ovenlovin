@@ -53,14 +53,14 @@ describe("countPdfPagesOnDisk", () => {
     expect(await countPdfPagesOnDisk(path)).toBe(7);
   });
 
-  it("resolves Count through a classic xref root", async () => {
+  it("counts pages for a classic-xref PDF via pdf.js", async () => {
     dir = await mkdtemp(join(tmpdir(), "ovenlovin-pdf-"));
     const path = join(dir, "book.pdf");
     await writeFile(path, xrefPdf(7));
     expect(await countPdfPagesOnDisk(path)).toBe(7);
   });
 
-  it("falls back to full parse for small plain PDFs without xref", async () => {
+  it("counts pages for a plain PDF via pdf.js", async () => {
     dir = await mkdtemp(join(tmpdir(), "ovenlovin-pdf-"));
     const path = join(dir, "book.pdf");
     await writeFile(path, plainPdf(3));

@@ -98,9 +98,21 @@ export function countPdfPages(bytes: Uint8Array) {
   return objects.reduce((memo, body) => memo + (body.match(PAGE)?.length ?? 0), 0);
 }
 
+export class PasswordProtectedPdfError extends Error {
+  constructor(message = "This PDF is password-protected. Remove the password and try again.") {
+    super(message);
+    this.name = "PasswordProtectedPdfError";
+  }
+}
+
 /**
- * Page count from a PDF on disk via pdf.js. Uses range reads over the file so
- * the worker does not load the whole book into memory just to learn /Count.
+ * Page count from a PDF on disk via pdf.js. Range fetches only what it needs
+ * (`disableStream` + `disableAutoFetch`) so a 500MB book does not get copied
+ * into a full-size buffer just to learn numPages.
+ *
+ * Returns 0 only for unreadable / invalid PDFs. Infrastructure errors
+ * (module load, OOM, missing file) rethrow so the job retries and the blob
+ * is not deleted.
  */
 export async function countPdfPagesOnDisk(path: string) {
   const { open } = await import("node:fs/promises");
@@ -116,22 +128,32 @@ export async function countPdfPagesOnDisk(path: string) {
     await file.close();
   }
 
-  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const task = pdfjs.getDocument({
+    url: pathToFileURL(path).href,
+    isEvalSupported: false,
+    useSystemFonts: true,
+    disableAutoFetch: true,
+    disableStream: true,
+  } as never);
   try {
-    const task = getDocument({
-      url: pathToFileURL(path).href,
-      isEvalSupported: false,
-      useSystemFonts: true,
-      disableAutoFetch: true,
-      disableStream: false,
-    } as never);
     const doc = await task.promise;
     const pages = Number(doc.numPages) || 0;
-    if (typeof (doc as { cleanup?: () => Promise<void> | void }).cleanup === "function") {
-      await (doc as { cleanup: () => Promise<void> | void }).cleanup();
-    }
     return pages;
-  } catch {
-    return 0;
+  } catch (error) {
+    const name = error instanceof Error ? error.name : "";
+    if (
+      name === "InvalidPDFException" ||
+      name === "MissingPDFException" ||
+      name === "UnexpectedResponseException"
+    ) {
+      return 0;
+    }
+    if (name === "PasswordException") {
+      throw new PasswordProtectedPdfError();
+    }
+    throw error;
+  } finally {
+    await task.destroy().catch(() => undefined);
   }
 }

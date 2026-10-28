@@ -11,7 +11,7 @@ import {
   type ClaimedItem,
   type JobQueue,
 } from "@ovenlovin/core/jobs";
-import { countPdfPagesOnDisk, isBookBlobUrl } from "@/lib/book-import";
+import { countPdfPagesOnDisk, isBookBlobUrl, PasswordProtectedPdfError } from "@/lib/book-import";
 
 async function streamToTemp(url: string, path: string) {
   const response = await fetch(url);
@@ -64,7 +64,16 @@ export async function verifyBookImport(queue: JobQueue, item: ClaimedItem) {
       throw new PermanentJobError("That upload did not match your file. Try again.");
     }
 
-    const pages = await countPdfPagesOnDisk(path);
+    let pages = 0;
+    try {
+      pages = await countPdfPagesOnDisk(path);
+    } catch (error) {
+      if (error instanceof PasswordProtectedPdfError) {
+        await del(input.blobUrl).catch(() => undefined);
+        throw new PermanentJobError(error.message);
+      }
+      throw error;
+    }
     if (pages === 0) {
       await del(input.blobUrl).catch(() => undefined);
       throw new PermanentJobError(

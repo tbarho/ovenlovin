@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { plainPdf } from "@/test/pdf-fixture";
+import { plainPdf, xrefPdf } from "@/test/pdf-fixture";
 import { sha256Hex } from "@/lib/book-import";
 import { verifyBookImport } from "@/lib/book-import-verify";
 
 const HOUSEHOLD = "22222222-2222-4222-8222-222222222222";
 const STORE = "abc.public.blob.vercel-storage.com";
-const pdf = plainPdf(3);
+const pdf = xrefPdf(3);
 const sha256 = sha256Hex(pdf);
 const blobUrl = `https://${STORE}/books/${HOUSEHOLD}/${sha256}.pdf`;
 
@@ -62,7 +62,7 @@ describe("verifyBookImport", () => {
   });
 
   it("refuses over-page books and deletes the blob", async () => {
-    const big = plainPdf(601);
+    const big = xrefPdf(601);
     const bigSha = sha256Hex(big);
     const bigUrl = `https://${STORE}/books/${HOUSEHOLD}/${bigSha}.pdf`;
     queue.get.mockResolvedValue({
