@@ -4,7 +4,10 @@ import * as schema from "./schema";
 
 type DbClient = PostgresJsDatabase<typeof schema> & { $client: Sql };
 
-const clients = new Map<string, DbClient>();
+// On globalThis: Next dev gives every route bundle its own copy of this module,
+// and a pool per bundle exhausts Postgres connections.
+const store = globalThis as { __ovenlovinDbClients?: Map<string, DbClient> };
+const clients = (store.__ovenlovinDbClients ??= new Map<string, DbClient>());
 
 export function getDatabase(): DbClient {
   // eslint-disable-next-line no-undef

@@ -43,7 +43,8 @@ test.describe("book triage", () => {
     // Bulk accept the Ready one.
     await page.getByRole("button", { name: "Save 1 ready recipe" }).click();
     const saved = page.getByRole("region", { name: "Saved" });
-    await expect(saved.getByRole("link", { name: "Lemon Bars" })).toBeVisible();
+    // First hit compiles the save route; slow CI runners need more than 5s.
+    await expect(saved.getByRole("link", { name: "Lemon Bars" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("region", { name: "Ready" })).toHaveCount(0);
 
     // Fix a flagged recipe in the review form.
@@ -73,11 +74,13 @@ test.describe("book triage", () => {
 
     // The cookbook keeps the book's title; each recipe credits its page.
     await page.getByRole("link", { name: "Open the cookbook" }).click();
+    await page.waitForURL(/\/recipes\?cookbook=/, { timeout: 30_000 });
     await expect(page.getByRole("heading", { name: "A Synthetic Pantry" })).toBeVisible();
     await page
       .getByRole("link", { name: /Shortbread/ })
       .first()
       .click();
+    await page.waitForURL(/\/recipes\/[0-9a-f-]{36}/, { timeout: 30_000 });
     await expect(page.locator(".book-attribution")).toHaveText("From A Synthetic Pantry, p. 2");
 
     await page.goto("/recipes");

@@ -1,8 +1,5 @@
-import { JobQueue, PermanentJobError, type JobHandlers } from "@ovenlovin/core/jobs";
+import { JobQueue } from "@ovenlovin/core/jobs";
 import { getDatabase } from "@ovenlovin/db";
-import { mapBookContents } from "@/lib/book-contents";
-import { extractBookRecipe } from "@/lib/book-recipes";
-import { verifyBookImport } from "@/lib/book-import-verify";
 import { cronHeaders } from "@/lib/cron-auth";
 
 type EnvLike = Record<string, string | undefined>;
@@ -12,21 +9,6 @@ export function isBooksEnabled(env: EnvLike = process.env): boolean {
   const flag = env.OVENLOVIN_BOOKS?.trim().toLowerCase();
   return flag === "1" || flag === "true";
 }
-
-export const jobHandlers: JobHandlers = {
-  book_import: async (item) => {
-    if (item.payload?.step === "verify") {
-      return verifyBookImport(jobQueue(), item);
-    }
-    if (item.payload?.step === "contents") {
-      return mapBookContents(jobQueue(), item);
-    }
-    if (item.payload?.step === "recipe") {
-      return extractBookRecipe(jobQueue(), item);
-    }
-    throw new PermanentJobError(`No book_import step for ${JSON.stringify(item.payload)}`);
-  },
-};
 
 export function jobQueue() {
   return new JobQueue(getDatabase());
