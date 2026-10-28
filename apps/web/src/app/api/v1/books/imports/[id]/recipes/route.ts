@@ -5,6 +5,7 @@ import { getRequestContext, requireWritableHousehold } from "@/lib/api/middlewar
 import { readJsonBody } from "@/lib/api/read-json";
 import { jsonResponse } from "@/lib/api/response";
 import { loadBookContents } from "@/lib/book-import-view";
+import { loadBookShotList } from "@/lib/book-shot-view";
 import { saveBookRecipes } from "@/lib/book-save";
 import { isBooksEnabled, jobQueue } from "@/lib/jobs";
 
@@ -34,7 +35,10 @@ export async function POST(request: NextRequest, { params }: Params) {
     const input = await readJsonBody(request, body);
     const result = await saveBookRecipes(jobQueue(), id, { householdId, createdBy }, input.items);
     if (!result) throw new NotFoundError("Book import", id);
-    return jsonResponse({ ...result, view: await loadBookContents(jobQueue(), id, householdId) });
+    const view =
+      (await loadBookShotList(jobQueue(), id, householdId)) ??
+      (await loadBookContents(jobQueue(), id, householdId));
+    return jsonResponse({ ...result, view });
   } catch (error) {
     return handleApiError(error, request.url);
   }

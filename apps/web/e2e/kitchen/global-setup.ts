@@ -7,12 +7,16 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${port}`;
 
 /** Next.js compiles these on first hit; do it before the test clock. */
 export default async function globalSetup() {
-  // The book triage spec saves recipes; start that book over so reruns work.
+  // The triage + paper-book specs save recipes; start those over so reruns work.
   if (process.env.DATABASE_URL) {
-    execFileSync("pnpm", ["exec", "tsx", "scripts/seed-e2e-kitchen.ts", "--fresh-book"], {
-      cwd: path.resolve(__dirname, "../.."),
-      stdio: "inherit",
-    });
+    execFileSync(
+      "pnpm",
+      ["exec", "tsx", "scripts/seed-e2e-kitchen.ts", "--fresh-book", "--fresh-shot"],
+      {
+        cwd: path.resolve(__dirname, "../.."),
+        stdio: "inherit",
+      }
+    );
   }
   const api = await request.newContext({ baseURL });
   await Promise.all([

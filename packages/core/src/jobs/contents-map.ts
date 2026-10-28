@@ -249,6 +249,39 @@ export function buildContentsMap(pages: PdfPageText[]): ContentsMap {
   return { ...empty, source: "none", mapPages: [], candidates: [] };
 }
 
+/** An index photo: a heading, or most lines in "Title, 112" form. */
+const isIndexPhoto = (page: PdfPageText) => {
+  const lines = textLines(page);
+  if (headingPage(page, INDEX_HEADING)) return true;
+  const commas = lines.filter((line) => INDEX_ENTRY.test(line)).length;
+  return lines.length > 0 && commas / lines.length >= 0.5;
+};
+
+/**
+ * Contents map from photos of a paper book's contents or index pages. Every
+ * photo is a map page (the person said so), so no heading is needed. The
+ * printed page is the only page there is: no offset, nothing to calibrate.
+ * Contents entries keep their order and sections; index-only entries follow
+ * in page order. Index lines citing several pages are ingredients, not recipes.
+ */
+export function buildPhotoContentsMap(pages: PdfPageText[]): ContentsMap {
+  const fromContents = contentsEntries(pages.filter((page) => !isIndexPhoto(page)));
+  const known = new Set(fromContents.map((entry) => normalizeTitle(entry.title)));
+  const fromIndex = indexEntries(pages.filter(isIndexPhoto))
+    .filter((entry) => !known.has(normalizeTitle(entry.title)))
+    .sort((a, b) => a.printedPage - b.printedPage);
+  const entries = [...fromContents, ...fromIndex];
+  const source = fromContents.length > 0 ? "contents" : fromIndex.length > 0 ? "index" : "none";
+  return {
+    source,
+    offset: 0,
+    calibrated: entries.length > 0,
+    mapPages: [],
+    scannedPages: [],
+    candidates: withIds(entries.map((entry) => ({ ...entry, pdfPage: null }))),
+  };
+}
+
 /** Contents screen helpers. */
 export const OTHER_GROUP = "Recipes";
 

@@ -148,6 +148,18 @@ describe("/books/imports/{id}", () => {
     expect(body).toMatchObject({ status: "ready", progress: { total: 3, done: 1, failed: 1 } });
   });
 
+  it("confirms a paper book: puts the shot list out and returns it shooting", async () => {
+    const paper = job({ source: "photos", photoMap: map, picks: ["1-lemon-bars"] });
+    queue.get
+      .mockResolvedValueOnce(paper)
+      .mockResolvedValueOnce({ ...paper, input: { ...paper.input, shooting: true } });
+    const response = await POST(request("POST"), params());
+    expect(response.status).toBe(202);
+    expect(queue.patchInput).toHaveBeenCalledWith(JOB, { shooting: true });
+    expect((await response.json()).view.shooting).toBe(true);
+    expect(queue.addItems).not.toHaveBeenCalled();
+  });
+
   it("refuses to start with nothing picked", async () => {
     queue.get.mockResolvedValue(job({ picks: [] }));
     expect((await POST(request("POST"), params())).status).toBe(400);
