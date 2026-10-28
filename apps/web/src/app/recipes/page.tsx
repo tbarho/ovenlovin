@@ -5,6 +5,7 @@ import { CookbookRecipes } from "@/components/kitchen/CookbookRecipes";
 import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { householdLovePeople, sortRecipesByLoves } from "@/lib/household-loves";
 import { demoImportQuota } from "@/lib/import-save";
+import { isBooksEnabled } from "@/lib/jobs";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadRecipeSafetyById } from "@/lib/load-recipe-safety";
 
@@ -79,6 +80,7 @@ export default async function RecipesPage({
       safetyByRecipe={safetyByRecipe}
       remainingImports={importQuota?.remainingImports}
       importLimit={importQuota?.importLimit}
+      booksEnabled={isBooksEnabled()}
     />
   );
 }

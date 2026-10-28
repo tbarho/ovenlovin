@@ -181,6 +181,18 @@ export class JobQueue extends BaseService {
     return { activeJobs: Number(row.active), jobsThisMonth: Number(row.month) };
   }
 
+  /** The household's live job for this file, so the same upload resumes instead of starting over. */
+  async findBySha(householdId: string, kind: JobKind, sha256: string) {
+    const [row] = await this.rows(sql`
+      select id from job
+      where household_id = ${householdId} and kind = ${kind}
+        and input->>'sha256' = ${sha256} and status <> 'failed'
+      order by created_at desc
+      limit 1
+    `);
+    return (row?.id as string | undefined) ?? null;
+  }
+
   async get(jobId: string) {
     const [row] = await this._db.select().from(job).where(eq(job.id, jobId));
     return row ?? null;
