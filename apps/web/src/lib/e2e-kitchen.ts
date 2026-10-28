@@ -11,7 +11,16 @@ import {
   type RecipeImportDraft,
 } from "@ovenlovin/core";
 import { buildContentsMap } from "@ovenlovin/core/contents-map";
-import { getDatabase, job, jobItem, type DbClient } from "@ovenlovin/db";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import {
+  collection,
+  getDatabase,
+  job,
+  jobItem,
+  recipe,
+  recipeSource,
+  type DbClient,
+} from "@ovenlovin/db";
 import { OFFSET_BOOK } from "@/test/book-fixtures";
 import type { RequestContext } from "@/lib/api/middleware";
 import { writePersonNotes } from "@/lib/person-appearance";
@@ -586,6 +595,7 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
   }
 
   await seedE2eBook(db, household.id);
+  await seedE2eTriageBook(db, household.id);
 
   return {
     userId: user.id,
@@ -628,6 +638,179 @@ async function seedE2eBook(db: DbClient, householdId: string) {
       status: "done",
       result: map,
     })
+    .onConflictDoNothing();
+}
+
+export const E2E_TRIAGE_JOB_ID = "00000000-0000-4000-8000-00000000b002";
+const TRIAGE_BOOK = { title: "A Synthetic Pantry", author: "Author B" };
+const TRIAGE_SHA_PREFIX = "e2etriage";
+
+const triageSpan = (
+  candidateId: string,
+  title: string,
+  pageStart: number,
+  printedPage: number
+) => ({
+  step: "recipe",
+  candidateId,
+  title,
+  group: "Baking",
+  printedPage,
+  pageStart,
+  pageEnd: pageStart,
+  nextTitle: null,
+  nextGroup: null,
+});
+
+function triageDraft(
+  sha: string,
+  candidateId: string,
+  page: number,
+  partial: Record<string, unknown>
+) {
+  return {
+    servings: 12,
+    images: [],
+    overallConfidence: 0.95,
+    needsReview: false,
+    reviewReasons: [],
+    uncertainFields: [],
+    ...partial,
+    source: {
+      type: "pdf",
+      author: TRIAGE_BOOK.author,
+      attribution: `${TRIAGE_BOOK.title}, p. ${page}`,
+      bookTitle: TRIAGE_BOOK.title,
+      pageStart: page + 3,
+      pageEnd: page + 3,
+      blobRefs: [],
+      importerName: "pdf-importer",
+      importerVersion: "0.1.0",
+      licenseNote: "Cookbook/printed recipe - personal use only",
+      rawExtractionJson: {
+        route: "text",
+        candidateId,
+        photoFingerprint: `pdf:${sha}:${candidateId}`,
+      },
+    },
+  };
+}
+
+/**
+ * A book whose recipes are already read (the AI step is not run in e2e):
+ * Lemon Bars is Ready, Shortbread was hard to read, Ginger Snaps failed.
+ * `fresh` starts it over under a new file hash so reruns save again.
+ */
+export async function seedE2eTriageBook(db: DbClient, householdId: string, fresh = false) {
+  const sha = fresh ? `${TRIAGE_SHA_PREFIX}${Date.now().toString(36)}` : TRIAGE_SHA_PREFIX;
+  if (fresh) {
+    const [existing] = await db.select().from(job).where(eq(job.id, E2E_TRIAGE_JOB_ID));
+    const cookbookId = (existing?.input as { cookbookId?: string } | null)?.cookbookId;
+    const now = new Date();
+    if (cookbookId) {
+      await db.update(collection).set({ deletedAt: now }).where(eq(collection.id, cookbookId));
+    }
+    const stale = await db
+      .select({ id: recipe.id })
+      .from(recipe)
+      .innerJoin(recipeSource, eq(recipeSource.recipeId, recipe.id))
+      .where(
+        and(
+          eq(recipe.householdId, householdId),
+          isNull(recipe.deletedAt),
+          sql`(${recipeSource.rawExtractionJson} ->> 'photoFingerprint') like ${`pdf:${TRIAGE_SHA_PREFIX}%`}`
+        )
+      );
+    await Promise.all(
+      stale.map((row) => db.update(recipe).set({ deletedAt: now }).where(eq(recipe.id, row.id)))
+    );
+    await db.delete(jobItem).where(eq(jobItem.jobId, E2E_TRIAGE_JOB_ID));
+    await db.delete(job).where(eq(job.id, E2E_TRIAGE_JOB_ID));
+  }
+
+  const lemon = triageSpan("lemon", "Lemon Bars", 4, 1);
+  const short = triageSpan("short", "Shortbread", 5, 2);
+  const ginger = triageSpan("ginger", "Ginger Snaps", 6, 3);
+  await db
+    .insert(job)
+    .values({
+      id: E2E_TRIAGE_JOB_ID,
+      householdId,
+      kind: "book_import",
+      status: "done",
+      input: {
+        blobUrl: "https://e2e.invalid/books/synthetic-pantry.pdf",
+        sha256: sha,
+        bytes: 1024,
+        pages: 6,
+        name: `${TRIAGE_BOOK.title}.pdf`,
+        verified: true,
+        picks: ["lemon", "short", "ginger"],
+      },
+      totalItems: 4,
+      doneItems: 3,
+      failedItems: 1,
+    })
+    .onConflictDoNothing();
+  await db
+    .insert(jobItem)
+    .values([
+      {
+        jobId: E2E_TRIAGE_JOB_ID,
+        seq: 0,
+        payload: { step: "contents" },
+        status: "done",
+        result: buildContentsMap(OFFSET_BOOK.map((lines, index) => ({ page: index + 1, lines }))),
+      },
+      {
+        jobId: E2E_TRIAGE_JOB_ID,
+        seq: 1,
+        payload: lemon,
+        status: "done",
+        result: {
+          candidateId: "lemon",
+          route: "text",
+          duplicate: null,
+          draft: triageDraft(sha, "lemon", 1, {
+            title: "Lemon Bars",
+            images: [RECIPE_IMAGE("chocolate-chip-cookies")],
+            ingredients: [
+              { rawText: "1 cup flour" },
+              { rawText: "2 lemons" },
+              { rawText: "3 eggs" },
+            ],
+            steps: [{ text: "Press the crust, pour the curd, and bake until set." }],
+          }),
+        },
+      },
+      {
+        jobId: E2E_TRIAGE_JOB_ID,
+        seq: 2,
+        payload: short,
+        status: "done",
+        result: {
+          candidateId: "short",
+          route: "vision",
+          duplicate: null,
+          draft: triageDraft(sha, "short", 2, {
+            title: "Shortbread",
+            servings: undefined,
+            overallConfidence: 0.5,
+            needsReview: true,
+            uncertainFields: ["servings"],
+            ingredients: [{ rawText: "2 cups flour" }, { rawText: "1 cup butter" }],
+            steps: [{ text: "Rub the butter into the flour and bake low." }],
+          }),
+        },
+      },
+      {
+        jobId: E2E_TRIAGE_JOB_ID,
+        seq: 3,
+        payload: ginger,
+        status: "failed",
+        error: 'We could not find "Ginger Snaps" on its pages.',
+      },
+    ])
     .onConflictDoNothing();
 }
 

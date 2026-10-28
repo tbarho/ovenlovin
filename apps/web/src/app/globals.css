@@ -2911,6 +2911,30 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+.book-triage {
+  display: grid;
+  gap: 12px;
+}
+
+.book-triage .book-contents-group {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.book-triage .recipe-pick-list {
+  width: 100%;
+}
+
+.book-triage-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.book-triage-reason {
+  display: block;
+  font-size: 12px;
+}
+
 .recipe-pick-row img,
 .recipe-pick-row .thumb-fallback {
   width: 40px;
@@ -4246,4 +4270,9 @@ label.photo-page-add-target:focus-visible {
 
 .demo-agent h2 {
   margin: 0;
+}
+
+.book-attribution {
+  margin: 10px 0 0;
+  font-size: 14px;
 }

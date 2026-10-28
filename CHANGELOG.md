@@ -13,6 +13,10 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 
 Drop in a cookbook PDF and see its recipes listed by section with their page numbers, all picked. Search, select all or none, and your picks are saved for when the recipes come in.
 
+### Turn a cookbook PDF into a cookbook
+
+Pull your picks and each recipe lands as Ready or Needs a look, with the reason. Save every Ready one in one tap, fix the rest in the usual review form, and they file into a new cookbook named for the book, in book order. The shelf shows how many are ready, and each recipe says which book and page it came from.
+
 ## 2026-10-22 - A week sized to your household
 
 ### Cook for the people who are actually home

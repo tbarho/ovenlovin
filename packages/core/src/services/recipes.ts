@@ -421,6 +421,9 @@ export class RecipeService extends BaseService {
             canonicalUrl: sources[0].canonicalUrl ?? null,
             author: sources[0].author ?? null,
             attribution: sources[0].attribution ?? null,
+            bookTitle: sources[0].bookTitle ?? null,
+            pageStart: sources[0].pageStart ?? null,
+            pageEnd: sources[0].pageEnd ?? null,
             blobRefs: omitInlineImagePayloads((sources[0].blobRefs as string[]) ?? []),
             importerName: sources[0].importerName ?? null,
             importerVersion: sources[0].importerVersion ?? null,
@@ -575,6 +578,30 @@ export class RecipeService extends BaseService {
       )
       .limit(1);
     return row ? this.mapRecipe(row.recipe) : null;
+  }
+
+  /** Recipes saved from one cookbook PDF, keyed by contents candidate id. */
+  async listBookImportRecipeIds(
+    householdId: string,
+    sha256: string
+  ): Promise<Record<string, string>> {
+    if (!sha256.trim()) return {};
+    const rows = await this._db
+      .select({ id: recipe.id, raw: recipeSource.rawExtractionJson })
+      .from(recipe)
+      .innerJoin(recipeSource, eq(recipeSource.recipeId, recipe.id))
+      .where(
+        and(
+          eq(recipe.householdId, householdId),
+          isNull(recipe.deletedAt),
+          eq(recipeSource.type, "pdf"),
+          sql`(${recipeSource.rawExtractionJson} ->> 'photoFingerprint') like ${`pdf:${sha256}:%`}`
+        )
+      );
+    return rows.reduce((memo: Record<string, string>, row) => {
+      const candidateId = (row.raw as Record<string, unknown> | null)?.candidateId;
+      return typeof candidateId === "string" ? { ...memo, [candidateId]: row.id } : memo;
+    }, {});
   }
 
   async findPhotoNearDuplicate(

@@ -102,6 +102,7 @@ export class CookbookService extends BaseService {
     description?: string | null;
     createdBy: string;
     visibility?: Cookbook["visibility"];
+    bookSettings?: Record<string, unknown> | null;
   }): Promise<Cookbook> {
     let slug = slugifyCookbookName(data.name);
     const existing = await this.getCookbookBySlug(data.householdId, slug);
@@ -123,6 +124,7 @@ export class CookbookService extends BaseService {
         description: data.description ?? null,
         visibility: data.visibility ?? "private",
         sortOrder: Number(countRow?.count ?? 0),
+        bookSettings: data.bookSettings ?? null,
         createdBy: data.createdBy,
       })
       .returning();
@@ -133,7 +135,12 @@ export class CookbookService extends BaseService {
 
   async updateCookbook(
     id: string,
-    data: { name?: string; description?: string | null; sortOrder?: number }
+    data: {
+      name?: string;
+      description?: string | null;
+      sortOrder?: number;
+      bookSettings?: Record<string, unknown> | null;
+    }
   ): Promise<Cookbook | null> {
     const current = await this.getCookbook(id);
     if (!current) return null;
@@ -154,6 +161,7 @@ export class CookbookService extends BaseService {
         slug,
         description: data.description === undefined ? current.description : data.description,
         sortOrder: data.sortOrder ?? current.sortOrder,
+        ...(data.bookSettings === undefined ? {} : { bookSettings: data.bookSettings }),
         updatedAt: new Date(),
       })
       .where(and(eq(collection.id, id), isNull(collection.deletedAt)))
@@ -210,7 +218,8 @@ export class CookbookService extends BaseService {
     return rows;
   }
 
-  async addRecipe(cookbookId: string, recipeId: string): Promise<boolean> {
+  /** Appends by default; `order` pins a position (a book import keeps book order). */
+  async addRecipe(cookbookId: string, recipeId: string, order?: number): Promise<boolean> {
     const [existing] = await this._db
       .select()
       .from(collectionRecipe)
@@ -224,7 +233,11 @@ export class CookbookService extends BaseService {
     if (existing) {
       await this._db
         .update(collectionRecipe)
-        .set({ deletedAt: null, updatedAt: new Date() })
+        .set({
+          deletedAt: null,
+          updatedAt: new Date(),
+          ...(order === undefined ? {} : { order }),
+        })
         .where(eq(collectionRecipe.id, existing.id));
       return true;
     }
@@ -239,7 +252,7 @@ export class CookbookService extends BaseService {
     await this._db.insert(collectionRecipe).values({
       collectionId: cookbookId,
       recipeId,
-      order: Number(countRow?.count ?? 0),
+      order: order ?? Number(countRow?.count ?? 0),
     });
     return true;
   }
@@ -350,6 +363,7 @@ export class CookbookService extends BaseService {
       description: row.description ?? null,
       visibility: row.visibility,
       sortOrder: row.sortOrder ?? 0,
+      bookSettings: row.bookSettings ?? null,
     };
   }
 }

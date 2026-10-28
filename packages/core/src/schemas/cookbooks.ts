@@ -9,6 +9,7 @@ export const cookbookSchema = baseEntitySchema.merge(createdBySchema).extend({
   description: z.string().nullable().optional(),
   visibility: recipeVisibilitySchema.default("private"),
   sortOrder: z.number().int().nonnegative().default(0),
+  bookSettings: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const cookbookSummarySchema = z.object({
