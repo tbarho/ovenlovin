@@ -17,8 +17,7 @@ export function shotOrder(candidates: ContentsCandidate[], picks: string[]) {
     .map((candidate, at) => ({ candidate, at }))
     .sort(
       (a, b) =>
-        (a.candidate.printedPage ?? Infinity) - (b.candidate.printedPage ?? Infinity) ||
-        a.at - b.at
+        (a.candidate.printedPage ?? Infinity) - (b.candidate.printedPage ?? Infinity) || a.at - b.at
     )
     .map(({ candidate }) => candidate);
 }

@@ -10,6 +10,7 @@ import {
 import { readJsonBody } from "@/lib/api/read-json";
 import { jsonResponse } from "@/lib/api/response";
 import { loadBookContents, startRecipeExtraction } from "@/lib/book-import-view";
+import { loadBookShotList } from "@/lib/book-shot-view";
 import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
 const body = z.object({ picks: z.array(z.string().max(200)).max(5000) });
@@ -24,12 +25,20 @@ const load = async (id: string, householdId: string) => {
   return view;
 };
 
+/** Paper books (contents read from photos) serve their shot list instead. */
+const loadShot = async (id: string, householdId: string) => {
+  if (!isBooksEnabled() || !z.string().uuid().safeParse(id).success) return null;
+  return loadBookShotList(jobQueue(), id, householdId);
+};
+
 /** The contents map for one uploaded book, with the household's picks. */
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     const context = await getRequestContext(request);
-    const view = await load((await params).id, requireHouseholdId(context));
-    return jsonResponse(view);
+    const householdId = requireHouseholdId(context);
+    const { id } = await params;
+    const shot = await loadShot(id, householdId);
+    return jsonResponse(shot ?? (await load(id, householdId)));
   } catch (error) {
     return handleApiError(error, request.url);
   }
@@ -40,7 +49,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const context = await getRequestContext(request);
     const { id } = await params;
-    const view = await load(id, requireWritableHousehold(context));
+    const householdId = requireWritableHousehold(context);
+    const shot = await loadShot(id, householdId);
+    if (shot) {
+      if (!shot.map) throw new BadRequestError("The contents are still being read. Try again soon.");
+      const input = await readJsonBody(request, body);
+      const picks = resolvePicks(shot.map.candidates, input.picks);
+      await jobQueue().patchInput(id, { picks });
+      return jsonResponse({ ...shot, picks });
+    }
+    const view = await load(id, householdId);
     if (!view.map) throw new BadRequestError("The contents are still being read. Try again soon.");
     const input = await readJsonBody(request, body);
     const picks = resolvePicks(view.map.candidates, input.picks);
@@ -52,15 +70,22 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 /**
- * Confirms the picks and starts pulling each picked recipe. Runs on the job
- * worker, so closing the tab does not stop it. Repeating it only adds recipes
- * picked since the last call.
+ * Confirms the picks. A PDF book starts pulling each picked recipe on the job
+ * worker, so closing the tab does not stop it. A paper book just puts the
+ * shot list out: each recipe waits for its page photos.
  */
 export async function POST(request: NextRequest, { params }: Params) {
   try {
     const context = await getRequestContext(request);
     const { id } = await params;
     const householdId = requireWritableHousehold(context);
+    const shot = await loadShot(id, householdId);
+    if (shot) {
+      if (!shot.map) throw new BadRequestError("The contents are still being read. Try again soon.");
+      if (shot.picks.length === 0) throw new BadRequestError("Pick at least one recipe first.");
+      await jobQueue().patchInput(id, { shooting: true });
+      return jsonResponse({ started: true, view: { ...shot } }, 202);
+    }
     const view = await load(id, householdId);
     if (!view.map) throw new BadRequestError("The contents are still being read. Try again soon.");
     if (view.picks.length === 0) throw new BadRequestError("Pick at least one recipe first.");

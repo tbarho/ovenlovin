@@ -1,5 +1,6 @@
 import { upload as blobUpload } from "@vercel/blob/client";
 import { api } from "@/lib/browser-api";
+import { budgetPhotoFiles, fileToDataUrl } from "@/lib/photo-import-client";
 
 export const BOOK_NOT_PDF =
   "Choose a PDF of the book. For an ebook, export or print it to PDF first.";
@@ -70,4 +71,27 @@ export async function addBook(
 
   onStep({ phase: "saving" });
   return post({ ...fingerprint, blobUrl: blob.url });
+}
+
+export type PaperBookResult = { jobId: string };
+
+/** Contents page photos, budgeted to data URLs so one JSON body carries them. */
+export async function contentsPhotoInputs(files: File[]) {
+  return Promise.all((await budgetPhotoFiles(files)).map((file) => fileToDataUrl(file)));
+}
+
+/** Photographs of a paper book's contents or index pages: read, map, start a book. */
+export async function addPaperBook(
+  name: string,
+  files: File[],
+  onStep: (step: BookStep) => void,
+  { photos = contentsPhotoInputs }: { photos?: typeof contentsPhotoInputs } = {}
+): Promise<PaperBookResult> {
+  onStep({ phase: "saving" });
+  const images = await photos(files);
+  onStep({ phase: "checking" });
+  return api<PaperBookResult>("/api/v1/books/photos", {
+    method: "POST",
+    body: JSON.stringify({ name, images }),
+  });
 }

@@ -172,3 +172,145 @@ describe("saveBookRecipes", () => {
     expect(recipes.persistImportedDraft).toHaveBeenCalledTimes(1);
   });
 });
+
+/** A paper book: the map is on the input, rows are shots, saves carry review edits. */
+function setupShot() {
+  const saved: Record<string, string> = {};
+  const input: Record<string, unknown> = {
+    name: "A Paper Pantry",
+    sha256: "papersha",
+    blobUrl: "",
+    pages: 0,
+    verified: true,
+    source: "photos",
+    photoMap: {
+      source: "contents",
+      offset: 0,
+      calibrated: true,
+      mapPages: [],
+      scannedPages: [],
+      candidates: [
+        { id: "ribs", title: "Short ribs", group: null, printedPage: 112, pdfPage: null },
+        { id: "corn", title: "Corn bread", group: null, printedPage: 140, pdfPage: null },
+      ],
+    },
+    picks: ["ribs", "corn"],
+    shooting: true,
+  };
+  const queue: any = {
+    get: vi.fn(async () => ({ id: JOB, householdId: HOUSEHOLD, kind: "book_import", input })),
+    items: vi.fn(async () => []),
+    patchInput: vi.fn(async (_id: string, patch: Record<string, unknown>) => {
+      Object.assign(input, patch);
+    }),
+  };
+  const book: any = { id: "cookbook-shot", householdId: HOUSEHOLD, bookSettings: null };
+  const cookbooks: any = {
+    getCookbook: vi.fn(async (id: string) => (id === book.id ? book : null)),
+    createCookbook: vi.fn(async (data: any) => Object.assign(book, data)),
+    updateCookbook: vi.fn(async (_id: string, data: any) => Object.assign(book, data)),
+    addRecipe: vi.fn(async () => true),
+  };
+  const recipes: any = {
+    listBookImportRecipeIds: vi.fn(async () => ({ ...saved })),
+    persistImportedDraft: vi.fn(async (d: any) => {
+      const candidateId = d.source.rawExtractionJson.candidateId;
+      const id = `recipe-${candidateId}`;
+      saved[candidateId] = id;
+      return { outcome: "created", recipe: { id, title: d.title, images: d.images ?? [] } } as any;
+    }),
+  };
+  const save = (entries: any[]) =>
+    saveBookRecipes(queue, JOB, { householdId: HOUSEHOLD, createdBy: "user-1" }, entries, {
+      recipes,
+      cookbooks,
+    });
+  return { queue, cookbooks, recipes, save, input };
+}
+
+describe("saveBookRecipes (paper book)", () => {
+  it("files a reviewed page-photo recipe into a cookbook named for the book, with its page", async () => {
+    const { save, cookbooks, recipes } = setupShot();
+    const result = await save([
+      {
+        candidateId: "ribs",
+        reviewed: {
+          title: "Short ribs",
+          ingredients: [{ rawText: "2 lb short ribs" }],
+          steps: [{ text: "Braise." }],
+          images: [],
+          source: {
+            type: "photo",
+            importerName: "photo-importer",
+            importerVersion: "0.1.0",
+            rawExtractionJson: {},
+          },
+        },
+      },
+    ]);
+
+    expect(result?.saved).toEqual([{ candidateId: "ribs", recipeId: "recipe-ribs" }]);
+    expect(cookbooks.createCookbook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "A Paper Pantry",
+        description: null,
+        bookSettings: { title: "A Paper Pantry" },
+      })
+    );
+    const draft: any = recipes.persistImportedDraft.mock.calls[0][0];
+    expect(draft.source).toMatchObject({
+      type: "pdf",
+      bookTitle: "A Paper Pantry",
+      attribution: "A Paper Pantry, p. 112",
+      importerName: "photo-importer",
+      rawExtractionJson: {
+        candidateId: "ribs",
+        bookPage: 112,
+        photoFingerprint: "pdf:papersha:ribs",
+      },
+    });
+    expect(cookbooks.addRecipe).toHaveBeenCalledWith("cookbook-shot", "recipe-ribs", 0);
+  });
+
+  it("skips shots without review edits and saved rows", async () => {
+    const { save, recipes } = setupShot();
+    const none = await save([{ candidateId: "ribs" }]);
+    expect(none?.saved).toEqual([]);
+    expect(recipes.persistImportedDraft).not.toHaveBeenCalled();
+
+    await save([
+      {
+        candidateId: "ribs",
+        reviewed: {
+          title: "Short ribs",
+          ingredients: [{ rawText: "2 lb short ribs" }],
+          steps: [{ text: "Braise." }],
+          source: {
+            type: "photo",
+            importerName: "photo-importer",
+            importerVersion: "0.1.0",
+            rawExtractionJson: {},
+          },
+        },
+      },
+    ]);
+    const again = await save([
+      {
+        candidateId: "ribs",
+        reviewed: {
+          title: "Short ribs",
+          ingredients: [{ rawText: "2 lb short ribs" }],
+          steps: [{ text: "Braise." }],
+          source: {
+            type: "photo",
+            importerName: "photo-importer",
+            importerVersion: "0.1.0",
+            rawExtractionJson: {},
+          },
+        },
+      },
+    ]);
+    expect(again?.saved).toEqual([]);
+    expect(recipes.persistImportedDraft).toHaveBeenCalledTimes(1);
+  });
+});

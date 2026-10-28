@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { generateObject } from "ai";
 import { z } from "zod";
 import { inlinePublicImageBlob } from "@ovenlovin/core";

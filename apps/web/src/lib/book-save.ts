@@ -8,6 +8,7 @@ import { readBookSettings } from "@ovenlovin/core/book";
 import type { JobQueue, TriageRow } from "@ovenlovin/core/jobs";
 import { getDatabase } from "@ovenlovin/db";
 import { loadBookContents, type BookImportJobInput } from "@/lib/book-import-view";
+import { loadBookShotList } from "@/lib/book-shot-view";
 
 export type BookSaveEntry = { candidateId: string; reviewed?: unknown };
 
@@ -78,11 +79,37 @@ export function draftForRow(
   return draftFromSavedPreview({ ...reviewed, images, source: stamped });
 }
 
+/** A pdf source for a photographed paper-book recipe: the person's page photos, reviewed. */
+function photoSource(
+  row: TriageRow,
+  input: BookImportJobInput,
+  book: { title: string; author: string | null }
+) {
+  return {
+    type: "pdf" as const,
+    author: book.author ?? undefined,
+    attribution: `${book.title}, p. ${row.page}`,
+    bookTitle: book.title,
+    pageStart: row.pageStart,
+    pageEnd: row.pageEnd,
+    blobRefs: [],
+    importerName: "photo-importer",
+    importerVersion: "0.1.0",
+    licenseNote: "Cookbook/printed recipe - personal use only",
+    rawExtractionJson: {
+      candidateId: row.candidateId,
+      bookPage: row.page,
+      photoFingerprint: `pdf:${input.sha256}:${row.candidateId}`,
+    },
+  };
+}
+
 /**
  * Saves picked recipes into the book's cookbook, created on first save with
  * the book's title and author. Each recipe is filed at its book position, so
  * saving Ready ones first and fixed ones later still reads in book order.
  * Repeats are safe: the PDF fingerprint dedupes, saved rows are skipped.
+ * A paper book goes through the same spine with its shot-list rows.
  */
 export async function saveBookRecipes(
   queue: JobQueue,
@@ -94,6 +121,10 @@ export async function saveBookRecipes(
   const db = deps.recipes && deps.cookbooks ? null : getDatabase();
   const recipes = deps.recipes ?? new RecipeService(db!);
   const cookbooks = deps.cookbooks ?? new CookbookService(db!);
+
+  const shot = await loadBookShotList(queue, jobId, context.householdId, recipes);
+  if (shot) return saveShotRecipes(queue, jobId, context, entries, shot, { recipes, cookbooks });
+
   const view = await loadBookContents(queue, jobId, context.householdId, recipes);
   if (!view) return null;
   const input = (await queue.get(jobId))!.input as BookImportJobInput;
@@ -105,6 +136,27 @@ export async function saveBookRecipes(
     const draft = entry ? draftForRow(row, entry, input, book) : null;
     return draft ? [{ row, draft }] : [];
   });
+  return fileTargets(queue, jobId, context, view, book, targets, { recipes, cookbooks });
+}
+
+type SaveTarget = { row: TriageRow; draft: RecipeImportDraft };
+type SaveDeps = Required<Pick<BookSaveDeps, "recipes" | "cookbooks">>;
+
+/**
+ * Files drafts into the book's cookbook, created on first save with the book's
+ * title. Each recipe goes at its book position, so saving some first and the
+ * rest later still reads in book order. Repeats are safe: the book fingerprint
+ * dedupes, saved rows are skipped.
+ */
+async function fileTargets(
+  queue: JobQueue,
+  jobId: string,
+  context: { householdId: string; createdBy: string },
+  view: { cookbookId: string | null; name: string },
+  book: { title: string; author: string | null },
+  targets: SaveTarget[],
+  { recipes, cookbooks }: SaveDeps
+) {
   if (targets.length === 0) return { cookbookId: view.cookbookId, saved: [] };
 
   const existing = view.cookbookId ? await cookbooks.getCookbook(view.cookbookId) : null;
@@ -153,4 +205,26 @@ export async function saveBookRecipes(
     cookbookId: cookbook.id,
     saved: saved.map(({ candidateId, recipeId }) => ({ candidateId, recipeId })),
   };
+}
+
+/** The paper-book shot list: each row saves the person's reviewed page photos. */
+async function saveShotRecipes(
+  queue: JobQueue,
+  jobId: string,
+  context: { householdId: string; createdBy: string },
+  entries: BookSaveEntry[],
+  view: Awaited<ReturnType<typeof loadBookShotList>>,
+  deps: SaveDeps
+) {
+  if (!view) return null;
+  const input = (await queue.get(jobId))!.input as BookImportJobInput;
+  const book = bookIdentity(view.triage.rows, view.name);
+  const wanted = new Map(entries.map((entry) => [entry.candidateId, entry]));
+  const targets = view.triage.rows.flatMap((row) => {
+    const entry = wanted.get(row.candidateId);
+    if (!entry?.reviewed || row.state === "saved") return [];
+    const draft = draftFromSavedPreview(entry.reviewed);
+    return draft ? [{ row, draft: { ...draft, source: photoSource(row, input, book) } }] : [];
+  });
+  return fileTargets(queue, jobId, context, view, book, targets, deps);
 }
