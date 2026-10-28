@@ -92,6 +92,7 @@ export async function addPaperBook(
   onStep({ phase: "checking" });
   return api<PaperBookResult>("/api/v1/books/photos", {
     method: "POST",
+    keepalive: false,
     body: JSON.stringify({ name, images }),
   });
 }

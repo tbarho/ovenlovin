@@ -86,7 +86,8 @@ export async function POST(request: NextRequest, { params }: Params) {
         throw new BadRequestError("The contents are still being read. Try again soon.");
       if (shot.picks.length === 0) throw new BadRequestError("Pick at least one recipe first.");
       await jobQueue().patchInput(id, { shooting: true });
-      return jsonResponse({ started: true, view: { ...shot } }, 202);
+      const view = (await loadShot(id, householdId)) ?? { ...shot, shooting: true };
+      return jsonResponse({ started: true, view }, 202);
     }
     const view = await load(id, householdId);
     if (!view.map) throw new BadRequestError("The contents are still being read. Try again soon.");
