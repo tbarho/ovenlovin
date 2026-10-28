@@ -229,11 +229,12 @@ export class JobQueue extends BaseService {
     return (row?.id as string | undefined) ?? null;
   }
 
-  /** The household's most recent jobs of one kind, newest first. */
-  async recent(householdId: string, kind: JobKind, limit = 20) {
+  /** The household's most recent jobs of one kind, newest first. Failed jobs only on request. */
+  async recent(householdId: string, kind: JobKind, limit = 20, includeFailed = false) {
     const rows = await this.rows(sql`
       select id from job
-      where household_id = ${householdId} and kind = ${kind} and status <> 'failed'
+      where household_id = ${householdId} and kind = ${kind}
+        and (${includeFailed}::boolean or status <> 'failed')
       order by created_at desc
       limit ${limit}
     `);

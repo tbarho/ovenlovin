@@ -11,6 +11,30 @@ export const BOOK_LIMITS = {
 
 export type BookLimits = typeof BOOK_LIMITS;
 
+/** Print PDF limits, same idea: product config the pipeline never reads. */
+export const PDF_LIMITS = {
+  maxConcurrentJobs: 2,
+  maxPdfsPerMonth: 60,
+};
+
+export type PdfLimits = typeof PDF_LIMITS;
+
+export function checkPdfLimits(
+  usage: { activeJobs: number; jobsThisMonth: number },
+  limits: PdfLimits = PDF_LIMITS
+): { ok: true } | { ok: false; message: string } {
+  if (usage.activeJobs >= limits.maxConcurrentJobs) {
+    return { ok: false, message: "A PDF is already being made. Try again when it finishes." };
+  }
+  if (usage.jobsThisMonth >= limits.maxPdfsPerMonth) {
+    return {
+      ok: false,
+      message: `You've made ${limits.maxPdfsPerMonth} PDFs this month. More open on the 1st.`,
+    };
+  }
+  return { ok: true };
+}
+
 export type BookLimitBreach = "pages" | "bytes" | "concurrency" | "monthly";
 
 export type BookRequest = {

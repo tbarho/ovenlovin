@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import type { ReaderBook } from "@/lib/book-reader";
 import { BookPage } from "./BookPage";
+import { BookPrint } from "./BookPrint";
 
 const FlipBook = dynamic(() => import("react-pageflip"), { ssr: false });
 
@@ -115,6 +116,7 @@ export function BookReader({ book }: { book: ReaderBook }) {
         <Link href={`/recipes?cookbook=${book.id}`} className="back-link">
           ← {book.title}
         </Link>
+        <BookPrint bookId={book.id} />
       </div>
 
       <div className="book-reader-stage" ref={stageRef}>

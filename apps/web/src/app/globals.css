@@ -4301,6 +4301,10 @@ label.photo-page-add-target:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.book-print-open {
+  margin-left: auto;
+}
+
 .book-reader-stage {
   position: relative;
   flex: 1;
@@ -4490,12 +4494,18 @@ label.photo-page-add-target:focus-visible {
   font-size: 0.85em;
 }
 
+.book-index {
+  column-count: 2;
+  column-gap: 1.5em;
+}
+
 .book-toc li,
 .book-index li {
   display: flex;
   align-items: baseline;
   gap: 0.5em;
   padding: 0.35em 0;
+  break-inside: avoid;
 }
 
 .book-toc-section .book-toc-title {
@@ -4517,6 +4527,13 @@ label.photo-page-add-target:focus-visible {
   font-size: 0.85em;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.book-index .book-toc-page {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: right;
+  max-width: 45%;
 }
 
 .book-section-title {
@@ -4718,4 +4735,76 @@ label.photo-page-add-target:focus-visible {
 .book-reader-empty {
   margin: 48px auto;
   max-width: 420px;
+}
+
+/* Print route: one fixed US Letter sheet per page for headless Chromium. */
+
+body:has(.print-book) {
+  background: #fff;
+  min-height: 0;
+}
+
+.print-book {
+  margin: 0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.print-sheet {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  break-after: page;
+  page-break-after: always;
+}
+
+.print-sheet:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+.print-book .book-page {
+  border-radius: 0;
+}
+
+.print-book .book-photo-caption-title {
+  font-size: 0.62em;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Print the photo as shot: CSS filters rasterize at low resolution in PDF. */
+.print-book .book-cover-photo {
+  filter: none;
+}
+
+/* Print shop: the page background and edge photos run into the bleed. The
+   layout inside the trim is identical to the home sheet. */
+.print-book--shop .print-bleed {
+  position: absolute;
+  top: var(--print-slug);
+  left: var(--print-slug);
+  padding: var(--print-bleed);
+  background: var(--bg);
+}
+
+.print-book--shop .book-page,
+.print-book--shop .book-cover {
+  overflow: visible;
+}
+
+.print-book--shop .book-cover-photo {
+  width: calc(100% + 2 * var(--print-bleed));
+  margin: calc(-1 * var(--print-bleed)) calc(-1 * var(--print-bleed)) 0;
+}
+
+.print-book--shop .book-photo-frame {
+  margin: calc(-1 * var(--print-bleed)) calc(-1 * var(--print-bleed)) 0;
+}
+
+.print-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
