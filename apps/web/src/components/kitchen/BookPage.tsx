@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { forwardRef } from "react";
 
-/** A page number label: "p. 12" for the caption and colophon. */
+/** A duration label: "45 min", "1 hr", "1 hr 30 min". */
 export function timeLabel(minutes: number) {
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);

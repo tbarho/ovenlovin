@@ -46,6 +46,7 @@ function setup(
     book?: Record<string, unknown> | null;
     ids?: string[];
     byId?: Record<string, any>;
+    groupNames?: Record<string, string>;
   } = {}
 ) {
   const book = overrides.book === undefined ? cookbook() : overrides.book;
@@ -62,6 +63,7 @@ function setup(
     recipes: {
       getRecipeDetails: vi.fn(async (id: string) => byId[id] ?? null),
     },
+    groupNames: vi.fn().mockResolvedValue(overrides.groupNames ?? {}),
   };
 }
 
@@ -77,6 +79,19 @@ describe("readerRecipe", () => {
       ingredients: [{ rawText: "1 cup flour", name: "flour", group: null }],
       steps: [{ text: "Boil." }],
     });
+  });
+
+  it("resolves ingredient group names by group id", () => {
+    const mapped = readerRecipe(
+      details("r1", "Lemon soup", {
+        ingredients: [
+          { rawText: "1 cup flour", name: "flour", groupId: "g1" },
+          { rawText: "Salt", name: "salt", groupId: null },
+        ],
+      }),
+      { g1: "For the dough" }
+    );
+    expect(mapped.ingredients.map((item: any) => item.group)).toEqual(["For the dough", null]);
   });
 
   it("defaults missing fields instead of passing undefined through", () => {
@@ -106,6 +121,28 @@ describe("loadReaderBook", () => {
       )
       .filter(Boolean);
     expect(titles).toEqual(["Ginger stew", "Lemon soup"]);
+  });
+
+  it("emits group headings for grouped ingredients", async () => {
+    const deps = setup({
+      ids: ["r1"],
+      byId: {
+        r1: details("r1", "Lemon soup", {
+          ingredients: [
+            { rawText: "1 cup flour", name: "flour", groupId: "g1" },
+            { rawText: "1 lemon", name: "lemon", groupId: "g2" },
+          ],
+        }),
+      },
+      groupNames: { g1: "For the dough", g2: "For the glaze" },
+    });
+    const book = await loadReaderBook("00000000-0000-4000-8000-000000000020", HOUSEHOLD, deps);
+    const headings = book!.pages
+      .flatMap((page: any) => page.blocks ?? [])
+      .filter((block: any) => block.type === "group")
+      .map((block: any) => block.name);
+    expect(headings).toEqual(["For the dough", "For the glaze"]);
+    expect(deps.groupNames).toHaveBeenCalledWith(["r1"]);
   });
 
   it("is null for another household's cookbook", async () => {
