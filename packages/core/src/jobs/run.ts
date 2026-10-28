@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- jsonb job payloads */
 import type { ClaimedItem, JobKind, JobQueue } from "./queue";
 
 // eslint-disable-next-line no-unused-vars
