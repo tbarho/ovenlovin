@@ -9,6 +9,10 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 
 ## [Unreleased]
 
+### Add a paper cookbook from its contents pages
+
+For a book you can hold, photograph the contents or index pages. You get the same list of recipes to pick from, then a shot list with page numbers ("p. 112 Short ribs") so you know what to photograph next. Photograph each pick with the usual page photo import and it files into the book's cookbook, credited to its page.
+
 ### Read a cookbook as a book
 
 Open a cookbook and tap Open book to page through it like the real thing: cover, contents, photos with the recipe name under them, and the index at the back. Turn pages by the edge arrows, the arrow keys, or a swipe, and on a phone it reads one page at a time.

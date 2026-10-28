@@ -10,7 +10,7 @@ import {
   RecipeService,
   type RecipeImportDraft,
 } from "@ovenlovin/core";
-import { buildContentsMap } from "@ovenlovin/core/contents-map";
+import { buildContentsMap, buildPhotoContentsMap } from "@ovenlovin/core/contents-map";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   collection,
@@ -596,6 +596,7 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
 
   await seedE2eBook(db, household.id);
   await seedE2eTriageBook(db, household.id);
+  await seedE2eShotBook(db, household.id);
 
   return {
     userId: user.id,
@@ -811,6 +812,68 @@ export async function seedE2eTriageBook(db: DbClient, householdId: string, fresh
         error: 'We could not find "Ginger Snaps" on its pages.',
       },
     ])
+    .onConflictDoNothing();
+}
+
+export const E2E_SHOT_JOB_ID = "00000000-0000-4000-8000-00000000b003";
+const SHOT_BOOK = "A Paper Kitchen";
+
+/**
+ * A paper book whose contents were read from photos (the vision step is not
+ * run in e2e): two picked recipes on the shot list, none photographed yet.
+ * `fresh` starts it over under a new file hash so reruns save again.
+ */
+export async function seedE2eShotBook(db: DbClient, householdId: string, fresh = false) {
+  const sha = fresh ? `e2eshot${Date.now().toString(36)}` : "e2eshot";
+  if (fresh) {
+    const [existing] = await db.select().from(job).where(eq(job.id, E2E_SHOT_JOB_ID));
+    const cookbookId = (existing?.input as { cookbookId?: string } | null)?.cookbookId;
+    const now = new Date();
+    if (cookbookId) {
+      await db.update(collection).set({ deletedAt: now }).where(eq(collection.id, cookbookId));
+    }
+    const stale = await db
+      .select({ id: recipe.id })
+      .from(recipe)
+      .innerJoin(recipeSource, eq(recipeSource.recipeId, recipe.id))
+      .where(
+        and(
+          eq(recipe.householdId, householdId),
+          isNull(recipe.deletedAt),
+          sql`(${recipeSource.rawExtractionJson} ->> 'photoFingerprint') like 'pdf:e2eshot%'`
+        )
+      );
+    await Promise.all(
+      stale.map((row) => db.update(recipe).set({ deletedAt: now }).where(eq(recipe.id, row.id)))
+    );
+    await db.delete(jobItem).where(eq(jobItem.jobId, E2E_SHOT_JOB_ID));
+    await db.delete(job).where(eq(job.id, E2E_SHOT_JOB_ID));
+  }
+
+  const map = buildPhotoContentsMap([
+    { page: 1, lines: ["Contents", "Suppers", "Short ribs ........ 112", "Corn bread 140"] },
+  ]);
+  await db
+    .insert(job)
+    .values({
+      id: E2E_SHOT_JOB_ID,
+      householdId,
+      kind: "book_import",
+      status: "queued",
+      input: {
+        blobUrl: "",
+        sha256: sha,
+        bytes: 0,
+        pages: 0,
+        name: SHOT_BOOK,
+        verified: true,
+        source: "photos",
+        photoMap: map,
+        picks: map.candidates.map((candidate) => candidate.id),
+        shooting: true,
+      },
+      totalItems: 0,
+    })
     .onConflictDoNothing();
 }
 

@@ -6,6 +6,7 @@ import { RecipesKitchen } from "@/components/kitchen/RecipesKitchen";
 import { householdLovePeople, sortRecipesByLoves } from "@/lib/household-loves";
 import { demoImportQuota } from "@/lib/import-save";
 import { listBookImportTiles } from "@/lib/book-import-view";
+import { listShotBookTiles } from "@/lib/book-shot-view";
 import { isBooksEnabled, jobQueue } from "@/lib/jobs";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadRecipeSafetyById } from "@/lib/load-recipe-safety";
@@ -66,7 +67,12 @@ export default async function RecipesPage({
     recipes.listRecipes(householdId, { uncategorized: true, pagination: { limit: 40 } }),
     recipes.listRecipes(householdId, { pagination: { limit: 40 } }),
     demoImportQuota(householdId),
-    booksEnabled ? listBookImportTiles(jobQueue(), householdId) : [],
+    booksEnabled
+      ? Promise.all([
+          listBookImportTiles(jobQueue(), householdId),
+          listShotBookTiles(jobQueue(), householdId),
+        ]).then(([pdf, paper]) => [...pdf, ...paper])
+      : [],
   ]);
 
   const safetyByRecipe = await loadRecipeSafetyById(

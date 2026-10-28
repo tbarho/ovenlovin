@@ -1,5 +1,5 @@
 import { createDbClient } from "@ovenlovin/db";
-import { seedE2eKitchen, seedE2eTriageBook } from "../src/lib/e2e-kitchen";
+import { seedE2eKitchen, seedE2eShotBook, seedE2eTriageBook } from "../src/lib/e2e-kitchen";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -12,6 +12,8 @@ async function main() {
     // --fresh-book: start the triage book over so the e2e can save it again.
     if (process.argv.includes("--fresh-book"))
       await seedE2eTriageBook(db, result.householdId, true);
+    // --fresh-shot: start the paper book over so the e2e can photograph it again.
+    if (process.argv.includes("--fresh-shot")) await seedE2eShotBook(db, result.householdId, true);
     console.log(
       JSON.stringify(
         {

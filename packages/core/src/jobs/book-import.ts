@@ -4,6 +4,7 @@ import {
   type BookLimitBreach,
   type BookLimits,
 } from "./entitlements";
+import type { ContentsMap } from "./contents-map";
 
 export type BookImportInput = {
   blobUrl: string;
@@ -12,6 +13,12 @@ export type BookImportInput = {
   pages: number;
   name: string;
   verified?: boolean;
+  /** `photos`: a paper book. No file; the map was read from photos of its pages. */
+  source?: "pdf" | "photos";
+  /** Paper book: its contents map (no PDF to re-read, so no queue step holds it). */
+  photoMap?: ContentsMap;
+  /** Paper book: picks confirmed, the shot list is out. */
+  shooting?: boolean;
 };
 
 export type BookImportRequest = {

@@ -9,7 +9,8 @@ import type { RecipeItemPayload } from "./recipe-spans";
 /** Below this the model was unsure enough that a person should read it first. */
 export const READY_CONFIDENCE = 0.8;
 
-export type TriageState = "pulling" | "ready" | "needs_look" | "saved";
+/** `shoot`: a paper-book recipe still to be photographed (see shot-list). */
+export type TriageState = "pulling" | "ready" | "needs_look" | "saved" | "shoot";
 
 export type TriageRow = {
   candidateId: string;
