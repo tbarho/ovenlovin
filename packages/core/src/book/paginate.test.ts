@@ -24,7 +24,11 @@ const cookbook = {
   recipes: [
     recipe("a", { ingredients: [ingredient("Buttermilk"), ingredient("flour")] }),
     recipe("b", { images: [], description: "Grandma made this every Sunday after church." }),
-    recipe("c", { course: "Desserts", steps: longSteps, ingredients: [ingredient("buttermilk "), ingredient("sugar")] }),
+    recipe("c", {
+      course: "Desserts",
+      steps: longSteps,
+      ingredients: [ingredient("buttermilk "), ingredient("sugar")],
+    }),
     recipe("d", {
       course: "Desserts",
       isFamilyRecipe: true,
@@ -46,8 +50,17 @@ describe("paginate", () => {
   it("numbers pages 1..N in order and opens and closes like a book", () => {
     const pages = paginate(cookbook, { dedication: "For Mom, Christmas 2026" });
     pages.forEach((page, i) => expect(page.number).toBe(i + 1));
-    expect(pages.map((p) => p.kind).slice(0, 4)).toEqual(["cover", "dedication", "contents", "section"]);
-    expect(pages[pages.length - 1]).toMatchObject({ kind: "colophon", pageCount: pages.length, recipeCount: 4 });
+    expect(pages.map((p) => p.kind).slice(0, 4)).toEqual([
+      "cover",
+      "dedication",
+      "contents",
+      "section",
+    ]);
+    expect(pages[pages.length - 1]).toMatchObject({
+      kind: "colophon",
+      pageCount: pages.length,
+      recipeCount: 4,
+    });
     expect(pages.filter((p) => p.kind === "notes")).toHaveLength(BOOK_METRICS.notesPages);
   });
 
@@ -76,7 +89,8 @@ describe("paginate", () => {
     expect(entries.filter((e: any) => e.type === "recipe")).toHaveLength(4);
     entries.forEach((entry: any) => {
       const target = pageOf(pages, entry.page);
-      if (entry.type === "section") return expect(target).toMatchObject({ kind: "section", title: entry.title });
+      if (entry.type === "section")
+        return expect(target).toMatchObject({ kind: "section", title: entry.title });
       expect(target.recipeId).toBe(entry.recipeId);
       expect(pageOf(pages, entry.page - 1).recipeId).not.toBe(entry.recipeId);
     });
@@ -91,7 +105,9 @@ describe("paginate", () => {
       entry.pages.forEach((n: number) => {
         const target = pageOf(pages, n);
         const source = cookbook.recipes.find((r) => r.id === target.recipeId)!;
-        expect(source.ingredients.map((i) => i.name.trim().toLowerCase())).toContain(entry.name.toLowerCase());
+        expect(source.ingredients.map((i) => i.name.trim().toLowerCase())).toContain(
+          entry.name.toLowerCase()
+        );
       })
     );
     expect(index.map((e: any) => e.name)).toEqual([...index.map((e: any) => e.name)].sort());
@@ -102,7 +118,9 @@ describe("paginate", () => {
     const c = pages.filter((p) => p.recipeId === "c" && p.kind.startsWith("recipe"));
     expect(c.length).toBeGreaterThan(1);
     expect(c[0].kind).toBe("recipe");
-    c.slice(1).forEach((page, i) => expect(page).toMatchObject({ kind: "recipe-cont", part: i + 2 }));
+    c.slice(1).forEach((page, i) =>
+      expect(page).toMatchObject({ kind: "recipe-cont", part: i + 2 })
+    );
     const steps = c.flatMap((p) => p.blocks).filter((b: any) => b.type === "step");
     expect(steps.map((s: any) => s.n)).toEqual(longSteps.map((_, i) => i + 1));
     expect(c[c.length - 1].blocks.at(-1).type).toBe("notes");
@@ -110,7 +128,12 @@ describe("paginate", () => {
 
   it("gives a no-photo recipe a typographic page from its own words", () => {
     const opener = paginate(cookbook, {}).find((p) => p.recipeId === "b");
-    expect(opener).toMatchObject({ kind: "photo", image: null, typographic: true, title: "Recipe b" });
+    expect(opener).toMatchObject({
+      kind: "photo",
+      image: null,
+      typographic: true,
+      title: "Recipe b",
+    });
     expect(opener.words).toBe("Grandma made this every Sunday after church.");
   });
 
@@ -121,7 +144,9 @@ describe("paginate", () => {
 
   it("prints original cards for family recipes unless turned off", () => {
     const card = (s: any) => paginate(cookbook, s).filter((p) => p.kind === "original-card");
-    expect(card({})).toEqual([expect.objectContaining({ recipeId: "d", image: "https://img/card-d.jpg" })]);
+    expect(card({})).toEqual([
+      expect.objectContaining({ recipeId: "d", image: "https://img/card-d.jpg" }),
+    ]);
     expect(card({ includeCards: false })).toEqual([]);
   });
 
@@ -137,7 +162,9 @@ describe("paginate", () => {
   it("honors cover settings", () => {
     const cover = (s: any) => paginate(cookbook, s)[0];
     expect(cover({})).toMatchObject({ title: "Barho Family Kitchen", image: "https://img/a.jpg" });
-    expect(cover({ cover: { kind: "type" }, title: "Our Book", subtitle: "Recipes" })).toMatchObject({
+    expect(
+      cover({ cover: { kind: "type" }, title: "Our Book", subtitle: "Recipes" })
+    ).toMatchObject({
       title: "Our Book",
       subtitle: "Recipes",
       image: null,
@@ -173,11 +200,19 @@ describe("fit", () => {
       { type: "steps-heading", lines: 2, keepWithNext: true },
       { type: "step", lines: 3 },
     ];
-    expect(fit(units).map((page) => page.map((b: any) => b.type))).toEqual([["header"], ["steps-heading", "step"]]);
+    expect(fit(units).map((page) => page.map((b: any) => b.type))).toEqual([
+      ["header"],
+      ["steps-heading", "step"],
+    ]);
   });
 
   it("puts an oversized unit on its own page instead of looping", () => {
-    expect(fit([{ type: "step", lines: 200 }, { type: "notes", lines: 6 }])).toHaveLength(2);
+    expect(
+      fit([
+        { type: "step", lines: 200 },
+        { type: "notes", lines: 6 },
+      ])
+    ).toHaveLength(2);
   });
 });
 

@@ -55,10 +55,11 @@ function words(recipe: any) {
 }
 
 function pairs(items: any[]) {
-  return items.reduce(
-    (memo: any[][], item, i) => (i % 2 ? [...memo.slice(0, -1), [...memo[memo.length - 1], item]] : [...memo, [item]]),
-    []
-  );
+  return items.reduce((memo: any[][], item, i) => {
+    if (i % 2 === 0) return [...memo, [item]];
+    const last = memo[memo.length - 1] ?? [];
+    return [...memo.slice(0, -1), [...last, item]];
+  }, [] as any[][]);
 }
 
 function ingredientUnits(ingredients: any[]) {
@@ -112,7 +113,9 @@ function recipeUnits(recipe: any) {
       totalTimeMinutes: recipe.totalTimeMinutes ?? null,
       lines: lineCount(recipe.title, m.titleChars) * m.titleLineHeight + m.metaLines + 1,
     },
-    ...(headnote ? [{ type: "headnote", text: headnote, lines: lineCount(headnote, m.fullChars) + 1 }] : []),
+    ...(headnote
+      ? [{ type: "headnote", text: headnote, lines: lineCount(headnote, m.fullChars) + 1 }]
+      : []),
     ...ingredientUnits(recipe.ingredients ?? []),
     ...stepUnits(recipe.steps ?? []),
     { type: "notes", lines: m.notesLines },
@@ -134,14 +137,23 @@ export function fit(units: any[], capacity = BOOK_METRICS.bodyLines) {
     },
     [{ units: [], used: 0 }]
   );
-  return chunks.map((chunk: any) => chunk.units.map(({ lines: _lines, keepWithNext: _keep, ...block }: any) => block));
+  return chunks.map((chunk: any) =>
+    chunk.units.map(({ lines: _lines, keepWithNext: _keep, ...block }: any) => block)
+  );
 }
 
 function recipePages(recipe: any, settings: BookSettings) {
   const image = recipe.images?.[0];
   const opener = image
     ? { kind: "photo", recipeId: recipe.id, title: recipe.title, image }
-    : { kind: "photo", recipeId: recipe.id, title: recipe.title, image: null, typographic: true, words: words(recipe) };
+    : {
+        kind: "photo",
+        recipeId: recipe.id,
+        title: recipe.title,
+        image: null,
+        typographic: true,
+        words: words(recipe),
+      };
   const cards =
     recipe.isFamilyRecipe && settings.includeCards !== false
       ? (recipe.sourcePhotos ?? []).map((photo: string) => ({
@@ -210,7 +222,8 @@ function coverImage(recipes: any[], settings: BookSettings) {
   const cover: any = settings.cover;
   if (cover?.kind === "type") return null;
   if (cover?.kind === "photo") return cover.image;
-  if (cover?.kind === "recipe") return recipes.find((r) => r.id === cover.recipeId)?.images?.[0] ?? null;
+  if (cover?.kind === "recipe")
+    return recipes.find((r) => r.id === cover.recipeId)?.images?.[0] ?? null;
   return recipes.find((r) => r.images?.length)?.images[0] ?? null;
 }
 
@@ -231,11 +244,20 @@ export function paginate(cookbook: any, settings: BookSettings = {}) {
   const title = settings.title?.trim() || cookbook.name;
   const sections = sectionsOf(recipes);
   const showSections = sections.length > 1;
-  const contentsCount = Math.ceil(((showSections ? sections.length : 0) + recipes.length) / m.contentsLines);
+  const contentsCount = Math.ceil(
+    ((showSections ? sections.length : 0) + recipes.length) / m.contentsLines
+  );
 
   const front = [
-    { kind: "cover", title, subtitle: settings.subtitle?.trim() || null, image: coverImage(recipes, settings) },
-    ...(settings.dedication?.trim() ? [{ kind: "dedication", text: settings.dedication.trim() }] : []),
+    {
+      kind: "cover",
+      title,
+      subtitle: settings.subtitle?.trim() || null,
+      image: coverImage(recipes, settings),
+    },
+    ...(settings.dedication?.trim()
+      ? [{ kind: "dedication", text: settings.dedication.trim() }]
+      : []),
   ];
   const offset = front.length + contentsCount + 1;
 
@@ -271,7 +293,12 @@ export function paginate(cookbook: any, settings: BookSettings = {}) {
 
   const notes = Array.from({ length: m.notesPages }, () => ({ kind: "notes" }));
   const pages = [...front, ...contents, ...body, ...index, ...notes];
-  const colophon = { kind: "colophon", title, recipeCount: recipes.length, pageCount: pages.length + 1 };
+  const colophon = {
+    kind: "colophon",
+    title,
+    recipeCount: recipes.length,
+    pageCount: pages.length + 1,
+  };
 
   return [...pages, colophon].map((page: any, i) => ({ number: i + 1, ...page }));
 }
