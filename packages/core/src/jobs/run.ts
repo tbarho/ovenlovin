@@ -1,14 +1,14 @@
 import type { ClaimedItem, JobKind, JobQueue } from "./queue";
 
 // eslint-disable-next-line no-unused-vars
-export type JobHandler = (item: ClaimedItem) => Promise<unknown>;
+export type JobHandler = (item: ClaimedItem) => Promise<any>;
 export type JobHandlers = Partial<Record<JobKind, JobHandler>>;
 
 export type RunResult =
   | { status: "idle" }
   | { status: "done" | "pending" | "failed" | "lost"; item: ClaimedItem };
 
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const message = (error: any) => (error instanceof Error ? error.message : String(error));
 
 /**
  * One unit of work: claim an item, run its handler, write the result.
