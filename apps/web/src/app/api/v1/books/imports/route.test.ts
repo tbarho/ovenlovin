@@ -13,13 +13,13 @@ const queue = {
   enqueue: vi.fn(),
 };
 const del = vi.fn(async () => undefined);
-const kickWorker = vi.fn(async () => undefined);
+const kickWorker = vi.fn(async (_origin: string) => undefined);
 
 vi.mock("@ovenlovin/db", () => ({ getDatabase: () => ({}) }));
 vi.mock("@vercel/blob", () => ({ del: (...args: any[]) => (del as any)(...args) }));
 vi.mock("@/lib/jobs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/jobs")>();
-  return { ...actual, jobQueue: () => queue, kickWorker: (...a: any[]) => kickWorker(...a) };
+  return { ...actual, jobQueue: () => queue, kickWorker: (origin: string) => kickWorker(origin) };
 });
 vi.mock("@/lib/api/middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/middleware")>();
