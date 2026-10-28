@@ -14,7 +14,7 @@ export type ClaimedItem = {
   householdId: string;
   kind: JobKind;
   seq: number;
-  payload: any;
+  payload: unknown;
   attempts: number;
   leaseUntil: Date;
 };
@@ -24,7 +24,7 @@ export type QueueOptions = { leaseMs?: number; maxAttempts?: number };
 // Raw sql params skip drizzle's column mapping, so timestamps go over as ISO text.
 const ts = (date: Date) => sql`${date.toISOString()}::timestamptz`;
 
-const toItem = (row: any): ClaimedItem => ({
+const toItem = (row: unknown): ClaimedItem => ({
   id: row.id,
   jobId: row.job_id,
   householdId: row.household_id,
@@ -44,13 +44,13 @@ export class JobQueue extends BaseService {
   private leaseMs: number;
   private maxAttempts: number;
 
-  constructor(db: any, options: QueueOptions = {}) {
+  constructor(db: unknown, options: QueueOptions = {}) {
     super(db);
     this.leaseMs = options.leaseMs ?? JOB_LEASE_MS;
     this.maxAttempts = options.maxAttempts ?? JOB_MAX_ATTEMPTS;
   }
 
-  async enqueue(householdId: string, kind: JobKind, input: any, payloads: any[] = []) {
+  async enqueue(householdId: string, kind: JobKind, input: unknown, payloads: unknown[] = []) {
     const [created] = await this._db
       .insert(job)
       .values({ householdId, kind, input })
@@ -59,9 +59,9 @@ export class JobQueue extends BaseService {
     return created!.id;
   }
 
-  async addItems(jobId: string, payloads: any[], now = new Date()) {
+  async addItems(jobId: string, payloads: unknown[], now = new Date()) {
     if (payloads.length === 0) return;
-    await this._db.transaction(async (tx: any) => {
+    await this._db.transaction(async (tx: unknown) => {
       const [locked] = await tx.execute(
         sql`select total_items from job where id = ${jobId} for update`
       );
@@ -110,7 +110,7 @@ export class JobQueue extends BaseService {
     return row ? toItem(row) : null;
   }
 
-  async complete(item: ClaimedItem, result: any, now = new Date()) {
+  async complete(item: ClaimedItem, result: unknown, now = new Date()) {
     const [row] = await this.rows(sql`
       update job_item set
         status = 'done',
@@ -189,7 +189,7 @@ export class JobQueue extends BaseService {
     return this._db.select().from(jobItem).where(eq(jobItem.jobId, jobId)).orderBy(jobItem.seq);
   }
 
-  private async rows(query: SQL): Promise<any[]> {
+  private async rows(query: SQL): Promise<Record<string, unknown>[]> {
     return [...(await this._db.execute(query))];
   }
 
@@ -204,7 +204,7 @@ export class JobQueue extends BaseService {
       jobIds.map((id) => sql`${id}`),
       sql`, `
     );
-    await this._db.transaction(async (tx: any) => {
+    await this._db.transaction(async (tx: unknown) => {
       await tx.execute(sql`select id from job where id in (${ids}) order by id for update`);
       await tx.execute(sql`
         update job set
