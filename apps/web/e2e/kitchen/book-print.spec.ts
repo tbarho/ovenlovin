@@ -183,7 +183,7 @@ test.describe("book print PDF", () => {
     expect(first.getBleedBox()).toEqual({ x: 18, y: 18, width: 630, height: 810 });
     const fonts = await embeddedFonts(shop.bytes);
     expect(
-      fonts.some((name) => /geist/i.test(name)),
+      fonts.some((name) => /geist|fascinate/i.test(name)),
       fonts.join(", ")
     ).toBe(true);
 

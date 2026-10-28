@@ -36,6 +36,12 @@ async function settle(page: any) {
     await Promise.all(
       [...document.images].map((img) => (img.complete ? null : img.decode().catch(() => null)))
     );
+    // next/font can still be swapping after fonts.ready; wait for Geist on body.
+    const deadline = Date.now() + 15_000;
+    while (Date.now() < deadline) {
+      if (/geist/i.test(getComputedStyle(document.body).fontFamily)) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
   });
 }
 
