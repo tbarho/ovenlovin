@@ -40,6 +40,9 @@ export type PersistImportedDraftResult =
   | { outcome: "existing"; recipe: RecipeDetails; match: ImportDuplicateMatch }
   | { outcome: "in_flight"; match: ImportDuplicateMatch };
 
+/** Sources whose raw extraction carries photoFingerprint / photoPerceptualHash. */
+const FINGERPRINTED_SOURCES: ("photo" | "pdf")[] = ["photo", "pdf"];
+
 export class RecipeService extends BaseService {
   async getRecipe(id: string): Promise<Recipe | null> {
     const [result] = await this._db
@@ -519,6 +522,9 @@ export class RecipeService extends BaseService {
       canonicalUrl: draft.source.canonicalUrl ?? null,
       author: draft.source.author ?? null,
       attribution: draft.source.attribution ?? null,
+      bookTitle: draft.source.bookTitle ?? null,
+      pageStart: draft.source.pageStart ?? null,
+      pageEnd: draft.source.pageEnd ?? null,
       blobRefs: omitInlineImagePayloads([
         ...(draft.source.blobRefs ?? []),
         ...(draft.images ?? []),
@@ -563,7 +569,7 @@ export class RecipeService extends BaseService {
         and(
           eq(recipe.householdId, householdId),
           isNull(recipe.deletedAt),
-          eq(recipeSource.type, "photo"),
+          inArray(recipeSource.type, FINGERPRINTED_SOURCES),
           sql`(${recipeSource.rawExtractionJson} ->> 'photoFingerprint') = ${fingerprint}`
         )
       )
@@ -584,7 +590,7 @@ export class RecipeService extends BaseService {
         and(
           eq(recipe.householdId, householdId),
           isNull(recipe.deletedAt),
-          eq(recipeSource.type, "photo")
+          inArray(recipeSource.type, FINGERPRINTED_SOURCES)
         )
       );
     for (const row of rows) {

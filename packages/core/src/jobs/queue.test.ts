@@ -6,6 +6,7 @@ import { createDbClient, type DbClient } from "@ovenlovin/db/client";
 import { household } from "@ovenlovin/db";
 import { JobQueue } from "./queue";
 import { runNext } from "./run";
+import { recipeProgress } from "./recipe-spans";
 
 // Needs a migrated Postgres. CI provides one; locally:
 // TEST_DATABASE_URL=postgresql://... pnpm --filter @ovenlovin/db db:migrate:deploy (with DATABASE_URL set to it)
@@ -145,6 +146,87 @@ describe.skipIf(!url)("JobQueue on Postgres", () => {
     expect(await queue.usage(householdId, "book_import")).toEqual({
       activeJobs: 1,
       jobsThisMonth: 1,
+    });
+  });
+
+  describe("book recipe items", () => {
+    const recipes = (ids: string[]) =>
+      ids.map((candidateId, at) => ({
+        step: "recipe",
+        candidateId,
+        pageStart: at + 2,
+        pageEnd: at + 2,
+      }));
+
+    it("never queues the same picked recipe twice, even when confirms race", async () => {
+      const queue = new JobQueue(db);
+      const jobId = await queue.enqueue(householdId, "book_import", {}, [{ step: "verify" }]);
+
+      const added = await Promise.all([
+        queue.addItems(jobId, recipes(["a", "b"]), new Date(), "candidateId"),
+        queue.addItems(jobId, recipes(["a", "b"]), new Date(), "candidateId"),
+      ]);
+      expect(added.sort()).toEqual([0, 2]);
+      expect(await queue.addItems(jobId, recipes(["a", "b", "c"]), new Date(), "candidateId")).toBe(
+        1
+      );
+
+      const items = await queue.items(jobId);
+      expect(items.map((item: any) => item.payload.candidateId ?? item.payload.step)).toEqual([
+        "verify",
+        "a",
+        "b",
+        "c",
+      ]);
+      expect(await queue.get(jobId)).toMatchObject({ totalItems: 4 });
+    });
+
+    it("claims and completes a recipe item under its lease, and a stale worker cannot overwrite it", async () => {
+      const queue = new JobQueue(db, { leaseMs: 1000 });
+      const jobId = await queue.enqueue(householdId, "book_import", {}, recipes(["a"]));
+      const t0 = new Date("2026-10-27T12:00:00.000Z");
+
+      const first = await queue.claim(t0);
+      expect(first).toMatchObject({ payload: { step: "recipe", candidateId: "a" }, attempts: 1 });
+      const second = await queue.claim(new Date(t0.getTime() + 2000));
+      expect(second).toMatchObject({ id: first!.id, attempts: 2 });
+
+      expect(await queue.complete(first!, { draft: { title: "stale" } })).toBe(false);
+      expect(await queue.complete(second!, { draft: { title: "Lemon Bars" } })).toBe(true);
+      const items = await queue.items(jobId);
+      expect(items[0]).toMatchObject({
+        status: "done",
+        result: { draft: { title: "Lemon Bars" } },
+      });
+      expect(recipeProgress(items)).toEqual({ total: 1, done: 1, failed: 0 });
+    });
+
+    it("finishes the whole book with no client attached (tab closed)", async () => {
+      const queue = new JobQueue(db);
+      const jobId = await queue.enqueue(householdId, "book_import", {}, [
+        { step: "verify" },
+        { step: "contents" },
+      ]);
+      const handlers = {
+        book_import: async (item: any) => {
+          if (item.payload.step === "contents") {
+            await queue.addItems(item.jobId, recipes(["a", "b", "c"]), new Date(), "candidateId");
+          }
+          if (item.payload.candidateId === "b") throw new Error("Not a recipe");
+          return { ok: true };
+        },
+      };
+
+      // The worker chain: each run claims one item and kicks the next until idle.
+      while ((await runNext(queue, handlers)).status !== "idle");
+
+      expect(recipeProgress(await queue.items(jobId))).toEqual({ total: 3, done: 2, failed: 1 });
+      expect(await queue.get(jobId)).toMatchObject({
+        status: "done",
+        totalItems: 5,
+        doneItems: 4,
+        failedItems: 1,
+      });
     });
   });
 });

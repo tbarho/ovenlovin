@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import { inflateSync } from "zlib";
+import { deflateSync, inflateSync } from "zlib";
 import { parseImageDataUrl } from "./recipe-images";
 
 export const PHOTO_PHASH_MAX_DISTANCE = 8;
@@ -167,4 +167,112 @@ export function perceptualHashFromImageBlob(blob: string): string | null {
   );
   if (!dataUrl) return null;
   return perceptualHashFromImageBytes(new Uint8Array(dataUrl.body), dataUrl.contentType);
+}
+
+/** pdf.js image object (kind 1 = 1-bit gray, 2 = RGB, 3 = RGBA) to RGBA. */
+export function rgbaFromPdfImage(image: {
+  width: number;
+  height: number;
+  kind: number;
+  data: Uint8Array | Uint8ClampedArray;
+}): Uint8Array | null {
+  const { width, height, kind, data } = image;
+  const pixels = width * height;
+  const rgba = new Uint8Array(pixels * 4);
+  if (kind === 3) {
+    rgba.set(data.subarray(0, pixels * 4));
+    return rgba;
+  }
+  if (kind === 2) {
+    for (let i = 0; i < pixels; i++) {
+      rgba[i * 4] = data[i * 3] ?? 0;
+      rgba[i * 4 + 1] = data[i * 3 + 1] ?? 0;
+      rgba[i * 4 + 2] = data[i * 3 + 2] ?? 0;
+      rgba[i * 4 + 3] = 255;
+    }
+    return rgba;
+  }
+  if (kind === 1) {
+    const stride = Math.ceil(width / 8);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const bit = ((data[y * stride + (x >> 3)] ?? 0) >> (7 - (x & 7))) & 1;
+        const o = (y * width + x) * 4;
+        rgba[o] = rgba[o + 1] = rgba[o + 2] = bit ? 255 : 0;
+        rgba[o + 3] = 255;
+      }
+    }
+    return rgba;
+  }
+  return null;
+}
+
+/** Box-filter shrink so the long side is at most `max`. Smaller images pass through. */
+export function downscaleRgba(width: number, height: number, rgba: Uint8Array, max: number) {
+  const scale = Math.max(width, height) / max;
+  if (scale <= 1) return { width, height, rgba };
+  const w = Math.max(1, Math.round(width / scale));
+  const h = Math.max(1, Math.round(height / scale));
+  const out = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.floor((y * height) / h);
+    const y1 = Math.max(y0 + 1, Math.floor(((y + 1) * height) / h));
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.floor((x * width) / w);
+      const x1 = Math.max(x0 + 1, Math.floor(((x + 1) * width) / w));
+      const sums = [0, 0, 0, 0];
+      for (let py = y0; py < y1; py++) {
+        for (let px = x0; px < x1; px++) {
+          const i = (py * width + px) * 4;
+          for (let c = 0; c < 4; c++) sums[c]! += rgba[i + c] ?? 0;
+        }
+      }
+      const count = (y1 - y0) * (x1 - x0);
+      for (let c = 0; c < 4; c++) out[(y * w + x) * 4 + c] = Math.round(sums[c]! / count);
+    }
+  }
+  return { width: w, height: h, rgba: out };
+}
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+function crc32(bytes: Uint8Array) {
+  let c = 0xffffffff;
+  for (const byte of bytes) c = CRC_TABLE[(c ^ byte) & 0xff]! ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type: string, data: Uint8Array) {
+  const body = Buffer.concat([Buffer.from(type, "latin1"), Buffer.from(data)]);
+  const head = Buffer.alloc(4);
+  head.writeUInt32BE(data.length);
+  const tail = Buffer.alloc(4);
+  tail.writeUInt32BE(crc32(body));
+  return Buffer.concat([head, body, tail]);
+}
+
+/** RGBA pixels to a PNG (8-bit, no filter). Pairs with decodePngRgba above. */
+export function encodePngRgba(width: number, height: number, rgba: Uint8Array): Uint8Array {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  const stride = width * 4;
+  const raw = Buffer.alloc((stride + 1) * height);
+  for (let y = 0; y < height; y++) {
+    raw.set(rgba.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
+  }
+  return new Uint8Array(
+    Buffer.concat([
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      pngChunk("IHDR", ihdr),
+      pngChunk("IDAT", deflateSync(raw)),
+      pngChunk("IEND", new Uint8Array()),
+    ])
+  );
 }

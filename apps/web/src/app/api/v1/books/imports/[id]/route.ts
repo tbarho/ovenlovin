@@ -9,8 +9,8 @@ import {
 } from "@/lib/api/middleware";
 import { readJsonBody } from "@/lib/api/read-json";
 import { jsonResponse } from "@/lib/api/response";
-import { loadBookContents } from "@/lib/book-import-view";
-import { isBooksEnabled, jobQueue } from "@/lib/jobs";
+import { loadBookContents, startRecipeExtraction } from "@/lib/book-import-view";
+import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
 const body = z.object({ picks: z.array(z.string().max(200)).max(5000) });
 
@@ -46,6 +46,27 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const picks = resolvePicks(view.map.candidates, input.picks);
     await jobQueue().patchInput(id, { picks });
     return jsonResponse({ ...view, picks });
+  } catch (error) {
+    return handleApiError(error, request.url);
+  }
+}
+
+/**
+ * Confirms the picks and starts pulling each picked recipe. Runs on the job
+ * worker, so closing the tab does not stop it. Repeating it only adds recipes
+ * picked since the last call.
+ */
+export async function POST(request: NextRequest, { params }: Params) {
+  try {
+    const context = await getRequestContext(request);
+    const { id } = await params;
+    const householdId = requireWritableHousehold(context);
+    const view = await load(id, householdId);
+    if (!view.map) throw new BadRequestError("The contents are still being read. Try again soon.");
+    if (view.picks.length === 0) throw new BadRequestError("Pick at least one recipe first.");
+    const started = await startRecipeExtraction(jobQueue(), id, householdId);
+    if (started?.added) await kickWorker(request.nextUrl.origin);
+    return jsonResponse(started, 202);
   } catch (error) {
     return handleApiError(error, request.url);
   }

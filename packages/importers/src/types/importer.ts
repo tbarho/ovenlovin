@@ -100,6 +100,9 @@ export interface RecipeDraft {
     canonicalUrl?: string;
     author?: string;
     attribution?: string;
+    bookTitle?: string;
+    pageStart?: number;
+    pageEnd?: number;
     blobRefs?: string[];
     importerName: string;
     importerVersion: string;
@@ -150,6 +153,8 @@ export interface UrlImportInput {
 
 export interface PasteImportInput {
   text: string;
+  /** Extra instructions for the model (e.g. where a cookbook puts the headnote). */
+  context?: string;
   url?: string;
   author?: string;
 }
@@ -157,6 +162,7 @@ export interface PasteImportInput {
 export interface PhotoImportInput {
   images: Array<{ blob: string; filename?: string }>;
   isHandwritten?: boolean;
+  context?: string;
 }
 
 /**

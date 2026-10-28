@@ -1,5 +1,8 @@
 import {
+  planRecipeItems,
+  recipeProgress,
   resolvePicks,
+  type RecipeProgress,
   type BookImportInput,
   type ContentsMap,
   type JobQueue,
@@ -13,6 +16,8 @@ export type BookContentsView = {
   error: string | null;
   map: ContentsMap | null;
   picks: string[];
+  /** Recipes pulled so far, once the picks are confirmed. */
+  progress: RecipeProgress;
 };
 
 /** What the contents screen needs: the map once the contents step is done, plus saved picks. */
@@ -25,7 +30,9 @@ export async function loadBookContents(
   if (!job || job.householdId !== householdId || job.kind !== "book_import") return null;
   const input = job.input as BookImportInput & { picks?: string[] };
   const items = await queue.items(jobId);
-  const failed = items.find((item: any) => item.status === "failed");
+  const failed = items.find(
+    (item: any) => item.status === "failed" && item.payload?.step !== "recipe"
+  );
   const contents = items.find((item: any) => item.payload?.step === "contents");
   const map = contents?.status === "done" ? (contents.result as ContentsMap) : null;
 
@@ -38,5 +45,18 @@ export async function loadBookContents(
     error: status === "failed" ? (failed?.error ?? null) : null,
     map,
     picks: map ? resolvePicks(map.candidates, input.picks) : [],
+    progress: recipeProgress(items),
   };
+}
+
+/**
+ * Confirms the picks: one `recipe` item per picked recipe, in book order.
+ * Safe to repeat; recipes already queued are skipped, newly picked ones added.
+ */
+export async function startRecipeExtraction(queue: JobQueue, jobId: string, householdId: string) {
+  const view = await loadBookContents(queue, jobId, householdId);
+  if (!view?.map) return null;
+  const payloads = planRecipeItems(view.map, view.picks, view.pages);
+  const added = await queue.addItems(jobId, payloads, new Date(), "candidateId");
+  return { added, progress: recipeProgress(await queue.items(jobId)) };
 }

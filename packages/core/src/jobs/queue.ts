@@ -60,24 +60,43 @@ export class JobQueue extends BaseService {
     return created!.id;
   }
 
-  async addItems(jobId: string, payloads: any[], now = new Date()) {
-    if (payloads.length === 0) return;
-    await this._db.transaction(async (tx: any) => {
+  /**
+   * Appends items under the job row lock. With `uniqueBy`, payloads whose
+   * value for that key is already queued on the job are skipped, so a repeated
+   * request never doubles the work. Returns how many were added.
+   */
+  async addItems(jobId: string, payloads: any[], now = new Date(), uniqueBy?: string) {
+    if (payloads.length === 0) return 0;
+    return this._db.transaction(async (tx: any) => {
       const [locked] = await tx.execute(
         sql`select total_items from job where id = ${jobId} for update`
       );
       const start = Number(locked.total_items);
+      const taken = uniqueBy
+        ? new Set(
+            [
+              ...(await tx.execute(
+                sql`select payload->>${uniqueBy} as key from job_item where job_id = ${jobId}`
+              )),
+            ].map((row: any) => row.key)
+          )
+        : new Set();
+      const fresh = payloads.filter(
+        (payload) => !uniqueBy || !taken.has(String(payload[uniqueBy]))
+      );
+      if (fresh.length === 0) return 0;
       await tx
         .insert(jobItem)
-        .values(payloads.map((payload, index) => ({ jobId, seq: start + index, payload })));
+        .values(fresh.map((payload, index) => ({ jobId, seq: start + index, payload })));
       await tx.execute(sql`
         update job set
-          total_items = total_items + ${payloads.length},
+          total_items = total_items + ${fresh.length},
           status = case when status = 'running' then 'running' else 'queued' end,
           completed_at = null,
           updated_at = ${ts(now)}
         where id = ${jobId}
       `);
+      return fresh.length;
     });
   }
 

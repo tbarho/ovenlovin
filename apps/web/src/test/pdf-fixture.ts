@@ -55,26 +55,61 @@ export function xrefPdf(pages: number) {
 
 const escapePdf = (text: string) => text.replace(/([\\()])/g, "\\$1");
 
+export type FixtureImage = { width: number; height: number; x?: number; y?: number };
+export type FixturePage = string[] | { lines: string[]; images?: FixtureImage[] };
+
+/** Deterministic RGB pixels: a diagonal gradient seeded by size, so each image hashes apart. */
+const imagePixels = ({ width, height }: FixtureImage) =>
+  Buffer.from(
+    Array.from({ length: width * height }, (_, at) => {
+      const x = at % width;
+      const y = Math.floor(at / width);
+      return [(x * 255) / width, (y * 255) / height, ((x + y + width) * 7) % 256];
+    }).flat()
+  );
+
 /**
  * Text-layer PDF: one array of lines per page, Helvetica, top to bottom.
- * An empty array is a page with no text layer (a scanned page stub).
+ * An empty array is a page with no text layer (a scanned page stub). A page
+ * object can also paint RGB images; a lone full-page image is a page scan.
  */
-export function textPdf(pages: string[][]) {
-  const pageIds = pages.map((_, index) => 4 + index * 2);
-  const objects = [
+export function textPdf(pages: FixturePage[], info?: { title?: string; author?: string }) {
+  const specs = pages.map((page) =>
+    Array.isArray(page) ? { lines: page, images: [] } : { images: [], ...page }
+  );
+  const objects: string[] = [
     `<< /Type /Catalog /Pages 2 0 R >>`,
-    `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pages.length} >>`,
+    "",
     `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`,
-    ...pages.flatMap((lines, index) => {
-      const stream = lines
-        .map((line, row) => `BT /F1 12 Tf 72 ${720 - row * 18} Td (${escapePdf(line)}) Tj ET`)
-        .join("\n");
-      return [
-        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${pageIds[index]! + 1} 0 R >>`,
-        `<< /Length ${Buffer.byteLength(stream, "latin1")} >>\nstream\n${stream}\nendstream`,
-      ];
-    }),
   ];
+  const add = (body: string) => objects.push(body) && objects.length;
+  const pageIds = specs.map((spec) => {
+    const images = spec.images.map((image) => {
+      const pixels = imagePixels(image);
+      return add(
+        `<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ${pixels.length} >>\nstream\n${pixels.toString("latin1")}\nendstream`
+      );
+    });
+    const text = spec.lines.map(
+      (line, row) => `BT /F1 12 Tf 72 ${720 - row * 18} Td (${escapePdf(line)}) Tj ET`
+    );
+    const paints = spec.images.map(
+      (image, at) =>
+        `q ${image.width} 0 0 ${image.height} ${image.x ?? 72} ${image.y ?? 72} cm /Im${at} Do Q`
+    );
+    const stream = [...text, ...paints].join("\n");
+    const contents = add(
+      `<< /Length ${Buffer.byteLength(stream, "latin1")} >>\nstream\n${stream}\nendstream`
+    );
+    const xobjects = images.map((id, at) => `/Im${at} ${id} 0 R`).join(" ");
+    return add(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> /XObject << ${xobjects} >> >> /Contents ${contents} 0 R >>`
+    );
+  });
+  objects[1] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pages.length} >>`;
+  const infoId = info
+    ? add(`<< /Title (${escapePdf(info.title ?? "")}) /Author (${escapePdf(info.author ?? "")}) >>`)
+    : 0;
 
   let body = `%PDF-1.4\n`;
   const offsets = objects.map((object, index) => {
@@ -85,7 +120,7 @@ export function textPdf(pages: string[][]) {
   const xrefStart = Buffer.byteLength(body, "latin1");
   body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
   body += offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
-  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
+  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R${infoId ? ` /Info ${infoId} 0 R` : ""} >>\nstartxref\n${xrefStart}\n%%EOF\n`;
   return pdfBytes(body);
 }
 

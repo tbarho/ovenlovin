@@ -2,7 +2,10 @@ import { deflateSync } from "zlib";
 import { describe, expect, it } from "vitest";
 import {
   averageHashFromRgba,
+  downscaleRgba,
+  encodePngRgba,
   isNearDuplicatePhotoHash,
+  rgbaFromPdfImage,
   perceptualHashFromImageBytes,
 } from "./photo-hash";
 
@@ -107,5 +110,30 @@ describe("photo perceptual hash", () => {
     const rgba = new Uint8Array(8 * 8 * 4);
     rgba.fill(180);
     expect(averageHashFromRgba(8, 8, rgba)).toHaveLength(16);
+  });
+});
+
+describe("pdf image pixels", () => {
+  it("round-trips RGB pixels through PNG into the same perceptual hash", () => {
+    const width = 16;
+    const height = 16;
+    const rgb = new Uint8Array(width * height * 3).map((_, i) => (i % 48 < 24 ? 240 : 20));
+    const rgba = rgbaFromPdfImage({ width, height, kind: 2, data: rgb })!;
+    const png = encodePngRgba(width, height, rgba);
+    expect(perceptualHashFromImageBytes(png, "image/png")).toBe(
+      averageHashFromRgba(width, height, rgba)
+    );
+  });
+
+  it("unpacks 1-bit gray and shrinks big scans to the long-side cap", () => {
+    const gray = rgbaFromPdfImage({
+      width: 8,
+      height: 1,
+      kind: 1,
+      data: new Uint8Array([0b10000001]),
+    })!;
+    expect([gray[0], gray[4], gray[28]]).toEqual([255, 0, 255]);
+    const small = downscaleRgba(400, 200, new Uint8Array(400 * 200 * 4).fill(9), 100);
+    expect([small.width, small.height, small.rgba[0]]).toEqual([100, 50, 9]);
   });
 });

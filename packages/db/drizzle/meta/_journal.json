@@ -120,6 +120,13 @@
       "when": 1793300000000,
       "tag": "0016_book_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793400000000,
+      "tag": "0017_recipe_source_book",
+      "breakpoints": true
     }
   ]
 }

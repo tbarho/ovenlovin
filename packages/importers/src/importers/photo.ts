@@ -135,7 +135,7 @@ export function createPhotoImporter(config: ImporterConfig = {}): Importer<Photo
               content: [
                 {
                   type: "text",
-                  text: `${pagesContext}Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
+                  text: `${pagesContext}${input.context ? `${input.context}\n\n` : ""}Extract a structured recipe from this photo (recipe card, cookbook page, screenshot, or multiple pages of one recipe). Read text EXACTLY as written. Do not invent quantities, times, or steps.${handwritingContext}
 
 Extract:
 - title, servings, prep/cook/total times

@@ -112,6 +112,19 @@ export class UnreadablePdfError extends Error {
   }
 }
 
+/** pdf.js 6 calls ArrayBuffer#transferToFixedLength (Node 22+); copy semantics on older Node. */
+function ensureTransferToFixedLength() {
+  const proto = ArrayBuffer.prototype as any;
+  if (typeof proto.transferToFixedLength === "function") return;
+  proto.transferToFixedLength = function transferToFixedLength(this: ArrayBuffer, length?: number) {
+    const size = length ?? this.byteLength;
+    if (size <= this.byteLength) return this.slice(0, size);
+    const next = new ArrayBuffer(size);
+    new Uint8Array(next).set(new Uint8Array(this));
+    return next;
+  };
+}
+
 function ensurePromiseWithResolvers() {
   if (typeof (Promise as { withResolvers?: unknown }).withResolvers === "function") return;
   (
@@ -159,11 +172,14 @@ export async function countPdfPagesOnDisk(path: string) {
 }
 
 /**
- * Opens a PDF on disk with pdf.js and hands the document to `run`. Unreadable
- * PDFs return 0 (count) or rethrow as typed errors; infra errors rethrow as-is.
+ * Opens a PDF with pdf.js and hands the document to `run`. `path` is a file on
+ * disk or an http(s) URL; a URL is read with range requests, so only the bytes
+ * for the pages touched come over the wire. Unreadable PDFs return 0 (count)
+ * or rethrow as typed errors; infra errors rethrow as-is.
  */
 export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): Promise<T | 0> {
   ensurePromiseWithResolvers();
+  ensureTransferToFixedLength();
   const { pathToFileURL } = await import("node:url");
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   // Static import so Next's file tracer ships the worker with the function.
@@ -171,7 +187,7 @@ export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): P
   (globalThis as { pdfjsWorker?: unknown }).pdfjsWorker = worker;
 
   const task = pdfjs.getDocument({
-    url: pathToFileURL(path).href,
+    url: /^https?:\/\//i.test(path) ? path : pathToFileURL(path).href,
     isEvalSupported: false,
     useSystemFonts: true,
     disableAutoFetch: true,
