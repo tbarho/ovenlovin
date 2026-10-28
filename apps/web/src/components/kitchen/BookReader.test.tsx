@@ -151,7 +151,7 @@ describe("BookReader", () => {
     await screen.findByTestId("flipbook");
 
     await user.click(screen.getByRole("button", { name: "Next page" }));
-    expect(screen.getByText("Page 2–3")).toBeVisible();
+    expect(screen.getByText("Page 2-3")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Previous page" }));
     expect(screen.getByText("Page 1")).toBeVisible();
@@ -163,7 +163,7 @@ describe("BookReader", () => {
     await screen.findByTestId("flipbook");
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
-    expect(await screen.findByText("Page 2–3")).toBeVisible();
+    expect(await screen.findByText("Page 2-3")).toBeVisible();
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
     expect(await screen.findByText("Page 1")).toBeVisible();
@@ -173,12 +173,12 @@ describe("BookReader", () => {
     render(<BookReader book={bookFixture()} />);
     await screen.findByTestId("flipbook");
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
-    expect(await screen.findByText("Page 2–3")).toBeVisible();
+    expect(await screen.findByText("Page 2-3")).toBeVisible();
 
     setStageSize(360, 700);
     window.dispatchEvent(new Event("resize"));
     expect(await screen.findByText("Page 2")).toBeVisible();
-    expect(screen.queryByText(/Page 2–3/)).toBeNull();
+    expect(screen.queryByText(/Page 2-3/)).toBeNull();
   });
 
   it("puts the photo caption below the photo, never on top of it", async () => {

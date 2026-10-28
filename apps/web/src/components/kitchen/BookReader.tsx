@@ -107,7 +107,7 @@ export function BookReader({ book }: { book: ReaderBook }) {
   const last = shown[shown.length - 1] ?? 0;
   const hasPrev = first > 0;
   const hasNext = last < total - 1;
-  const label = shown.map((n) => book.pages[n]!.number).join("–");
+  const label = shown.map((n) => book.pages[n]!.number).join("-");
 
   return (
     <div className="book-reader">
