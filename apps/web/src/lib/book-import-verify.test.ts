@@ -16,6 +16,8 @@ describe("verifyBookImport", () => {
   const queue = {
     get: vi.fn(),
     patchInput: vi.fn(),
+    items: vi.fn(async () => [] as any[]),
+    addItems: vi.fn(),
   };
 
   beforeEach(() => {
@@ -59,6 +61,26 @@ describe("verifyBookImport", () => {
       bytes: pdf.byteLength,
       verified: true,
     });
+    expect(queue.addItems).toHaveBeenCalledWith("job-1", [{ step: "contents" }]);
+  });
+
+  it("queues the contents step once, even on a retried verify", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(pdf))
+    );
+    queue.items.mockResolvedValueOnce([{ payload: { step: "contents" } }]);
+    await verifyBookImport(queue as any, {
+      id: "item-1",
+      jobId: "job-1",
+      householdId: HOUSEHOLD,
+      kind: "book_import",
+      seq: 0,
+      payload: { step: "verify" },
+      attempts: 2,
+      leaseUntil: new Date(),
+    });
+    expect(queue.addItems).not.toHaveBeenCalled();
   });
 
   it("refuses over-page books and deletes the blob", async () => {

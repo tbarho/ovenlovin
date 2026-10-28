@@ -2881,6 +2881,36 @@ select {
   border-radius: 10px;
 }
 
+.book-contents-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.book-contents-group h2 {
+  margin: 12px 0 8px;
+  font-size: 15px;
+}
+
+.book-contents-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid #f0eee9;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.book-contents-page {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 .recipe-pick-row img,
 .recipe-pick-row .thumb-fallback {
   width: 40px;

@@ -25,6 +25,7 @@ export default defineConfig({
         env: {
           ...process.env,
           E2E_AUTH_BYPASS: "1",
+          OVENLOVIN_BOOKS: "1",
           PORT: port,
         },
       },

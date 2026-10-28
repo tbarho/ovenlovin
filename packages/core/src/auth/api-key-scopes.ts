@@ -38,6 +38,8 @@ export const REST_SCOPE_TABLE = [
   { method: "DELETE", path: "/cookbooks/{id}/recipes", scope: "recipes:write" },
   { method: "POST", path: "/books/upload", scope: "recipes:write" },
   { method: "POST", path: "/books/imports", scope: "recipes:write" },
+  { method: "GET", path: "/books/imports/{id}", scope: "recipes:read" },
+  { method: "PATCH", path: "/books/imports/{id}", scope: "recipes:write" },
   { method: "POST", path: "/uploads/images", scope: "recipes:write" },
 
   { method: "GET", path: "/meal-plans", scope: "plans:read" },

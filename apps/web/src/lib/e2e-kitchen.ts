@@ -10,7 +10,9 @@ import {
   RecipeService,
   type RecipeImportDraft,
 } from "@ovenlovin/core";
-import { getDatabase, type DbClient } from "@ovenlovin/db";
+import { buildContentsMap } from "@ovenlovin/core/contents-map";
+import { getDatabase, job, jobItem, type DbClient } from "@ovenlovin/db";
+import { OFFSET_BOOK } from "@/test/book-fixtures";
 import type { RequestContext } from "@/lib/api/middleware";
 import { writePersonNotes } from "@/lib/person-appearance";
 import { addDays, startOfWeekMonday } from "@/lib/week-plan-view";
@@ -583,12 +585,50 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
     });
   }
 
+  await seedE2eBook(db, household.id);
+
   return {
     userId: user.id,
     householdId: household.id,
     membershipRole: membership.role,
     created: existingRecipes.items.length === 0,
   };
+}
+
+export const E2E_BOOK_JOB_ID = "00000000-0000-4000-8000-00000000b001";
+
+/** One uploaded book whose contents are already read, for the contents screen. */
+async function seedE2eBook(db: DbClient, householdId: string) {
+  const map = buildContentsMap(OFFSET_BOOK.map((lines, index) => ({ page: index + 1, lines })));
+  await db
+    .insert(job)
+    .values({
+      id: E2E_BOOK_JOB_ID,
+      householdId,
+      kind: "book_import",
+      status: "done",
+      input: {
+        blobUrl: "https://e2e.invalid/books/synthetic-kitchen.pdf",
+        sha256: "e2e".padEnd(64, "0"),
+        bytes: 1024,
+        pages: OFFSET_BOOK.length,
+        name: "A Synthetic Kitchen.pdf",
+        verified: true,
+      },
+      totalItems: 1,
+      doneItems: 1,
+    })
+    .onConflictDoNothing();
+  await db
+    .insert(jobItem)
+    .values({
+      jobId: E2E_BOOK_JOB_ID,
+      seq: 0,
+      payload: { step: "contents" },
+      status: "done",
+      result: map,
+    })
+    .onConflictDoNothing();
 }
 
 export async function getE2eSessionContext(): Promise<RequestContext> {
