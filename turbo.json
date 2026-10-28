@@ -18,7 +18,8 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "passThroughEnv": ["CI", "TEST_DATABASE_URL"]
     },
     "test:watch": {
       "cache": false,

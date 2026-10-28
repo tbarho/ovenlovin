@@ -15,7 +15,8 @@
     "./parsing": "./src/parsing/ingredient-line.ts",
     "./scaling": "./src/scaling/index.ts",
     "./aisles": "./src/services/shopping-aisles.ts",
-    "./people-order": "./src/services/people-order.ts"
+    "./people-order": "./src/services/people-order.ts",
+    "./jobs": "./src/jobs/index.ts"
   },
   "scripts": {
     "test": "vitest run",
