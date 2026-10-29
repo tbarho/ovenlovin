@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `apps/web` renders this file at `/changelog`, so write it for the people and agents who cook with OvenLovin: only changes they would notice and care about.
 
 ## [Unreleased]
-- Phone book reader shows one page at a time with page numbers centered at the bottom; demo share links stay off like print PDFs; disabled Share button now looks dimmed.
+- Book page numbers sit at the bottom on phone and desktop; demo share links stay off like print PDFs; disabled Share button now looks dimmed.
 
 ### Print your cookbook
 
