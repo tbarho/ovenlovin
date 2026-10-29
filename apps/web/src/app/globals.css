@@ -4380,6 +4380,32 @@ label.photo-page-add-target:focus-visible {
   right: max(8px, env(safe-area-inset-right));
 }
 
+/* One page at a time: the arrows flank the page count, off the page. */
+.book-reader-foot:has(.book-arrow) {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.book-reader-foot .book-arrow {
+  position: static;
+  translate: none;
+  height: 44px;
+}
+
+/* In the reader the folio takes its own line under the text instead of floating over it. */
+.book-reader .book-body {
+  padding-bottom: 0;
+}
+
+.book-reader .book-page-number {
+  position: static;
+  translate: none;
+  flex: none;
+  align-self: center;
+  padding: 0.8em 0 1em;
+}
+
 /* One laid-out page. Font size scales with the page, everything inside is em-based. */
 
 .book-page {

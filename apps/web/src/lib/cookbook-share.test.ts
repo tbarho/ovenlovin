@@ -35,6 +35,19 @@ describe("cookbook share", () => {
     expect(load).toHaveBeenCalledWith("c1", "h1");
   });
 
+  it("never opens a shared book in the public demo", async () => {
+    vi.stubEnv("OVENLOVIN_DEMO_MODE", "1");
+    const resolveLink = vi.fn(async () => "c1");
+    const book = await loadSharedBook(TOKEN, {
+      shares: { resolveLink },
+      cookbooks: { getCookbook: async () => COOKBOOK as any },
+      load: async () => BOOK,
+    });
+    vi.unstubAllEnvs();
+    expect(book).toBeNull();
+    expect(resolveLink).not.toHaveBeenCalled();
+  });
+
   it("is null for a revoked or blocked link, or a deleted cookbook", async () => {
     const load = vi.fn(async () => BOOK);
     const revoked = await loadSharedBook(TOKEN, {

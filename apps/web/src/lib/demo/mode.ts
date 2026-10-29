@@ -11,6 +11,8 @@
 
 export type EnvLike = Record<string, string | undefined>;
 
+export const DEMO_SHARE_OFF = "Share links are turned off in the public demo.";
+
 export function isTruthyEnvFlag(value: string | undefined): boolean {
   const flag = value?.trim().toLowerCase();
   return flag === "1" || flag === "true";

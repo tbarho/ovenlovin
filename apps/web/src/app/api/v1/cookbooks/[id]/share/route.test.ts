@@ -102,6 +102,20 @@ describe("/cookbooks/{id}/share", () => {
     expect(body.code).toBe("share_blocked");
   });
 
+  it("refuses with 403 and reports sharing off in the public demo", async () => {
+    vi.stubEnv("OVENLOVIN_DEMO_MODE", "1");
+    const response = await POST(request("POST"), params());
+    expect(response.status).toBe(403);
+    expect((await response.json()).detail).toBe("Share links are turned off in the public demo.");
+    expect(shares.createLink).not.toHaveBeenCalled();
+
+    shares.getStatus.mockResolvedValueOnce({ token: TOKEN, blocked: null });
+    expect(await (await GET(request("GET"), params())).json()).toEqual({
+      path: null,
+      blocked: "Share links are turned off in the public demo.",
+    });
+  });
+
   it("revokes", async () => {
     expect((await DELETE(request("DELETE"), params())).status).toBe(204);
     expect(shares.revokeLink).toHaveBeenCalledWith(COOKBOOK);

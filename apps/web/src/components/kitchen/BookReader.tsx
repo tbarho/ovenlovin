@@ -11,8 +11,8 @@ const FlipBook = dynamic(() => import("react-pageflip"), { ssr: false });
 
 /** A portrait page is taller than wide, like a real book page. */
 export const PAGE_RATIO = 1.35;
-/** At this width or below the book shows one page at a time. */
-export const SINGLE_MAX = 375;
+/** Below a tablet's width the book shows one page at a time. */
+export const SINGLE_MAX = 767;
 
 export type BookSize = { w: number; h: number; single: boolean };
 
@@ -123,6 +123,29 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
   const hasPrev = first > 0;
   const hasNext = last < total - 1;
   const label = shown.map((n) => book.pages[n]!.number).join("-");
+  /* On one page the arrows sit in the foot, off the page, so they never cover text. */
+  const arrows = [
+    <button
+      key="prev"
+      type="button"
+      className="book-arrow book-arrow-prev"
+      aria-label="Previous page"
+      disabled={!hasPrev}
+      onClick={() => flip(-1)}
+    >
+      ‹
+    </button>,
+    <button
+      key="next"
+      type="button"
+      className="book-arrow book-arrow-next"
+      aria-label="Next page"
+      disabled={!hasNext}
+      onClick={() => flip(1)}
+    >
+      ›
+    </button>,
+  ];
 
   return (
     <div className="book-reader">
@@ -154,32 +177,17 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
                 <BookPage key={i} page={pageData} size={size} bookId={shared ? null : book.id} />
               ))}
             </FlipBook>
-            <button
-              type="button"
-              className="book-arrow book-arrow-prev"
-              aria-label="Previous page"
-              disabled={!hasPrev}
-              onClick={() => flip(-1)}
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="book-arrow book-arrow-next"
-              aria-label="Next page"
-              disabled={!hasNext}
-              onClick={() => flip(1)}
-            >
-              ›
-            </button>
+            {size.single ? null : arrows}
           </>
         ) : null}
       </div>
 
       <div className="book-reader-foot">
+        {size?.single ? arrows[0] : null}
         <p aria-live="polite">
           Page {label} <span className="book-reader-total">of {total}</span>
         </p>
+        {size?.single ? arrows[1] : null}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { CookbookShareService, ShareBlockedError } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
-import { ConflictError, handleApiError, NotFoundError } from "@/lib/api/errors";
+import { ConflictError, ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
 import { loadOwnedCookbook } from "@/lib/api/cookbooks";
 import {
   getRequestContext,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/api/middleware";
 import { jsonResponse, noContentResponse } from "@/lib/api/response";
 import { presentShare } from "@/lib/cookbook-share";
+import { DEMO_SHARE_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
 import { isBooksEnabled } from "@/lib/jobs";
 
 type Params = { params: Promise<{ id: string }> };
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 export async function POST(request: NextRequest, { params }: Params) {
   try {
     if (!isBooksEnabled()) throw new NotFoundError("Route");
+    if (isDemoModeEnabled()) throw new ForbiddenError(DEMO_SHARE_OFF);
     const context = await getRequestContext(request);
     const { id } = await params;
     await loadOwnedCookbook(id, requireWritableHousehold(context));

@@ -1,3 +1,6 @@
+## Unreleased
+- Phone book reader shows one page at a time; demo share links stay off like print PDFs.
+
 # Changelog
 
 All notable changes to this project are documented in this file.
