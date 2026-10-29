@@ -4404,26 +4404,9 @@ label.photo-page-add-target:focus-visible {
   height: 44px;
 }
 
-/* In the reader the folio takes its own line under the text instead of floating over it. */
+/* Book reader pages keep the default absolute-positioned folio at bottom-center. */
 .book-reader .book-body {
   padding-bottom: 0;
-}
-
-.book-reader .book-page-number {
-  position: static;
-  translate: none;
-  flex: none;
-  align-self: center;
-  padding: 0.8em 0 1em;
-}
-
-/* Single-page mode: center folio at the bottom, not in the flow. */
-.book-flip-single .book-page-number {
-  position: absolute;
-  bottom: 0.6em;
-  left: 50%;
-  translate: -50% 0;
-  padding: 0;
 }
 
 /* One laid-out page. Font size scales with the page, everything inside is em-based. */
