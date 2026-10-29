@@ -19,7 +19,9 @@ describe("import input", () => {
 
   it("rejects a string that is not a web address", () => {
     expect(looksLikeHttpUrl("not a url")).toBe(false);
-    expect(importInputError("url", "not a url")).toBe("That doesn't look like a web address");
+    expect(importInputError("url", "not a url")).toBe(
+      "That does not look like a link. It should start with https://www.instagram.com/"
+    );
     expect(looksLikeHttpUrl("https://www.allrecipes.com/cookies")).toBe(true);
   });
 
@@ -59,7 +61,11 @@ describe("import input", () => {
       true
     );
     expect(isRetryableImportError("That photo took too long to read.")).toBe(true);
-    expect(isRetryableImportError("That doesn't look like a web address")).toBe(false);
+    expect(
+      isRetryableImportError(
+        "That does not look like a link. It should start with https://www.instagram.com/"
+      )
+    ).toBe(false);
     expect(isRetryableImportError(BLOCKED_IMPORT_COPY)).toBe(false);
   });
 

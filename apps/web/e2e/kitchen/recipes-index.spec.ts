@@ -42,7 +42,8 @@ test("paste import previews then saves from review", async ({ page }) => {
     .fill(
       "Weeknight tomato pasta\n\nIngredients\n- 12 oz pasta\n- 1 jar tomatoes\n\nSteps\nBoil pasta. Warm sauce. Combine."
     );
-  await page.getByRole("button", { name: "Import" }).click();
+  const sheet = page.getByRole("dialog", { name: "Import a recipe" });
+  await sheet.getByRole("button", { name: "Import", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Review before saving" });
   await expect(dialog.getByLabel("Title")).toBeVisible({ timeout: 30_000 });
   await expect(dialog.getByLabel("Title")).toHaveValue(/pasta/i);

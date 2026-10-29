@@ -111,11 +111,7 @@ describe("POST /recipes/import", () => {
       code: "instagram_blocked",
       heading: "Instagram did not let us read this post",
       permalink: "https://www.instagram.com/reel/C9mIsoButter",
-      nextSteps: [
-        { id: "retry" },
-        { id: "paste" },
-        { id: "photo" },
-      ],
+      nextSteps: [{ id: "retry" }, { id: "paste" }, { id: "photo" }],
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });

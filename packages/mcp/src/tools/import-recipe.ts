@@ -31,10 +31,7 @@ export const importRecipeSchema = z.object({
     .describe("Persist even when this URL or draft already exists"),
   skipReview: z.boolean().default(false).describe("Skip review queue and publish immediately"),
   cookbookId: z.string().uuid().optional().describe("Optional cookbook to file the recipe in"),
-  sourceUrl: z
-    .string()
-    .optional()
-    .describe("Instagram permalink when content is a pasted caption"),
+  sourceUrl: z.string().optional().describe("Instagram permalink when content is a pasted caption"),
   creator: z.string().optional().describe("@handle credited on a pasted Instagram caption"),
 });
 

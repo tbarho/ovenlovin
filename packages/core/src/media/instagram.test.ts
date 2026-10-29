@@ -25,7 +25,9 @@ a splash of soy sauce
 describe("canonicalInstagramPermalink", () => {
   it("canonicalizes reel, reels, and photo posts and strips igsh", () => {
     expect(
-      canonicalInstagramPermalink("https://www.instagram.com/reel/C9mIsoButter/?igsh=abc&utm_source=ig")
+      canonicalInstagramPermalink(
+        "https://www.instagram.com/reel/C9mIsoButter/?igsh=abc&utm_source=ig"
+      )
     ).toEqual({
       permalink: "https://www.instagram.com/reel/C9mIsoButter",
       kind: "reel",
