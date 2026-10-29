@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import {
   formatInstagramHandle,
@@ -477,9 +478,9 @@ export function InstagramSaved({
       <button type="button" className="btn primary" onClick={onAnother}>
         Import another
       </button>
-      <a className="btn" href="/recipes">
+      <Link className="btn" href="/recipes">
         Back to recipes
-      </a>
+      </Link>
     </div>
   );
 }
