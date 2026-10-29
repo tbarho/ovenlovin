@@ -1,11 +1,13 @@
 import { CookbookService, CookbookShareService, type CookbookShareStatus } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { loadReaderBook, type ReaderBook } from "@/lib/book-reader";
+import { DEMO_SHARE_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
 
 export const sharedBookPath = (token: string) => `/read/${token}`;
 
-/** The share status as the API and cookbook page hand it out. */
+/** The share status as the API and cookbook page hand it out. The public demo never shares. */
 export function presentShare(status: CookbookShareStatus) {
+  if (isDemoModeEnabled()) return { path: null, blocked: DEMO_SHARE_OFF };
   return {
     path: status.token ? sharedBookPath(status.token) : null,
     blocked: status.blocked,
@@ -28,6 +30,7 @@ export async function loadSharedBook(
   const cookbooks = deps.cookbooks ?? new CookbookService(db!);
   const load = deps.load ?? loadReaderBook;
 
+  if (isDemoModeEnabled()) return null;
   const cookbookId = await shares.resolveLink(token);
   if (!cookbookId) return null;
   const cookbook = await cookbooks.getCookbook(cookbookId);

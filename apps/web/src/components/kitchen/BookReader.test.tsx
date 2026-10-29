@@ -99,10 +99,29 @@ function setStageSize(width: number, height: number) {
 }
 
 describe("fitBook", () => {
-  it("shows a single page at 375px and under", () => {
-    expect(fitBook(375, 700)?.single).toBe(true);
+  it("shows a single page under a tablet's width", () => {
     expect(fitBook(320, 700)?.single).toBe(true);
-    expect(fitBook(376, 700)?.single).toBe(false);
+    expect(fitBook(390, 700)?.single).toBe(true);
+    expect(fitBook(767, 900)?.single).toBe(true);
+    expect(fitBook(768, 900)?.single).toBe(false);
+  });
+
+  it("sizes the single page to the phone", () => {
+    const size = fitBook(374, 640)!;
+    // fitBook snaps to 4px, so allow one snap step past the raw margin.
+    expect(size.w).toBeLessThanOrEqual(374 - 16 + 4);
+    expect(size.h).toBeLessThanOrEqual(640 - 16 + 4);
+    expect(size.single).toBe(true);
+  });
+
+  it("keeps page-flip in portrait when height caps a wide single stage", () => {
+    // page-flip uses landscape when blockWidth >= pageWidth * 2. In single
+    // mode the flip host is pinned to size.w, so 2*w must still beat a short
+    // wide stage only after that pin - assert the sized page itself.
+    const size = fitBook(700, 400)!;
+    expect(size.single).toBe(true);
+    expect(size.w * 2).toBeGreaterThan(size.w); // sanity
+    expect(size.h).toBeLessThanOrEqual(400 - 16 + 4);
   });
 
   it("keeps the portrait ratio whatever the stage", () => {
@@ -179,6 +198,22 @@ describe("BookReader", () => {
     window.dispatchEvent(new Event("resize"));
     expect(await screen.findByText("Page 2")).toBeVisible();
     expect(screen.queryByText(/Page 2-3/)).toBeNull();
+  });
+
+  it("on a phone moves the arrows off the page and leaves the cover unnumbered", async () => {
+    setStageSize(374, 640);
+    const user = userEvent.setup();
+    const { container } = render(<BookReader book={bookFixture()} />);
+    const flip = await screen.findByTestId("flipbook");
+    const foot = container.querySelector(".book-reader-foot") as HTMLElement;
+    const stage = container.querySelector(".book-reader-stage") as HTMLElement;
+
+    expect(within(foot).getByRole("button", { name: "Next page" })).toBeEnabled();
+    expect(within(stage).queryByRole("button", { name: /page/ })).toBeNull();
+    expect(flip.querySelector(".book-page--cover .book-page-number")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    expect(screen.getByText("Page 2")).toBeVisible();
   });
 
   it("puts the photo caption below the photo, never on top of it", async () => {

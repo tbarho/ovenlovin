@@ -4316,10 +4316,16 @@ label.photo-page-add-target:focus-visible {
   padding: 8px;
 }
 
-/* page-flip measures this element to pick landscape vs portrait, so it must
-   span the stage: shrunk to the book width it would always read as portrait. */
+/* page-flip measures this element to pick landscape vs portrait. Spread mode
+   spans the stage so two pages fit; single mode pins to the page width so a
+   short wide stage cannot flip back into a two-page view. */
 .book-flip {
   width: 100%;
+}
+
+.book-flip.book-flip-single {
+  width: auto;
+  max-width: 100%;
 }
 
 .book-reader-foot {
@@ -4378,6 +4384,32 @@ label.photo-page-add-target:focus-visible {
 
 .book-arrow-next {
   right: max(8px, env(safe-area-inset-right));
+}
+
+/* One page at a time: the arrows flank the page count, off the page. */
+.book-reader-foot:has(.book-arrow) {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.book-reader-foot .book-arrow {
+  position: static;
+  translate: none;
+  height: 44px;
+}
+
+/* In the reader the folio takes its own line under the text instead of floating over it. */
+.book-reader .book-body {
+  padding-bottom: 0;
+}
+
+.book-reader .book-page-number {
+  position: static;
+  translate: none;
+  flex: none;
+  align-self: center;
+  padding: 0.8em 0 1em;
 }
 
 /* One laid-out page. Font size scales with the page, everything inside is em-based. */

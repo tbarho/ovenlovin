@@ -23,8 +23,8 @@ export function metaLine(header: any) {
   return parts.join(" · ");
 }
 
-/** Photo pages carry their number inside the caption bar instead of the corner. */
-const CAPTIONED = new Set(["photo", "original-card"]);
+/** Photo pages carry their number inside the caption bar; the cover carries none. */
+const NO_FOLIO = new Set(["cover", "photo", "original-card"]);
 /**
  * One laid-out book page. The caption bar under photos is a flex row at the
  * bottom of the page, never an overlay on top of the photo.
@@ -50,7 +50,7 @@ export const BookPage = forwardRef<
       {page.kind === "notes" ? <Notes /> : null}
       {page.kind === "colophon" ? <Colophon page={page} /> : null}
 
-      {CAPTIONED.has(page.kind) ? null : <p className="book-page-number">{page.number}</p>}
+      {NO_FOLIO.has(page.kind) ? null : <p className="book-page-number">{page.number}</p>}
     </div>
   );
 });

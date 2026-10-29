@@ -7,6 +7,7 @@ import type { PersonLove } from "@ovenlovin/allergens";
 import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { api } from "@/lib/browser-api";
+import { DEMO_SHARE_OFF } from "@/lib/demo/mode";
 import { recipeCardMeta } from "@/lib/recipe-card-meta";
 import { EMPTY_RECIPE_SAFETY, type RecipeSafetySummary } from "@/lib/recipe-card-safety";
 import { BottomSheet } from "./BottomSheet";
@@ -258,7 +259,9 @@ export function CookbookRecipes({
 
       {shareState?.blocked ? (
         <p className="muted" id="share-blocked">
-          Sharing is off: {shareState.blocked}
+          {shareState.blocked === DEMO_SHARE_OFF
+            ? DEMO_SHARE_OFF
+            : `Sharing is off: ${shareState.blocked}`}
         </p>
       ) : null}
       {error ? <p className="muted">{error}</p> : null}
