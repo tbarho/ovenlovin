@@ -284,6 +284,11 @@ select {
   border-color: var(--orange);
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn.primary {
   background: var(--orange-press);
   border-color: var(--orange-press);
@@ -4410,6 +4415,15 @@ label.photo-page-add-target:focus-visible {
   flex: none;
   align-self: center;
   padding: 0.8em 0 1em;
+}
+
+/* Single-page mode: center folio at the bottom, not in the flow. */
+.book-flip-single .book-page-number {
+  position: absolute;
+  bottom: 0.6em;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0;
 }
 
 /* One laid-out page. Font size scales with the page, everything inside is em-based. */
