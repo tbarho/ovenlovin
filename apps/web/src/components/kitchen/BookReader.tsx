@@ -159,7 +159,8 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
               key={`${size.single}-${size.w}x${size.h}`}
               {...({
                 ref: flipRef,
-                className: "book-flip",
+                className: size.single ? "book-flip book-flip-single" : "book-flip",
+                style: size.single ? { width: size.w } : undefined,
                 width: size.w,
                 height: size.h,
                 size: "fixed",

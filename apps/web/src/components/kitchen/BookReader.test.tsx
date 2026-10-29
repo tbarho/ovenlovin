@@ -114,6 +114,16 @@ describe("fitBook", () => {
     expect(size.single).toBe(true);
   });
 
+  it("keeps page-flip in portrait when height caps a wide single stage", () => {
+    // page-flip uses landscape when blockWidth >= pageWidth * 2. In single
+    // mode the flip host is pinned to size.w, so 2*w must still beat a short
+    // wide stage only after that pin - assert the sized page itself.
+    const size = fitBook(700, 400)!;
+    expect(size.single).toBe(true);
+    expect(size.w * 2).toBeGreaterThan(size.w); // sanity
+    expect(size.h).toBeLessThanOrEqual(400 - 16 + 4);
+  });
+
   it("keeps the portrait ratio whatever the stage", () => {
     const size = fitBook(900, 700);
     expect(size).not.toBeNull();

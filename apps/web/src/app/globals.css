@@ -4316,10 +4316,16 @@ label.photo-page-add-target:focus-visible {
   padding: 8px;
 }
 
-/* page-flip measures this element to pick landscape vs portrait, so it must
-   span the stage: shrunk to the book width it would always read as portrait. */
+/* page-flip measures this element to pick landscape vs portrait. Spread mode
+   spans the stage so two pages fit; single mode pins to the page width so a
+   short wide stage cannot flip back into a two-page view. */
 .book-flip {
   width: 100%;
+}
+
+.book-flip.book-flip-single {
+  width: auto;
+  max-width: 100%;
 }
 
 .book-reader-foot {
