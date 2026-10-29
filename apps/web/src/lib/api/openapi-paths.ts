@@ -382,9 +382,9 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "post",
     path: "/recipes/import",
     tags: ["recipes"],
-    summary: "Import a recipe from a URL or pasted text",
+    summary: "Import a recipe from a URL, pasted text, or an Instagram caption",
     description:
-      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send the previewed `draft` with `save=true` to persist without extracting again. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. Demo responses include `remainingImports`.",
+      "Preview by default (`save` omitted or false). Persist only when `save=true`. Preview responses include `saved:false` and `preview:true`. Send the previewed `draft` with `save=true` to persist without extracting again. Send `Idempotency-Key` so a dropped connection can be retried without a second recipe. URL and Instagram permalink duplicates and in-flight locks return 409 with `recipeId` / `recipeUrl`. An Instagram link is read from the caption when a reader is configured. Until then the response is 400 `instagram_blocked` (also `instagram_private` or `instagram_no_caption`) with `heading` and `nextSteps`. Paste that caption with `source: paste`, `sourceUrl` (the permalink), and `creator` (`@handle`). Demo responses include `remainingImports`.",
     request: {
       body: {
         content: {
@@ -392,6 +392,9 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
             schema: z.object({
               source: z.enum(["url", "paste"]),
               content: z.string().optional(),
+              sourceUrl: z.string().optional().describe("Instagram permalink when source is paste"),
+              creator: z.string().optional().describe("Instagram @handle to credit"),
+              cookbookId: z.string().uuid().optional(),
               draft: z
                 .unknown()
                 .optional()

@@ -10,6 +10,10 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 ## [Unreleased]
 - Book page numbers sit at the bottom on phone and desktop; demo share links stay off like print PDFs; disabled Share button now looks dimmed.
 
+### Import a recipe from an Instagram caption
+
+Paste a public Instagram link. OvenLovin reads the caption, shows you what it found, and credits the creator on the recipe. Save it to your kitchen or a cookbook. If Instagram cannot be read, paste the caption yourself. Nothing is saved until you say so.
+
 ### Print your cookbook
 
 In the book reader, tap Print and choose where it's headed. At home gets you a US Letter PDF of exactly the pages you paged through. At a print shop gets the same pages with bleed, crop marks, and embedded fonts, plus a heads-up if a photo will print soft. Big books are made in the background with a progress bar, so you can close the sheet and come back to the download.

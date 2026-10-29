@@ -3350,6 +3350,279 @@ label.photo-page-add-target:focus-visible {
   gap: 8px;
 }
 
+.import-card.is-bare {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.import-tabs {
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.import-tabs .tab {
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: 8px;
+}
+
+.import-tabs .tab[aria-selected="true"] {
+  border-color: var(--ink);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.import-hint,
+.import-detect,
+.import-source,
+.import-progress-timer {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.import-detect,
+.import-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.ig-mark {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.import-actions .btn {
+  flex: 1 1 120px;
+}
+
+.import-quiet {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 550;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.import-progress,
+.import-error-screen,
+.import-caption,
+.import-review,
+.import-saved {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.import-progress h3,
+.import-error-screen h3,
+.import-caption h3,
+.import-review h3,
+.import-saved h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.import-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.import-steps li {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.import-steps .is-current,
+.import-steps .is-done {
+  color: var(--ink);
+}
+
+.import-steps .is-current {
+  font-weight: 650;
+}
+
+.import-steps .is-done::before {
+  content: "\2713  ";
+}
+
+.import-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.import-meter span {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: var(--orange);
+  animation: photo-import-sweep 1.8s var(--motion-ease) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .import-meter span {
+    width: 100%;
+    opacity: 1;
+    animation: none !important;
+  }
+}
+
+.import-next {
+  display: grid;
+  gap: 8px;
+}
+
+.import-next-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  height: auto;
+  min-height: 44px;
+  padding: 10px 14px;
+  text-align: left;
+  white-space: normal;
+}
+
+.import-next-hint {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 450;
+  opacity: 0.8;
+}
+
+.import-card textarea.import-caption-box,
+.import-card textarea.import-step {
+  min-height: 72px;
+}
+
+.import-serves,
+.import-section-head,
+.import-savebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-section h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.import-rows {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.import-ing,
+.import-step-row {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.import-ing {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.import-ing .import-chip {
+  grid-column: 1 / -1;
+}
+
+.import-step-row {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.import-step-num {
+  min-width: 1.5em;
+  padding-top: 10px;
+  font-weight: 650;
+}
+
+.import-chip {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.import-savebar {
+  position: sticky;
+  bottom: 0;
+  padding-top: 8px;
+  background: var(--panel);
+}
+
+.import-savebar .btn {
+  flex: 1 1 140px;
+}
+
+.import-caption-read pre {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  color: var(--muted);
+}
+
+.import-done-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 22px;
+}
+
+.import-saved-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.import-saved-card p {
+  margin: 0;
+}
+
+.import-cookbooks {
+  display: grid;
+  gap: 8px;
+}
+
+.import-disclose code {
+  overflow-wrap: anywhere;
+}
+
 .import-warn {
   margin: 0;
   padding: 10px 12px;

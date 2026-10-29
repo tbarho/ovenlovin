@@ -3,10 +3,10 @@ import { draftFromPlainText } from "../parsing/plain-import";
 import type { RecipeImportDraft } from "../schemas/recipes";
 import { canonicalInstagramPermalink, type InstagramPostKind } from "./source-url";
 
+export type { InstagramPostKind };
+
 export type InstagramFailureCode =
-  | "instagram_private"
-  | "instagram_no_caption"
-  | "instagram_blocked";
+  "instagram_private" | "instagram_no_caption" | "instagram_blocked";
 
 export type InstagramNextStepId = "paste" | "photo" | "link" | "retry" | "bio" | "type";
 
@@ -17,11 +17,7 @@ export type InstagramNextStep = {
 };
 
 export type InstagramReadFailureCode =
-  | "private"
-  | "not_found"
-  | "no_caption"
-  | "blocked"
-  | "unavailable";
+  "private" | "not_found" | "no_caption" | "blocked" | "unavailable";
 
 const NO_AMOUNT_PREFIX = "no-amount:";
 
@@ -261,8 +257,7 @@ export function withInstagramCredit(
   for (const ingredient of draft.ingredients) {
     if (!ingredientHasAmount(ingredient.rawText)) uncertain.add(noAmountField(ingredient.rawText));
   }
-  const images =
-    input.coverStorable && input.coverUrl ? [input.coverUrl] : (draft.images ?? []);
+  const images = input.coverStorable && input.coverUrl ? [input.coverUrl] : (draft.images ?? []);
   return {
     ...draft,
     images,
@@ -283,6 +278,7 @@ export function withInstagramCredit(
         sourceName: handle || undefined,
         kind: input.kind,
         caption: input.caption,
+        ...(input.coverUrl ? { coverUrl: input.coverUrl } : {}),
         coverStorable: Boolean(input.coverStorable && input.coverUrl),
       },
     },

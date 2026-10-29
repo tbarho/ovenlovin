@@ -26,12 +26,14 @@ describe("BookImportDoor", () => {
     vi.mocked(api).mockReset();
   });
 
-  it("shows the door only when books are enabled", () => {
+  it("shows the door only when books are enabled", async () => {
     const { unmount } = render(<ImportRecipeForm />);
     expect(screen.queryByRole("button", { name: "Add a whole cookbook" })).not.toBeInTheDocument();
     unmount();
 
     render(<ImportRecipeForm booksEnabled />);
+    expect(screen.queryByRole("button", { name: "Add a whole cookbook" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Cookbook" }));
     expect(screen.getByRole("button", { name: "Add a whole cookbook" })).toBeVisible();
   });
 

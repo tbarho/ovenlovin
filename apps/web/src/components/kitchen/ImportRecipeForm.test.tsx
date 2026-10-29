@@ -94,9 +94,9 @@ describe("ImportRecipeForm photo import", () => {
 
   it("shows Import from photo next to URL and Paste", () => {
     render(<ImportRecipeForm />);
-    expect(screen.getByRole("tab", { name: "URL" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Paste" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Link" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Photo" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Cookbook" })).toBeVisible();
   });
 
   it("reads a photo after Import recipe", async () => {
@@ -211,7 +211,7 @@ describe("ImportRecipeForm photo import", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByRole("img", { name: /selected recipe photo/i })).toBeVisible();
     await user.click(within(dialog).getByRole("button", { name: "Close" }));
-    await user.click(screen.getByRole("tab", { name: "URL" }));
+    await user.click(screen.getByRole("tab", { name: "Link" }));
     expect(screen.getByTestId("photo-import-progress")).toBeVisible();
     expect(screen.getByText("Import in progress")).toBeVisible();
     expect(screen.getByRole("img", { name: /selected recipe photo/i })).toBeVisible();
@@ -385,18 +385,23 @@ describe("ImportRecipeForm url and paste validation", () => {
       );
       render(<ImportRecipeForm />);
       if (tab === "paste") {
-        await user.click(screen.getByRole("tab", { name: "Paste" }));
+        await user.click(screen.getByRole("button", { name: "Paste the recipe text" }));
         await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Parent A pasta");
       } else {
         await user.type(
-          screen.getByPlaceholderText(/example.com/i),
+          screen.getByPlaceholderText(/instagram.com\/reel/i),
           "https://www.allrecipes.com/cookies"
         );
       }
       await user.click(screen.getByRole("button", { name: "Import" }));
       expect(await screen.findByTestId("import-progress")).toBeVisible();
-      expect(screen.getByText("Reading")).toBeVisible();
-      expect(screen.getByText(`${PHOTO_IMPORT_ESTIMATE}.`)).toBeVisible();
+      expect(screen.getByRole("heading", { name: "Importing" })).toBeVisible();
+      expect(
+        screen.getByText(tab === "paste" ? "Reading the recipe" : "Finding the post")
+      ).toBeVisible();
+      const meter = screen.getByRole("progressbar", { name: "Importing" });
+      expect(meter).toHaveAttribute("aria-valuetext", "Working, no estimate");
+      expect(meter).not.toHaveAttribute("aria-valuenow");
       expect(screen.queryByText("Importing…")).not.toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Cancel" }));
       expect(signal?.aborted).toBe(true);
@@ -409,7 +414,7 @@ describe("ImportRecipeForm url and paste validation", () => {
   it("keeps Paste import disabled until there is text", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
-    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.click(screen.getByRole("button", { name: "Paste the recipe text" }));
     expect(screen.getByRole("button", { name: "Import" })).toBeDisabled();
     await user.type(
       screen.getByPlaceholderText(/weeknight tomato pasta/i),
@@ -421,20 +426,31 @@ describe("ImportRecipeForm url and paste validation", () => {
   it("validates a bad URL before calling the importer", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
-    await user.type(screen.getByPlaceholderText(/example.com/i), "not a url");
+    await user.type(screen.getByPlaceholderText(/instagram.com\/reel/i), "not a url");
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByText("That doesn't look like a web address")).toBeVisible();
+    expect(
+      screen.getByText(
+        "That does not look like a link. It should start with https://www.instagram.com/"
+      )
+    ).toBeVisible();
     expect(api).not.toHaveBeenCalled();
-    await user.clear(screen.getByPlaceholderText(/example.com/i));
-    await user.type(screen.getByPlaceholderText(/example.com/i), "https://www.allrecipes.com/x");
-    expect(screen.queryByText("That doesn't look like a web address")).not.toBeInTheDocument();
+    await user.clear(screen.getByPlaceholderText(/instagram.com\/reel/i));
+    await user.type(
+      screen.getByPlaceholderText(/instagram.com\/reel/i),
+      "https://www.allrecipes.com/x"
+    );
+    expect(
+      screen.queryByText(
+        "That does not look like a link. It should start with https://www.instagram.com/"
+      )
+    ).not.toBeInTheDocument();
   });
 
   it("does not report example.com as blocked", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
     await user.type(
-      screen.getByPlaceholderText(/example.com/i),
+      screen.getByPlaceholderText(/instagram.com\/reel/i),
       "https://example.com/chocolate-chip-cookies"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
@@ -449,7 +465,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     const user = userEvent.setup();
     vi.mocked(api).mockRejectedValueOnce(new Error("We couldn't find a recipe in that text/photo"));
     render(<ImportRecipeForm />);
-    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.click(screen.getByRole("button", { name: "Paste the recipe text" }));
     await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "lorem ipsum");
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText(NOT_A_RECIPE_COPY)).toBeVisible();
@@ -463,7 +479,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     vi.mocked(api).mockRejectedValueOnce(new Error("That page is gone."));
     render(<ImportRecipeForm />);
     await user.type(
-      screen.getByPlaceholderText(/example.com/i),
+      screen.getByPlaceholderText(/instagram.com\/reel/i),
       "https://www.foodnetwork.com/recipes/old"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
@@ -477,7 +493,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     const user = userEvent.setup();
     vi.mocked(api).mockRejectedValue(new Error("An unexpected error occurred"));
     render(<ImportRecipeForm />);
-    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.click(screen.getByRole("button", { name: "Paste the recipe text" }));
     await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Soup\nServes 2");
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText("An unexpected error occurred")).toBeVisible();
@@ -493,7 +509,7 @@ describe("ImportRecipeForm url and paste validation", () => {
     );
     render(<ImportRecipeForm />);
     await user.type(
-      screen.getByPlaceholderText(/example.com/i),
+      screen.getByPlaceholderText(/instagram.com\/reel/i),
       "https://www.budgetbytes.com/beef-stroganoff/"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
@@ -506,11 +522,10 @@ describe("ImportRecipeForm url and paste validation", () => {
     );
 
     await user.click(pasteHelp);
-    expect(screen.getByRole("tab", { name: "Paste" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByPlaceholderText(/weeknight tomato pasta/i)).toHaveFocus();
     expect(screen.queryByText(BLOCKED_IMPORT_COPY)).not.toBeInTheDocument();
-    await user.click(screen.getByRole("tab", { name: "URL" }));
-    expect(screen.getByPlaceholderText(/example.com/i)).toHaveValue(
+    await user.click(screen.getByRole("tab", { name: "Link" }));
+    expect(screen.getByPlaceholderText(/instagram.com\/reel/i)).toHaveValue(
       "https://www.budgetbytes.com/beef-stroganoff/"
     );
   });
@@ -520,14 +535,14 @@ describe("ImportRecipeForm url and paste validation", () => {
     vi.mocked(api).mockRejectedValue(new Error("This site blocked the importer (tried direct)."));
     render(<ImportRecipeForm />);
     await user.type(
-      screen.getByPlaceholderText(/example.com/i),
+      screen.getByPlaceholderText(/instagram.com\/reel/i),
       "https://www.foodnetwork.com/recipes/alton-brown/baked-macaroni-and-cheese-recipe-1939524"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
     await user.click(await screen.findByRole("button", { name: "Add a photo" }));
     expect(screen.getByRole("tab", { name: "Photo" })).toHaveAttribute("aria-selected", "true");
-    await user.click(screen.getByRole("tab", { name: "URL" }));
-    expect(screen.getByPlaceholderText(/example.com/i)).toHaveValue(
+    await user.click(screen.getByRole("tab", { name: "Link" }));
+    expect(screen.getByPlaceholderText(/instagram.com\/reel/i)).toHaveValue(
       "https://www.foodnetwork.com/recipes/alton-brown/baked-macaroni-and-cheese-recipe-1939524"
     );
   });
@@ -561,17 +576,17 @@ describe("ImportRecipeForm url and paste validation", () => {
         servings: 4,
       });
     render(<ImportRecipeForm />);
-    const field = screen.getByPlaceholderText(/example.com/i);
+    const field = screen.getByPlaceholderText(/instagram.com\/reel/i);
     await user.type(field, "https://www.budgetbytes.com/pasta");
     await user.click(screen.getByRole("button", { name: "Import" }));
     const firstDialog = await screen.findByRole("dialog");
-    await user.click(within(firstDialog).getByRole("button", { name: "Save recipe" }));
+    await user.click(within(firstDialog).getByRole("button", { name: "Save to kitchen" }));
     expect(await within(firstDialog).findByText("Connection lost")).toBeVisible();
     await user.clear(field);
     await user.type(field, "https://www.budgetbytes.com/cookies");
     await user.click(screen.getByRole("button", { name: "Import" }));
     const secondDialog = await screen.findByRole("dialog");
-    await user.click(within(secondDialog).getByRole("button", { name: "Save recipe" }));
+    await user.click(within(secondDialog).getByRole("button", { name: "Save to kitchen" }));
     await waitFor(() => expect(api).toHaveBeenCalledTimes(4));
     const keys = vi.mocked(api).mock.calls.map((call) => {
       const headers = call[1]?.headers as Record<string, string> | undefined;
@@ -605,16 +620,156 @@ describe("ImportRecipeForm url and paste validation", () => {
         servings: 4,
       });
     render(<ImportRecipeForm />);
-    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    await user.click(screen.getByRole("button", { name: "Paste the recipe text" }));
     await user.type(screen.getByPlaceholderText(/weeknight tomato pasta/i), "Test Recipe 1");
     await user.click(screen.getByRole("button", { name: "Import" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByLabelText("Title")).toHaveValue("Test Recipe 1");
-    await user.click(within(dialog).getByRole("button", { name: "Save recipe" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save to kitchen" }));
     await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
     expect(vi.mocked(api).mock.calls[1]?.[1]?.body).toContain("save");
     expect(await screen.findByTestId("import-review")).toHaveTextContent(
       "Imported Test Recipe 1 · 4 servings (guessed)"
     );
+  });
+});
+
+const reel = "https://www.instagram.com/reel/C9mIsoButter?igsh=abc";
+
+function blockedIgError() {
+  const error = new Error(
+    "This happens sometimes and is not your link's fault. Nothing was saved."
+  ) as Error & { code: string; kind: string; permalink: string };
+  error.code = "instagram_blocked";
+  error.kind = "reel";
+  error.permalink = "https://www.instagram.com/reel/C9mIsoButter";
+  return error;
+}
+
+const captionPreview = {
+  title: "15-minute miso butter pasta",
+  servings: 2,
+  ingredients: [{ rawText: "8 oz spaghetti" }, { rawText: "a splash of soy sauce" }],
+  steps: [{ text: "Boil the pasta." }, { text: "Toss with miso." }],
+  images: [],
+  source: {
+    type: "social",
+    author: "@weeknightwithmaya",
+    url: "https://www.instagram.com/reel/C9mIsoButter",
+    canonicalUrl: "https://www.instagram.com/reel/C9mIsoButter",
+    importerName: "instagram",
+    importerVersion: "0.1.0",
+    rawExtractionJson: {
+      sourcePlatform: "instagram",
+      sourceName: "@weeknightwithmaya",
+      kind: "reel",
+      caption: "15-minute miso butter pasta\n8 oz spaghetti\na splash of soy sauce",
+      coverStorable: false,
+    },
+  },
+};
+
+describe("ImportRecipeForm Instagram", () => {
+  beforeEach(() => {
+    vi.mocked(api).mockReset();
+  });
+
+  it("asks for a link, and rejects text that is not a link", async () => {
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(screen.getByText("Paste an Instagram link first.")).toBeVisible();
+    expect(api).not.toHaveBeenCalled();
+    await user.type(screen.getByPlaceholderText(/instagram.com\/reel/i), "not a url");
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(
+      screen.getByText(
+        "That does not look like a link. It should start with https://www.instagram.com/"
+      )
+    ).toBeVisible();
+  });
+
+  it("shows a Reel or post chip and drops Try again after a second block", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockRejectedValue(blockedIgError());
+    render(<ImportRecipeForm />);
+    const field = screen.getByPlaceholderText(/instagram.com\/reel/i);
+    await user.type(field, reel);
+    expect(screen.getByText("Instagram Reel link. We read the caption.")).toBeVisible();
+    await user.clear(field);
+    await user.type(field, "https://instagram.com/p/C8sheetPanGn/");
+    expect(screen.getByText("Instagram post link. We read the caption.")).toBeVisible();
+    await user.clear(field);
+    await user.type(field, reel);
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    expect(
+      await screen.findByRole("heading", { name: "Instagram did not let us read this post" })
+    ).toBeVisible();
+    expect(screen.getByText(/Nothing was saved/)).toBeVisible();
+    expect(screen.getByRole("button", { name: /Try again/ })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Try again/ }));
+    expect(
+      await screen.findByRole("heading", { name: "Instagram is still not letting us read it" })
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Try again/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Paste the caption/ })).toBeVisible();
+    expect(api).toHaveBeenCalledTimes(2);
+  });
+
+  it("reads a pasted caption, credits the creator, and saves to the kitchen", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api)
+      .mockRejectedValueOnce(blockedIgError())
+      .mockResolvedValueOnce(captionPreview)
+      .mockResolvedValueOnce({
+        id: "00000000-0000-4000-8000-0000000000aa",
+        title: "15-minute miso butter pasta",
+        servings: 2,
+      });
+    render(<ImportRecipeForm cookbooks={[{ id: "book-1", name: "Weeknight dinners" }]} />);
+    await user.type(screen.getByPlaceholderText(/instagram.com\/reel/i), reel);
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    await user.click(await screen.findByRole("button", { name: /Paste the caption/ }));
+    await user.click(screen.getByRole("button", { name: "Read caption" }));
+    expect(await screen.findByText("Paste the caption first.")).toBeVisible();
+    await user.type(screen.getByLabelText("Caption"), "15-minute miso butter pasta");
+    await user.click(screen.getByRole("button", { name: "Read caption" }));
+    expect(
+      await screen.findByRole("link", { name: "From @weeknightwithmaya on Instagram" })
+    ).toBeVisible();
+    expect(screen.getByText("No amount in the caption. Add one if you know it.")).toBeVisible();
+    expect(screen.queryByText("No cover photo. You can add one later.")).not.toBeInTheDocument();
+    expect(screen.getByText(/Show the caption we read/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Save to kitchen" }));
+    expect(await screen.findByRole("heading", { name: "Saved to your kitchen" })).toBeVisible();
+    expect(screen.getByText("From @weeknightwithmaya on Instagram")).toBeVisible();
+    expect(screen.getByText("Serves 2 · 2 ingredients")).toBeVisible();
+    const saveCall = vi.mocked(api).mock.calls[2];
+    expect(saveCall?.[0]).toBe("/api/v1/recipes/import");
+    expect(String(saveCall?.[1]?.body)).toContain('"sourcePlatform":"instagram"');
+    expect(String(saveCall?.[1]?.body)).toContain("no-amount:a splash of soy sauce");
+  });
+
+  it("cancels an in-flight import without saving", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockImplementation(
+      (_path, init) =>
+        new Promise((_, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            const error = new Error("Aborted");
+            error.name = "AbortError";
+            reject(error);
+          });
+        })
+    );
+    render(<ImportRecipeForm />);
+    await user.type(
+      screen.getByPlaceholderText(/instagram.com\/reel/i),
+      "https://www.budgetbytes.com/pasta"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    await user.click(await screen.findByRole("button", { name: "Cancel" }));
+    expect(await screen.findByText("Import cancelled. Nothing saved.")).toBeVisible();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

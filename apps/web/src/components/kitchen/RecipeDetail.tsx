@@ -122,6 +122,13 @@ export function RecipeDetail({
 
   const mainImage = recipeMainImage(recipe.images);
   const sourceUrl = recipe.source?.canonicalUrl || recipe.source?.url || null;
+  const instagram =
+    recipe.source?.rawExtractionJson?.sourcePlatform === "instagram" && sourceUrl
+      ? {
+          url: sourceUrl,
+          handle: recipe.source.author?.trim().startsWith("@") ? recipe.source.author.trim() : "",
+        }
+      : null;
   const fromBook = bookAttribution(recipe.source);
   const checkIngredients = recipe.ingredients.map((ingredient) => ({
     id: ingredient.id,
@@ -243,7 +250,11 @@ export function RecipeDetail({
                   {fromBook.page ? `, p. ${fromBook.page}` : null}
                 </p>
               ) : null}
-              {sourceUrl ? (
+              {instagram ? (
+                <a className="source-link" href={instagram.url} target="_blank" rel="noreferrer">
+                  {instagram.handle ? `From ${instagram.handle} on Instagram` : "From Instagram"}
+                </a>
+              ) : sourceUrl ? (
                 <a className="source-link" href={sourceUrl} target="_blank" rel="noreferrer">
                   View original on {sourceHost(sourceUrl)}
                 </a>

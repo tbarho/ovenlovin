@@ -29,10 +29,10 @@ export function isExamplePlaceholderUrl(value: string): boolean {
 
 export function importInputError(source: "url" | "paste", content: string): string | null {
   if (!content.trim()) {
-    return source === "paste" ? "Paste a recipe first" : "Enter a web address first";
+    return source === "paste" ? "Paste a recipe first" : "Paste an Instagram link first.";
   }
   if (source === "url" && !looksLikeHttpUrl(content)) {
-    return "That doesn't look like a web address";
+    return "That does not look like a link. It should start with https://www.instagram.com/";
   }
   if (source === "url" && isExamplePlaceholderUrl(content)) {
     return NOT_A_RECIPE_COPY;

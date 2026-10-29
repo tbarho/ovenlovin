@@ -70,18 +70,21 @@ export default async function RecipesPage({
     );
   }
 
-  const [cards, uncategorized, all, importQuota, bookImports] = await Promise.all([
-    cookbooks.listCookbookCards(householdId),
-    recipes.listRecipes(householdId, { uncategorized: true, pagination: { limit: 40 } }),
-    recipes.listRecipes(householdId, { pagination: { limit: 40 } }),
-    demoImportQuota(householdId),
-    booksEnabled
-      ? Promise.all([
-          listBookImportTiles(jobQueue(), householdId),
-          listShotBookTiles(jobQueue(), householdId),
-        ]).then(([pdf, paper]) => [...pdf, ...paper])
-      : [],
-  ]);
+  const [cards, uncategorized, all, importQuota, bookImports, instagramCredits, cookbookNames] =
+    await Promise.all([
+      cookbooks.listCookbookCards(householdId),
+      recipes.listRecipes(householdId, { uncategorized: true, pagination: { limit: 40 } }),
+      recipes.listRecipes(householdId, { pagination: { limit: 40 } }),
+      demoImportQuota(householdId),
+      booksEnabled
+        ? Promise.all([
+            listBookImportTiles(jobQueue(), householdId),
+            listShotBookTiles(jobQueue(), householdId),
+          ]).then(([pdf, paper]) => [...pdf, ...paper])
+        : [],
+      recipes.listInstagramCredits(householdId),
+      cookbooks.listRecipeCookbookNames(householdId),
+    ]);
 
   const safetyByRecipe = await loadRecipeSafetyById(
     all.items.map((recipe) => recipe.id),
@@ -100,6 +103,8 @@ export default async function RecipesPage({
       importLimit={importQuota?.importLimit}
       booksEnabled={booksEnabled}
       bookImports={bookImports}
+      instagramCredits={instagramCredits}
+      cookbookNames={cookbookNames}
     />
   );
 }

@@ -48,7 +48,7 @@ function reviewLead(photo: boolean, pages: number): string {
   }
   if (photo)
     return "Ready to review. Fix anything that looks off, then save. One main photo is kept.";
-  return "Ready to review. Fix anything that looks off, then save.";
+  return "Check what we read";
 }
 
 const STEP_CLASS = { done: "is-done", current: "is-current", todo: undefined };
@@ -156,6 +156,7 @@ export function ImportReviewForm({
   possibleDuplicate,
   savedRecipeId,
   showPhotoChrome = true,
+  saveLabel = "Save recipe",
   pages = 1,
   notice = null,
   replacePrompt = null,
@@ -172,6 +173,7 @@ export function ImportReviewForm({
   possibleDuplicate: { recipeId: string; title: string } | null;
   savedRecipeId: string | null;
   showPhotoChrome?: boolean;
+  saveLabel?: string;
   pages?: number;
   notice?: string | null;
   replacePrompt?: { onReplace: () => void; onKeep: () => void } | null;
@@ -405,7 +407,7 @@ export function ImportReviewForm({
         </button>
       ) : (
         <button className="btn primary" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save recipe"}
+          {pending ? "Saving…" : saveLabel}
         </button>
       )}
     </form>

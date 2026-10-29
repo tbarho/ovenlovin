@@ -100,6 +100,8 @@ export function RecipesKitchen({
   importLimit,
   booksEnabled = false,
   bookImports = [],
+  instagramCredits = {},
+  cookbookNames = {},
 }: {
   cookbooks: CookbookCard[];
   uncategorized: Recipe[];
@@ -110,6 +112,8 @@ export function RecipesKitchen({
   importLimit?: number;
   booksEnabled?: boolean;
   bookImports?: BookImportTile[];
+  instagramCredits?: Record<string, { handle: string; url: string }>;
+  cookbookNames?: Record<string, string[]>;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -133,6 +137,15 @@ export function RecipesKitchen({
     } catch {
       setDeleted(recipe);
     }
+  }
+
+  function recipeLine(recipe: Recipe): string {
+    const credit = instagramCredits[recipe.id];
+    if (!credit) return recipeCardMeta(recipe);
+    const book = cookbookNames[recipe.id]?.[0];
+    return book
+      ? `From ${credit.handle} on Instagram · ${book}`
+      : `From ${credit.handle} on Instagram`;
   }
 
   const pool = scope === "all" || query.trim() || cookbooks.length === 0 ? recipes : uncategorized;
@@ -164,19 +177,20 @@ export function RecipesKitchen({
               if (!emptyKitchen) setImportOpen((current) => !current);
             }}
           >
-            Add recipe
+            + Import
           </button>
           <button className="btn" type="button" onClick={() => setOpen(true)}>
             New cookbook
           </button>
         </div>
       </div>
-      {showImport ? (
+      {showImport && emptyKitchen ? (
         <div id="add-recipe-panel">
           <ImportRecipeForm
             remainingImports={remainingImports}
             importLimit={importLimit}
             booksEnabled={booksEnabled}
+            cookbooks={cookbooks.map((cookbook) => ({ id: cookbook.id, name: cookbook.name }))}
           />
         </div>
       ) : null}
@@ -281,7 +295,7 @@ export function RecipesKitchen({
                     lovePeople={lovePeople}
                     safety={safetyByRecipe[recipe.id] ?? EMPTY_RECIPE_SAFETY}
                   />
-                  <p className="muted">{recipeCardMeta(recipe)}</p>
+                  <p className="muted">{recipeLine(recipe)}</p>
                 </div>
               </Link>
             ))}
@@ -289,6 +303,20 @@ export function RecipesKitchen({
         </>
       )}
 
+      <BottomSheet
+        open={!emptyKitchen && importOpen}
+        title="Import a recipe"
+        id="add-recipe-panel"
+        onClose={() => setImportOpen(false)}
+      >
+        <ImportRecipeForm
+          showHeading={false}
+          remainingImports={remainingImports}
+          importLimit={importLimit}
+          booksEnabled={booksEnabled}
+          cookbooks={cookbooks.map((cookbook) => ({ id: cookbook.id, name: cookbook.name }))}
+        />
+      </BottomSheet>
       <NewCookbookSheet open={open} onClose={close} />
       <KitchenToast
         message={deleted ? `Deleted ${deleted.title}` : null}
