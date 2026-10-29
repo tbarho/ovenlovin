@@ -91,4 +91,58 @@ describe("POST /recipes/import", () => {
       detail: IMPORT_BLOCKED_MESSAGE,
     });
   });
+
+  it("returns instagram_blocked for a Reel link without fetching Instagram", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { POST } = await import("./route");
+    const response = await POST(
+      new NextRequest("http://localhost/api/v1/recipes/import", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          source: "url",
+          content: "https://www.instagram.com/reel/C9mIsoButter/?igsh=1",
+        }),
+      })
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      code: "instagram_blocked",
+      heading: "Instagram did not let us read this post",
+      permalink: "https://www.instagram.com/reel/C9mIsoButter",
+      nextSteps: [
+        { id: "retry" },
+        { id: "paste" },
+        { id: "photo" },
+      ],
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("previews a pasted caption with the creator credited", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new NextRequest("http://localhost/api/v1/recipes/import", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          source: "paste",
+          content: "Miso pasta\n\nServes 2\n8 oz spaghetti\n2 tbsp butter\n\n1. Boil the pasta.",
+          sourceUrl: "https://www.instagram.com/reel/C9mIsoButter/",
+          creator: "@weeknightwithmaya",
+        }),
+      })
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      preview: true,
+      saved: false,
+      source: {
+        type: "social",
+        author: "@weeknightwithmaya",
+        url: "https://www.instagram.com/reel/C9mIsoButter",
+      },
+    });
+  });
 });

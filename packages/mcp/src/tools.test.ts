@@ -1270,6 +1270,71 @@ describe("MCP Tool Schemas", () => {
         vi.unstubAllGlobals();
       }
     });
+
+    it("returns instagram_blocked with next steps and does not fetch the page", async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      vi.spyOn(RecipeService.prototype, "findUrlImportCollision").mockResolvedValue(null);
+      try {
+        await importRecipeTool.handler(
+          {
+            source: "url",
+            content: "https://www.instagram.com/reel/C9mIsoButter/?igsh=1",
+            skipReview: false,
+          },
+          {
+            householdId: "22222222-2222-4222-8222-222222222222",
+            membershipRole: "owner",
+            scopes: [],
+          }
+        );
+        throw new Error("expected import to fail");
+      } catch (error) {
+        const rpc = jsonRpcFromThrown(1, error);
+        expect(rpc.error.data).toMatchObject({
+          code: "instagram_blocked",
+          heading: "Instagram did not let us read this post",
+          permalink: "https://www.instagram.com/reel/C9mIsoButter",
+        });
+        expect(rpc.error.message).toMatch(/Nothing was saved/);
+        const steps = (rpc.error.data as { nextSteps?: Array<{ id: string }> }).nextSteps ?? [];
+        expect(steps.map((step) => step.id)).toEqual(["retry", "paste", "photo"]);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("previews a pasted Instagram caption with creator credit", async () => {
+      vi.spyOn(db, "createDbClient").mockReturnValue({} as never);
+      const result = await importRecipeTool.handler(
+        {
+          source: "paste",
+          content: "Miso pasta\n\nServes 2\n8 oz spaghetti\na splash of soy\n\n1. Boil the pasta.",
+          sourceUrl: "https://instagram.com/reel/C9mIsoButter?igsh=1",
+          creator: "@weeknightwithmaya",
+          save: false,
+          skipReview: false,
+        },
+        {
+          householdId: "22222222-2222-4222-8222-222222222222",
+          membershipRole: "owner",
+          scopes: [],
+        }
+      );
+      expect(result.preview).toBe(true);
+      expect(result.draft).toMatchObject({
+        source: {
+          type: "social",
+          author: "@weeknightwithmaya",
+          url: "https://www.instagram.com/reel/C9mIsoButter",
+          rawExtractionJson: { sourcePlatform: "instagram" },
+        },
+      });
+      expect(result.uncertainFields).toContain("no-amount:a splash of soy");
+      expect(result.recipeId).toBeUndefined();
+    });
   });
 
   describe("import_recipe_from_image", () => {

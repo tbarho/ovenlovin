@@ -99,6 +99,11 @@ export function jsonRpcFromThrown(id: JsonRpcId, error: unknown): JsonRpcFailure
   if (importFailure) {
     return jsonRpcError(id, JsonRpcErrorCode.invalidParams, importFailure.message, {
       code: importFailure.code,
+      ...(importFailure.heading ? { heading: importFailure.heading } : {}),
+      ...(importFailure.nextSteps ? { nextSteps: importFailure.nextSteps } : {}),
+      ...(importFailure.permalink ? { permalink: importFailure.permalink } : {}),
+      ...(importFailure.handle ? { handle: importFailure.handle } : {}),
+      ...(importFailure.kind ? { kind: importFailure.kind } : {}),
     });
   }
   if (isImportAiUnavailable(error)) {

@@ -142,7 +142,15 @@ export function throwIfNotARecipe(
   throw Object.assign(new Error(IMPORT_NOT_A_RECIPE_MESSAGE), { name: "RecipeNotFoundError" });
 }
 
-export type ImportFailure = { code: string; message: string };
+export type ImportFailure = {
+  code: string;
+  message: string;
+  heading?: string;
+  nextSteps?: Array<{ id: string; label: string; hint: string }>;
+  permalink?: string;
+  handle?: string;
+  kind?: string;
+};
 
 /** Blocked / gone / not-a-recipe / unsupported. Same codes on REST and MCP. */
 export function classifyImportFailure(error: unknown): ImportFailure | null {
@@ -181,6 +189,25 @@ export function classifyImportFailure(error: unknown): ImportFailure | null {
     message.startsWith("We can't import from this site")
   ) {
     return { code: IMPORT_UNSUPPORTED_SITE_CODE, message: IMPORT_UNSUPPORTED_SITE_MESSAGE };
+  }
+  if (name === "InstagramImportError") {
+    const failure = error as {
+      failureCode?: string;
+      heading?: string;
+      nextSteps?: ImportFailure["nextSteps"];
+      permalink?: string;
+      handle?: string;
+      kind?: string;
+    };
+    return {
+      code: failure.failureCode || "instagram_blocked",
+      message,
+      heading: failure.heading,
+      nextSteps: failure.nextSteps,
+      permalink: failure.permalink,
+      handle: failure.handle,
+      kind: failure.kind,
+    };
   }
   if (
     name === "RecipeNotFoundError" ||

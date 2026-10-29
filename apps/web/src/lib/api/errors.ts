@@ -254,6 +254,11 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
   if (importFailure) {
     return new BadRequestError(importFailure.message, {
       code: importFailure.code,
+      ...(importFailure.heading ? { heading: importFailure.heading } : {}),
+      ...(importFailure.nextSteps ? { nextSteps: importFailure.nextSteps } : {}),
+      ...(importFailure.permalink ? { permalink: importFailure.permalink } : {}),
+      ...(importFailure.handle ? { handle: importFailure.handle } : {}),
+      ...(importFailure.kind ? { kind: importFailure.kind } : {}),
     }).toResponse(instance);
   }
 

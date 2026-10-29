@@ -221,6 +221,11 @@ export const importRecipeBodySchema = z.object({
   save: z.union([z.boolean(), z.string()]).optional(),
   draft: z.unknown().optional(),
   allowDuplicate: z.boolean().optional(),
+  cookbookId: uuidSchema.optional(),
+  /** Instagram permalink when the content is a pasted caption. */
+  sourceUrl: z.string().max(2048).optional(),
+  /** @handle to credit on a pasted Instagram caption. */
+  creator: z.string().max(255).optional(),
 });
 
 export type RecipeStatus = z.infer<typeof recipeStatusSchema>;

@@ -14,6 +14,7 @@ export * from "./media/public-http-url";
 export * from "./media/import-title";
 export * from "./media/import-review";
 export * from "./media/source-url";
+export * from "./media/instagram";
 export * from "./media/prepare-import-draft";
 export * from "./media/import-ai-unavailable";
 export * from "./plans/merge-entries";

@@ -17,7 +17,7 @@ import {
 } from "@ovenlovin/core";
 import { isAiGatewayConfigured } from "@ovenlovin/core/onboarding";
 import { createDbClient } from "@ovenlovin/db";
-import { createUrlImporter, createPasteImporter } from "@ovenlovin/importers";
+import { createUrlImporter, createPasteImporter, instagramImportDraft } from "@ovenlovin/importers";
 
 export const importRecipeSchema = z.object({
   source: z.enum(["url", "paste"]),
@@ -31,6 +31,11 @@ export const importRecipeSchema = z.object({
     .describe("Persist even when this URL or draft already exists"),
   skipReview: z.boolean().default(false).describe("Skip review queue and publish immediately"),
   cookbookId: z.string().uuid().optional().describe("Optional cookbook to file the recipe in"),
+  sourceUrl: z
+    .string()
+    .optional()
+    .describe("Instagram permalink when content is a pasted caption"),
+  creator: z.string().optional().describe("@handle credited on a pasted Instagram caption"),
 });
 
 export type ImportRecipeInput = z.infer<typeof importRecipeSchema>;
@@ -120,6 +125,16 @@ async function handler(
           message: `This recipe was already imported as "${recipe.title}" (${recipe.id}). Open that recipe instead of importing again.`,
         };
       }
+    }
+    const instagram = await instagramImportDraft({
+      source: input.source,
+      content: input.content.trim(),
+      sourceUrl: input.sourceUrl,
+      creator: input.creator,
+    });
+    if (instagram) {
+      draft = instagram;
+    } else if (input.source === "url") {
       const importer = createUrlImporter();
       const raw = await importer.extract({ url: input.content });
       draft = await importer.toDraft(raw);
@@ -233,7 +248,7 @@ async function handler(
 export const importRecipeTool = {
   name: "import_recipe",
   description:
-    "Import a recipe from a URL or pasted text. Pulls schema.org prep/cook times, servings, and the main image (copied into Vercel Blob). save:false returns a preview; omit save to persist. skipReview clears needsReview. idempotencyKey replays a save.",
+    "Import a recipe from a URL, pasted text, or an Instagram caption. An Instagram link is read from the caption when a reader is configured; otherwise it returns instagram_blocked with nextSteps so the cook can paste the caption. source:paste with sourceUrl and creator stores the credit. save:false returns a preview; omit save to persist. skipReview clears needsReview. idempotencyKey replays a save.",
   inputSchema: importRecipeSchema,
   handler,
 } as const;

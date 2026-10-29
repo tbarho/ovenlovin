@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createPasteImporter, createUrlImporter } from "@ovenlovin/importers";
+import { createPasteImporter, createUrlImporter, instagramImportDraft } from "@ovenlovin/importers";
 import {
   copyRemoteImages,
   draftFromSavedPreview,
@@ -91,7 +91,15 @@ export async function POST(request: NextRequest) {
       if (!body.content?.trim()) {
         throw new BadRequestError("Provide source (url or paste) and content");
       }
-      if (body.source === "url") {
+      const instagram = await instagramImportDraft({
+        source: body.source,
+        content: body.content.trim(),
+        sourceUrl: body.sourceUrl,
+        creator: body.creator,
+      });
+      if (instagram) {
+        draft = instagram;
+      } else if (body.source === "url") {
         const importer = createUrlImporter();
         const raw = await importer.extract({ url: body.content.trim() });
         draft = await importer.toDraft(raw);
@@ -130,6 +138,14 @@ export async function POST(request: NextRequest) {
       idempotencyKey,
     });
     const recipe = recipeFromPersist(result);
+    if (body.cookbookId && result.outcome === "created") {
+      const { CookbookService } = await import("@ovenlovin/core");
+      const cookbooks = new CookbookService(getDatabase());
+      const cookbook = await cookbooks.getCookbook(body.cookbookId);
+      if (cookbook && cookbook.householdId === householdId) {
+        await cookbooks.addRecipe(body.cookbookId, recipe.id);
+      }
+    }
     const presented = withDemoImportQuota(
       presentListedRecipe(recipe, requestApiOrigin(request)),
       quota

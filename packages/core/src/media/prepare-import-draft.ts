@@ -62,7 +62,7 @@ export function importDedupeKeys(
   }
 
   const url = normalizeSourceUrl(draft.source.canonicalUrl ?? draft.source.url ?? "");
-  if (url && draft.source.type === "url") {
+  if (url && (draft.source.type === "url" || draft.source.type === "social")) {
     keys.push({ kind: "source_url", key: url.slice(0, 512) });
   }
   return keys;
@@ -136,11 +136,10 @@ export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null 
     if (typeof text !== "string" || !text.trim()) continue;
     steps.push({ text });
   }
-  if (ingredients.length === 0) return null;
-
   const source = raw.source as RecipeImportDraft["source"];
   if (typeof source.importerName !== "string" || !source.importerName.trim()) return null;
   if (!recipeSourceTypeSchema.safeParse(source.type).success) return null;
+  if (ingredients.length === 0 && source.type !== "social") return null;
   const images = Array.isArray(raw.images)
     ? raw.images.filter(
         (item): item is string => typeof item === "string" && isFetchableRecipeImageUrl(item)
@@ -174,7 +173,7 @@ export function draftFromSavedPreview(value: unknown): RecipeImportDraft | null 
 }
 
 export function sourceUrlFromDraft(draft: RecipeImportDraft): string | null {
-  if (draft.source.type !== "url") return null;
+  if (draft.source.type !== "url" && draft.source.type !== "social") return null;
   return (
     normalizeSourceUrl(
       String(draft.source.rawExtractionJson?.sourceUrlNormalized ?? "") ||

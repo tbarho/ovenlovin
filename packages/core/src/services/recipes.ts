@@ -646,7 +646,7 @@ export class RecipeService extends BaseService {
         and(
           eq(recipe.householdId, householdId),
           isNull(recipe.deletedAt),
-          eq(recipeSource.type, "url")
+          inArray(recipeSource.type, ["url", "social"])
         )
       );
     for (const row of rows) {
@@ -662,6 +662,40 @@ export class RecipeService extends BaseService {
       }
     }
     return null;
+  }
+
+  /** Instagram credits for recipe cards. Keyed by recipe id. */
+  async listInstagramCredits(
+    householdId: string
+  ): Promise<Record<string, { handle: string; url: string }>> {
+    const rows = await this._db
+      .select({
+        recipeId: recipeSource.recipeId,
+        author: recipeSource.author,
+        url: recipeSource.url,
+        canonicalUrl: recipeSource.canonicalUrl,
+        raw: recipeSource.rawExtractionJson,
+      })
+      .from(recipeSource)
+      .innerJoin(recipe, eq(recipe.id, recipeSource.recipeId))
+      .where(
+        and(
+          eq(recipe.householdId, householdId),
+          isNull(recipe.deletedAt),
+          isNull(recipeSource.deletedAt),
+          eq(recipeSource.type, "social")
+        )
+      );
+    const credits: Record<string, { handle: string; url: string }> = {};
+    for (const row of rows) {
+      const raw = (row.raw as Record<string, unknown> | null) ?? {};
+      if (raw.sourcePlatform !== "instagram") continue;
+      const handle = typeof row.author === "string" ? row.author.trim() : "";
+      const url = (row.canonicalUrl || row.url || "").trim();
+      if (!handle.startsWith("@") || !url) continue;
+      credits[row.recipeId] = { handle, url };
+    }
+    return credits;
   }
 
   async findImportDuplicate(
