@@ -97,6 +97,7 @@ function failureCode(code: InstagramFailureCode): "private" | "no_caption" | "bl
   return "blocked";
 }
 
+const IMPORT_TOAST_MS = 4000;
 const LINK_PLACEHOLDER = "https://www.instagram.com/reel/...";
 const PASTE_PLACEHOLDER =
   "Weeknight tomato pasta\n\nIngredients\n- 12 oz pasta\n- 1 jar tomatoes\n\nSteps\nBoil pasta. Warm sauce. Combine.";
@@ -107,12 +108,15 @@ export function ImportRecipeForm({
   booksEnabled = false,
   showHeading = true,
   cookbooks = [],
+  onDone,
 }: {
   remainingImports?: number;
   importLimit?: number;
   booksEnabled?: boolean;
   showHeading?: boolean;
   cookbooks?: { id: string; name: string }[];
+  /** Leave the import flow, e.g. close the hosting sheet. Gets the saved recipe id. */
+  onDone?: (recipeId: string | null) => void;
 } = {}) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("link");
@@ -143,7 +147,8 @@ export function ImportRecipeForm({
   const [igReview, setIgReview] = useState<IgReviewState | null>(null);
   const [savedCookbook, setSavedCookbook] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; step: string } | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [activePost, setActivePost] = useState<{
     permalink: string;
     kind: InstagramPostKind;
@@ -188,7 +193,12 @@ export function ImportRecipeForm({
   const inlineLinkError =
     error === "Paste an Instagram link first." ||
     error?.startsWith("That does not look like a link.") === true;
+  // A toast belongs to the step it was shown on and clears when the step changes.
+  const step = `${tab}:${linkMode}:${linkView}`;
   const dismissToast = useCallback(() => setToast(null), []);
+  useEffect(() => {
+    setToast((current) => (current && current.step !== step ? null : current));
+  }, [step]);
   const closePhoto = useCallback(() => setPhotoOpen(false), []);
   const closePicker = useCallback(() => setPickerOpen(false), []);
 
@@ -269,7 +279,7 @@ export function ImportRecipeForm({
     previewAbortRef.current = null;
     setPending(false);
     setLinkView("input");
-    setToast("Import cancelled. Nothing saved.");
+    setToast({ message: "Import cancelled. Nothing saved.", step: `${tab}:${linkMode}:input` });
   }
 
   function onLinkSubmit(event: React.FormEvent) {
@@ -332,7 +342,7 @@ export function ImportRecipeForm({
 
   function readCaption() {
     if (!caption.trim()) {
-      setToast("Paste the caption first.");
+      setToast({ message: "Paste the caption first.", step });
       return;
     }
     const permalink = igError?.permalink || activePost?.permalink;
@@ -393,7 +403,7 @@ export function ImportRecipeForm({
     try {
       if (!importKeyRef.current) importKeyRef.current = crypto.randomUUID();
       const draft = igDraftForSave(igReview);
-      await api<RecipeDetails>("/api/v1/recipes/import", {
+      const recipe = await api<RecipeDetails>("/api/v1/recipes/import", {
         method: "POST",
         keepalive: false,
         headers: { "Idempotency-Key": importKeyRef.current },
@@ -408,6 +418,7 @@ export function ImportRecipeForm({
         }),
       });
       importKeyRef.current = "";
+      setSavedId(recipe?.id ?? null);
       setSavedCookbook(cookbook?.name ?? null);
       setPickerOpen(false);
       setLinkView("saved");
@@ -472,6 +483,7 @@ export function ImportRecipeForm({
     setIgReview(null);
     setIgError(null);
     setSavedCookbook(null);
+    setSavedId(null);
     setImported(null);
     setError(null);
     setActivePost(null);
@@ -479,6 +491,13 @@ export function ImportRecipeForm({
     setLinkView("input");
     setTab("link");
     setAnnounce("");
+  }
+
+  function backToRecipes() {
+    const recipeId = savedId;
+    importAnother();
+    router.refresh();
+    onDone?.(recipeId);
   }
 
   const shownError = igError
@@ -601,6 +620,7 @@ export function ImportRecipeForm({
             ingredientCount={igReview.ingredients.filter((row) => row.text.trim()).length}
             cookbookName={savedCookbook}
             onAnother={importAnother}
+            onBack={backToRecipes}
           />
         ) : null}
 
@@ -804,7 +824,11 @@ export function ImportRecipeForm({
           openRecipePaste();
         }}
       />
-      <KitchenToast message={toast} onDismiss={dismissToast} />
+      <KitchenToast
+        message={toast?.step === step ? toast.message : null}
+        onDismiss={dismissToast}
+        durationMs={IMPORT_TOAST_MS}
+      />
     </>
   );
 }

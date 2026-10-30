@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import {
   formatInstagramHandle,
@@ -449,6 +448,7 @@ export function InstagramSaved({
   ingredientCount,
   cookbookName,
   onAnother,
+  onBack,
 }: {
   title: string;
   handle: string;
@@ -456,6 +456,7 @@ export function InstagramSaved({
   ingredientCount: number;
   cookbookName: string | null;
   onAnother: () => void;
+  onBack: () => void;
 }) {
   const credit = formatInstagramHandle(handle);
   return (
@@ -478,9 +479,9 @@ export function InstagramSaved({
       <button type="button" className="btn primary" onClick={onAnother}>
         Import another
       </button>
-      <Link className="btn" href="/recipes">
+      <button type="button" className="btn" onClick={onBack}>
         Back to recipes
-      </Link>
+      </button>
     </div>
   );
 }

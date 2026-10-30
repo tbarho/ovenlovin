@@ -121,6 +121,7 @@ export function RecipesKitchen({
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<"unfiled" | "all">("all");
   const [deleted, setDeleted] = useState<RecipeDeleteToast | null>(null);
+  const [newRecipeId, setNewRecipeId] = useState<string | null>(null);
   const close = useCallback(() => setOpen(false), []);
   const emptyKitchen = recipes.length === 0;
   const showImport = emptyKitchen || importOpen;
@@ -150,6 +151,20 @@ export function RecipesKitchen({
 
   const pool = scope === "all" || query.trim() || cookbooks.length === 0 ? recipes : uncategorized;
   const listed = useMemo(() => filterRecipesByQuery(pool, query), [pool, query]);
+  const finishImport = useCallback((recipeId: string | null) => {
+    setImportOpen(false);
+    setNewRecipeId(recipeId);
+  }, []);
+
+  // After an import, bring the new card into view once the refreshed list has it.
+  useEffect(() => {
+    if (!newRecipeId || !listed.some((recipe) => recipe.id === newRecipeId)) return;
+    const card = document.querySelector<HTMLElement>(`[data-recipe-id="${newRecipeId}"]`);
+    card?.scrollIntoView?.({ block: "center" });
+    card?.focus();
+    setNewRecipeId(null);
+  }, [newRecipeId, listed]);
+
   const sectionLabel =
     query.trim() || scope === "all" || cookbooks.length === 0
       ? "All recipes"
@@ -286,7 +301,12 @@ export function RecipesKitchen({
           <p className="section-label">{sectionLabel}</p>
           <div className="recipe-grid">
             {listed.map((recipe) => (
-              <Link className="recipe-card" key={recipe.id} href={`/recipes/${recipe.id}`}>
+              <Link
+                className="recipe-card"
+                key={recipe.id}
+                href={`/recipes/${recipe.id}`}
+                data-recipe-id={recipe.id}
+              >
                 <RecipeThumb recipe={recipe} />
                 <div className="card-copy">
                   <h2>{recipe.title}</h2>
@@ -315,6 +335,7 @@ export function RecipesKitchen({
           importLimit={importLimit}
           booksEnabled={booksEnabled}
           cookbooks={cookbooks.map((cookbook) => ({ id: cookbook.id, name: cookbook.name }))}
+          onDone={finishImport}
         />
       </BottomSheet>
       <NewCookbookSheet open={open} onClose={close} />

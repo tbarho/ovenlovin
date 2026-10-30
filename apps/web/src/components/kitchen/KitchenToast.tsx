@@ -9,17 +9,19 @@ export function KitchenToast({
   actionLabel,
   onUndo,
   onDismiss,
+  durationMs = TOAST_MS,
 }: {
   message: string | null;
   actionLabel?: string;
   onUndo?: () => void;
   onDismiss: () => void;
+  durationMs?: number;
 }) {
   useEffect(() => {
     if (!message || actionLabel) return;
-    const timer = window.setTimeout(onDismiss, TOAST_MS);
+    const timer = window.setTimeout(onDismiss, durationMs);
     return () => window.clearTimeout(timer);
-  }, [message, onDismiss, actionLabel]);
+  }, [message, onDismiss, actionLabel, durationMs]);
 
   if (!message) return null;
 

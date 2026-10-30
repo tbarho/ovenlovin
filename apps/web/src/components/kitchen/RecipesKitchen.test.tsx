@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/browser-api";
 import { testCookbook, testRecipe } from "@/test/fixtures";
 import { RecipesKitchen } from "./RecipesKitchen";
 
@@ -33,6 +34,42 @@ describe("RecipesKitchen add recipe", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText("Save from Safari on iPhone")).toBeVisible();
     expect(screen.getByText("Bookmarklet for desktop browsers")).toBeVisible();
+  });
+
+  it("closes the import sheet from Back to recipes after an Instagram save", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api)
+      .mockReset()
+      .mockResolvedValueOnce({
+        title: "15-minute miso butter pasta",
+        servings: 2,
+        ingredients: [{ rawText: "8 oz spaghetti" }],
+        steps: [{ text: "Boil the pasta." }],
+        images: [],
+        source: {
+          type: "social",
+          author: "@weeknightwithmaya",
+          url: "https://www.instagram.com/reel/C9mIsoButter",
+          rawExtractionJson: { sourcePlatform: "instagram", kind: "reel" },
+        },
+      })
+      .mockResolvedValueOnce({ id: pesto.id, title: "15-minute miso butter pasta" });
+    render(<RecipesKitchen cookbooks={[weeknight]} uncategorized={[]} recipes={[pesto]} />);
+
+    await user.click(screen.getByRole("button", { name: "+ Import" }));
+    await user.type(
+      screen.getByPlaceholderText(/instagram.com\/reel/i),
+      "https://www.instagram.com/reel/C9mIsoButter/"
+    );
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    await user.click(await screen.findByRole("button", { name: "Save to kitchen" }));
+    await user.click(await screen.findByRole("button", { name: "Back to recipes" }));
+
+    expect(screen.queryByRole("heading", { name: "Import a recipe" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Saved to your kitchen" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Weeknight pesto pasta/ })).toHaveFocus();
   });
 
   it("shows import methods immediately when the kitchen has no recipes", () => {

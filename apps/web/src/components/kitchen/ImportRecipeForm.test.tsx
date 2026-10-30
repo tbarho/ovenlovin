@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
@@ -674,6 +674,10 @@ describe("ImportRecipeForm Instagram", () => {
     vi.mocked(api).mockReset();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("asks for a link, and rejects text that is not a link", async () => {
     const user = userEvent.setup();
     render(<ImportRecipeForm />);
@@ -737,6 +741,7 @@ describe("ImportRecipeForm Instagram", () => {
     expect(
       await screen.findByRole("link", { name: "From @weeknightwithmaya on Instagram" })
     ).toBeVisible();
+    expect(screen.queryByText("Paste the caption first.")).not.toBeInTheDocument();
     expect(screen.getByText("No amount in the caption. Add one if you know it.")).toBeVisible();
     expect(screen.queryByText("No cover photo. You can add one later.")).not.toBeInTheDocument();
     expect(screen.getByText(/Show the caption we read/)).toBeVisible();
@@ -750,8 +755,30 @@ describe("ImportRecipeForm Instagram", () => {
     expect(String(saveCall?.[1]?.body)).toContain("no-amount:a splash of soy sauce");
   });
 
-  it("cancels an in-flight import without saving", async () => {
+  it("leaves the import flow from Back to recipes with the saved recipe id", async () => {
     const user = userEvent.setup();
+    const onDone = vi.fn();
+    vi.mocked(api).mockResolvedValueOnce(captionPreview).mockResolvedValueOnce({
+      id: "00000000-0000-4000-8000-0000000000aa",
+      title: "15-minute miso butter pasta",
+      servings: 2,
+    });
+    render(<ImportRecipeForm onDone={onDone} />);
+    await user.type(screen.getByPlaceholderText(/instagram.com\/reel/i), reel);
+    await user.click(screen.getByRole("button", { name: "Import" }));
+    await user.click(await screen.findByRole("button", { name: "Save to kitchen" }));
+    await screen.findByRole("heading", { name: "Saved to your kitchen" });
+    expect(screen.queryByRole("link", { name: "Back to recipes" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Back to recipes" }));
+    expect(onDone).toHaveBeenCalledWith("00000000-0000-4000-8000-0000000000aa");
+    expect(
+      screen.queryByRole("heading", { name: "Saved to your kitchen" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("cancels an in-flight import without saving", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     vi.mocked(api).mockImplementation(
       (_path, init) =>
         new Promise((_, reject) => {
@@ -771,5 +798,9 @@ describe("ImportRecipeForm Instagram", () => {
     await user.click(await screen.findByRole("button", { name: "Cancel" }));
     expect(await screen.findByText("Import cancelled. Nothing saved.")).toBeVisible();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(3500));
+    expect(screen.getByText("Import cancelled. Nothing saved.")).toBeVisible();
+    act(() => vi.advanceTimersByTime(600));
+    expect(screen.queryByText("Import cancelled. Nothing saved.")).not.toBeInTheDocument();
   });
 });
