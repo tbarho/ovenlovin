@@ -9,10 +9,11 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 
 ## [Unreleased]
 - Book page numbers sit at the bottom on phone and desktop; demo share links stay off like print PDFs; disabled Share button now looks dimmed.
+- Text fields have a visible border, and the orange focus outline is no longer cut off at the sides in sheets on phones.
 
 ### Import a recipe from an Instagram caption
 
-Paste a public Instagram link. OvenLovin reads the caption, shows you what it found, and credits the creator on the recipe. Save it to your kitchen or a cookbook. If Instagram cannot be read, paste the caption yourself. Nothing is saved until you say so. Back to recipes closes the import, scrolls to your new recipe, and briefly highlights it, and import messages clear on their own.
+OvenLovin can't read Instagram links yet, and the import says so up front. Paste the post link, then copy the caption in Instagram and paste it on the next step. OvenLovin reads the caption you pasted, shows you what it found, and credits the creator with a link back to the post. Save it to your kitchen or a cookbook. Nothing is saved until you say so. Back to recipes closes the import, scrolls to your new recipe, and briefly highlights it, and import messages clear on their own.
 
 ### Print your cookbook
 
