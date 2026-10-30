@@ -119,8 +119,7 @@ describe("ImportRecipeForm photo import", () => {
     xhr.upload.onprogress?.({ lengthComputable: true, loaded: 32, total: 100 } as ProgressEvent);
     expect(await screen.findByText("Uploading 32%")).toBeVisible();
     xhr.upload.onload?.();
-    expect(await screen.findByText("Reading")).toBeVisible();
-    const meter = screen.getByRole("progressbar", { name: "Reading" });
+    const meter = await screen.findByRole("progressbar", { name: "Reading" });
     expect(meter).toHaveClass("is-indeterminate");
     expect(meter).not.toHaveAttribute("aria-valuenow");
     expect(screen.getByText("Reading - 0:00")).toBeVisible();
