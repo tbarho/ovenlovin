@@ -35,18 +35,25 @@ export function getSheetFocusableElements(panel: HTMLElement): HTMLElement[] {
  * Autofocus and listeners are keyed only on `open`. Callers almost always pass
  * an inline `onClose`, so putting that in the effect deps re-runs after every
  * keystroke and steals focus (usually to the Close button).
+ *
+ * `onClosed` runs after the sheet has closed and restored focus, so callers can
+ * move focus somewhere else without racing the restore.
  */
 export function useSheetOpenEffects({
   open,
   onClose,
+  onClosed,
   panelRef,
 }: {
   open: boolean;
   onClose: () => void;
+  onClosed?: () => void;
   panelRef: RefObject<HTMLElement | null>;
 }) {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const onClosedRef = useRef(onClosed);
+  onClosedRef.current = onClosed;
 
   useEffect(() => {
     if (!open) return;
@@ -101,6 +108,7 @@ export function useSheetOpenEffects({
       if (previousFocus?.isConnected) {
         previousFocus.focus({ preventScroll: true });
       }
+      onClosedRef.current?.();
     };
   }, [open, panelRef]);
 }

@@ -1863,11 +1863,19 @@ select {
 .recipe-card {
   overflow: hidden;
   padding: 0;
-  transition: border-color var(--motion-base) var(--motion-ease);
+  transition:
+    border-color var(--motion-base) var(--motion-ease),
+    box-shadow var(--motion-base) var(--motion-ease);
 }
 
 .recipe-card:hover {
   border-color: var(--orange);
+}
+
+/* The recipe just imported, briefly marked so it is easy to spot in a long list. */
+.recipe-card.recipe-card-new {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgb(224 122 61 / 35%);
 }
 
 .recipe-card img,

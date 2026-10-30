@@ -19,6 +19,7 @@ import { RecipeCardSafety } from "./RecipeCardSafety";
 import type { BookImportTile } from "@/lib/book-import-view";
 
 const EMPTY_LOVE_PEOPLE: PersonLove[] = [];
+const NEW_RECIPE_HIGHLIGHT_MS = 2400;
 
 function RecipeThumb({ recipe }: { recipe: Recipe }) {
   const image = recipeMainImage(recipe.images);
@@ -121,7 +122,10 @@ export function RecipesKitchen({
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<"unfiled" | "all">("all");
   const [deleted, setDeleted] = useState<RecipeDeleteToast | null>(null);
-  const [newRecipeId, setNewRecipeId] = useState<string | null>(null);
+  // The recipe just imported. `sheetClosed` flips once the import sheet has
+  // closed and restored focus, so moving focus to the card cannot lose that race.
+  const [newRecipe, setNewRecipe] = useState<{ id: string; sheetClosed: boolean } | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const close = useCallback(() => setOpen(false), []);
   const emptyKitchen = recipes.length === 0;
   const showImport = emptyKitchen || importOpen;
@@ -152,18 +156,34 @@ export function RecipesKitchen({
   const pool = scope === "all" || query.trim() || cookbooks.length === 0 ? recipes : uncategorized;
   const listed = useMemo(() => filterRecipesByQuery(pool, query), [pool, query]);
   const finishImport = useCallback((recipeId: string | null) => {
+    setNewRecipe(recipeId ? { id: recipeId, sheetClosed: false } : null);
     setImportOpen(false);
-    setNewRecipeId(recipeId);
+  }, []);
+  const importSheetClosed = useCallback(() => {
+    setNewRecipe((current) => (current ? { ...current, sheetClosed: true } : current));
   }, []);
 
-  // After an import, bring the new card into view once the refreshed list has it.
+  // After an import, bring the new card into view once the sheet is gone and the
+  // refreshed list has it. Waits a frame so nothing else in the close can take focus back.
   useEffect(() => {
-    if (!newRecipeId || !listed.some((recipe) => recipe.id === newRecipeId)) return;
-    const card = document.querySelector<HTMLElement>(`[data-recipe-id="${newRecipeId}"]`);
-    card?.scrollIntoView?.({ block: "center" });
-    card?.focus();
-    setNewRecipeId(null);
-  }, [newRecipeId, listed]);
+    if (!newRecipe?.sheetClosed || !listed.some((recipe) => recipe.id === newRecipe.id)) return;
+    const recipeId = newRecipe.id;
+    const frame = window.requestAnimationFrame(() => {
+      const card = document.querySelector<HTMLElement>(`[data-recipe-id="${recipeId}"]`);
+      if (!card) return;
+      card.scrollIntoView?.({ block: "center" });
+      card.focus({ preventScroll: true });
+      setHighlightId(recipeId);
+      setNewRecipe(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [newRecipe, listed]);
+
+  useEffect(() => {
+    if (!highlightId) return;
+    const timer = window.setTimeout(() => setHighlightId(null), NEW_RECIPE_HIGHLIGHT_MS);
+    return () => window.clearTimeout(timer);
+  }, [highlightId]);
 
   const sectionLabel =
     query.trim() || scope === "all" || cookbooks.length === 0
@@ -302,7 +322,9 @@ export function RecipesKitchen({
           <div className="recipe-grid">
             {listed.map((recipe) => (
               <Link
-                className="recipe-card"
+                className={
+                  recipe.id === highlightId ? "recipe-card recipe-card-new" : "recipe-card"
+                }
                 key={recipe.id}
                 href={`/recipes/${recipe.id}`}
                 data-recipe-id={recipe.id}
@@ -328,6 +350,7 @@ export function RecipesKitchen({
         title="Import a recipe"
         id="add-recipe-panel"
         onClose={() => setImportOpen(false)}
+        onClosed={importSheetClosed}
       >
         <ImportRecipeForm
           showHeading={false}

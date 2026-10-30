@@ -12,7 +12,7 @@ Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `
 
 ### Import a recipe from an Instagram caption
 
-Paste a public Instagram link. OvenLovin reads the caption, shows you what it found, and credits the creator on the recipe. Save it to your kitchen or a cookbook. If Instagram cannot be read, paste the caption yourself. Nothing is saved until you say so. Back to recipes closes the import and takes you to your new recipe, and import messages clear on their own.
+Paste a public Instagram link. OvenLovin reads the caption, shows you what it found, and credits the creator on the recipe. Save it to your kitchen or a cookbook. If Instagram cannot be read, paste the caption yourself. Nothing is saved until you say so. Back to recipes closes the import, scrolls to your new recipe, and briefly highlights it, and import messages clear on their own.
 
 ### Print your cookbook
 

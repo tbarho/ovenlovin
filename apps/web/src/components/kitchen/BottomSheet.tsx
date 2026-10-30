@@ -10,6 +10,7 @@ export function BottomSheet({
   open,
   title,
   onClose,
+  onClosed,
   children,
   layout = "sheet",
   id,
@@ -19,6 +20,8 @@ export function BottomSheet({
   open: boolean;
   title: string;
   onClose: () => void;
+  /** After the sheet has closed and restored focus to its opener. */
+  onClosed?: () => void;
   children: ReactNode;
   layout?: "sheet" | "picker";
   id?: string;
@@ -29,7 +32,7 @@ export function BottomSheet({
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useSheetOpenEffects({ open, onClose, panelRef });
+  useSheetOpenEffects({ open, onClose, onClosed, panelRef });
   useSheetViewport({ open, rootRef, panelRef });
   useSheetSwipeDismiss({ open, onClose, panelRef, enabled: swipeToDismiss });
 
