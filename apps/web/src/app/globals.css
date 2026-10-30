@@ -407,7 +407,10 @@ select {
   display: grid;
   gap: 16px;
   overflow: auto;
-  padding: 8px 0 4px;
+  /* A scroll box clips the 2px + 2px :focus-visible ring on full-width fields.
+     Inline padding gives the ring room; the negative margin keeps the layout. */
+  padding: 8px 4px 4px;
+  margin-inline: -4px;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -1952,7 +1955,7 @@ select {
 .field input,
 .field textarea {
   width: 100%;
-  border: 1px solid #eaeaea;
+  border: 1px solid #c9c0b2;
   border-radius: var(--r-sm);
   padding: 10px 12px;
   background: #fff;
