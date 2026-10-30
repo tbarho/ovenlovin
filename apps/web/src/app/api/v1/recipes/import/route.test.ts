@@ -109,9 +109,9 @@ describe("POST /recipes/import", () => {
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({
       code: "instagram_blocked",
-      heading: "Instagram did not let us read this post",
+      heading: "We can't read Instagram links yet",
       permalink: "https://www.instagram.com/reel/C9mIsoButter",
-      nextSteps: [{ id: "retry" }, { id: "paste" }, { id: "photo" }],
+      nextSteps: [{ id: "paste" }, { id: "photo" }],
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });

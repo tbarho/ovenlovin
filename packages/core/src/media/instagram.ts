@@ -8,7 +8,7 @@ export type { InstagramPostKind };
 export type InstagramFailureCode =
   "instagram_private" | "instagram_no_caption" | "instagram_blocked";
 
-export type InstagramNextStepId = "paste" | "photo" | "link" | "retry" | "bio" | "type";
+export type InstagramNextStepId = "paste" | "photo" | "link" | "bio" | "type";
 
 export type InstagramNextStep = {
   id: InstagramNextStepId;
@@ -81,13 +81,11 @@ export function instagramFailurePresentation(input: {
   code: InstagramReadFailureCode;
   handle?: string;
   kind?: InstagramPostKind;
-  attempts?: number;
   permalink?: string;
 }): InstagramImportError {
   const handle = formatInstagramHandle(input.handle);
   const who = creditName(handle);
   const kind = kindLabel(input.kind);
-  const attempts = input.attempts ?? 1;
   const shared = {
     permalink: input.permalink,
     handle: handle || undefined,
@@ -142,24 +140,21 @@ export function instagramFailurePresentation(input: {
     });
   }
 
-  const stillBlocked = attempts > 1;
+  // No reader ships yet (PasteOnlyAdapter), so "unavailable" is every link.
+  // Say so plainly. Never suggest a retry that cannot work.
   return new InstagramImportError({
     ...shared,
     failureCode: "instagram_blocked",
-    heading: stillBlocked
-      ? "Instagram is still not letting us read it"
-      : "Instagram did not let us read this post",
-    message: stillBlocked
-      ? "We tried twice. Nothing was saved."
-      : "This happens sometimes and is not your link's fault. Nothing was saved.",
+    heading:
+      input.code === "unavailable"
+        ? "We can't read Instagram links yet"
+        : "Instagram did not let us read this post",
+    message: `Copy the caption in Instagram and paste it here. We keep the link to credit ${who}. Nothing was saved.`,
     nextSteps: [
-      ...(stillBlocked
-        ? []
-        : [{ id: "retry" as const, label: "Try again", hint: "One more try usually works." }]),
       {
         id: "paste",
         label: "Paste the caption",
-        hint: "Always works for public posts.",
+        hint: "In Instagram, press and hold the caption, then Copy.",
       },
       { id: "photo", label: "Screenshot it, use Photo import", hint: "" },
     ],

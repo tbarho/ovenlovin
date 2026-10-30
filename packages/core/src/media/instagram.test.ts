@@ -114,24 +114,24 @@ describe("parseInstagramCaption", () => {
 });
 
 describe("instagram failures", () => {
-  it("classifies a blocked read with next steps, and drops Try again after a second failure", () => {
-    const once = instagramFailurePresentation({
+  it("says plainly that links are not read yet and never offers Try again", () => {
+    const failure = instagramFailurePresentation({
       code: "unavailable",
       permalink: "https://www.instagram.com/reel/C9mIsoButter",
       kind: "reel",
     });
-    expect(classifyImportFailure(once)).toMatchObject({
+    expect(classifyImportFailure(failure)).toMatchObject({
       code: "instagram_blocked",
-      heading: "Instagram did not let us read this post",
+      heading: "We can't read Instagram links yet",
       nextSteps: [
-        { id: "retry", label: "Try again" },
         { id: "paste", label: "Paste the caption" },
         { id: "photo", label: "Screenshot it, use Photo import" },
       ],
     });
-    const twice = instagramFailurePresentation({ code: "blocked", attempts: 2 });
-    expect(twice.heading).toBe("Instagram is still not letting us read it");
-    expect(twice.nextSteps.map((step) => step.id)).toEqual(["paste", "photo"]);
-    expect(twice.message).toMatch(/Nothing was saved/);
+    expect(failure.message).toMatch(/Copy the caption in Instagram and paste it here/);
+    expect(failure.message).not.toMatch(/sometimes|not your link's fault/);
+    const blocked = instagramFailurePresentation({ code: "blocked" });
+    expect(blocked.nextSteps.map((step) => step.id)).toEqual(["paste", "photo"]);
+    expect(blocked.message).toMatch(/Nothing was saved/);
   });
 });

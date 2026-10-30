@@ -59,7 +59,9 @@ describe("RecipesKitchen add recipe", () => {
       screen.getByPlaceholderText(/instagram.com\/reel/i),
       "https://www.instagram.com/reel/C9mIsoButter/"
     );
-    await user.click(screen.getByRole("button", { name: "Import" }));
+    await user.click(screen.getByRole("button", { name: "Paste the caption" }));
+    await user.type(screen.getByLabelText("Caption"), "15-minute miso butter pasta");
+    await user.click(screen.getByRole("button", { name: "Read caption" }));
     await user.click(await screen.findByRole("button", { name: "Save to kitchen" }));
     await user.click(await screen.findByRole("button", { name: "Back to recipes" }));
   }

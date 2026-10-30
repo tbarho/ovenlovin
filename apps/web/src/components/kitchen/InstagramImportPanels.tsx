@@ -218,8 +218,8 @@ export function CaptionPanel({
     >
       <h3>Paste the caption</h3>
       <p className="muted">
-        In Instagram, tap the caption, then &quot;more&quot;, press and hold, then Copy.{" "}
-        {captionCreditLine(handle)}
+        We can&apos;t read Instagram links yet. In Instagram, tap the caption, then
+        &quot;more&quot;, press and hold, then Copy. Paste it here. {captionCreditLine(handle)}
       </p>
       <label>
         Caption

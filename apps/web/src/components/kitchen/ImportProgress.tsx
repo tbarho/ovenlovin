@@ -10,8 +10,8 @@ const VARIANTS: Record<
   { id: string; label: string; state: "done" | "current" | "todo" }[]
 > = {
   link: [
-    { id: "find", label: "Finding the post", state: "current" },
-    { id: "read", label: "Reading the caption", state: "todo" },
+    { id: "find", label: "Finding the page", state: "current" },
+    { id: "read", label: "Reading the recipe", state: "todo" },
     { id: "ready", label: "Ready to review", state: "todo" },
   ],
   caption: [

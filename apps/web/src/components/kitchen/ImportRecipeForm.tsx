@@ -143,7 +143,6 @@ export function ImportRecipeForm({
   const [progressVariant, setProgressVariant] = useState<ImportProgressVariant>("link");
   const [announce, setAnnounce] = useState("");
   const [igError, setIgError] = useState<IgClientError | null>(null);
-  const [blockedAttempts, setBlockedAttempts] = useState(0);
   const [igReview, setIgReview] = useState<IgReviewState | null>(null);
   const [savedCookbook, setSavedCookbook] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -169,10 +168,6 @@ export function ImportRecipeForm({
     setReview(null);
     setReviewPreview(null);
   }, [url, paste, linkMode]);
-
-  useEffect(() => {
-    setBlockedAttempts(0);
-  }, [url]);
 
   useEffect(() => {
     if (tab === "link" && linkMode === "paste" && linkView === "input") pasteRef.current?.focus();
@@ -227,7 +222,7 @@ export function ImportRecipeForm({
         ? "Reading the recipe."
         : variant === "caption"
           ? "Reading the caption."
-          : "Finding the post."
+          : "Finding the page."
     );
     setPending(true);
     setError(null);
@@ -260,7 +255,6 @@ export function ImportRecipeForm({
       if (requestId !== requestRef.current || controller.signal.aborted) return;
       const ig = readIgError(err);
       if (ig) {
-        if (ig.code === "instagram_blocked") setBlockedAttempts((count) => count + 1);
         setIgError(ig);
         setLinkView("error");
         setAnnounce("Import did not work. Next steps are listed.");
@@ -303,6 +297,14 @@ export function ImportRecipeForm({
     }
     const post = canonicalInstagramPermalink(url);
     setActivePost(post);
+    if (post) {
+      // No Instagram reader ships yet. Go straight to the caption paste
+      // instead of a server round trip that always fails.
+      setIgError(null);
+      setError(null);
+      setLinkView("caption");
+      return;
+    }
     void runImport({ source: "url", content: url.trim() }, "link");
   }
 
@@ -358,10 +360,6 @@ export function ImportRecipeForm({
   }
 
   function onIgStep(id: InstagramNextStep["id"]) {
-    if (id === "retry") {
-      void runImport({ source: "url", content: url.trim() }, "link");
-      return;
-    }
     if (id === "paste") {
       setLinkView("caption");
       setError(null);
@@ -503,7 +501,6 @@ export function ImportRecipeForm({
   const shownError = igError
     ? instagramFailurePresentation({
         code: failureCode(igError.code),
-        attempts: Math.max(1, blockedAttempts),
         handle: igError.handle,
         kind: igError.kind,
         permalink: igError.permalink || activePost?.permalink,
@@ -675,8 +672,9 @@ export function ImportRecipeForm({
                   <p className="import-detect">
                     <InstagramMark />
                     <span>
-                      Instagram {detected.kind === "post" ? "post" : "Reel"} link. We read the
-                      caption.
+                      Instagram {detected.kind === "post" ? "post" : "Reel"} link. We can&apos;t
+                      read Instagram links yet. Copy the caption in Instagram and paste it on the
+                      next step.
                     </span>
                   </p>
                 ) : null}
@@ -685,7 +683,7 @@ export function ImportRecipeForm({
                     Paste
                   </button>
                   <button className="btn primary import-submit" type="submit">
-                    Import
+                    {detected ? "Paste the caption" : "Import"}
                   </button>
                 </div>
                 {error && !inlineLinkError ? null : (

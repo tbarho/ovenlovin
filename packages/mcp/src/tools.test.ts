@@ -1294,12 +1294,12 @@ describe("MCP Tool Schemas", () => {
         const rpc = jsonRpcFromThrown(1, error);
         expect(rpc.error.data).toMatchObject({
           code: "instagram_blocked",
-          heading: "Instagram did not let us read this post",
+          heading: "We can't read Instagram links yet",
           permalink: "https://www.instagram.com/reel/C9mIsoButter",
         });
         expect(rpc.error.message).toMatch(/Nothing was saved/);
         const steps = (rpc.error.data as { nextSteps?: Array<{ id: string }> }).nextSteps ?? [];
-        expect(steps.map((step) => step.id)).toEqual(["retry", "paste", "photo"]);
+        expect(steps.map((step) => step.id)).toEqual(["paste", "photo"]);
       } finally {
         vi.unstubAllGlobals();
       }

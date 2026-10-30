@@ -396,7 +396,7 @@ describe("ImportRecipeForm url and paste validation", () => {
       expect(await screen.findByTestId("import-progress")).toBeVisible();
       expect(screen.getByRole("heading", { name: "Importing" })).toBeVisible();
       expect(
-        screen.getByText(tab === "paste" ? "Reading the recipe" : "Finding the post")
+        screen.getByText(tab === "paste" ? "Reading the recipe" : "Finding the page")
       ).toBeVisible();
       const meter = screen.getByRole("progressbar", { name: "Importing" });
       expect(meter).toHaveAttribute("aria-valuetext", "Working, no estimate");
@@ -635,16 +635,6 @@ describe("ImportRecipeForm url and paste validation", () => {
 
 const reel = "https://www.instagram.com/reel/C9mIsoButter?igsh=abc";
 
-function blockedIgError() {
-  const error = new Error(
-    "This happens sometimes and is not your link's fault. Nothing was saved."
-  ) as Error & { code: string; kind: string; permalink: string };
-  error.code = "instagram_blocked";
-  error.kind = "reel";
-  error.permalink = "https://www.instagram.com/reel/C9mIsoButter";
-  return error;
-}
-
 const captionPreview = {
   title: "15-minute miso butter pasta",
   servings: 2,
@@ -692,47 +682,39 @@ describe("ImportRecipeForm Instagram", () => {
     ).toBeVisible();
   });
 
-  it("shows a Reel or post chip and drops Try again after a second block", async () => {
+  it("says plainly it cannot read Instagram links and goes straight to the caption paste", async () => {
     const user = userEvent.setup();
-    vi.mocked(api).mockRejectedValue(blockedIgError());
     render(<ImportRecipeForm />);
     const field = screen.getByPlaceholderText(/instagram.com\/reel/i);
     await user.type(field, reel);
-    expect(screen.getByText("Instagram Reel link. We read the caption.")).toBeVisible();
+    expect(
+      screen.getByText(/Instagram Reel link\. We can't read Instagram links yet\./)
+    ).toBeVisible();
     await user.clear(field);
     await user.type(field, "https://instagram.com/p/C8sheetPanGn/");
-    expect(screen.getByText("Instagram post link. We read the caption.")).toBeVisible();
-    await user.clear(field);
-    await user.type(field, reel);
-    await user.click(screen.getByRole("button", { name: "Import" }));
     expect(
-      await screen.findByRole("heading", { name: "Instagram did not let us read this post" })
+      screen.getByText(/Instagram post link\. We can't read Instagram links yet\./)
     ).toBeVisible();
-    expect(screen.getByText(/Nothing was saved/)).toBeVisible();
-    expect(screen.getByRole("button", { name: /Try again/ })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: /Try again/ }));
-    expect(
-      await screen.findByRole("heading", { name: "Instagram is still not letting us read it" })
-    ).toBeVisible();
+    expect(screen.queryByText(/We read the caption/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Paste the caption" }));
+    expect(await screen.findByRole("heading", { name: "Paste the caption" })).toBeVisible();
+    expect(screen.getByLabelText("Caption")).toHaveFocus();
+    expect(screen.queryByTestId("import-progress")).not.toBeInTheDocument();
+    expect(screen.queryByText("Finding the post")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Try again/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Paste the caption/ })).toBeVisible();
-    expect(api).toHaveBeenCalledTimes(2);
+    expect(api).not.toHaveBeenCalled();
   });
 
   it("reads a pasted caption, credits the creator, and saves to the kitchen", async () => {
     const user = userEvent.setup();
-    vi.mocked(api)
-      .mockRejectedValueOnce(blockedIgError())
-      .mockResolvedValueOnce(captionPreview)
-      .mockResolvedValueOnce({
-        id: "00000000-0000-4000-8000-0000000000aa",
-        title: "15-minute miso butter pasta",
-        servings: 2,
-      });
+    vi.mocked(api).mockResolvedValueOnce(captionPreview).mockResolvedValueOnce({
+      id: "00000000-0000-4000-8000-0000000000aa",
+      title: "15-minute miso butter pasta",
+      servings: 2,
+    });
     render(<ImportRecipeForm cookbooks={[{ id: "book-1", name: "Weeknight dinners" }]} />);
     await user.type(screen.getByPlaceholderText(/instagram.com\/reel/i), reel);
-    await user.click(screen.getByRole("button", { name: "Import" }));
-    await user.click(await screen.findByRole("button", { name: /Paste the caption/ }));
+    await user.click(screen.getByRole("button", { name: "Paste the caption" }));
     await user.click(screen.getByRole("button", { name: "Read caption" }));
     expect(await screen.findByText("Paste the caption first.")).toBeVisible();
     await user.type(screen.getByLabelText("Caption"), "15-minute miso butter pasta");
@@ -748,7 +730,11 @@ describe("ImportRecipeForm Instagram", () => {
     expect(await screen.findByRole("heading", { name: "Saved to your kitchen" })).toBeVisible();
     expect(screen.getByText("From @weeknightwithmaya on Instagram")).toBeVisible();
     expect(screen.getByText("Serves 2 · 2 ingredients")).toBeVisible();
-    const saveCall = vi.mocked(api).mock.calls[2];
+    const readCall = vi.mocked(api).mock.calls[0];
+    expect(String(readCall?.[1]?.body)).toContain(
+      '"sourceUrl":"https://www.instagram.com/reel/C9mIsoButter"'
+    );
+    const saveCall = vi.mocked(api).mock.calls[1];
     expect(saveCall?.[0]).toBe("/api/v1/recipes/import");
     expect(String(saveCall?.[1]?.body)).toContain('"sourcePlatform":"instagram"');
     expect(String(saveCall?.[1]?.body)).toContain("no-amount:a splash of soy sauce");
@@ -764,7 +750,9 @@ describe("ImportRecipeForm Instagram", () => {
     });
     render(<ImportRecipeForm onDone={onDone} />);
     await user.type(screen.getByPlaceholderText(/instagram.com\/reel/i), reel);
-    await user.click(screen.getByRole("button", { name: "Import" }));
+    await user.click(screen.getByRole("button", { name: "Paste the caption" }));
+    await user.type(screen.getByLabelText("Caption"), "15-minute miso butter pasta");
+    await user.click(screen.getByRole("button", { name: "Read caption" }));
     await user.click(await screen.findByRole("button", { name: "Save to kitchen" }));
     await screen.findByRole("heading", { name: "Saved to your kitchen" });
     expect(screen.queryByRole("link", { name: "Back to recipes" })).not.toBeInTheDocument();
