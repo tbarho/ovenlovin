@@ -43,7 +43,15 @@ export function spreadOf(page: number, total: number, single: boolean): number[]
   return [page, page + 1];
 }
 
-function BookReaderHead({ book, shared }: { book: ReaderBook; shared: boolean }) {
+function BookReaderHead({
+  book,
+  shared,
+  printBlocked,
+}: {
+  book: ReaderBook;
+  shared: boolean;
+  printBlocked: string | null;
+}) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <div className="book-reader-head">
@@ -71,15 +79,26 @@ function BookReaderHead({ book, shared }: { book: ReaderBook; shared: boolean })
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
           />
-          <BookPrint bookId={book.id} />
+          <BookPrint bookId={book.id} blocked={printBlocked} />
         </>
       )}
     </div>
   );
 }
 
-/** `shared` is the signed-out reader: no links back into the kitchen. */
-export function BookReader({ book, shared = false }: { book: ReaderBook; shared?: boolean }) {
+/**
+ * `shared` is the signed-out reader: no links back into the kitchen.
+ * `printBlocked` is the sentence shown when PDFs are off (the public demo).
+ */
+export function BookReader({
+  book,
+  shared = false,
+  printBlocked = null,
+}: {
+  book: ReaderBook;
+  shared?: boolean;
+  printBlocked?: string | null;
+}) {
   const stageRef = useRef<HTMLDivElement>(null);
   const flipRef = useRef<any>(null);
   const [size, setSize] = useState<BookSize | null>(null);
@@ -125,7 +144,7 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
   if (total === 0) {
     return (
       <div className="book-reader">
-        <BookReaderHead book={book} shared={shared} />
+        <BookReaderHead book={book} shared={shared} printBlocked={printBlocked} />
         <div className="empty-card book-reader-empty">
           <p>This book has no recipes yet.</p>
           {shared ? null : (
@@ -170,7 +189,7 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
 
   return (
     <div className="book-reader">
-      <BookReaderHead book={book} shared={shared} />
+      <BookReaderHead book={book} shared={shared} printBlocked={printBlocked} />
 
       <div className="book-reader-stage" ref={stageRef}>
         {size ? (
