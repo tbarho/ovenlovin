@@ -75,6 +75,16 @@ export const E2E_TY_LOVES = [
 
 const RECIPE_IMAGE = (slug: string) => `/e2e-kitchen/${slug}.svg`;
 
+/**
+ * Raster dish photos in three shapes so the book can prove it shows photos
+ * whole (portrait, landscape, square). Synthetic art, dark corner marks show any crop.
+ */
+export const E2E_BOOK_PHOTOS: Record<string, string> = {
+  "roast-chicken": "/e2e-kitchen/photo-portrait.jpg",
+  "sheet-pan-salmon": "/e2e-kitchen/photo-landscape.jpg",
+  "tomato-soup": "/e2e-kitchen/photo-square.jpg",
+};
+
 /** Extra images exist so recipe detail can prove it only renders the main one. */
 const PESTO_GALLERY = [
   RECIPE_IMAGE("pesto-pasta"),
@@ -87,7 +97,7 @@ type KitchenRecipe = RecipeImportDraft & { slug: string; cookbook?: "weeknight" 
 function draft(partial: Omit<RecipeImportDraft, "source"> & { slug: string }): KitchenRecipe {
   return {
     ...partial,
-    images: [RECIPE_IMAGE(partial.slug)],
+    images: [E2E_BOOK_PHOTOS[partial.slug] ?? RECIPE_IMAGE(partial.slug)],
     source: {
       type: "manual",
       importerName: "e2e-kitchen",
@@ -475,6 +485,13 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
   const pesto = existingRecipes.items.find((recipe) => /pesto pasta/i.test(recipe.title));
   if (pesto && pesto.images.length < 3) {
     await recipes.updateRecipe(pesto.id, { images: PESTO_GALLERY });
+  }
+  for (const recipe of E2E_RECIPES) {
+    const photo = E2E_BOOK_PHOTOS[recipe.slug];
+    const existing = existingRecipes.items.find((item) => item.title === recipe.title);
+    if (photo && existing && existing.images[0] !== photo) {
+      await recipes.updateRecipe(existing.id, { images: [photo] });
+    }
   }
   if (existingRecipes.items.length === 0) {
     const weeknight = await cookbooks.createCookbook({

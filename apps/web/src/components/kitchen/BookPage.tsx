@@ -37,18 +37,21 @@ export const BookPage = forwardRef<
 
   return (
     <div ref={ref} className={`book-page book-page--${page.kind}`} style={style}>
-      {page.kind === "cover" ? <Cover page={page} /> : null}
-      {page.kind === "dedication" ? <Dedication page={page} /> : null}
-      {page.kind === "contents" ? <Contents page={page} /> : null}
-      {page.kind === "section" ? <Section page={page} /> : null}
-      {page.kind === "photo" ? <Photo page={page} bookId={bookId} print={print} /> : null}
-      {page.kind === "original-card" ? (
-        <OriginalCard page={page} bookId={bookId} print={print} />
-      ) : null}
-      {page.kind === "recipe" || page.kind === "recipe-cont" ? <Recipe page={page} /> : null}
-      {page.kind === "index" ? <Index page={page} /> : null}
-      {page.kind === "notes" ? <Notes /> : null}
-      {page.kind === "colophon" ? <Colophon page={page} /> : null}
+      {/* page-flip sets display: block on the page itself; the column lives one level in. */}
+      <div className="book-page-in">
+        {page.kind === "cover" ? <Cover page={page} /> : null}
+        {page.kind === "dedication" ? <Dedication page={page} /> : null}
+        {page.kind === "contents" ? <Contents page={page} /> : null}
+        {page.kind === "section" ? <Section page={page} /> : null}
+        {page.kind === "photo" ? <Photo page={page} bookId={bookId} print={print} /> : null}
+        {page.kind === "original-card" ? (
+          <OriginalCard page={page} bookId={bookId} print={print} />
+        ) : null}
+        {page.kind === "recipe" || page.kind === "recipe-cont" ? <Recipe page={page} /> : null}
+        {page.kind === "index" ? <Index page={page} /> : null}
+        {page.kind === "notes" ? <Notes /> : null}
+        {page.kind === "colophon" ? <Colophon page={page} /> : null}
+      </div>
 
       {NO_FOLIO.has(page.kind) ? null : <p className="book-page-number">{page.number}</p>}
     </div>
