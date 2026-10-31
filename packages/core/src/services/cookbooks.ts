@@ -192,21 +192,26 @@ export class CookbookService extends BaseService {
     const order =
       data.recipeOrder === undefined ? null : orderedRecipeIds(recipeIds, data.recipeOrder);
 
-    if (order) {
-      await this._db.transaction(async (tx) => {
-        for (const [index, recipeId] of order.entries()) {
-          await tx
-            .update(collectionRecipe)
-            .set({ order: index, updatedAt: new Date() })
-            .where(
-              and(
-                eq(collectionRecipe.collectionId, id),
-                eq(collectionRecipe.recipeId, recipeId),
-                isNull(collectionRecipe.deletedAt)
-              )
-            );
-        }
-      });
+    // One statement, so two overlapping reorders (a double tap, two devices,
+    // the app and an agent) lock rows in the same order and never deadlock.
+    if (order?.length) {
+      const position = sql.join(
+        order.map((recipeId, index) => sql`when ${recipeId}::uuid then ${index}::int`),
+        sql` `
+      );
+      await this._db
+        .update(collectionRecipe)
+        .set({
+          order: sql`case ${collectionRecipe.recipeId} ${position} end`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(collectionRecipe.collectionId, id),
+            inArray(collectionRecipe.recipeId, order),
+            isNull(collectionRecipe.deletedAt)
+          )
+        );
     }
 
     const [updated] = await this._db
