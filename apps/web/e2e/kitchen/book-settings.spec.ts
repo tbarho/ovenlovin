@@ -47,7 +47,8 @@ test.describe("make it yours", () => {
         await sheet.getByRole("button", { name: `Move ${before[1]} up` }).click();
         await expect(titles.first()).toHaveText(before[1]!);
         await sheet.getByRole("button", { name: "Save book" }).click();
-        await expect(sheet).toBeHidden();
+        // The first PATCH compiles the route on the CI dev server, so allow for it.
+        await expect(sheet).toBeHidden({ timeout: 60_000 });
 
         // Live: the cover takes the new title with no photo, the dedication is page 2.
         const cover = page.locator(".book-page--cover").first();
