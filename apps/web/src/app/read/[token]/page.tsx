@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BookReader } from "@/components/kitchen/BookReader";
 import { loadSharedBook } from "@/lib/cookbook-share";
+import { getPublicDemoUrl } from "@/lib/demo/mode";
 import { isBooksEnabled } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
@@ -14,5 +15,6 @@ export default async function SharedBookPage({ params }: { params: Promise<{ tok
   const { token } = await params;
   const book = await loadSharedBook(token);
   if (!book) notFound();
-  return <BookReader book={book} shared />;
+  // "Cook this" in a shared book: there is no kitchen to open, so try the demo or sign up.
+  return <BookReader book={book} shared cookHref={getPublicDemoUrl() ?? "/sign-up"} />;
 }

@@ -5,6 +5,7 @@ import {
   updateMealPlanBodySchema,
 } from "@ovenlovin/core";
 import { z } from "zod";
+import { bookSettingsInputSchema } from "@ovenlovin/core/book";
 
 extendZodWithOpenApi(z);
 
@@ -612,7 +613,9 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
     method: "patch",
     path: "/cookbooks/{id}",
     tags: ["cookbooks"],
-    summary: "Rename a cookbook",
+    summary: "Rename a cookbook, or make its book yours",
+    description:
+      "bookSettings replaces the whole book settings object (cover, title, subtitle, dedication, includeCards); null resets to the house default. A recipe cover must be a recipe in this cookbook. recipeOrder lists every recipe id in the cookbook once, in the new book order. The reader and the PDF both follow these.",
     request: {
       params: z.object({ id: z.string().uuid() }),
       body: {
@@ -621,6 +624,8 @@ export function registerApiPaths(registry: OpenAPIRegistry) {
             schema: z.object({
               name: z.string().optional(),
               description: z.string().nullable().optional(),
+              bookSettings: bookSettingsInputSchema.nullable().optional(),
+              recipeOrder: z.array(z.string().uuid()).optional(),
             }),
           },
         },

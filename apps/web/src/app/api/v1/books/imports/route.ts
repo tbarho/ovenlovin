@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { del } from "@vercel/blob";
 import { planBookImport, type BookImportInput } from "@ovenlovin/core/jobs";
 import { z } from "zod";
 import { BadRequestError, ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";
@@ -7,6 +6,7 @@ import { getRequestContext, requireWritableHousehold } from "@/lib/api/middlewar
 import { readJsonBody } from "@/lib/api/read-json";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
 import { bookUploadPath, isBookBlobUrl } from "@/lib/book-import";
+import { bookBlobAccess, deleteBookBlobs } from "@/lib/books-blob";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         input.blobUrl &&
         input.blobUrl !== found?.blobUrl &&
         isBookBlobUrl(input.blobUrl, householdId);
-      if (duplicate) await del(input.blobUrl!).catch(() => undefined);
+      if (duplicate) await deleteBookBlobs([input.blobUrl!]).catch(() => undefined);
       return jsonResponse({ status: "resumed", jobId: existing, pages: found?.pages });
     }
     const usage = await queue.usage(householdId, "book_import");
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       return jsonResponse({
         status: "upload",
         pathname: bookUploadPath(householdId, input.sha256),
+        access: bookBlobAccess().access,
       });
     }
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     // Pages are unknown until the worker verifies. Size and concurrency still apply.
     const plan = planBookImport({ ...input, pages: undefined }, null, usage);
     if (plan.action === "refuse") {
-      await del(input.blobUrl).catch(() => undefined);
+      await deleteBookBlobs([input.blobUrl]).catch(() => undefined);
       throw new BadRequestError(plan.message, { breach: plan.breach });
     }
 

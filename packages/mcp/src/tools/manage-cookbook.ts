@@ -2,14 +2,19 @@ import { z } from "zod";
 import type { AuthContext } from "../auth/index";
 import { requireWriteRole } from "../auth/index";
 import { CookbookService, RecipeService } from "@ovenlovin/core";
+import { bookSettingsInputSchema } from "@ovenlovin/core/book";
 import { createDbClient } from "@ovenlovin/db";
 
 export const manageCookbookSchema = z.object({
-  action: z.enum(["create", "rename", "delete", "add_recipe", "remove_recipe"]),
+  action: z.enum(["create", "rename", "delete", "add_recipe", "remove_recipe", "update_book"]),
   id: z.string().uuid().optional(),
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
   recipeId: z.string().uuid().optional(),
+  /** update_book: replaces the whole book settings object; null resets to the default. */
+  bookSettings: bookSettingsInputSchema.nullable().optional(),
+  /** update_book: every recipe id in the cookbook once, in the new book order. */
+  recipeOrder: z.array(z.string().uuid()).optional(),
 });
 
 export type ManageCookbookInput = z.infer<typeof manageCookbookSchema>;
@@ -45,6 +50,21 @@ async function handler(input: ManageCookbookInput, context: AuthContext) {
     return { id: input.id, name: updated?.name, status: "renamed" as const };
   }
 
+  if (input.action === "update_book") {
+    if (input.bookSettings === undefined && input.recipeOrder === undefined) {
+      throw new Error("bookSettings or recipeOrder is required to update the book");
+    }
+    const updated = await cookbooks.updateBook(input.id, {
+      bookSettings: input.bookSettings,
+      recipeOrder: input.recipeOrder,
+    });
+    return {
+      id: input.id,
+      bookSettings: updated?.bookSettings ?? null,
+      status: "updated" as const,
+    };
+  }
+
   if (input.action === "delete") {
     await cookbooks.deleteCookbook(input.id);
     return { id: input.id, status: "deleted" as const };
@@ -68,7 +88,7 @@ async function handler(input: ManageCookbookInput, context: AuthContext) {
 export const manageCookbookTool = {
   name: "manage_cookbook",
   description:
-    "Create, rename, or delete a cookbook, or add/remove a recipe. Cookbooks are many-to-many folders for recipes.",
+    "Create, rename, or delete a cookbook, or add/remove a recipe. Cookbooks are many-to-many folders for recipes. update_book sets the printed book: bookSettings { cover: { kind: 'type' } or { kind: 'recipe', recipeId }, title, subtitle, dedication, includeCards } (replaces the whole object; null resets) and/or recipeOrder (every recipe id once, in book order).",
   inputSchema: manageCookbookSchema,
   handler,
 } as const;

@@ -4301,13 +4301,125 @@ label.photo-page-add-target:focus-visible {
 }
 
 .book-reader-head .back-link {
+  min-width: 0;
   font-size: var(--text-sm);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
-.book-print-open {
+.book-reader-head .btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+.book-settings-open {
   margin-left: auto;
+}
+
+/* "Make it yours" sheet */
+
+.book-settings-group {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.book-settings-group legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.book-settings-group .field-hint {
+  margin: 0;
+}
+
+.book-cover-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.book-cover-choice {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #eaeaea;
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-cover-choice img,
+.book-cover-choice-type {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  font-family: var(--display);
+  font-size: 22px;
+}
+
+.book-cover-choice span:last-child {
+  overflow-wrap: anywhere;
+}
+
+.book-cover-choice.is-selected {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px var(--orange);
+}
+
+.book-settings-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.form-card .book-settings-check input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.book-settings-check > span {
+  display: grid;
+  gap: 2px;
+}
+
+.book-order {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.book-order li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.book-order-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.book-order-move {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
 }
 
 .book-reader-stage {
@@ -4421,6 +4533,14 @@ label.photo-page-add-target:focus-visible {
   border-radius: 2px;
 }
 
+.book-page-in {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .book-page-number {
   position: absolute;
   bottom: 0.6em;
@@ -4482,8 +4602,11 @@ label.photo-page-add-target:focus-visible {
 .book-cover-photo {
   flex: 1;
   width: 100%;
-  object-fit: cover;
   min-height: 0;
+  box-sizing: border-box;
+  padding: 1.6em 1.6em 0;
+  object-fit: contain;
+  background: var(--bg-soft);
   filter: grayscale(0.15) contrast(1.02);
 }
 
@@ -4572,7 +4695,8 @@ label.photo-page-add-target:focus-visible {
   font-weight: 400;
 }
 
-/* Photo pages: the caption bar is a sibling below the photo, never an overlay. */
+/* Photo pages: the caption bar is a sibling below the photo, never an overlay.
+   Photos are shown whole (contain), matted on a paper-colored frame: never cropped. */
 
 .book-photo {
   flex: 1;
@@ -4585,12 +4709,15 @@ label.photo-page-add-target:focus-visible {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  background: var(--bg-soft);
 }
 
 .book-photo-frame img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  box-sizing: border-box;
+  padding: 1.4em;
+  object-fit: contain;
   display: block;
 }
 
@@ -4646,15 +4773,26 @@ label.photo-page-add-target:focus-visible {
 .book-words {
   margin: 0;
   max-width: 24em;
-  font-size: 0.6em;
+  font-size: 0.72em;
   line-height: 1.6;
   color: var(--muted);
 }
 
+/* Recipe type runs 1.2x the page body so a desktop spread reads at book size.
+   paginate's BOOK_METRICS line and character counts are scaled to match. */
+.book-page--recipe .book-body,
+.book-page--recipe-cont .book-body {
+  display: flex;
+  flex-direction: column;
+}
+
 .book-recipe-blocks {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.7em;
+  min-height: 0;
+  font-size: 1.2em;
 }
 
 .book-recipe-header h2 {
@@ -4665,10 +4803,40 @@ label.photo-page-add-target:focus-visible {
   line-height: 1.2;
 }
 
+/* Meta line and "Cook this" share one line, so the link costs no page space. */
+.book-recipe-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+  margin-top: 0.45em;
+}
+
+.book-cook-this {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--orange);
+  text-decoration: none;
+}
+
+/* A thumb-sized hit area without taking page space. */
+.book-cook-this::after {
+  content: "";
+  position: absolute;
+  inset: -14px -10px;
+}
+
+.book-cook-this:hover {
+  text-decoration: underline;
+}
+
 .book-recipe-meta {
-  margin: 0.45em 0 0;
+  margin: 0;
   font-family: var(--mono);
-  font-size: 0.5em;
+  font-size: 0.6em;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
@@ -4685,7 +4853,7 @@ label.photo-page-add-target:focus-visible {
 .book-subheading {
   margin: 0.4em 0 0;
   font-family: var(--mono);
-  font-size: 0.55em;
+  font-size: 0.62em;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -4724,8 +4892,31 @@ label.photo-page-add-target:focus-visible {
   margin-right: 0.5em;
 }
 
-.book-spacer {
-  height: 4em;
+/* The ruled Notes box takes whatever the recipe leaves, so a short recipe
+   fills its page instead of stopping halfway. Never shorter than the
+   notesLines paginate reserves for it. */
+.book-recipe-notes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 6em;
+  margin: 0.6em 0 1.6em;
+}
+
+.book-recipe-notes .book-subheading {
+  margin: 0 0 0.4em;
+}
+
+.book-recipe-notes-rules {
+  flex: 1;
+  min-height: 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(1.8em - 1px),
+    var(--line) calc(1.8em - 1px),
+    var(--line) 1.8em
+  );
 }
 
 .book-rules {
@@ -4808,28 +4999,14 @@ body:has(.print-book) {
   filter: none;
 }
 
-/* Print shop: the page background and edge photos run into the bleed. The
-   layout inside the trim is identical to the home sheet. */
+/* Print shop: the page background runs into the bleed. Photos sit whole on
+   their mat inside the trim, so the layout is identical to the home sheet. */
 .print-book--shop .print-bleed {
   position: absolute;
   top: var(--print-slug);
   left: var(--print-slug);
   padding: var(--print-bleed);
   background: var(--bg);
-}
-
-.print-book--shop .book-page,
-.print-book--shop .book-cover {
-  overflow: visible;
-}
-
-.print-book--shop .book-cover-photo {
-  width: calc(100% + 2 * var(--print-bleed));
-  margin: calc(-1 * var(--print-bleed)) calc(-1 * var(--print-bleed)) 0;
-}
-
-.print-book--shop .book-photo-frame {
-  margin: calc(-1 * var(--print-bleed)) calc(-1 * var(--print-bleed)) 0;
 }
 
 .print-marks {

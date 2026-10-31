@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReaderBook } from "@/lib/book-reader";
@@ -32,6 +32,8 @@ vi.mock("react-pageflip", async () => {
     }),
   };
 });
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 vi.mock("next/dynamic", async () => {
   const React = await import("react");
@@ -84,6 +86,10 @@ function bookFixture(): ReaderBook {
       },
       { number: 4, kind: "colophon", title: "Test book", recipeCount: 1, pageCount: 4 },
     ],
+    version: "v1",
+    name: "Test book",
+    settings: {},
+    recipes: [{ id: "r1", title: "Lemon soup", image: HERO }],
   };
 }
 
@@ -128,6 +134,14 @@ describe("fitBook", () => {
     const size = fitBook(900, 700);
     expect(size).not.toBeNull();
     expect(size!.h / size!.w).toBeCloseTo(1.35, 1);
+  });
+
+  it("opens a desktop spread at reading size, not a thumbnail", () => {
+    // 1440x900 window: the stage is about 1440x780 under the head and foot.
+    const size = fitBook(1440, 780)!;
+    expect(size.single).toBe(false);
+    expect(size.w).toBeGreaterThanOrEqual(540);
+    expect(size.h).toBeLessThanOrEqual(780 - 16 + 4);
   });
 
   it("waits for a stage big enough to read", () => {
@@ -246,6 +260,22 @@ describe("BookReader", () => {
     expect(screen.getByText("Serves 4 · Prep 10 min · Cook 20 min · Total 30 min")).toBeVisible();
   });
 
+  it("Cook this opens the live recipe in the kitchen, and the demo from a shared book", async () => {
+    const { unmount } = render(<BookReader book={bookFixture()} />);
+    await screen.findByTestId("flipbook");
+    expect(screen.getByRole("link", { name: "Cook this" })).toHaveAttribute(
+      "href",
+      "/recipes/r1?fromCookbook=00000000-0000-4000-8000-000000000020"
+    );
+    unmount();
+    render(<BookReader book={bookFixture()} shared cookHref="https://demo.example/" />);
+    await screen.findByTestId("flipbook");
+    expect(screen.getByRole("link", { name: "Cook this" })).toHaveAttribute(
+      "href",
+      "https://demo.example/"
+    );
+  });
+
   it("offers to add recipes when the book is empty", () => {
     render(
       <BookReader
@@ -254,6 +284,10 @@ describe("BookReader", () => {
           title: "Empty",
           subtitle: null,
           pages: [],
+          version: "v0",
+          name: "Empty",
+          settings: {},
+          recipes: [],
         }}
       />
     );
@@ -264,10 +298,21 @@ describe("BookReader", () => {
     );
   });
 
+  it("opens Make it yours from the header", async () => {
+    render(<BookReader book={bookFixture()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Make it yours" }));
+    expect(screen.getByRole("dialog", { name: "Make it yours" })).toBeVisible();
+    expect(screen.getByLabelText("Dedication")).toHaveAttribute(
+      "placeholder",
+      "For Mom, Christmas 2026"
+    );
+  });
+
   it("links nowhere into the kitchen when shared", async () => {
     render(<BookReader book={bookFixture()} shared />);
     await screen.findByTestId("flipbook");
     expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Make it yours" })).toBeNull();
     expect(screen.getByText("Lemon soup", { selector: ".book-photo-caption span" })).toBeVisible();
   });
 });

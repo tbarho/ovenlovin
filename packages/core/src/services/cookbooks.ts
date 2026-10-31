@@ -4,6 +4,7 @@ import type { PaginatedResponse, Pagination } from "../schemas/common";
 import type { Cookbook, CookbookCard, CookbookSummary } from "../schemas/cookbooks";
 import { slugifyCookbookName } from "../schemas/cookbooks";
 import { publicRecipeImages } from "../media/recipe-images";
+import { normalizeBookSettings, orderedRecipeIds, type BookSettingsInput } from "../book/settings";
 import { BaseService } from "./base";
 
 type CookbookRow = typeof collection.$inferSelect;
@@ -167,6 +168,60 @@ export class CookbookService extends BaseService {
       .where(and(eq(collection.id, id), isNull(collection.deletedAt)))
       .returning();
 
+    return updated ? this.mapCookbook(updated) : null;
+  }
+
+  /**
+   * "Make it yours": store the book settings (null resets to the house
+   * default) and/or put the book's recipes in a new order. The reader and
+   * the PDF both lay out from these, so they change together.
+   */
+  async updateBook(
+    id: string,
+    data: { bookSettings?: BookSettingsInput | null; recipeOrder?: string[] }
+  ): Promise<Cookbook | null> {
+    const current = await this.getCookbook(id);
+    if (!current) return null;
+    const recipeIds = await this.listRecipeIds(id);
+    const settings =
+      data.bookSettings === undefined
+        ? undefined
+        : data.bookSettings === null
+          ? null
+          : normalizeBookSettings(data.bookSettings, recipeIds);
+    const order =
+      data.recipeOrder === undefined ? null : orderedRecipeIds(recipeIds, data.recipeOrder);
+
+    // One statement, so two overlapping reorders (a double tap, two devices,
+    // the app and an agent) lock rows in the same order and never deadlock.
+    if (order?.length) {
+      const position = sql.join(
+        order.map((recipeId, index) => sql`when ${recipeId}::uuid then ${index}::int`),
+        sql` `
+      );
+      await this._db
+        .update(collectionRecipe)
+        .set({
+          order: sql`case ${collectionRecipe.recipeId} ${position} end`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(collectionRecipe.collectionId, id),
+            inArray(collectionRecipe.recipeId, order),
+            isNull(collectionRecipe.deletedAt)
+          )
+        );
+    }
+
+    const [updated] = await this._db
+      .update(collection)
+      .set({
+        ...(settings === undefined ? {} : { bookSettings: settings }),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(collection.id, id), isNull(collection.deletedAt)))
+      .returning();
     return updated ? this.mapCookbook(updated) : null;
   }
 

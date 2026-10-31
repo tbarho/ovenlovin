@@ -39,9 +39,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const householdId = requireWritableHousehold(context);
     const { id } = await params;
     await loadOwnedCookbook(id, householdId);
-    const body = await readJsonBody(request, updateCookbookBodySchema);
+    const { bookSettings, recipeOrder, ...fields } = await readJsonBody(
+      request,
+      updateCookbookBodySchema
+    );
 
-    const updated = await new CookbookService(getDatabase()).updateCookbook(id, body);
+    const cookbooks = new CookbookService(getDatabase());
+    let updated = Object.keys(fields).length ? await cookbooks.updateCookbook(id, fields) : null;
+    if (bookSettings !== undefined || recipeOrder !== undefined) {
+      updated = await cookbooks.updateBook(id, { bookSettings, recipeOrder });
+    }
     if (!updated) throw new NotFoundError("Cookbook", id);
     return jsonResponse(updated);
   } catch (error) {
