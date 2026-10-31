@@ -4661,15 +4661,26 @@ label.photo-page-add-target:focus-visible {
 .book-words {
   margin: 0;
   max-width: 24em;
-  font-size: 0.6em;
+  font-size: 0.72em;
   line-height: 1.6;
   color: var(--muted);
 }
 
+/* Recipe type runs 1.2x the page body so a desktop spread reads at book size.
+   paginate's BOOK_METRICS line and character counts are scaled to match. */
+.book-page--recipe .book-body,
+.book-page--recipe-cont .book-body {
+  display: flex;
+  flex-direction: column;
+}
+
 .book-recipe-blocks {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.7em;
+  min-height: 0;
+  font-size: 1.2em;
 }
 
 .book-recipe-header h2 {
@@ -4683,7 +4694,7 @@ label.photo-page-add-target:focus-visible {
 .book-recipe-meta {
   margin: 0.45em 0 0;
   font-family: var(--mono);
-  font-size: 0.5em;
+  font-size: 0.6em;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
@@ -4700,7 +4711,7 @@ label.photo-page-add-target:focus-visible {
 .book-subheading {
   margin: 0.4em 0 0;
   font-family: var(--mono);
-  font-size: 0.55em;
+  font-size: 0.62em;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -4739,8 +4750,31 @@ label.photo-page-add-target:focus-visible {
   margin-right: 0.5em;
 }
 
-.book-spacer {
-  height: 4em;
+/* The ruled Notes box takes whatever the recipe leaves, so a short recipe
+   fills its page instead of stopping halfway. Never shorter than the
+   notesLines paginate reserves for it. */
+.book-recipe-notes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 6em;
+  margin: 0.6em 0 1.6em;
+}
+
+.book-recipe-notes .book-subheading {
+  margin: 0 0 0.4em;
+}
+
+.book-recipe-notes-rules {
+  flex: 1;
+  min-height: 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(1.8em - 1px),
+    var(--line) calc(1.8em - 1px),
+    var(--line) 1.8em
+  );
 }
 
 .book-rules {

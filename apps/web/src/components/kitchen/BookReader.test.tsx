@@ -130,6 +130,14 @@ describe("fitBook", () => {
     expect(size!.h / size!.w).toBeCloseTo(1.35, 1);
   });
 
+  it("opens a desktop spread at reading size, not a thumbnail", () => {
+    // 1440x900 window: the stage is about 1440x780 under the head and foot.
+    const size = fitBook(1440, 780)!;
+    expect(size.single).toBe(false);
+    expect(size.w).toBeGreaterThanOrEqual(540);
+    expect(size.h).toBeLessThanOrEqual(780 - 16 + 4);
+  });
+
   it("waits for a stage big enough to read", () => {
     expect(fitBook(150, 200)).toBeNull();
   });

@@ -227,7 +227,12 @@ function Recipe({ page }: { page: any }) {
                 {block.text}
               </p>
             );
-          return <div key={i} className="book-spacer" />;
+          return (
+            <div key={i} className="book-recipe-notes">
+              <h3 className="book-subheading">Notes</h3>
+              <div className="book-recipe-notes-rules" aria-hidden="true" />
+            </div>
+          );
         })}
       </div>
     </div>

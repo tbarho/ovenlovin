@@ -23,8 +23,8 @@ export type BookSize = { w: number; h: number; single: boolean };
 export function fitBook(stageW: number, stageH: number): BookSize | null {
   if (stageW < 200 || stageH < 260) return null;
   const single = stageW <= SINGLE_MAX;
-  const maxH = Math.min(stageH - 16, 760);
-  let w = single ? Math.min(stageW - 16, 400) : Math.min((stageW - 32) / 2, 420);
+  const maxH = Math.min(stageH - 16, 820);
+  let w = single ? Math.min(stageW - 16, 400) : Math.min((stageW - 32) / 2, 600);
   let h = w * PAGE_RATIO;
   if (h > maxH) {
     h = maxH;
