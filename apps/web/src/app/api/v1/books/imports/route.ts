@@ -7,7 +7,7 @@ import { readJsonBody } from "@/lib/api/read-json";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
 import { bookUploadPath, isBookBlobUrl } from "@/lib/book-import";
 import { bookBlobAccess, deleteBookBlobs } from "@/lib/books-blob";
-import { isDemoModeEnabled } from "@/lib/demo/mode";
+import { DEMO_BOOKS_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
 import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
 const body = z.object({
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     if (!isBooksEnabled()) throw new NotFoundError("Route");
     if (isDemoModeEnabled()) {
-      throw new ForbiddenError("Book uploads are turned off in the public demo.");
+      throw new ForbiddenError(DEMO_BOOKS_OFF);
     }
     const context = await getRequestContext(request);
     const householdId = requireWritableHousehold(context);

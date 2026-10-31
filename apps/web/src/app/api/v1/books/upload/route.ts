@@ -5,7 +5,7 @@ import { BadRequestError, ForbiddenError, handleApiError, NotFoundError } from "
 import { getRequestContext, requireWritableHousehold } from "@/lib/api/middleware";
 import { BOOK_CONTENT_TYPE } from "@/lib/book-import";
 import { bookBlobAccess } from "@/lib/books-blob";
-import { isDemoModeEnabled } from "@/lib/demo/mode";
+import { DEMO_BOOKS_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
 import { isBooksEnabled } from "@/lib/jobs";
 
 /**
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     if (!isBooksEnabled()) throw new NotFoundError("Route");
     if (isDemoModeEnabled()) {
-      throw new ForbiddenError("Book uploads are turned off in the public demo.");
+      throw new ForbiddenError(DEMO_BOOKS_OFF);
     }
     const context = await getRequestContext(request);
     const householdId = requireWritableHousehold(context);

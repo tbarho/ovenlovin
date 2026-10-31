@@ -40,10 +40,12 @@ export function ImportRecipeForm({
   remainingImports,
   importLimit,
   booksEnabled = false,
+  booksBlocked = null,
 }: {
   remainingImports?: number;
   importLimit?: number;
   booksEnabled?: boolean;
+  booksBlocked?: string | null;
 } = {}) {
   const router = useRouter();
   const [source, setSource] = useState<"url" | "paste" | "photo">("url");
@@ -415,8 +417,13 @@ export function ImportRecipeForm({
       <PhotoImportDialog open={photoOpen} onClose={closePhoto} onTypeOrPaste={typeOrPaste} />
       {booksEnabled ? (
         <>
-          <BookImportDoor />
-          <BookShotDoor />
+          <BookImportDoor blocked={booksBlocked} />
+          <BookShotDoor blocked={booksBlocked} />
+          {booksBlocked ? (
+            <p className="muted" id="books-blocked">
+              {booksBlocked}
+            </p>
+          ) : null}
         </>
       ) : null}
       <ImportFromDevice />

@@ -17,10 +17,13 @@ const LEAD =
 export function BookShotDoor({
   label = "Add a paper cookbook",
   defaultName = "",
+  blocked = null,
 }: {
   label?: string;
   /** Prefills the title, e.g. from a PDF whose contents we could not find. */
   defaultName?: string;
+  /** Disables the door up front (the public demo); the sentence lives at `#books-blocked`. */
+  blocked?: string | null;
 } = {}) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(() => defaultName.replace(/\.pdf$/i, ""));
@@ -45,7 +48,13 @@ export function BookShotDoor({
   return (
     <>
       <p>
-        <button className="btn" type="button" onClick={() => setOpen(true)}>
+        <button
+          className="btn"
+          type="button"
+          disabled={Boolean(blocked)}
+          aria-describedby={blocked ? "books-blocked" : undefined}
+          onClick={() => setOpen(true)}
+        >
           {label}
         </button>
       </p>

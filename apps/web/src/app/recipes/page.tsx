@@ -14,6 +14,7 @@ import { listBookImportTiles } from "@/lib/book-import-view";
 import { presentShare } from "@/lib/cookbook-share";
 import { listShotBookTiles } from "@/lib/book-shot-view";
 import { isBooksEnabled, jobQueue } from "@/lib/jobs";
+import { DEMO_BOOKS_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadRecipeSafetyById } from "@/lib/load-recipe-safety";
 
@@ -99,6 +100,7 @@ export default async function RecipesPage({
       remainingImports={importQuota?.remainingImports}
       importLimit={importQuota?.importLimit}
       booksEnabled={booksEnabled}
+      booksBlocked={isDemoModeEnabled() ? DEMO_BOOKS_OFF : null}
       bookImports={bookImports}
     />
   );

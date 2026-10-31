@@ -99,6 +99,7 @@ export function RecipesKitchen({
   remainingImports,
   importLimit,
   booksEnabled = false,
+  booksBlocked = null,
   bookImports = [],
 }: {
   cookbooks: CookbookCard[];
@@ -109,6 +110,8 @@ export function RecipesKitchen({
   remainingImports?: number;
   importLimit?: number;
   booksEnabled?: boolean;
+  /** Why book uploads are off (the public demo); the doors say so up front. */
+  booksBlocked?: string | null;
   bookImports?: BookImportTile[];
 }) {
   const router = useRouter();
@@ -177,6 +180,7 @@ export function RecipesKitchen({
             remainingImports={remainingImports}
             importLimit={importLimit}
             booksEnabled={booksEnabled}
+            booksBlocked={booksBlocked}
           />
         </div>
       ) : null}

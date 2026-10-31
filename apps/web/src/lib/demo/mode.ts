@@ -13,6 +13,7 @@ export type EnvLike = Record<string, string | undefined>;
 
 export const DEMO_SHARE_OFF = "Share links are turned off in the public demo.";
 export const DEMO_PDF_OFF = "Print PDFs are turned off in the public demo.";
+export const DEMO_BOOKS_OFF = "Book uploads are turned off in the public demo.";
 
 export function isTruthyEnvFlag(value: string | undefined): boolean {
   const flag = value?.trim().toLowerCase();
