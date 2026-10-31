@@ -31,8 +31,14 @@ const NO_FOLIO = new Set(["cover", "photo", "original-card"]);
  */
 export const BookPage = forwardRef<
   HTMLDivElement,
-  { page: any; size: { w: number; h: number }; bookId: string | null; print?: boolean }
->(function BookPage({ page, size, bookId, print = false }, ref) {
+  {
+    page: any;
+    size: { w: number; h: number };
+    bookId: string | null;
+    print?: boolean;
+    cookHref?: string | null;
+  }
+>(function BookPage({ page, size, bookId, print = false, cookHref = null }, ref) {
   const style = { width: size.w, height: size.h, fontSize: `${size.h / 56}px` };
 
   return (
@@ -47,7 +53,9 @@ export const BookPage = forwardRef<
         {page.kind === "original-card" ? (
           <OriginalCard page={page} bookId={bookId} print={print} />
         ) : null}
-        {page.kind === "recipe" || page.kind === "recipe-cont" ? <Recipe page={page} /> : null}
+        {page.kind === "recipe" || page.kind === "recipe-cont" ? (
+          <Recipe page={page} cook={print ? null : cookLink(page, bookId, cookHref)} />
+        ) : null}
         {page.kind === "index" ? <Index page={page} /> : null}
         {page.kind === "notes" ? <Notes /> : null}
         {page.kind === "colophon" ? <Colophon page={page} /> : null}
@@ -169,7 +177,16 @@ function OriginalCard({
   );
 }
 
-function Recipe({ page }: { page: any }) {
+/**
+ * "The book is the gift. The app is the kitchen." Signed in, Cook this opens
+ * the live recipe; in a shared book it goes to the demo or sign-up. Paper has none.
+ */
+function cookLink(page: any, bookId: string | null, cookHref: string | null) {
+  if (bookId) return `/recipes/${page.recipeId}?fromCookbook=${bookId}`;
+  return cookHref;
+}
+
+function Recipe({ page, cook }: { page: any; cook: string | null }) {
   return (
     <div className="book-body">
       {page.kind === "recipe-cont" ? (
@@ -184,7 +201,14 @@ function Recipe({ page }: { page: any }) {
             return (
               <header key={i} className="book-recipe-header">
                 <h2>{block.title}</h2>
-                {meta ? <p className="book-recipe-meta">{meta}</p> : null}
+                <div className="book-recipe-meta-row">
+                  {meta ? <p className="book-recipe-meta">{meta}</p> : null}
+                  {cook ? (
+                    <Link className="book-cook-this" href={cook}>
+                      Cook this
+                    </Link>
+                  ) : null}
+                </div>
               </header>
             );
           }

@@ -260,6 +260,22 @@ describe("BookReader", () => {
     expect(screen.getByText("Serves 4 · Prep 10 min · Cook 20 min · Total 30 min")).toBeVisible();
   });
 
+  it("Cook this opens the live recipe in the kitchen, and the demo from a shared book", async () => {
+    const { unmount } = render(<BookReader book={bookFixture()} />);
+    await screen.findByTestId("flipbook");
+    expect(screen.getByRole("link", { name: "Cook this" })).toHaveAttribute(
+      "href",
+      "/recipes/r1?fromCookbook=00000000-0000-4000-8000-000000000020"
+    );
+    unmount();
+    render(<BookReader book={bookFixture()} shared cookHref="https://demo.example/" />);
+    await screen.findByTestId("flipbook");
+    expect(screen.getByRole("link", { name: "Cook this" })).toHaveAttribute(
+      "href",
+      "https://demo.example/"
+    );
+  });
+
   it("offers to add recipes when the book is empty", () => {
     render(
       <BookReader

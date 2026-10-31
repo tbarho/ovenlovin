@@ -4803,8 +4803,38 @@ label.photo-page-add-target:focus-visible {
   line-height: 1.2;
 }
 
+/* Meta line and "Cook this" share one line, so the link costs no page space. */
+.book-recipe-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+  margin-top: 0.45em;
+}
+
+.book-cook-this {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--orange);
+  text-decoration: none;
+}
+
+/* A thumb-sized hit area without taking page space. */
+.book-cook-this::after {
+  content: "";
+  position: absolute;
+  inset: -14px -10px;
+}
+
+.book-cook-this:hover {
+  text-decoration: underline;
+}
+
 .book-recipe-meta {
-  margin: 0.45em 0 0;
+  margin: 0;
   font-family: var(--mono);
   font-size: 0.6em;
   letter-spacing: 0.06em;

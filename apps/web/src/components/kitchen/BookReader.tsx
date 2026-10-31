@@ -89,15 +89,18 @@ function BookReaderHead({
 /**
  * `shared` is the signed-out reader: no links back into the kitchen.
  * `printBlocked` is the sentence shown when PDFs are off (the public demo).
+ * `cookHref` is where "Cook this" goes in a shared book (demo or sign-up).
  */
 export function BookReader({
   book,
   shared = false,
   printBlocked = null,
+  cookHref = null,
 }: {
   book: ReaderBook;
   shared?: boolean;
   printBlocked?: string | null;
+  cookHref?: string | null;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const flipRef = useRef<any>(null);
@@ -215,7 +218,13 @@ export function BookReader({
               } as any)}
             >
               {book.pages.map((pageData: any, i: number) => (
-                <BookPage key={i} page={pageData} size={size} bookId={shared ? null : book.id} />
+                <BookPage
+                  key={i}
+                  page={pageData}
+                  size={size}
+                  bookId={shared ? null : book.id}
+                  cookHref={cookHref}
+                />
               ))}
             </FlipBook>
             {size.single ? null : arrows}
