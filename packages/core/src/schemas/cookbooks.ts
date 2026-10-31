@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { baseEntitySchema, createdBySchema, uuidSchema } from "./common";
 import { recipeVisibilitySchema } from "./recipes";
+import { bookSettingsInputSchema } from "../book/settings";
 
 export const cookbookSchema = baseEntitySchema.merge(createdBySchema).extend({
   householdId: uuidSchema,
@@ -39,6 +40,10 @@ export const updateCookbookBodySchema = z
     name: z.string().trim().min(1).max(255).optional(),
     description: z.string().max(10_000).nullable().optional(),
     sortOrder: z.number().int().nonnegative().optional(),
+    /** "Make it yours": replaces the whole book settings object; null resets to the default. */
+    bookSettings: bookSettingsInputSchema.nullable().optional(),
+    /** Every recipe id in the cookbook, once each, in the new book order. */
+    recipeOrder: z.array(uuidSchema).max(5000).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: "Request body cannot be empty" });
 

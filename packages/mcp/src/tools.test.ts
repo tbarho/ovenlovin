@@ -814,6 +814,26 @@ describe("MCP Tool Schemas", () => {
           recipeId: "550e8400-e29b-41d4-a716-446655440001",
         }).success
       ).toBe(true);
+      expect(
+        manageCookbookTool.inputSchema.safeParse({
+          action: "update_book",
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          bookSettings: {
+            cover: { kind: "recipe", recipeId: "550e8400-e29b-41d4-a716-446655440001" },
+            dedication: "For Parent A, holidays 2026",
+            includeCards: false,
+          },
+          recipeOrder: ["550e8400-e29b-41d4-a716-446655440001"],
+        }).success
+      ).toBe(true);
+      // No arbitrary cover URLs: the PDF renderer must never fetch a stranger's link.
+      expect(
+        manageCookbookTool.inputSchema.safeParse({
+          action: "update_book",
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          bookSettings: { cover: { kind: "photo", image: "https://example.com/x.jpg" } },
+        }).success
+      ).toBe(false);
     });
   });
 

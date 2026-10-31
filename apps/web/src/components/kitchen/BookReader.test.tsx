@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReaderBook } from "@/lib/book-reader";
@@ -32,6 +32,8 @@ vi.mock("react-pageflip", async () => {
     }),
   };
 });
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 vi.mock("next/dynamic", async () => {
   const React = await import("react");
@@ -84,6 +86,10 @@ function bookFixture(): ReaderBook {
       },
       { number: 4, kind: "colophon", title: "Test book", recipeCount: 1, pageCount: 4 },
     ],
+    version: "v1",
+    name: "Test book",
+    settings: {},
+    recipes: [{ id: "r1", title: "Lemon soup", image: HERO }],
   };
 }
 
@@ -262,6 +268,10 @@ describe("BookReader", () => {
           title: "Empty",
           subtitle: null,
           pages: [],
+          version: "v0",
+          name: "Empty",
+          settings: {},
+          recipes: [],
         }}
       />
     );
@@ -272,10 +282,21 @@ describe("BookReader", () => {
     );
   });
 
+  it("opens Make it yours from the header", async () => {
+    render(<BookReader book={bookFixture()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Make it yours" }));
+    expect(screen.getByRole("dialog", { name: "Make it yours" })).toBeVisible();
+    expect(screen.getByLabelText("Dedication")).toHaveAttribute(
+      "placeholder",
+      "For Mom, Christmas 2026"
+    );
+  });
+
   it("links nowhere into the kitchen when shared", async () => {
     render(<BookReader book={bookFixture()} shared />);
     await screen.findByTestId("flipbook");
     expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Make it yours" })).toBeNull();
     expect(screen.getByText("Lemon soup", { selector: ".book-photo-caption span" })).toBeVisible();
   });
 });

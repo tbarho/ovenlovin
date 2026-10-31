@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReaderBook } from "@/lib/book-reader";
 import { BookPage } from "./BookPage";
 import { BookPrint } from "./BookPrint";
+import { BookSettingsSheet } from "./BookSettingsSheet";
 
 const FlipBook = dynamic(() => import("react-pageflip"), { ssr: false });
 
@@ -43,6 +44,7 @@ export function spreadOf(page: number, total: number, single: boolean): number[]
 }
 
 function BookReaderHead({ book, shared }: { book: ReaderBook; shared: boolean }) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <div className="book-reader-head">
       {shared ? (
@@ -52,7 +54,26 @@ function BookReaderHead({ book, shared }: { book: ReaderBook; shared: boolean })
           ← {book.title}
         </Link>
       )}
-      {shared ? null : <BookPrint bookId={book.id} />}
+      {shared ? null : (
+        <>
+          <button
+            className="btn book-settings-open"
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+          >
+            Make it yours
+          </button>
+          <BookSettingsSheet
+            bookId={book.id}
+            name={book.name ?? book.title}
+            settings={book.settings ?? {}}
+            recipes={book.recipes ?? []}
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+          />
+          <BookPrint bookId={book.id} />
+        </>
+      )}
     </div>
   );
 }
@@ -156,7 +177,7 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
           <>
             {/* react-pageflip's typings mark every setting required; runtime has defaults. */}
             <FlipBook
-              key={`${size.single}-${size.w}x${size.h}`}
+              key={`${size.single}-${size.w}x${size.h}-${book.version ?? ""}`}
               {...({
                 ref: flipRef,
                 className: size.single ? "book-flip book-flip-single" : "book-flip",
@@ -167,7 +188,7 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
                 autoSize: false,
                 showCover: true,
                 usePortrait: true,
-                startPage: page,
+                startPage: Math.min(page, total - 1),
                 maxShadowOpacity: 0.5,
                 flippingTime: 650,
                 startZIndex: 1,
