@@ -39,12 +39,15 @@ export const BookPage = forwardRef<
     cookHref?: string | null;
   }
 >(function BookPage({ page, size, bookId, print = false, cookHref = null }, ref) {
-  const style = { width: size.w, height: size.h, fontSize: `${size.h / 56}px` };
-
+  /* page-flip replaces the page's inline style, so the page-relative type size lives one level in. */
   return (
-    <div ref={ref} className={`book-page book-page--${page.kind}`} style={style}>
+    <div
+      ref={ref}
+      className={`book-page book-page--${page.kind}`}
+      style={{ width: size.w, height: size.h }}
+    >
       {/* page-flip sets display: block on the page itself; the column lives one level in. */}
-      <div className="book-page-in">
+      <div className="book-page-in" style={{ fontSize: `${size.h / 56}px` }}>
         {page.kind === "cover" ? <Cover page={page} /> : null}
         {page.kind === "dedication" ? <Dedication page={page} /> : null}
         {page.kind === "contents" ? <Contents page={page} /> : null}
@@ -59,9 +62,8 @@ export const BookPage = forwardRef<
         {page.kind === "index" ? <Index page={page} /> : null}
         {page.kind === "notes" ? <Notes /> : null}
         {page.kind === "colophon" ? <Colophon page={page} /> : null}
+        {NO_FOLIO.has(page.kind) ? null : <p className="book-page-number">{page.number}</p>}
       </div>
-
-      {NO_FOLIO.has(page.kind) ? null : <p className="book-page-number">{page.number}</p>}
     </div>
   );
 });
