@@ -1,7 +1,13 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { del, put } from "@vercel/blob";
+import { put } from "@vercel/blob";
+import {
+  bookBlobAccess,
+  booksPrivateToken,
+  deleteBookBlobs,
+  fetchBookBlob,
+} from "@/lib/books-blob";
 
 /** Without a Blob token (local dev, e2e) PDFs live on disk under this prefix. */
 const LOCAL = "local:";
@@ -33,8 +39,10 @@ const localStore: PdfStore = {
 
 const blobStore: PdfStore = {
   put: async (pathname, bytes) => {
+    const { access, token } = bookBlobAccess();
     const stored = await put(pathname, Buffer.from(bytes), {
-      access: "public",
+      access,
+      ...(token ? { token } : {}),
       contentType: "application/pdf",
       addRandomSuffix: true,
     });
@@ -42,19 +50,35 @@ const blobStore: PdfStore = {
   },
   read: async (url) => {
     if (isLocalPdf(url)) return localStore.read(url);
-    const response = await fetch(url);
+    const response = await fetchBookBlob(url);
     if (!response.ok) throw new Error(`Could not read ${url}: ${response.status}`);
     return new Uint8Array(await response.arrayBuffer());
   },
   remove: async (urls) => {
     const remote = urls.filter((url) => !isLocalPdf(url));
     await Promise.all([
-      remote.length ? del(remote) : undefined,
+      remote.length ? deleteBookBlobs(remote) : undefined,
       localStore.remove(urls.filter(isLocalPdf)),
     ]);
   },
 };
 
+/** Blob when a token is set (the private books store first, see books-blob), else local disk. */
 export function pdfStore(): PdfStore {
-  return process.env.BLOB_READ_WRITE_TOKEN ? blobStore : localStore;
+  return process.env.BLOB_READ_WRITE_TOKEN || booksPrivateToken() ? blobStore : localStore;
+}
+
+/**
+ * A stored PDF as a response body, for the authed download route. The browser
+ * never gets the blob URL: local files come off disk, Blob ones stream through.
+ */
+export async function openPdf(url: string): Promise<{ body: BodyInit; bytes: number | null }> {
+  if (isLocalPdf(url)) {
+    const bytes = await localStore.read(url);
+    return { body: Buffer.from(bytes), bytes: bytes.length };
+  }
+  const response = await fetchBookBlob(url);
+  if (!response.ok || !response.body) throw new Error(`Could not read ${url}: ${response.status}`);
+  const length = Number(response.headers.get("content-length"));
+  return { body: response.body, bytes: Number.isFinite(length) && length > 0 ? length : null };
 }

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { constants, inflateSync } from "node:zlib";
+import { privateBookStoreHost } from "@/lib/books-blob";
 
 export const BOOK_CONTENT_TYPE = "application/pdf";
 
@@ -20,7 +21,7 @@ export function bookBlobStoreHost(env: Record<string, string | undefined> = proc
   return `${match[1]!.toLowerCase()}.public.blob.vercel-storage.com`;
 }
 
-/** Only blobs this household uploaded through the book door, on OUR Blob store. */
+/** Only blobs this household uploaded through the book door, on OUR Blob stores (public or private). */
 export function isBookBlobUrl(
   url: string,
   householdId: string,
@@ -29,9 +30,8 @@ export function isBookBlobUrl(
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return false;
-    const host = bookBlobStoreHost(env);
-    if (!host) return false;
-    if (parsed.hostname.toLowerCase() !== host) return false;
+    const hosts = [bookBlobStoreHost(env), privateBookStoreHost(env)].filter(Boolean);
+    if (!hosts.includes(parsed.hostname.toLowerCase())) return false;
     return parsed.pathname.startsWith(`/books/${householdId}/`);
   } catch {
     return false;
@@ -175,9 +175,14 @@ export async function countPdfPagesOnDisk(path: string) {
  * Opens a PDF with pdf.js and hands the document to `run`. `path` is a file on
  * disk or an http(s) URL; a URL is read with range requests, so only the bytes
  * for the pages touched come over the wire. Unreadable PDFs return 0 (count)
- * or rethrow as typed errors; infra errors rethrow as-is.
+ * or rethrow as typed errors; infra errors rethrow as-is. `httpHeaders` ride
+ * along on URL reads (the bearer token for a private blob).
  */
-export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): Promise<T | 0> {
+export async function withPdf<T>(
+  path: string,
+  run: (doc: any) => Promise<T>,
+  httpHeaders?: Record<string, string>
+): Promise<T | 0> {
   ensurePromiseWithResolvers();
   ensureTransferToFixedLength();
   const { pathToFileURL } = await import("node:url");
@@ -192,6 +197,7 @@ export async function withPdf<T>(path: string, run: (doc: any) => Promise<T>): P
     useSystemFonts: true,
     disableAutoFetch: true,
     disableStream: true,
+    ...(httpHeaders ? { httpHeaders } : {}),
   } as never);
   try {
     return await run(await task.promise);

@@ -77,7 +77,14 @@ describe("POST /books/imports", () => {
     expect(await response.json()).toEqual({
       status: "upload",
       pathname: `books/${HOUSEHOLD}/${sha256}.pdf`,
+      access: "public",
     });
+  });
+
+  it("tells the browser to upload private when the books store is private", async () => {
+    vi.stubEnv("BOOKS_BLOB_PRIVATE_READ_WRITE_TOKEN", "vercel_blob_rw_PrIv9_secretpart");
+    const response = await post({ sha256, bytes: pdf.byteLength, name: "Book.pdf" });
+    expect(await response.json()).toMatchObject({ status: "upload", access: "private" });
   });
 
   it("resumes the existing job when the same file comes back, before any upload", async () => {

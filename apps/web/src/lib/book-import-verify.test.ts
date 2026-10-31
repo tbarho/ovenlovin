@@ -106,7 +106,7 @@ describe("verifyBookImport", () => {
         leaseUntil: new Date(),
       })
     ).rejects.toThrow(/more than 600 pages/);
-    expect(del).toHaveBeenCalledWith(bigUrl);
+    expect(del).toHaveBeenCalledWith([bigUrl]);
     expect(queue.patchInput).not.toHaveBeenCalled();
   });
 });

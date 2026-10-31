@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { open, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { del } from "@vercel/blob";
 import {
   BOOK_LIMITS,
   PermanentJobError,
@@ -17,9 +16,11 @@ import {
   PasswordProtectedPdfError,
   UnreadablePdfError,
 } from "@/lib/book-import";
+import { deleteBookBlobs, fetchBookBlob } from "@/lib/books-blob";
 
+/** Streams a book blob (public or private) to disk while hashing it. */
 export async function streamToTemp(url: string, path: string) {
-  const response = await fetch(url);
+  const response = await fetchBookBlob(url);
   if (!response.ok || !response.body) {
     if (response.status === 404 || response.status === 403) {
       throw new PermanentJobError("We could not find that upload. Try again.");
@@ -65,7 +66,7 @@ export async function verifyBookImport(queue: JobQueue, item: ClaimedItem) {
   try {
     const streamed = await streamToTemp(input.blobUrl, path);
     if (streamed.sha256 !== input.sha256) {
-      await del(input.blobUrl).catch(() => undefined);
+      await deleteBookBlobs([input.blobUrl]).catch(() => undefined);
       throw new PermanentJobError("That upload did not match your file. Try again.");
     }
 
@@ -74,7 +75,7 @@ export async function verifyBookImport(queue: JobQueue, item: ClaimedItem) {
       pages = await countPdfPagesOnDisk(path);
     } catch (error) {
       if (error instanceof PasswordProtectedPdfError) {
-        await del(input.blobUrl).catch(() => undefined);
+        await deleteBookBlobs([input.blobUrl]).catch(() => undefined);
         throw new PermanentJobError(error.message);
       }
       if (error instanceof UnreadablePdfError) {
@@ -84,13 +85,13 @@ export async function verifyBookImport(queue: JobQueue, item: ClaimedItem) {
       throw error;
     }
     if (pages === 0) {
-      await del(input.blobUrl).catch(() => undefined);
+      await deleteBookBlobs([input.blobUrl]).catch(() => undefined);
       throw new PermanentJobError(
         "We could not read this PDF's page count. Try exporting or printing it to PDF again."
       );
     }
     if (pages > BOOK_LIMITS.maxPages) {
-      await del(input.blobUrl).catch(() => undefined);
+      await deleteBookBlobs([input.blobUrl]).catch(() => undefined);
       throw new PermanentJobError(bookLimitMessage("pages", BOOK_LIMITS.maxPages));
     }
 

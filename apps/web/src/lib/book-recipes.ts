@@ -15,6 +15,7 @@ import { runPdfSpanImport } from "@ovenlovin/importers";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { itemsToLines } from "@/lib/book-contents";
 import { isBookBlobUrl, UnreadablePdfError, withPdf } from "@/lib/book-import";
+import { bookBlobHeaders } from "@/lib/books-blob";
 import { dataUrl, largestImage, png, SCAN_MAX_SIDE, type Pixels } from "@/lib/pdf-page-image";
 
 /** Ornaments and spot art are small; a hero photo is at least this big on its short side. */
@@ -43,34 +44,38 @@ export async function readSpan(
   end: number,
   name = ""
 ): Promise<SpanRead> {
-  const read = await withPdf(source, async (doc) => {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const paint = pdfjs.OPS.paintImageXObject;
-    const info: any = (await doc.getMetadata().catch(() => null))?.info ?? {};
-    const last = Math.min(end, Number(doc.numPages) || 0);
-    const numbers = Array.from({ length: Math.max(0, last - start + 1) }, (_, at) => start + at);
+  const read = await withPdf(
+    source,
+    async (doc) => {
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      const paint = pdfjs.OPS.paintImageXObject;
+      const info: any = (await doc.getMetadata().catch(() => null))?.info ?? {};
+      const last = Math.min(end, Number(doc.numPages) || 0);
+      const numbers = Array.from({ length: Math.max(0, last - start + 1) }, (_, at) => start + at);
 
-    const empty: SpanRead = {
-      book: {
-        title: String(info.Title ?? "").trim() || fileTitle(name),
-        author: String(info.Author ?? "").trim() || undefined,
-      },
-      pages: [],
-      images: {},
-    };
-    return numbers.reduce(async (memo: Promise<SpanRead>, number) => {
-      const done = await memo;
-      const page = await doc.getPage(number);
-      const lines = itemsToLines((await page.getTextContent()).items as any[]);
-      const image = await largestImage(page, await page.getOperatorList(), paint);
-      const next = { ...done, pages: [...done.pages, { page: number, lines }] };
-      if (!image) return next;
-      const [, width, height] = image.args;
-      if (lines.length > 0 && Math.min(width, height) < MIN_HERO_SIDE) return next;
-      const pixels = await image.pixels();
-      return pixels ? { ...next, images: { ...next.images, [number]: pixels } } : next;
-    }, Promise.resolve(empty));
-  });
+      const empty: SpanRead = {
+        book: {
+          title: String(info.Title ?? "").trim() || fileTitle(name),
+          author: String(info.Author ?? "").trim() || undefined,
+        },
+        pages: [],
+        images: {},
+      };
+      return numbers.reduce(async (memo: Promise<SpanRead>, number) => {
+        const done = await memo;
+        const page = await doc.getPage(number);
+        const lines = itemsToLines((await page.getTextContent()).items as any[]);
+        const image = await largestImage(page, await page.getOperatorList(), paint);
+        const next = { ...done, pages: [...done.pages, { page: number, lines }] };
+        if (!image) return next;
+        const [, width, height] = image.args;
+        if (lines.length > 0 && Math.min(width, height) < MIN_HERO_SIDE) return next;
+        const pixels = await image.pixels();
+        return pixels ? { ...next, images: { ...next.images, [number]: pixels } } : next;
+      }, Promise.resolve(empty));
+    },
+    bookBlobHeaders(source)
+  );
   if (!read) throw new UnreadablePdfError();
   return read;
 }
