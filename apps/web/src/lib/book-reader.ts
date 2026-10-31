@@ -4,6 +4,7 @@ import { CookbookService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { recipeIngredientGroup } from "@ovenlovin/db/schema";
 import { and, inArray, isNull } from "drizzle-orm";
+import { demoBookImages } from "@/lib/demo/book";
 
 /** One page of the laid-out book, exactly as `paginate` returns it. */
 export type ReaderPage = Record<string, any>;
@@ -61,7 +62,7 @@ export function readerRecipe(details: any, groupNames: Record<string, string> = 
     prepTimeMinutes: details.prepTimeMinutes ?? null,
     cookTimeMinutes: details.cookTimeMinutes ?? null,
     totalTimeMinutes: details.totalTimeMinutes ?? null,
-    images: details.images ?? [],
+    images: demoBookImages(details.images ?? []),
     isFamilyRecipe: details.isFamilyRecipe ?? false,
     sourcePhotos: details.sourcePhotos ?? [],
     ingredients: (details.ingredients ?? []).map((item: any) => ({
