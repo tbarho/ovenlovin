@@ -14,9 +14,16 @@ const LEAD =
  * same contents map and picks as a PDF gets. No file upload, so the meter is
  * indeterminate while the pages are read.
  */
-export function BookShotDoor() {
+export function BookShotDoor({
+  label = "Add a paper cookbook",
+  defaultName = "",
+}: {
+  label?: string;
+  /** Prefills the title, e.g. from a PDF whose contents we could not find. */
+  defaultName?: string;
+} = {}) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => defaultName.replace(/\.pdf$/i, ""));
   const [files, setFiles] = useState<File[]>([]);
   const [step, setStep] = useState<"idle" | "reading" | "done" | "error">("idle");
   const [result, setResult] = useState<PaperBookResult | null>(null);
@@ -39,7 +46,7 @@ export function BookShotDoor() {
     <>
       <p>
         <button className="btn" type="button" onClick={() => setOpen(true)}>
-          Add a paper cookbook
+          {label}
         </button>
       </p>
       <BottomSheet

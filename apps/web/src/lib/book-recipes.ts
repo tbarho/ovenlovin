@@ -8,27 +8,20 @@ import {
   type RecipeItemPayload,
 } from "@ovenlovin/core/jobs";
 import { isImportAiNotARecipe } from "@ovenlovin/core/import-ai-unavailable";
-import {
-  averageHashFromRgba,
-  downscaleRgba,
-  encodePngRgba,
-  rgbaFromPdfImage,
-} from "@ovenlovin/core/photo-hash";
+import { averageHashFromRgba } from "@ovenlovin/core/photo-hash";
 import { RecipeService, type StoredImagePut } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { runPdfSpanImport } from "@ovenlovin/importers";
 import { createVercelImagePut } from "@/lib/blob-store";
 import { itemsToLines } from "@/lib/book-contents";
 import { isBookBlobUrl, UnreadablePdfError, withPdf } from "@/lib/book-import";
+import { dataUrl, largestImage, png, SCAN_MAX_SIDE, type Pixels } from "@/lib/pdf-page-image";
 
 /** Ornaments and spot art are small; a hero photo is at least this big on its short side. */
 const MIN_HERO_SIDE = 200;
-/** Long side for page scans sent to the vision model. */
-const SCAN_MAX_SIDE = 1600;
 /** Long side for the stored hero candidate. */
 const HERO_MAX_SIDE = 2000;
 
-type Pixels = { width: number; height: number; rgba: Uint8Array };
 export type SpanPage = { page: number; lines: string[] };
 export type SpanRead = {
   book: { title: string; author?: string };
@@ -36,28 +29,6 @@ export type SpanRead = {
   /** Largest embedded image per page: always on textless pages, hero-sized ones on text pages. */
   images: Record<number, Pixels>;
 };
-
-const imageArea = (args: any[]) => Number(args[1]) * Number(args[2]);
-
-async function imagePixels(page: any, name: string): Promise<Pixels | null> {
-  const store = name.startsWith("g_") ? page.commonObjs : page.objs;
-  const image: any = await new Promise((resolve) => store.get(name, resolve));
-  if (!image?.data) return null;
-  const rgba = rgbaFromPdfImage(image);
-  return rgba ? { width: image.width, height: image.height, rgba } : null;
-}
-
-/** Largest XObject image painted on the page, by pixel count. */
-async function largestImage(page: any, ops: any, paint: number) {
-  const best = ops.fnArray.reduce(
-    (memo: any[] | null, fn: number, at: number) =>
-      fn === paint && (!memo || imageArea(ops.argsArray[at]) > imageArea(memo))
-        ? ops.argsArray[at]
-        : memo,
-    null
-  );
-  return best ? { args: best, pixels: () => imagePixels(page, best[0]) } : null;
-}
 
 const fileTitle = (name: string) => name.replace(/\.pdf$/i, "").trim() || "Cookbook";
 
@@ -139,14 +110,6 @@ export function planSpan(
     );
   return { pages, scans: [], hero };
 }
-
-const png = (pixels: Pixels, max: number) => {
-  const small = downscaleRgba(pixels.width, pixels.height, pixels.rgba, max);
-  return encodePngRgba(small.width, small.height, small.rgba);
-};
-
-const dataUrl = (bytes: Uint8Array) =>
-  `data:image/png;base64,${Buffer.from(bytes).toString("base64")}`;
 
 const asBuffer = (bytes: Uint8Array) =>
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
