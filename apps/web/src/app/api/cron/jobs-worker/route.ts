@@ -1,3 +1,4 @@
+import "@sparticuz/chromium";
 import { after, NextRequest, NextResponse } from "next/server";
 import { runNext } from "@ovenlovin/core/jobs";
 import { cronAuthorized } from "@/lib/cron-auth";

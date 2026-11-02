@@ -1,3 +1,4 @@
+import "@/lib/book-pdf-job";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { BadRequestError, ForbiddenError, handleApiError, NotFoundError } from "@/lib/api/errors";

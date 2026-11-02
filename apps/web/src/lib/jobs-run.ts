@@ -1,3 +1,4 @@
+import "@sparticuz/chromium";
 import { after } from "next/server";
 import { runNext } from "@ovenlovin/core/jobs";
 import { jobHandlers } from "@/lib/job-handlers";
