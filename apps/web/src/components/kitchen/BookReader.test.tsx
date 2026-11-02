@@ -170,6 +170,15 @@ describe("BookReader", () => {
     setStageSize(900, 700);
   });
 
+  it("uses the shared page-type divisor on the laid-out page", async () => {
+    setStageSize(1440, 780);
+    render(<BookReader book={bookFixture()} />);
+    await screen.findByTestId("flipbook");
+    const page = document.querySelector(".book-page-in") as HTMLElement;
+    const size = fitBook(1440, 780)!;
+    expect(parseFloat(page.style.fontSize)).toBeCloseTo(size.h / PAGE_TYPE_DIVISOR, 5);
+  });
+
   it("renders the cover first with the page indicator and edge arrows", async () => {
     render(<BookReader book={bookFixture()} />);
     const flip = await screen.findByTestId("flipbook");
