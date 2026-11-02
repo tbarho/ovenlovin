@@ -14,6 +14,25 @@ export function jobQueue() {
   return new JobQueue(getDatabase());
 }
 
+const BYPASS_QUERY = "x-vercel-protection-bypass";
+
+/** URL and headers for a self-kick to /api/cron/jobs-worker. */
+export function workerKickRequest(origin: string, env: EnvLike = process.env) {
+  const bypass = env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim();
+  const url = new URL("/api/cron/jobs-worker", origin);
+  if (bypass) url.searchParams.set(BYPASS_QUERY, bypass);
+  const headers: Record<string, string> = {
+    ...cronHeaders(env),
+    ...(bypass
+      ? {
+          "x-vercel-protection-bypass": bypass,
+          "x-vercel-set-bypass-cookie": "true",
+        }
+      : {}),
+  };
+  return { url: url.toString(), headers };
+}
+
 /**
  * Starts a worker chain. The worker answers 202 before doing any work, so this
  * returns fast and never holds the caller open. A lost kick is safe: the
@@ -21,16 +40,13 @@ export function jobQueue() {
  */
 export async function kickWorker(origin: string, env: EnvLike = process.env) {
   try {
-    const bypass = env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim();
-    const response = await fetch(`${origin}/api/cron/jobs-worker`, {
-      method: "POST",
-      headers: {
-        ...cronHeaders(),
-        ...(bypass ? { "x-vercel-protection-bypass": bypass } : {}),
-      },
-    });
+    const { url, headers } = workerKickRequest(origin, env);
+    const response = await fetch(url, { method: "POST", headers });
     if (!response.ok) {
-      console.error("Job worker kick failed", response.status);
+      console.error("Job worker kick failed", response.status, {
+        hasAuthorization: Boolean(headers.authorization),
+        hasProtectionBypass: Boolean(env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim()),
+      });
     }
   } catch (error) {
     console.error("Job worker kick failed", error);
