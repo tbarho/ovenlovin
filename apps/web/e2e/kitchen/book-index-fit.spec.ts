@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import { PAGE_TYPE_DIVISOR } from "@ovenlovin/core/book";
 
 const shotRoot = path.resolve(__dirname, "../../../../e2e-artifacts/kitchen/book-index-fit");
 
@@ -72,7 +73,7 @@ test.describe("book index fits the page", () => {
           .locator(".book-page")
           .first()
           .evaluate((el) => el.getBoundingClientRect().height);
-        expect(fontSize).toBeCloseTo(pageHeight / 56, 0);
+        expect(fontSize).toBeCloseTo(pageHeight / PAGE_TYPE_DIVISOR, 0);
 
         const total = Number(
           (await page.locator(".book-reader-total").textContent())!.replace(/\D/g, "")

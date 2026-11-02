@@ -4899,7 +4899,7 @@ label.photo-page-add-target:focus-visible {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 6em;
+  min-height: 5em;
   margin: 0.6em 0 1.6em;
 }
 

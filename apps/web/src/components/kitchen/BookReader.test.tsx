@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PAGE_TYPE_DIVISOR, pageTypePx } from "@ovenlovin/core/book";
 import type { ReaderBook } from "@/lib/book-reader";
 import { fitBook, spreadOf, BookReader } from "./BookReader";
 
@@ -142,6 +143,7 @@ describe("fitBook", () => {
     expect(size.single).toBe(false);
     expect(size.w).toBeGreaterThanOrEqual(540);
     expect(size.h).toBeLessThanOrEqual(780 - 16 + 4);
+    expect(pageTypePx(size.h).body).toBeGreaterThanOrEqual(11.75);
   });
 
   it("waits for a stage big enough to read", () => {

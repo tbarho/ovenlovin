@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { forwardRef } from "react";
+import { PAGE_TYPE_DIVISOR } from "@ovenlovin/core/book";
 
 /** A duration label: "45 min", "1 hr", "1 hr 30 min". */
 export function timeLabel(minutes: number) {
@@ -47,7 +48,7 @@ export const BookPage = forwardRef<
       style={{ width: size.w, height: size.h }}
     >
       {/* page-flip sets display: block on the page itself; the column lives one level in. */}
-      <div className="book-page-in" style={{ fontSize: `${size.h / 56}px` }}>
+      <div className="book-page-in" style={{ fontSize: `${size.h / PAGE_TYPE_DIVISOR}px` }}>
         {page.kind === "cover" ? <Cover page={page} /> : null}
         {page.kind === "dedication" ? <Dedication page={page} /> : null}
         {page.kind === "contents" ? <Contents page={page} /> : null}

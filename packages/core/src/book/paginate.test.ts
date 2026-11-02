@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOOK_METRICS, fit, lineCount, paginate } from "./paginate";
+import { BOOK_METRICS, fit, lineCount, pageTypePx, paginate } from "./paginate";
 import { readBookSettings } from "./settings";
 
 const ingredient = (name: string, rawText = `1 cup ${name}`) => ({ name, rawText });
@@ -213,6 +213,17 @@ describe("fit", () => {
         { type: "notes", lines: 6 },
       ])
     ).toHaveLength(2);
+  });
+});
+
+describe("pageTypePx", () => {
+  it("keeps desktop recipe body at Jony's 11.75px floor on a 1440 page", () => {
+    // UAT 1440×900: ~568×768 pages. Same ratio as fitBook at that window.
+    const type = pageTypePx(768);
+    expect(type.body).toBeGreaterThanOrEqual(11.75);
+    expect(type.title).toBeGreaterThan(type.body);
+    expect(type.index).toBeGreaterThan(type.body * 0.75);
+    expect(type.title).toBeGreaterThan(type.index);
   });
 });
 

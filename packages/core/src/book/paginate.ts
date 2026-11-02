@@ -2,26 +2,56 @@
 import type { BookSettings } from "./settings";
 
 /**
+ * Reader and print set `.book-page-in` to `pageHeight / PAGE_TYPE_DIVISOR`.
+ * Recipe body is 0.72 (page body) × 1.2 (recipe blocks) × 0.85 (ingredients/steps).
+ * 48 keeps that body at ≥ 11.75px on a 1440 desktop page (~768px tall, ~568px wide).
+ */
+export const PAGE_TYPE_DIVISOR = 48;
+
+export const PAGE_TYPE = {
+  divisor: PAGE_TYPE_DIVISOR,
+  body: 0.72,
+  recipe: 1.2,
+  recipeText: 0.85,
+  recipeTitle: 1.05,
+  index: 0.85,
+} as const;
+
+/** Computed px at a laid-out page height. Same math the reader CSS applies. */
+export function pageTypePx(pageHeight: number) {
+  const root = pageHeight / PAGE_TYPE.divisor;
+  const recipeRoot = root * PAGE_TYPE.body * PAGE_TYPE.recipe;
+  return {
+    root,
+    body: recipeRoot * PAGE_TYPE.recipeText,
+    title: recipeRoot * PAGE_TYPE.recipeTitle,
+    index: root * PAGE_TYPE.body * PAGE_TYPE.index,
+  };
+}
+
+/**
  * Fixed type metrics for the house book at US Letter. Reader, PDF, contents
  * and index all read page numbers from the one list `paginate` returns, so
  * these numbers only need to be stable, not pixel exact. Recipe pages set
  * type 1.2x the page body (`.book-recipe-blocks` in globals.css), so their
- * line and character counts are the body counts divided by 1.2.
+ * line and character counts are the body counts divided by 1.2. Counts were
+ * rematched when PAGE_TYPE_DIVISOR moved from 56 to 48 (scale 6/7, floored)
+ * so larger type does not clip.
  */
 export const BOOK_METRICS = {
-  bodyLines: 38,
-  fullChars: 65,
-  stepChars: 60,
-  columnChars: 30,
-  titleChars: 23,
+  bodyLines: 32,
+  fullChars: 55,
+  stepChars: 51,
+  columnChars: 25,
+  titleChars: 19,
   titleLineHeight: 2,
   metaLines: 2,
   contLines: 2,
-  notesLines: 6,
-  contentsLines: 36,
-  indexLines: 56,
-  indexChars: 18,
-  wordsChars: 420,
+  notesLines: 5,
+  contentsLines: 30,
+  indexLines: 48,
+  indexChars: 15,
+  wordsChars: 360,
   notesPages: 2,
 };
 
