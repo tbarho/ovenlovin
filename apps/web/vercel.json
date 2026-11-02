@@ -12,6 +12,14 @@
     "src/app/api/cron/jobs-worker/route.ts": {
       "maxDuration": 180,
       "memory": 2048
+    },
+    "src/app/api/cron/jobs-sweep/route.ts": {
+      "maxDuration": 180,
+      "memory": 2048
+    },
+    "src/app/api/v1/cookbooks/[id]/pdf/route.ts": {
+      "maxDuration": 180,
+      "memory": 2048
     }
   },
   "crons": [

@@ -13,13 +13,17 @@ const queue = {
   enqueue: vi.fn(),
 };
 const del = vi.fn(async () => undefined);
-const kickWorker = vi.fn(async (_origin: string) => undefined);
+const kickFromRequest = vi.fn(async (_request: Request) => undefined);
 
 vi.mock("@ovenlovin/db", () => ({ getDatabase: () => ({}) }));
 vi.mock("@vercel/blob", () => ({ del: (...args: any[]) => (del as any)(...args) }));
 vi.mock("@/lib/jobs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/jobs")>();
-  return { ...actual, jobQueue: () => queue, kickWorker: (origin: string) => kickWorker(origin) };
+  return {
+    ...actual,
+    jobQueue: () => queue,
+    kickFromRequest: (request: Request) => kickFromRequest(request),
+  };
 });
 vi.mock("@/lib/api/middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/middleware")>();
@@ -133,7 +137,7 @@ describe("POST /books/imports", () => {
       },
       [{ step: "verify" }]
     );
-    expect(kickWorker).toHaveBeenCalled();
+    expect(kickFromRequest).toHaveBeenCalled();
   });
 
   it("rejects a blob URL outside this household's book folder", async () => {

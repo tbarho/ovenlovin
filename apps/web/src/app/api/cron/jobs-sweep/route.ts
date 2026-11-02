@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/cron-auth";
-import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
+import { isBooksEnabled, jobQueue, kickFromRequest } from "@/lib/jobs";
 
 /** Fails jobs that stopped progressing, parks spent leases, and restarts the worker chain. */
 export async function GET(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const stale = await queue.failStale();
   const parked = await queue.park();
   const claimable = await queue.claimable();
-  if (claimable > 0) await kickWorker(request.nextUrl.origin);
+  if (claimable > 0) await kickFromRequest(request);
 
   return NextResponse.json({ ok: true, stale, parked, claimable, at: new Date().toISOString() });
 }

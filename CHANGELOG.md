@@ -15,7 +15,7 @@ Recipe pages on a laptop or desktop now sit at book size: body type holds around
 
 ### Print when the last try got stuck
 
-If Make the PDF never finishes, tap it again. A stuck job no longer blocks a new one. The print starts making pages as soon as you tap, including on preview deploys.
+If Make the PDF never finishes, tap it again. A stuck job no longer blocks a new one. The print starts making pages as soon as you tap, including on a signed-in preview.
 
 ### Make the book yours
 

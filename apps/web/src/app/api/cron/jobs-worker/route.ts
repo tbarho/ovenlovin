@@ -17,10 +17,11 @@ export async function POST(request: NextRequest) {
   }
 
   const origin = request.nextUrl.origin;
+  const cookie = request.headers.get("cookie");
   after(async () => {
     const result = await runNext(jobQueue(), jobHandlers);
     if (result.status === "idle") return;
-    await kickWorker(origin);
+    await kickWorker(origin, process.env, cookie);
   });
 
   return NextResponse.json({ ok: true }, { status: 202 });
