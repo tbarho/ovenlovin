@@ -1,33 +1,45 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import nextConfig from "./next.config";
+import { copyChromiumBin, chromiumBinDest } from "./scripts/copy-chromium-bin";
+import {
+  CHROMIUM_BIN_INCLUDE,
+  CHROMIUM_BIN_MARKER,
+  findChromiumBinDir,
+} from "./src/lib/chromium-bin";
 
-const appRoot = __dirname;
-const workspaceRoot = path.join(appRoot, "../..");
+function symlinkPaths(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isSymbolicLink()) return [full];
+    if (entry.isDirectory()) return symlinkPaths(full);
+    return [];
+  });
+}
 
 describe("Chromium file tracing", () => {
-  const includes = nextConfig.outputFileTracingIncludes ?? {};
+  const dest = copyChromiumBin();
+  const marker = path.join(dest, CHROMIUM_BIN_MARKER);
 
-  it("includes bin globs on the worker and PDF routes", () => {
-    const worker = includes["/api/cron/jobs-worker"] ?? [];
-    const pdf =
-      includes["/api/v1/cookbooks/\\[id\\]/pdf"] ?? includes["/api/v1/cookbooks/*/pdf"] ?? [];
-    expect(worker.some((glob) => glob.includes("@sparticuz/chromium/bin"))).toBe(true);
-    expect(pdf.some((glob) => glob.includes("@sparticuz/chromium/bin"))).toBe(true);
-    expect(nextConfig.serverExternalPackages).toContain("@sparticuz/chromium");
-    expect(nextConfig.serverExternalPackages).toContain("playwright-core");
+  it("copies chromium.br as a real file with no symlinks", () => {
+    expect(dest).toBe(chromiumBinDest());
+    expect(existsSync(marker)).toBe(true);
+    expect(lstatSync(marker).isFile()).toBe(true);
+    expect(lstatSync(marker).isSymbolicLink()).toBe(false);
+    expect(symlinkPaths(dest)).toEqual([]);
+    expect(findChromiumBinDir(path.join(__dirname))).toBe(dest);
   });
 
-  it("resolves the pnpm Chromium bin that Vercel looks up", () => {
-    const viaLink = path.join(appRoot, "node_modules/@sparticuz/chromium/bin/chromium.br");
-    const pnpmDir = path.join(workspaceRoot, "node_modules/.pnpm");
-    const store = readdirSync(pnpmDir).find((name) => name.startsWith("@sparticuz+chromium@"));
-    const viaPnpm = store
-      ? path.join(pnpmDir, store, "node_modules/@sparticuz/chromium/bin/chromium.br")
-      : "";
-    expect(existsSync(viaLink)).toBe(true);
-    expect(store).toBeTruthy();
-    expect(existsSync(viaPnpm)).toBe(true);
+  it("traces only the real copy on the worker and PDF routes", () => {
+    const includes = Object.values(nextConfig.outputFileTracingIncludes ?? {}).flat();
+    expect(includes.every((glob) => glob === CHROMIUM_BIN_INCLUDE)).toBe(true);
+    expect(includes.some((glob) => glob.includes("node_modules"))).toBe(false);
+    expect(includes.some((glob) => glob.includes(".pnpm"))).toBe(false);
+    expect(nextConfig.outputFileTracingIncludes?.["/api/cron/jobs-worker"]).toEqual([
+      CHROMIUM_BIN_INCLUDE,
+    ]);
+    expect(nextConfig.serverExternalPackages).toContain("@sparticuz/chromium");
+    expect(nextConfig.serverExternalPackages).toContain("playwright-core");
   });
 });

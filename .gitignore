@@ -16,6 +16,7 @@ packages/importers/src/eval/fixtures/photo/.fonts
 out/
 build
 apps/docs/.source/
+apps/web/.chromium-bin/
 
 # Turbo
 .turbo

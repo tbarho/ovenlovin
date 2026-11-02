@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import { PRINT_SPEC, printSheet, type PrintMode } from "@ovenlovin/core/book";
+import { findChromiumBinDir } from "@/lib/chromium-bin";
 
 /** Points per inch in PDF space. */
 const PT = 72;
@@ -17,8 +18,14 @@ export async function launchChromium() {
   const { chromium } = await import("playwright-core");
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
     const serverless = (await import("@sparticuz/chromium")).default;
+    const bin = findChromiumBinDir();
+    if (!bin) {
+      throw new Error(
+        "Chromium bin copy is missing from the function package. Run apps/web prebuild."
+      );
+    }
     return chromium.launch({
-      executablePath: await serverless.executablePath(),
+      executablePath: await serverless.executablePath(bin),
       args: serverless.args,
       headless: true,
     });
