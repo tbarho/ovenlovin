@@ -189,10 +189,7 @@ export class JobQueue extends BaseService {
    * A dead worker leaves the job `running` and `usage()` still counts it, so
    * Make the PDF stays refused until something parks those rows.
    */
-  async failStale(
-    now = new Date(),
-    filter: { householdId?: string; kind?: JobKind } = {}
-  ) {
+  async failStale(now = new Date(), filter: { householdId?: string; kind?: JobKind } = {}) {
     const cutoff = new Date(now.getTime() - this.staleMs);
     const householdClause = filter.householdId
       ? sql`and household_id = ${filter.householdId}`
