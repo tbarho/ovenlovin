@@ -19,9 +19,19 @@ export function jobQueue() {
  * returns fast and never holds the caller open. A lost kick is safe: the
  * sweeper restarts the chain from whatever is still queued.
  */
-export async function kickWorker(origin: string) {
+export async function kickWorker(origin: string, env: EnvLike = process.env) {
   try {
-    await fetch(`${origin}/api/cron/jobs-worker`, { method: "POST", headers: cronHeaders() });
+    const bypass = env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim();
+    const response = await fetch(`${origin}/api/cron/jobs-worker`, {
+      method: "POST",
+      headers: {
+        ...cronHeaders(),
+        ...(bypass ? { "x-vercel-protection-bypass": bypass } : {}),
+      },
+    });
+    if (!response.ok) {
+      console.error("Job worker kick failed", response.status);
+    }
   } catch (error) {
     console.error("Job worker kick failed", error);
   }

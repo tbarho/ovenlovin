@@ -40,6 +40,7 @@ const job = (overrides: any = {}, inputOverrides: any = {}) => ({
 
 function fakeQueue(found: any = null, usage = { activeJobs: 0, jobsThisMonth: 0 }) {
   return {
+    failStale: vi.fn(async () => 0),
     findBySha: vi.fn(async () => found?.id ?? null),
     get: vi.fn(async () => found),
     usage: vi.fn(async () => usage),
@@ -116,6 +117,24 @@ describe("startBookPdf", () => {
     });
     vi.mocked(loadPrintBook).mockResolvedValue(null);
     expect(await startBookPdf(fakeQueue(), args)).toBeNull();
+  });
+
+  it("clears stale jobs before reuse or the concurrency cap", async () => {
+    const stuck = fakeQueue(null, { activeJobs: 2, jobsThisMonth: 2 });
+    stuck.failStale.mockImplementation(async () => {
+      stuck.usage.mockResolvedValue({ activeJobs: 0, jobsThisMonth: 2 });
+      return 2;
+    });
+    expect(await startBookPdf(stuck, args)).toEqual({ jobId: "new-job", started: true });
+    expect(stuck.failStale).toHaveBeenCalledWith(expect.any(Date), {
+      householdId: HOUSEHOLD,
+      kind: "book_pdf",
+    });
+    expect(stuck.enqueue).toHaveBeenCalled();
+
+    const running = fakeQueue(job());
+    expect(await startBookPdf(running, args)).toEqual({ jobId: JOB, started: false });
+    expect(running.failStale).toHaveBeenCalled();
   });
 });
 

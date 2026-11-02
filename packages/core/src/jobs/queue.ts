@@ -8,6 +8,9 @@ export type JobKind = (typeof JOB_KINDS)[number];
 
 export const JOB_LEASE_MS = 2 * 60 * 1000;
 export const JOB_MAX_ATTEMPTS = 3;
+/** A job with no write-back for this long is dead: fail it so it cannot block a new one. */
+export const JOB_STALE_MS = 3 * 60 * 1000;
+export const JOB_STALE_ERROR = "Timed out. Nothing progressed; try again.";
 
 export type ClaimedItem = {
   id: string;
@@ -20,7 +23,7 @@ export type ClaimedItem = {
   leaseUntil: Date;
 };
 
-export type QueueOptions = { leaseMs?: number; maxAttempts?: number };
+export type QueueOptions = { leaseMs?: number; maxAttempts?: number; staleMs?: number };
 
 // Raw sql params skip drizzle's column mapping, so timestamps go over as ISO text.
 const ts = (date: Date) => sql`${date.toISOString()}::timestamptz`;
@@ -44,11 +47,13 @@ const toItem = (row: any): ClaimedItem => ({
 export class JobQueue extends BaseService {
   private leaseMs: number;
   private maxAttempts: number;
+  private staleMs: number;
 
   constructor(db: any, options: QueueOptions = {}) {
     super(db);
     this.leaseMs = options.leaseMs ?? JOB_LEASE_MS;
     this.maxAttempts = options.maxAttempts ?? JOB_MAX_ATTEMPTS;
+    this.staleMs = options.staleMs ?? JOB_STALE_MS;
   }
 
   async enqueue(householdId: string, kind: JobKind, input: any, payloads: any[] = []) {
@@ -177,6 +182,57 @@ export class JobQueue extends BaseService {
     if (!row) return "lost" as const;
     await this.refresh([item.jobId], now);
     return "failed" as const;
+  }
+
+  /**
+   * Fails queued/running jobs that have not progressed for `staleMs`.
+   * A dead worker leaves the job `running` and `usage()` still counts it, so
+   * Make the PDF stays refused until something parks those rows.
+   */
+  async failStale(
+    now = new Date(),
+    filter: { householdId?: string; kind?: JobKind } = {}
+  ) {
+    const cutoff = new Date(now.getTime() - this.staleMs);
+    const householdClause = filter.householdId
+      ? sql`and household_id = ${filter.householdId}`
+      : sql``;
+    const kindClause = filter.kind ? sql`and kind = ${filter.kind}` : sql``;
+    const rows = await this.rows(sql`
+      with stale as (
+        select id from job
+        where status in ('queued', 'running')
+          and updated_at < ${ts(cutoff)}
+          ${householdClause}
+          ${kindClause}
+      ),
+      parked as (
+        update job_item set
+          status = 'failed',
+          error = coalesce(error, ${JOB_STALE_ERROR}),
+          attempts = greatest(attempts, ${this.maxAttempts}),
+          lease_until = null,
+          updated_at = ${ts(now)}
+        where job_id in (select id from stale)
+          and status in ('pending', 'running')
+        returning job_id
+      )
+      select job_id from parked
+    `);
+    const jobIds = [...new Set(rows.map((row) => row.job_id as string))];
+    await this.refresh(jobIds, now);
+    const leftover = await this.rows(sql`
+      update job set
+        status = 'failed',
+        completed_at = coalesce(completed_at, ${ts(now)}),
+        updated_at = ${ts(now)}
+      where status in ('queued', 'running')
+        and updated_at < ${ts(cutoff)}
+        ${householdClause}
+        ${kindClause}
+      returning id
+    `);
+    return new Set([...jobIds, ...leftover.map((row) => row.id as string)]).size;
   }
 
   /** Parks items whose last allowed lease expired (the worker died mid-item). */

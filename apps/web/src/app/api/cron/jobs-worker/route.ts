@@ -4,6 +4,9 @@ import { cronAuthorized } from "@/lib/cron-auth";
 import { jobHandlers } from "@/lib/job-handlers";
 import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
+/** One chunk must finish inside this window; Chromium launch + 40 pages needs room. */
+export const maxDuration = 180;
+
 /** Answers at once, runs one item after the response, then chains itself while work remains. */
 export async function POST(request: NextRequest) {
   if (!isBooksEnabled()) {

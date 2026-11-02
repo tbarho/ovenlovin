@@ -125,6 +125,26 @@ describe.skipIf(!url)("JobQueue on Postgres", () => {
     expect(item).toMatchObject({ status: "failed", error: "Timed out after 1 attempts" });
   });
 
+  it("fails a stuck job so a later enqueue is not blocked by concurrency", async () => {
+    const queue = new JobQueue(db, { staleMs: 1000 });
+    const t0 = new Date("2026-10-27T12:00:00.000Z");
+    await queue.enqueue(householdId, "book_pdf", {}, payloads(1));
+    await queue.enqueue(householdId, "book_pdf", {}, payloads(1));
+    await db.execute(
+      sql`update job set created_at = ${t0.toISOString()}::timestamptz, updated_at = ${t0.toISOString()}::timestamptz where household_id = ${householdId}`
+    );
+    expect(await queue.usage(householdId, "book_pdf", t0)).toMatchObject({ activeJobs: 2 });
+
+    const later = new Date(t0.getTime() + 5000);
+    expect(await queue.failStale(t0, { householdId, kind: "book_pdf" })).toBe(0);
+    expect(await queue.failStale(later, { householdId, kind: "book_pdf" })).toBe(2);
+    expect(await queue.usage(householdId, "book_pdf", later)).toMatchObject({ activeJobs: 0 });
+
+    const next = await queue.enqueue(householdId, "book_pdf", {}, payloads(1));
+    expect(await queue.usage(householdId, "book_pdf", later)).toMatchObject({ activeJobs: 1 });
+    expect(await queue.get(next)).toMatchObject({ status: "queued" });
+  });
+
   it("finds the live job for a file fingerprint so re-uploads resume", async () => {
     const queue = new JobQueue(db);
     const sha256 = "b".repeat(64);

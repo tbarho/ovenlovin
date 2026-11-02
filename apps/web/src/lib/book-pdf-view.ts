@@ -95,6 +95,8 @@ export async function startBookPdf(
   if (!book.pages.length) return { refused: "This book has no recipes yet." };
 
   const sha256 = bookFingerprint(book.id, mode, book.pages);
+  // Dead in-progress rows still count as active and still match this SHA.
+  await queue.failStale(new Date(), { householdId, kind: "book_pdf" });
   const existing = await queue.findBySha(householdId, "book_pdf", sha256);
   const found = existing ? await queue.get(existing) : null;
   if (found && (found.status !== "done" || (found.input as BookPdfInput).pdf)) {

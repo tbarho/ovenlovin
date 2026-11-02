@@ -77,7 +77,7 @@ export async function renderChunk(
   const context = await browser.newContext({ extraHTTPHeaders: headers });
   try {
     const page = await context.newPage();
-    const response = await page.goto(url, { waitUntil: "networkidle", timeout: 45_000 });
+    const response = await page.goto(url, { waitUntil: "load", timeout: 45_000 });
     if (!response?.ok()) throw new Error(`Print page answered ${response?.status() ?? "nothing"}`);
     await settle(page);
     const sha = await page.getAttribute(".print-book", "data-book-sha");

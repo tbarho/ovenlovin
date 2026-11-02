@@ -10,7 +10,7 @@
       "maxDuration": 60
     },
     "src/app/api/cron/jobs-worker/route.ts": {
-      "maxDuration": 60,
+      "maxDuration": 180,
       "memory": 2048
     }
   },
@@ -21,7 +21,7 @@
     },
     {
       "path": "/api/cron/jobs-sweep",
-      "schedule": "17 9 * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }

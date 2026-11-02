@@ -29,8 +29,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       origin: request.nextUrl.origin,
     });
     if (!started) throw new NotFoundError("Cookbook", id);
-    if ("refused" in started) throw new BadRequestError(started.refused);
-    if (started.started) await kickWorker(request.nextUrl.origin);
+    if ("refused" in started) {
+      await kickWorker(request.nextUrl.origin);
+      throw new BadRequestError(started.refused);
+    }
+    // Resume a live job and start a new one the same way: a lost chain needs
+    // another kick, otherwise the sheet polls "0 of N" until the daily sweep.
+    await kickWorker(request.nextUrl.origin);
 
     const job = await queue.get(started.jobId);
     return jsonResponse(pdfView(job, await queue.items(started.jobId)), 202);
