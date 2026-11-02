@@ -264,9 +264,13 @@ async function captureWidth(page: Page, width: number, urls: KitchenUrls) {
   await page.goto("/plans");
   await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
   await expect(page.getByRole("note")).toBeVisible();
-  await expect(page.getByTestId("meal-plan-week")).toBeVisible();
-  await expect(page.getByRole("heading", { name: /pesto pasta/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /beef chili/i }).first()).toBeVisible();
+  const week = page.getByTestId("meal-plan-week");
+  await expect(week).toBeVisible();
+  // Seeded on the current Monday week. Other specs must not save/delete that week.
+  await expect(week.getByRole("heading", { name: /pesto pasta/i })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(week.getByRole("heading", { name: /beef chili/i }).first()).toBeVisible();
   await expect(page.getByText("Recipe makes 6 · cooking for 5").first()).toBeVisible();
   await expect(
     page.getByRole("combobox", { name: /scale shopping and portions for/i })
