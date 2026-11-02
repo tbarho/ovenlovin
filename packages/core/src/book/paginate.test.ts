@@ -218,12 +218,14 @@ describe("fit", () => {
 
 describe("pageTypePx", () => {
   it("keeps desktop recipe body at Jony's 11.75px floor on a 1440 page", () => {
-    // UAT 1440×900: ~568×768 pages. Same ratio as fitBook at that window.
-    const type = pageTypePx(768);
-    expect(type.body).toBeGreaterThanOrEqual(11.75);
-    expect(type.title).toBeGreaterThan(type.body);
-    expect(type.index).toBeGreaterThan(type.body * 0.75);
-    expect(type.title).toBeGreaterThan(type.index);
+    // UAT ~568×768, and fitBook(1440, 780) height-caps around 764.
+    for (const height of [768, 764]) {
+      const type = pageTypePx(height);
+      expect(type.body).toBeGreaterThanOrEqual(11.75);
+      expect(type.title).toBeGreaterThan(type.body);
+      expect(type.index).toBeGreaterThan(type.body * 0.75);
+      expect(type.title).toBeGreaterThan(type.index);
+    }
   });
 });
 

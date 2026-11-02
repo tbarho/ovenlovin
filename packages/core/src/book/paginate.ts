@@ -4,9 +4,10 @@ import type { BookSettings } from "./settings";
 /**
  * Reader and print set `.book-page-in` to `pageHeight / PAGE_TYPE_DIVISOR`.
  * Recipe body is 0.72 (page body) × 1.2 (recipe blocks) × 0.85 (ingredients/steps).
- * 48 keeps that body at ≥ 11.75px on a 1440 desktop page (~768px tall, ~568px wide).
+ * 47 keeps that body at ≥ 11.75px on a 1440 desktop page (height-capped
+ * ~764px, or UAT's ~768px / ~568px-wide spread).
  */
-export const PAGE_TYPE_DIVISOR = 48;
+export const PAGE_TYPE_DIVISOR = 47;
 
 export const PAGE_TYPE = {
   divisor: PAGE_TYPE_DIVISOR,
@@ -35,13 +36,13 @@ export function pageTypePx(pageHeight: number) {
  * these numbers only need to be stable, not pixel exact. Recipe pages set
  * type 1.2x the page body (`.book-recipe-blocks` in globals.css), so their
  * line and character counts are the body counts divided by 1.2. Counts were
- * rematched when PAGE_TYPE_DIVISOR moved from 56 to 48 (scale 6/7, floored)
+ * rematched when PAGE_TYPE_DIVISOR moved from 56 to 47 (scale 47/56, floored)
  * so larger type does not clip.
  */
 export const BOOK_METRICS = {
-  bodyLines: 32,
-  fullChars: 55,
-  stepChars: 51,
+  bodyLines: 31,
+  fullChars: 54,
+  stepChars: 50,
   columnChars: 25,
   titleChars: 19,
   titleLineHeight: 2,
@@ -49,9 +50,9 @@ export const BOOK_METRICS = {
   contLines: 2,
   notesLines: 5,
   contentsLines: 30,
-  indexLines: 48,
+  indexLines: 47,
   indexChars: 15,
-  wordsChars: 360,
+  wordsChars: 352,
   notesPages: 2,
 };
 
