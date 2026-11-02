@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { PAGE_TYPE_DIVISOR } from "@ovenlovin/core/book";
+import { INDEX_PAGE_FULL_ENTRIES, PAGE_TYPE_DIVISOR } from "@ovenlovin/core/book";
 
 const shotRoot = path.resolve(__dirname, "../../../../e2e-artifacts/kitchen/book-index-fit");
 
@@ -95,8 +95,11 @@ test.describe("book index fits the page", () => {
 
         const pages = [...seen.values()];
         expect(pages.length).toBeGreaterThan(0);
-        // Dense enough to have filled a page, or the check proves nothing.
-        expect(Math.max(...pages.map((p) => p.entries))).toBeGreaterThanOrEqual(40);
+        // Dense enough to have filled a page under BOOK_METRICS, or clip checks prove nothing.
+        // Names wrap, so a packed page has fewer <li>s than indexLines (47 → 31).
+        expect(Math.max(...pages.map((p) => p.entries))).toBeGreaterThanOrEqual(
+          INDEX_PAGE_FULL_ENTRIES
+        );
         expect(pages.flatMap((p) => p.clipped)).toEqual([]);
       }
     } finally {

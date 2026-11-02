@@ -56,6 +56,12 @@ export const BOOK_METRICS = {
   notesPages: 2,
 };
 
+/**
+ * A packed index page has fewer <li>s than `indexLines` because names wrap at
+ * `indexChars`. Two-thirds of the line budget is still a full page.
+ */
+export const INDEX_PAGE_FULL_ENTRIES = Math.floor((BOOK_METRICS.indexLines * 2) / 3);
+
 export function lineCount(text: any, width: number) {
   const words = String(text ?? "")
     .split(/\s+/)
