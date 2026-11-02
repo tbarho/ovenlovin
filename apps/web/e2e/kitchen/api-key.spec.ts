@@ -1,4 +1,8 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { addDays, startOfWeekMonday } from "../../src/lib/week-plan-view";
+
+/** Never the seeded "This week" Monday, or save_meal_plan + delete wipes pesto. */
+const isolatedWeek = addDays(startOfWeekMonday(), 21);
 
 type Tool = {
   name: string;
@@ -192,12 +196,12 @@ test.describe("REST + MCP with a real API key", () => {
       const saved = await mcp(request, key, 12, "tools/call", {
         name: "save_meal_plan",
         arguments: {
-          weekStart: "2026-11-02",
+          weekStart: isolatedWeek,
           status: "draft",
           checkReportJson: { status: "complete" },
           entries: [
             {
-              date: "2026-11-02",
+              date: isolatedWeek,
               meal: "dinner",
               recipeId,
               servings: 4,
