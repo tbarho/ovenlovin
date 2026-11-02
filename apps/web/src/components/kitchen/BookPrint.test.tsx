@@ -28,6 +28,16 @@ afterEach(() => {
 });
 
 describe("BookPrint", () => {
+  it("in the demo, Make the PDF is off up front and says why", () => {
+    render(<BookPrint bookId={BOOK} blocked="Print PDFs are turned off in the public demo." />);
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    const make = screen.getByRole("button", { name: /make the pdf/i });
+    expect(make).toBeDisabled();
+    expect(make).toHaveAccessibleDescription("Print PDFs are turned off in the public demo.");
+    fireEvent.click(make);
+    expect(api).not.toHaveBeenCalled();
+  });
+
   it("starts the chosen mode, shows progress, then the download", async () => {
     vi.useFakeTimers();
     vi.mocked(api)

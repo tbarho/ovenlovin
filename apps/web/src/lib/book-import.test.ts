@@ -103,6 +103,24 @@ describe("isBookBlobUrl", () => {
     expect(isBookBlobUrl(blob(`/recipes/${household}/x.pdf`), household)).toBe(false);
     expect(isBookBlobUrl("not a url", household)).toBe(false);
   });
+
+  it("accepts the private books store and still the public one", () => {
+    const env = {
+      BLOB_STORE_HOST: store,
+      BOOKS_BLOB_PRIVATE_READ_WRITE_TOKEN: "vercel_blob_rw_PrIv9_secretpart",
+    };
+    const secret = `https://priv9.private.blob.vercel-storage.com/books/${household}/x-Ab3.pdf`;
+    expect(isBookBlobUrl(secret, household, env)).toBe(true);
+    expect(isBookBlobUrl(blob(`/books/${household}/x-Ab3.pdf`), household, env)).toBe(true);
+    expect(
+      isBookBlobUrl(
+        `https://other.private.blob.vercel-storage.com/books/${household}/x.pdf`,
+        household,
+        env
+      )
+    ).toBe(false);
+    expect(isBookBlobUrl(secret, household, { BLOB_STORE_HOST: store })).toBe(false);
+  });
 });
 
 describe("sha256Hex", () => {

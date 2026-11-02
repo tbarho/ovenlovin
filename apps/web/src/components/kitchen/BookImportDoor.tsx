@@ -48,7 +48,11 @@ function BookProgress({ step }: { step: BookStep }) {
   );
 }
 
-export function BookImportDoor({ deps }: { deps?: Parameters<typeof addBook>[2] } = {}) {
+/** `blocked` (the public demo) disables the door up front; the sentence lives at `#books-blocked`. */
+export function BookImportDoor({
+  deps,
+  blocked = null,
+}: { deps?: Parameters<typeof addBook>[2]; blocked?: string | null } = {}) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<BookStep | null>(null);
   const [result, setResult] = useState<BookImportResult | null>(null);
@@ -70,7 +74,13 @@ export function BookImportDoor({ deps }: { deps?: Parameters<typeof addBook>[2] 
   return (
     <>
       <p>
-        <button className="btn" type="button" onClick={() => setOpen(true)}>
+        <button
+          className="btn"
+          type="button"
+          disabled={Boolean(blocked)}
+          aria-describedby={blocked ? "books-blocked" : undefined}
+          onClick={() => setOpen(true)}
+        >
           Add a whole cookbook
         </button>
       </p>

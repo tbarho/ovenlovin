@@ -4,14 +4,16 @@ import type { BookSettings } from "./settings";
 /**
  * Fixed type metrics for the house book at US Letter. Reader, PDF, contents
  * and index all read page numbers from the one list `paginate` returns, so
- * these numbers only need to be stable, not pixel exact.
+ * these numbers only need to be stable, not pixel exact. Recipe pages set
+ * type 1.2x the page body (`.book-recipe-blocks` in globals.css), so their
+ * line and character counts are the body counts divided by 1.2.
  */
 export const BOOK_METRICS = {
-  bodyLines: 46,
-  fullChars: 78,
-  stepChars: 72,
-  columnChars: 36,
-  titleChars: 28,
+  bodyLines: 38,
+  fullChars: 65,
+  stepChars: 60,
+  columnChars: 30,
+  titleChars: 23,
   titleLineHeight: 2,
   metaLines: 2,
   contLines: 2,

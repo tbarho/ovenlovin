@@ -22,7 +22,7 @@ Cookbooks are many-to-many folders over recipes. One recipe can appear in severa
 
 - `list_cookbooks` - household cookbooks with recipe counts and preview images
 - `get_cookbook` - cookbook plus its recipes
-- `manage_cookbook` - `create`, `rename`, `delete`, `add_recipe`, `remove_recipe`
+- `manage_cookbook` - `create`, `rename`, `delete`, `add_recipe`, `remove_recipe`, `update_book`. `update_book` makes the printed book yours: `bookSettings` (`cover` `{kind:"type"}` or `{kind:"recipe", recipeId}`, `title`, `subtitle`, `dedication`, `includeCards`; replaces the whole object, `null` resets) and/or `recipeOrder` (every recipe id in the cookbook once). Same fields as `PATCH /api/v1/cookbooks/{id}`; the reader and PDF follow
 
 ## Household and plans
 

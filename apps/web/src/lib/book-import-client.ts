@@ -62,7 +62,8 @@ export async function addBook(
 
   onStep({ phase: "uploading", loaded: 0, total: file.size });
   const blob = await upload(preflight.pathname, file, {
-    access: "public",
+    // The server says which store the upload token is for.
+    access: preflight.access === "private" ? "private" : "public",
     contentType: "application/pdf",
     handleUploadUrl: "/api/v1/books/upload",
     multipart: file.size > 8 * MB,

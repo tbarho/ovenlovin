@@ -50,9 +50,16 @@ async function lowResPhotos(page: any, minDpi: number): Promise<LowRes[]> {
   return page.evaluate((min: number) => {
     return [...document.querySelectorAll<HTMLElement>(".print-sheet")].flatMap((sheet) =>
       [...sheet.querySelectorAll("img")].reduce((memo: any[], img) => {
-        const box = img.getBoundingClientRect();
-        if (!img.naturalWidth || !box.width) return memo;
-        const scale = Math.max(box.width / img.naturalWidth, box.height / img.naturalHeight);
+        const rect = img.getBoundingClientRect();
+        const style = getComputedStyle(img);
+        const px = (value: string) => parseFloat(value) || 0;
+        const box = {
+          width: rect.width - px(style.paddingLeft) - px(style.paddingRight),
+          height: rect.height - px(style.paddingTop) - px(style.paddingBottom),
+        };
+        if (!img.naturalWidth || box.width <= 0) return memo;
+        // Photos are aspect-fit (object-fit: contain) inside their padded mat: the smaller scale paints.
+        const scale = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
         const dpi = Math.round(96 / scale);
         if (dpi >= min) return memo;
         return [...memo, { page: Number(sheet.dataset.page), dpi }];

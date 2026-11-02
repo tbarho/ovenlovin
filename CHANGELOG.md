@@ -8,15 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Each `## YYYY-MM-DD - Title` block is one ship day (UTC merge date on `main`). `apps/web` renders this file at `/changelog`, so write it for the people and agents who cook with OvenLovin: only changes they would notice and care about.
 
 ## [Unreleased]
-- Book page numbers sit at the bottom on phone and desktop; demo share links stay off like print PDFs; disabled Share button now looks dimmed.
+
+### Make the book yours
+
+Tap Make it yours in the book reader to set the cover (your first photo, type only, or any recipe photo in the book), the title and subtitle, a dedication like "For Mom, Christmas 2026", whether original recipe cards are included, and the order of the recipes. The book changes as soon as you save, and the PDF prints the same pages. Agents can do the same over REST and MCP.
+
+### Your photos, whole
+
+Dish photos in the book and the PDF are never cropped anymore. Each one sits whole on a paper mat, in portrait, landscape, or square, with the recipe name below it.
+
+### A book you can read on a desktop
+
+On a laptop or desktop the book opens larger, and recipe pages use bigger type. A short recipe no longer stops halfway down the page: a ruled Notes box fills the rest, ready for your own notes.
+
+### Cook this
+
+Every recipe page in the book has Cook this, which opens the recipe in your kitchen. In a shared book it goes to the demo instead.
+
+### Scanned cookbook PDFs
+
+A cookbook PDF made from scans now gets its contents and index pages read, so you can pick recipes from it like a text PDF. If we still can't find a contents page, we say so and offer to photograph it instead.
 
 ### Print your cookbook
 
-In the book reader, tap Print and choose where it's headed. At home gets you a US Letter PDF of exactly the pages you paged through. At a print shop gets the same pages with bleed, crop marks, and embedded fonts, plus a heads-up if a photo will print soft. Big books are made in the background with a progress bar, so you can close the sheet and come back to the download.
+In the book reader, tap Print and choose where it's headed. At home gets you a US Letter PDF of exactly the pages you paged through. At a print shop gets the same pages with bleed, crop marks, and embedded fonts, plus a heads-up if a photo will print soft. Big books are made in the background with a progress bar, so you can close the sheet and come back to the download. In the public demo, Make the PDF is off from the start and says why, instead of failing after you tap it.
 
 ### Share a cookbook with a link
 
-Tap Share on a cookbook to make a private link anyone can open to read it as a book, no account needed. They can page through it but not edit it or see the rest of your kitchen. Tap Stop sharing and the link stops working. A cookbook with recipes from a published cookbook stays in your kitchen and can't be shared, and the page tells you why.
+Tap Share on a cookbook to make a private link anyone can open to read it as a book, no account needed. They can page through it but not edit it or see the rest of your kitchen. Tap Stop sharing and the link stops working. A cookbook with recipes from a published cookbook stays in your kitchen and can't be shared, and the page tells you why. Share links stay off in the public demo, and the Share button looks dimmed there.
 
 ### Add a paper cookbook from its contents pages
 
@@ -24,7 +43,7 @@ For a book you can hold, photograph the contents or index pages. You get the sam
 
 ### Read a cookbook as a book
 
-Open a cookbook and tap Open book to page through it like the real thing: cover, contents, photos with the recipe name under them, and the index at the back. Turn pages by the edge arrows, the arrow keys, or a swipe, and on a phone it reads one page at a time.
+Open a cookbook and tap Open book to page through it like the real thing: cover, contents, photos with the recipe name under them, and the index at the back. Turn pages by the edge arrows, the arrow keys, or a swipe, and on a phone it reads one page at a time. Page numbers sit at the bottom of the page on phone and desktop.
 
 ### Pick recipes from a cookbook's contents page
 

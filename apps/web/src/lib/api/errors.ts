@@ -1,3 +1,4 @@
+import { BookSettingsError } from "@ovenlovin/core/book";
 import {
   HouseholdAccessError,
   IMPORT_AI_UNAVAILABLE_CODE,
@@ -242,6 +243,10 @@ export function handleApiError(error: unknown, instance?: string): NextResponse 
 
   if (error instanceof InvalidImageUrlError) {
     return new BadRequestError(error.message, { code: error.code }).toResponse(instance);
+  }
+
+  if (error instanceof BookSettingsError) {
+    return new BadRequestError(error.message).toResponse(instance);
   }
 
   // Demo HTML routes redirect to /api/demo/enter. If that throw leaks into a

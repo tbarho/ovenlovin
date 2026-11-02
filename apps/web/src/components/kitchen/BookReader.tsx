@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReaderBook } from "@/lib/book-reader";
 import { BookPage } from "./BookPage";
 import { BookPrint } from "./BookPrint";
+import { BookSettingsSheet } from "./BookSettingsSheet";
 
 const FlipBook = dynamic(() => import("react-pageflip"), { ssr: false });
 
@@ -23,8 +24,8 @@ export type BookSize = { w: number; h: number; single: boolean };
 export function fitBook(stageW: number, stageH: number): BookSize | null {
   if (stageW < 200 || stageH < 260) return null;
   const single = stageW <= SINGLE_MAX;
-  const maxH = Math.min(stageH - 16, 760);
-  let w = single ? Math.min(stageW - 16, 400) : Math.min((stageW - 32) / 2, 420);
+  const maxH = Math.min(stageH - 16, 820);
+  let w = single ? Math.min(stageW - 16, 400) : Math.min((stageW - 32) / 2, 600);
   let h = w * PAGE_RATIO;
   if (h > maxH) {
     h = maxH;
@@ -42,7 +43,16 @@ export function spreadOf(page: number, total: number, single: boolean): number[]
   return [page, page + 1];
 }
 
-function BookReaderHead({ book, shared }: { book: ReaderBook; shared: boolean }) {
+function BookReaderHead({
+  book,
+  shared,
+  printBlocked,
+}: {
+  book: ReaderBook;
+  shared: boolean;
+  printBlocked: string | null;
+}) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <div className="book-reader-head">
       {shared ? (
@@ -52,13 +62,46 @@ function BookReaderHead({ book, shared }: { book: ReaderBook; shared: boolean })
           ← {book.title}
         </Link>
       )}
-      {shared ? null : <BookPrint bookId={book.id} />}
+      {shared ? null : (
+        <>
+          <button
+            className="btn book-settings-open"
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+          >
+            Make it yours
+          </button>
+          <BookSettingsSheet
+            bookId={book.id}
+            name={book.name ?? book.title}
+            settings={book.settings ?? {}}
+            recipes={book.recipes ?? []}
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+          />
+          <BookPrint bookId={book.id} blocked={printBlocked} />
+        </>
+      )}
     </div>
   );
 }
 
-/** `shared` is the signed-out reader: no links back into the kitchen. */
-export function BookReader({ book, shared = false }: { book: ReaderBook; shared?: boolean }) {
+/**
+ * `shared` is the signed-out reader: no links back into the kitchen.
+ * `printBlocked` is the sentence shown when PDFs are off (the public demo).
+ * `cookHref` is where "Cook this" goes in a shared book (demo or sign-up).
+ */
+export function BookReader({
+  book,
+  shared = false,
+  printBlocked = null,
+  cookHref = null,
+}: {
+  book: ReaderBook;
+  shared?: boolean;
+  printBlocked?: string | null;
+  cookHref?: string | null;
+}) {
   const stageRef = useRef<HTMLDivElement>(null);
   const flipRef = useRef<any>(null);
   const [size, setSize] = useState<BookSize | null>(null);
@@ -104,7 +147,7 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
   if (total === 0) {
     return (
       <div className="book-reader">
-        <BookReaderHead book={book} shared={shared} />
+        <BookReaderHead book={book} shared={shared} printBlocked={printBlocked} />
         <div className="empty-card book-reader-empty">
           <p>This book has no recipes yet.</p>
           {shared ? null : (
@@ -149,14 +192,14 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
 
   return (
     <div className="book-reader">
-      <BookReaderHead book={book} shared={shared} />
+      <BookReaderHead book={book} shared={shared} printBlocked={printBlocked} />
 
       <div className="book-reader-stage" ref={stageRef}>
         {size ? (
           <>
             {/* react-pageflip's typings mark every setting required; runtime has defaults. */}
             <FlipBook
-              key={`${size.single}-${size.w}x${size.h}`}
+              key={`${size.single}-${size.w}x${size.h}-${book.version ?? ""}`}
               {...({
                 ref: flipRef,
                 className: size.single ? "book-flip book-flip-single" : "book-flip",
@@ -167,7 +210,7 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
                 autoSize: false,
                 showCover: true,
                 usePortrait: true,
-                startPage: page,
+                startPage: Math.min(page, total - 1),
                 maxShadowOpacity: 0.5,
                 flippingTime: 650,
                 startZIndex: 1,
@@ -175,7 +218,13 @@ export function BookReader({ book, shared = false }: { book: ReaderBook; shared?
               } as any)}
             >
               {book.pages.map((pageData: any, i: number) => (
-                <BookPage key={i} page={pageData} size={size} bookId={shared ? null : book.id} />
+                <BookPage
+                  key={i}
+                  page={pageData}
+                  size={size}
+                  bookId={shared ? null : book.id}
+                  cookHref={cookHref}
+                />
               ))}
             </FlipBook>
             {size.single ? null : arrows}

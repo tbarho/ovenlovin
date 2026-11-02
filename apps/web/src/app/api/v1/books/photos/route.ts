@@ -8,7 +8,7 @@ import { getRequestContext, requireWritableHousehold } from "@/lib/api/middlewar
 import { readJsonBody } from "@/lib/api/read-json";
 import { createdResponse, jsonResponse } from "@/lib/api/response";
 import { createShotBook, mapPhotoContents } from "@/lib/book-shot-view";
-import { isDemoModeEnabled } from "@/lib/demo/mode";
+import { DEMO_BOOKS_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
 import { isBooksEnabled, jobQueue } from "@/lib/jobs";
 
 export const runtime = "nodejs";
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   try {
     if (!isBooksEnabled()) throw new NotFoundError("Route");
     if (isDemoModeEnabled()) {
-      throw new ForbiddenError("Book uploads are turned off in the public demo.");
+      throw new ForbiddenError(DEMO_BOOKS_OFF);
     }
     if (!isAiGatewayConfigured(process.env)) {
       throw new BadRequestError(AI_GATEWAY_MISSING_MESSAGE);

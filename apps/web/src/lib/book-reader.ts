@@ -1,8 +1,10 @@
-import { paginate, readBookSettings } from "@ovenlovin/core/book";
+import { createHash } from "node:crypto";
+import { paginate, readBookSettings, type BookSettings } from "@ovenlovin/core/book";
 import { CookbookService, RecipeService } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
 import { recipeIngredientGroup } from "@ovenlovin/db/schema";
 import { and, inArray, isNull } from "drizzle-orm";
+import { demoBookImages } from "@/lib/demo/book";
 
 /** One page of the laid-out book, exactly as `paginate` returns it. */
 export type ReaderPage = Record<string, any>;
@@ -12,6 +14,12 @@ export type ReaderBook = {
   title: string;
   subtitle: string | null;
   pages: ReaderPage[];
+  /** Changes whenever the laid-out pages change, so the flipbook rebuilds. */
+  version?: string;
+  /** For "Make it yours": the cookbook name, its stored settings, and its recipes in book order. */
+  name?: string;
+  settings?: BookSettings;
+  recipes?: { id: string; title: string; image: string | null }[];
 };
 
 export type ReaderDeps = {
@@ -54,7 +62,7 @@ export function readerRecipe(details: any, groupNames: Record<string, string> = 
     prepTimeMinutes: details.prepTimeMinutes ?? null,
     cookTimeMinutes: details.cookTimeMinutes ?? null,
     totalTimeMinutes: details.totalTimeMinutes ?? null,
-    images: details.images ?? [],
+    images: demoBookImages(details.images ?? []),
     isFamilyRecipe: details.isFamilyRecipe ?? false,
     sourcePhotos: details.sourcePhotos ?? [],
     ingredients: (details.ingredients ?? []).map((item: any) => ({
@@ -86,18 +94,21 @@ export async function loadReaderBook(
     groupNames(ids),
   ]);
   const settings = readBookSettings(cookbook.bookSettings);
-  const pages = paginate(
-    {
-      name: cookbook.name,
-      recipes: details.filter(Boolean).map((item) => readerRecipe(item, names)),
-    },
-    settings
-  );
+  const inBook = details.filter(Boolean).map((item) => readerRecipe(item, names));
+  const pages = paginate({ name: cookbook.name, recipes: inBook }, settings);
 
   return {
     id: cookbook.id,
     title: settings.title?.trim() || cookbook.name,
     subtitle: settings.subtitle?.trim() || null,
     pages,
+    version: createHash("sha1").update(JSON.stringify(pages)).digest("hex").slice(0, 12),
+    name: cookbook.name,
+    settings,
+    recipes: inBook.map((recipe) => ({
+      id: recipe.id,
+      title: recipe.title,
+      image: recipe.images[0] ?? null,
+    })),
   };
 }

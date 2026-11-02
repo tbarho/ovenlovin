@@ -5,15 +5,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { groupCandidates, searchCandidates } from "@ovenlovin/core/contents-map";
 import { api } from "@/lib/browser-api";
 import type { BookContentsView } from "@/lib/book-import-view";
+import { BookShotDoor } from "./BookShotDoor";
 import { BookTriage } from "./BookTriage";
 
 const POLL_MS = 3000;
 
+/** Scans the contents read left unread. A picked recipe on one is read from its page image. */
 export function scannedNote(count: number) {
   if (count === 0) return null;
-  if (count === 1) return "1 page is a scan with no text. We'll read it when we pull the recipes.";
-  return `${count} pages are scans with no text. We'll read them when we pull the recipes.`;
+  if (count === 1) return "1 page is a scan. A recipe you pick on it is read from the page image.";
+  return `${count} pages are scans. Recipes you pick on them are read from the page images.`;
 }
+
+/** Nothing to pick: say so plainly and lead into the paper path. */
+export const NO_CONTENTS_LINE = "We couldn't find a contents page. Photograph it instead.";
 
 export function BookContents({ initial }: { initial: BookContentsView }) {
   const [view, setView] = useState(initial);
@@ -111,9 +116,12 @@ export function BookContents({ initial }: { initial: BookContentsView }) {
       ) : null}
 
       {view.map && candidates.length === 0 ? (
-        <p className="muted" role="status">
-          We could not find any recipes in this book.
-        </p>
+        <div className="sheet-stack">
+          <p className="muted" role="status">
+            {NO_CONTENTS_LINE}
+          </p>
+          <BookShotDoor label="Photograph the contents" defaultName={view.name} />
+        </div>
       ) : null}
 
       {triaging ? <BookTriage view={view} onChange={setView} /> : null}

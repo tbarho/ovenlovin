@@ -31,8 +31,9 @@ export function megabytes(bytes: number | null) {
 /**
  * Print the book: pick at home or at a print shop, then the PDF is made on
  * the job worker in chunks. The sheet polls progress and hands back the file.
+ * `blocked` (the public demo) disables Make the PDF up front and says why.
  */
-export function BookPrint({ bookId }: { bookId: string }) {
+export function BookPrint({ bookId, blocked = null }: { bookId: string; blocked?: string | null }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"home" | "shop">("home");
   const [view, setView] = useState<any>(null);
@@ -102,9 +103,20 @@ export function BookPrint({ bookId }: { bookId: string }) {
                 </button>
               ))}
             </div>
-            <button className="btn primary" type="button" disabled={busy} onClick={make}>
+            <button
+              className="btn primary"
+              type="button"
+              disabled={busy || Boolean(blocked)}
+              aria-describedby={blocked ? "print-blocked" : undefined}
+              onClick={make}
+            >
               Make the PDF
             </button>
+            {blocked ? (
+              <p className="muted" id="print-blocked">
+                {blocked}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

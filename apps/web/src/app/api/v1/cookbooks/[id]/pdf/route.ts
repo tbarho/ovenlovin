@@ -6,7 +6,7 @@ import { readJsonBody } from "@/lib/api/read-json";
 import { jsonResponse } from "@/lib/api/response";
 import { pdfView, startBookPdf } from "@/lib/book-pdf-view";
 import { printCookbookId } from "@/lib/book-print";
-import { isDemoModeEnabled } from "@/lib/demo/mode";
+import { DEMO_PDF_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
 import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
 
 const body = z.object({ mode: z.enum(["home", "shop"]) });
@@ -15,8 +15,7 @@ const body = z.object({ mode: z.enum(["home", "shop"]) });
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!isBooksEnabled()) throw new NotFoundError("Route");
-    if (isDemoModeEnabled())
-      throw new ForbiddenError("Print PDFs are turned off in the public demo.");
+    if (isDemoModeEnabled()) throw new ForbiddenError(DEMO_PDF_OFF);
     const context = await getRequestContext(request);
     const householdId = requireHouseholdId(context);
     const id = printCookbookId((await params).id);

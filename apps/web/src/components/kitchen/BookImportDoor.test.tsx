@@ -35,6 +35,18 @@ describe("BookImportDoor", () => {
     expect(screen.getByRole("button", { name: "Add a whole cookbook" })).toBeVisible();
   });
 
+  it("in the demo, both book doors are off up front and say why", async () => {
+    const sentence = "Book uploads are turned off in the public demo.";
+    render(<ImportRecipeForm booksEnabled booksBlocked={sentence} />);
+    for (const name of ["Add a whole cookbook", "Add a paper cookbook"]) {
+      const door = screen.getByRole("button", { name });
+      expect(door).toBeDisabled();
+      expect(door).toHaveAccessibleDescription(sentence);
+      await userEvent.click(door);
+    }
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("uploads straight to Blob with byte progress, then creates the job", async () => {
     let progress: (event: { loaded: number; total: number }) => void = () => {};
     let finish: (blob: { url: string }) => void = () => {};
