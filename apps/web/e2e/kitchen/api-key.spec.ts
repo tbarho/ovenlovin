@@ -3,6 +3,8 @@ import { addDays, startOfWeekMonday } from "../../src/lib/week-plan-view";
 
 /** Never the seeded "This week" Monday, or save_meal_plan + delete wipes pesto. */
 const isolatedWeek = addDays(startOfWeekMonday(), 21);
+const restWeek = addDays(isolatedWeek, 7);
+const restTuesday = addDays(restWeek, 1);
 
 type Tool = {
   name: string;
@@ -287,7 +289,7 @@ test.describe("REST + MCP with a real API key", () => {
 
     const rejected = await request.post("/api/v1/meal-plans", {
       headers,
-      data: { weekStart: "2026-11-09", name: "should not be silently dropped" },
+      data: { weekStart: restWeek, name: "should not be silently dropped" },
     });
     expect(rejected.status(), await rejected.text()).toBe(400);
     expect(rejected.headers()["content-type"] ?? "").toMatch(/problem\+json|json/);
@@ -295,11 +297,11 @@ test.describe("REST + MCP with a real API key", () => {
     const created = await request.post("/api/v1/meal-plans", {
       headers,
       data: {
-        weekStart: "2026-11-09",
+        weekStart: restWeek,
         status: "draft",
         entries: [
           {
-            date: "2026-11-09",
+            date: restWeek,
             meal: "dinner",
             recipeId,
             servings: 4,
@@ -339,7 +341,7 @@ test.describe("REST + MCP with a real API key", () => {
           status: "approved",
           entries: [
             {
-              date: "2026-11-10",
+              date: restTuesday,
               meal: "lunch",
               recipeId,
               servings: 2,
@@ -368,7 +370,7 @@ test.describe("REST + MCP with a real API key", () => {
           entriesMode: "replace",
           entries: [
             {
-              date: "2026-11-10",
+              date: restTuesday,
               meal: "lunch",
               recipeId,
               servings: 2,
@@ -383,7 +385,7 @@ test.describe("REST + MCP with a real API key", () => {
         previousEntries?: unknown[];
       };
       expect(patchedBody.entries).toHaveLength(1);
-      expect(patchedBody.entries?.[0]?.date).toBe("2026-11-10");
+      expect(patchedBody.entries?.[0]?.date).toBe(restTuesday);
       expect(patchedBody.entries?.[0]?.mealSlot).toBe("lunch");
       expect(patchedBody.previousEntries?.length).toBe(2);
     } finally {
