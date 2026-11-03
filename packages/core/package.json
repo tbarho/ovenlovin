@@ -18,7 +18,8 @@
     "./people-order": "./src/services/people-order.ts",
     "./jobs": "./src/jobs/index.ts",
     "./contents-map": "./src/jobs/contents-map.ts",
-    "./book": "./src/book/index.ts"
+    "./book": "./src/book/index.ts",
+    "./recipe-events": "./src/services/recipe-events.ts"
   },
   "scripts": {
     "test": "vitest run",

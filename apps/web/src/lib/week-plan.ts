@@ -23,6 +23,7 @@ import {
 } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
 import { getDatabase } from "@ovenlovin/db";
+import { warmIngredientMatches } from "@/lib/ingredient-match-store";
 import { whoCanEat, type CheckableIngredient, type WhoCanEatResult } from "@/lib/who-can-eat";
 import {
   formatWeekRange,
@@ -380,6 +381,13 @@ async function recipePicksForCatalog(
       storeIngredients(ingredientsByRecipe, item.id, grouped.get(item.id) ?? []);
     }
   }
+
+  await warmIngredientMatches(
+    [...ingredientsByRecipe].map(([recipeId, rows]) => ({
+      recipeId,
+      lines: rows.map((row) => row.rawText),
+    }))
+  );
 
   return catalog.map((item) => {
     const rows = ingredientsByRecipe.get(item.id) ?? [];

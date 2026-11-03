@@ -1,5 +1,6 @@
 import { PlanService, type Person, type PersonRule } from "@ovenlovin/core";
 import { getDatabase } from "@ovenlovin/db";
+import { warmIngredientMatches } from "@/lib/ingredient-match-store";
 import {
   ingredientsForRecipeCheck,
   recipeSafetySummary,
@@ -13,6 +14,12 @@ export async function loadRecipeSafetyById(
 ): Promise<Record<string, RecipeSafetySummary>> {
   const unique = [...new Set(recipeIds.filter(Boolean))];
   const grouped = await new PlanService(getDatabase()).getRecipeIngredientsForRecipes(unique);
+  await warmIngredientMatches(
+    unique.map((recipeId) => ({
+      recipeId,
+      lines: (grouped.get(recipeId) ?? []).map((row) => row.rawText),
+    }))
+  );
   const map: Record<string, RecipeSafetySummary> = {};
   for (const id of unique) {
     map[id] = recipeSafetySummary({
