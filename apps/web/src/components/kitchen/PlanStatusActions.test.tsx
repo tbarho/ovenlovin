@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
@@ -13,14 +13,46 @@ describe("PlanStatusActions", () => {
   it("marks a draft plan final", async () => {
     const user = userEvent.setup();
     render(<PlanStatusActions planId="plan-1" status="draft" />);
-    await user.click(screen.getByRole("button", { name: "Mark as final" }));
+    const mark = screen.getByRole("button", { name: "Mark as final" });
+    expect(mark.tagName).toBe("BUTTON");
+    expect(mark).toHaveAttribute("data-slot", "button");
+    expect(mark).toHaveAttribute("data-variant", "secondary");
+    expect(mark).toHaveAttribute("type", "button");
+    expect(mark).not.toHaveAttribute("href");
+    expect(mark).toBeEnabled();
+    await user.click(mark);
     expect(api).toHaveBeenCalledWith("/api/v1/meal-plans/plan-1", {
       method: "PATCH",
       body: JSON.stringify({ status: "approved" }),
     });
     expect(screen.queryByRole("button", { name: "Mark as final" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reopen as draft" })).toBeEnabled();
+    const reopen = screen.getByRole("button", { name: "Reopen as draft" });
+    expect(reopen).toHaveAttribute("data-variant", "secondary");
+    expect(reopen).toBeEnabled();
     expect(screen.getByRole("status")).toHaveTextContent("Plan marked as final.");
+  });
+
+  it("disables the mark button while the status save is pending", async () => {
+    const user = userEvent.setup();
+    let resolveMark: (value: { id: string; status: string }) => void = () => {};
+    vi.mocked(api).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveMark = resolve;
+        })
+    );
+    render(<PlanStatusActions planId="plan-1" status="draft" />);
+    await user.click(screen.getByRole("button", { name: "Mark as final" }));
+    const saving = screen.getByRole("button", { name: "Saving…" });
+    expect(saving).toBeDisabled();
+    expect(saving).toHaveAttribute("data-variant", "secondary");
+    expect(saving).not.toHaveAttribute("aria-busy");
+    expect(api).toHaveBeenCalledTimes(1);
+
+    resolveMark({ id: "plan-1", status: "approved" });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Reopen as draft" })).toBeEnabled();
+    });
   });
 
   it("asks before marking a plan final with an anaphylaxis-risk dinner and pending recheck", async () => {

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { planFinalConfirmCopy, type PlanBlockNight } from "@/lib/plan-final";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -58,9 +59,9 @@ export function PlanStatusActions({
 
   return (
     <>
-      <button className="btn" type="button" disabled={pending} onClick={onMarkClick}>
+      <Button type="button" variant="secondary" disabled={pending} onClick={onMarkClick}>
         {pending ? "Saving…" : final ? "Reopen as draft" : "Mark as final"}
-      </button>
+      </Button>
       {error ? <p className="muted">{error}</p> : null}
       <ConfirmDialog
         open={confirmOpen}
