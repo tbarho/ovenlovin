@@ -480,6 +480,74 @@ describe("MealPlanWeek", () => {
     });
   });
 
+  it("uses compact secondary Buttons for clear, no-cook, and close", async () => {
+    const user = userEvent.setup();
+    const noCook: WeekMeal = {
+      ...pesto,
+      entryId: "entry-off",
+      date: "2026-10-13",
+      recipeId: null,
+      title: "No-cook night",
+      href: null,
+      image: null,
+      isNoCook: true,
+      findings: [],
+    };
+    render(
+      <MealPlanWeek
+        days={groupMealsByDate("2026-10-12", [pesto, noCook])}
+        weekStart="2026-10-12"
+        recipes={recipes}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit Monday dinner" }));
+    const monday = screen.getByTestId("plan-editor-2026-10-12");
+    for (const name of ["Clear night", "No-cook night", "Close"]) {
+      const button = within(monday).getByRole("button", { name });
+      expect(button.tagName).toBe("BUTTON");
+      expect(button).toHaveAttribute("type", "button");
+      expect(button).toHaveAttribute("data-slot", "button");
+      expect(button).toHaveAttribute("data-variant", "secondary");
+      expect(button).toHaveAttribute("data-size", "sm");
+      expect(button).toHaveClass("ds-button", "ds-button--secondary", "ds-button--sm", "hit44-y");
+      expect(button).not.toHaveClass("btn");
+      expect(button).not.toHaveClass("compact");
+      expect(button).not.toHaveAttribute("href");
+    }
+    expect(within(monday).getByRole("button", { name: "No-cook night" })).toBeEnabled();
+
+    const pick = within(monday).getByRole("button", { name: /veggie tacos/i });
+    expect(pick).toHaveClass("week-pick");
+    expect(pick).not.toHaveAttribute("data-slot");
+
+    const unsafe = within(monday).getByRole("button", { name: /not safe for everyone/i });
+    expect(unsafe).toHaveClass("week-unsafe-toggle");
+    expect(unsafe).not.toHaveAttribute("data-slot");
+
+    const day = screen.getByRole("button", { name: "Edit Monday dinner" });
+    expect(day).toHaveClass("week-day-hit");
+    expect(day).not.toHaveAttribute("data-slot");
+
+    const view = screen.getByRole("link", { name: /view weeknight pesto pasta/i });
+    expect(view).toHaveClass("week-meal-open", "hit44-y");
+    expect(view).not.toHaveClass("ds-button");
+    expect(view).not.toHaveAttribute("data-slot");
+
+    await user.click(screen.getByRole("button", { name: "Edit Tuesday dinner" }));
+    const tuesday = screen.getByTestId("plan-editor-2026-10-13");
+    expect(within(tuesday).getByRole("button", { name: "Clear night" })).toBeEnabled();
+    expect(within(tuesday).getByRole("button", { name: "No-cook night" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Edit Wednesday dinner" }));
+    const wednesday = screen.getByTestId("plan-editor-2026-10-14");
+    expect(
+      within(wednesday).queryByRole("button", { name: "Clear night" })
+    ).not.toBeInTheDocument();
+    expect(within(wednesday).getByRole("button", { name: "No-cook night" })).toBeEnabled();
+    expect(within(wednesday).getByRole("button", { name: "Close" })).toHaveClass("hit44-y");
+  });
+
   it("opens the editor under the selected day and Close collapses it", async () => {
     const user = userEvent.setup();
     const wednesday: WeekMeal = { ...pesto, date: "2026-10-14", entryId: "entry-wed" };
