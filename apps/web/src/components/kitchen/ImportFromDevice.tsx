@@ -1,5 +1,6 @@
 "use client";
 
+import "@/components/ui/ui.css";
 import { iosShortcutUrl } from "@/lib/ios-shortcut";
 import { ImportBookmarklet } from "./ImportBookmarklet";
 
@@ -35,7 +36,7 @@ export function ImportFromDevice({
         </ol>
         {showAddButton ? (
           <p>
-            <a className="btn primary" href={addShortcutHref}>
+            <a className="ds-button ds-button--default ds-button--md" href={addShortcutHref}>
               Add the OvenLovin Shortcut
             </a>
           </p>

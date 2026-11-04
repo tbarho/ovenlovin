@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Button, Field, Input } from "@/components/ui";
 import { addPaperBook, type PaperBookResult } from "@/lib/book-import-client";
 import { BottomSheet } from "./BottomSheet";
 import { PhotoPick } from "./PhotoPick";
@@ -48,15 +49,14 @@ export function BookShotDoor({
   return (
     <>
       <p>
-        <button
-          className="btn"
-          type="button"
+        <Button
+          variant="secondary"
           disabled={Boolean(blocked)}
           aria-describedby={blocked ? "books-blocked" : undefined}
           onClick={() => setOpen(true)}
         >
           {label}
-        </button>
+        </Button>
       </p>
       <BottomSheet
         open={open}
@@ -85,7 +85,10 @@ export function BookShotDoor({
             <p className="sheet-lead" role="status">
               Got the contents. Pick the recipes you want from the book.
             </p>
-            <Link className="btn primary" href={`/recipes/books/${result.jobId}`}>
+            <Link
+              className="ds-button ds-button--default ds-button--md"
+              href={`/recipes/books/${result.jobId}`}
+            >
               Pick recipes
             </Link>
           </div>
@@ -93,24 +96,18 @@ export function BookShotDoor({
         {step === "idle" || step === "error" ? (
           <div className="sheet-stack">
             <p className="sheet-lead">{LEAD}</p>
-            <label className="field">
-              <span className="field-label">Book title</span>
-              <input
+            <Field label="Book title">
+              <Input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="The title on the cover"
                 maxLength={200}
               />
-            </label>
+            </Field>
             <PhotoPick files={files} onChange={setFiles} />
-            <button
-              className="btn primary"
-              type="button"
-              disabled={files.length === 0}
-              onClick={read}
-            >
+            <Button disabled={files.length === 0} onClick={read}>
               Read the contents
-            </button>
+            </Button>
           </div>
         ) : null}
         {error ? (
