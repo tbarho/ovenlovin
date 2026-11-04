@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
+import { Button } from "@/components/ui";
 import { filterRecipesByQuery, pickerBookNote } from "@/lib/cookbook-recipes";
 import { BottomSheet } from "./BottomSheet";
 
@@ -114,21 +115,17 @@ export function CookbookRecipePicker({
         )}
         {error ? <p className="muted">{error}</p> : null}
         <div className="sheet-actions">
-          <button type="button" className="btn" onClick={onClose} disabled={pending}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn primary"
             disabled={pending || selected.length === 0}
+            loading={pending}
             onClick={() => onAdd(selected)}
           >
-            {pending
-              ? "Adding…"
-              : selected.length === 1
-                ? "Add 1 recipe"
-                : `Add ${selected.length} recipes`}
-          </button>
+            {selected.length === 1 ? "Add 1 recipe" : `Add ${selected.length} recipes`}
+          </Button>
         </div>
       </div>
     </BottomSheet>
