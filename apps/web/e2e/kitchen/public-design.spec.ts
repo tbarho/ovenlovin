@@ -212,7 +212,10 @@ test.describe("public design sign-off", () => {
           }
           if (width === 1440) {
             const heading = await page.locator(".docs-page h1").boundingBox();
-            const cta = await page.locator(".docs-page .hero-ctas .btn").first().boundingBox();
+            const cta = await page
+              .locator(".docs-page .hero-ctas .ds-button")
+              .first()
+              .boundingBox();
             expect(heading && cta).toBeTruthy();
             if (heading && cta) {
               expect(cta.x).toBeLessThanOrEqual(heading.x + 2);
