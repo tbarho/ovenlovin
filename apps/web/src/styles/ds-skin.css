@@ -1,0 +1,76 @@
+/* OvenLovin brand skin + legacy aliases.
+   ds-tokens.css is style-agnostic (Geist / Cursor / Grok Bot).
+   This layer (1) paints brand-facing --ds-* semantics with the current
+   orange / cream / ink hexes and (2) aliases existing product vars
+   (--bg, --ink, --orange, ...) onto those tokens so var(--ink) usage
+   keeps the same look. No component rewrite in this file. */
+
+:root {
+  /* Fonts: keep Geist + Fascinate, not the Inter slot from fundamentals. */
+  --ds-font-sans: var(--font-geist-sans, "Geist"), ui-sans-serif, system-ui, sans-serif;
+  --ds-font-mono: var(--font-geist-mono, ui-monospace), "SFMono-Regular", Menlo, monospace;
+
+  /* Brand-facing semantic overrides (same hexes as the previous :root block). */
+  --ds-color-surface-base: #ffffff;
+  --ds-color-surface-sunken: #fffaf4;
+  --ds-color-surface-raised: #fffdf9;
+  --ds-color-surface-inverse: #1a1817;
+  --ds-color-surface-component: #fff1de;
+  --ds-color-text-primary: #161310;
+  --ds-color-text-secondary: #5c564c;
+  --ds-color-text-tertiary: #8a8376;
+  --ds-color-text-inverse: #f7f5ef;
+  --ds-color-border-default: #efe6d8;
+  --ds-color-border-hover: #e0d4c2;
+  --ds-color-interactive-accent-slot: #e07a3d;
+  --ds-color-interactive-accent-fill: #c45d28;
+  --ds-color-interactive-primary-bg: #b85420;
+  --ds-color-status-success-solid: #2f9e62;
+  --ds-color-status-warning-solid: #c46a1b;
+  --ds-color-status-danger-solid: #c4473a;
+  --ds-color-focus-color: #e07a3d;
+  --ds-focus-color: var(--ds-color-focus-color);
+
+  /* Short dual aliases for new code. */
+  --ds-color-fg: var(--ds-color-text-primary);
+  --ds-color-bg: var(--ds-color-surface-base);
+
+  /* Existing product vars: aliases onto --ds-* (hex kept when no slot). */
+  --bg: var(--ds-color-surface-base);
+  --bg-soft: var(--ds-color-surface-sunken);
+  --ink: var(--ds-color-text-primary);
+  --muted: var(--ds-color-text-secondary);
+  --faint: var(--ds-color-text-tertiary);
+  --line: var(--ds-color-border-default);
+  --border: var(--ds-color-border-default);
+  --line-2: var(--ds-color-border-hover);
+  --panel: var(--ds-color-surface-raised);
+  --code: var(--ds-color-surface-inverse);
+  --code-ink: var(--ds-color-text-inverse);
+  --orange: var(--ds-color-interactive-accent-slot);
+  --orange-2: #ff8001;
+  --orange-deep: var(--ds-color-interactive-accent-fill);
+  --orange-press: var(--ds-color-interactive-primary-bg);
+  --orange-press-hover: #9a4519;
+  --cream: var(--ds-color-surface-component);
+  --ok: var(--ds-color-status-success-solid);
+  --warn: var(--ds-color-status-warning-solid);
+  --bad: var(--ds-color-status-danger-solid);
+  --sans: var(--ds-font-sans);
+  --mono: var(--ds-font-mono);
+  --display: var(--font-display, "Fascinate Inline"), cursive;
+  --max: 1080px;
+  --gut: var(--ds-space-page-margin);
+  --r: 14px;
+  --r-sm: 8px;
+  --shadow: 0 18px 50px rgba(196, 93, 40, 0.08);
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-input: var(--text-md);
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-sheet: 220ms;
+  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
