@@ -18,6 +18,7 @@ describe("ui primitive tokens", () => {
     expect(css).toContain("--ds-size-control-small");
     expect(css).toContain("--ds-size-control-medium");
     expect(css).toContain("--ds-size-control-large");
+    expect(css).toContain("--ds-size-icon");
     expect(css).toContain("--ds-size-avatar-16");
     expect(css).toContain("--ds-size-avatar-24");
     expect(css).toContain("--ds-size-avatar-32");
