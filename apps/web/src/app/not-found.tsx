@@ -1,6 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
+import "@/components/ui/ui.css";
+
+/** Nav density matches the 14px nav links, so Docs, kitchen, and sign-in use the medium control. */
+const navCtaClass = "ds-button ds-button--secondary ds-button--md";
+const homeCtaClass = "ds-button ds-button--default ds-button--md";
 
 export default async function NotFound() {
   const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
@@ -23,16 +28,16 @@ export default async function NotFound() {
             OvenLovin
           </Link>
           <div className="nav-cta">
-            <Link className="btn" href="/docs">
+            <Link className={navCtaClass} href="/docs">
               Docs
             </Link>
             {clerkEnabled ? (
               signedIn ? (
-                <Link className="btn" href="/recipes">
+                <Link className={navCtaClass} href="/recipes">
                   Open kitchen
                 </Link>
               ) : (
-                <Link className="btn" href="/sign-in">
+                <Link className={navCtaClass} href="/sign-in">
                   Sign in
                 </Link>
               )
@@ -46,7 +51,7 @@ export default async function NotFound() {
             <div className="not-found">
               <h1>We couldn&apos;t find that page</h1>
               <p>It may have been moved, or the link is out of date.</p>
-              <Link className="btn primary" href="/">
+              <Link className={homeCtaClass} href="/">
                 Back home
               </Link>
             </div>
