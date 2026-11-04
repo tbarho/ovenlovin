@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Button, Field, Hint, Input } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 
 type HouseholdName = {
@@ -67,23 +68,22 @@ export function KitchenNameSettings({ canRename }: { canRename: boolean }) {
             void save();
           }}
         >
-          <label>
-            <span>Name</span>
-            <input
+          <Field label="Name" error={error}>
+            <Input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               maxLength={255}
               disabled={pending}
               autoComplete="off"
             />
-          </label>
-          <button
-            className="btn"
+          </Field>
+          <Button
             type="submit"
+            loading={pending}
             disabled={pending || draft.trim() === name || draft.trim().length === 0}
           >
-            {pending ? "Saving…" : "Save name"}
-          </button>
+            Save Name
+          </Button>
         </form>
       ) : (
         <p>{name || "This kitchen"}</p>
@@ -93,7 +93,7 @@ export function KitchenNameSettings({ canRename }: { canRename: boolean }) {
           Saved
         </p>
       ) : null}
-      {error ? <p className="muted">{error}</p> : null}
+      {!canRename && error ? <Hint tone="error">{error}</Hint> : null}
     </section>
   );
 }

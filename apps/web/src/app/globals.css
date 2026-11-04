@@ -2285,7 +2285,6 @@ select {
   align-items: end;
 }
 
-.kitchen-name-form label,
 .kitchen-switcher label,
 .invite-create label {
   display: grid;
@@ -2294,7 +2293,6 @@ select {
   color: var(--muted);
 }
 
-.kitchen-name-form input,
 .kitchen-switcher select,
 .invite-create select,
 .invite-create input,
@@ -2307,11 +2305,10 @@ select {
   max-width: 100%;
 }
 
-.kitchen-name-form input {
+.kitchen-name-form [data-slot="field"] {
   min-width: min(100%, 16rem);
 }
 
-.kitchen-name-form .btn,
 .invite-create .btn {
   min-height: 44px;
 }
