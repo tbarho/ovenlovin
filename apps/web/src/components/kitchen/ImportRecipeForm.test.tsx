@@ -157,7 +157,9 @@ describe("ImportRecipeForm photo import", () => {
     expect(within(dialog).getByRole("status")).toHaveTextContent(
       "Ready to review. This photo was hard to read. Check title, ingredient: pasta."
     );
-    expect(within(dialog).getByLabelText("Title").closest("label")).toHaveClass("is-uncertain");
+    expect(within(dialog).getByLabelText("Title").closest("[data-slot='field']")).toHaveClass(
+      "is-uncertain"
+    );
     expect(within(dialog).getByText("This title was hard to read.")).toBeVisible();
     expect(within(dialog).getByText("pasta was hard to read.")).toBeVisible();
     await typeFullWordAndKeepFocus(user, within(dialog).getByLabelText("Title"), "Garlic");
@@ -173,8 +175,14 @@ describe("ImportRecipeForm photo import", () => {
     await user.upload(library, file);
     await user.click(screen.getByRole("button", { name: "Import recipe" }));
     expect(await screen.findByText(PHOTO_IMPORT_TIMEOUT_MESSAGE)).toBeVisible();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Type or paste instead" })).toBeVisible();
+    const retry = screen.getByRole("button", { name: "Retry" });
+    expect(retry).toBeVisible();
+    expect(retry).toHaveAttribute("data-slot", "button");
+    expect(retry).toHaveAttribute("data-variant", "default");
+    expect(screen.getByRole("button", { name: "Type or paste instead" })).toHaveAttribute(
+      "data-variant",
+      "tertiary"
+    );
     expect(screen.getAllByRole("button", { name: "Cancel" }).length).toBeGreaterThan(0);
     const xhr = mockXhr();
     await user.click(screen.getByRole("button", { name: "Retry" }));

@@ -3184,18 +3184,15 @@ label.photo-page-add-target:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.photo-review-form label.is-uncertain input,
-.photo-review-form label.is-uncertain textarea {
+.photo-review-form .ds-field.is-uncertain .ds-input,
+.photo-review-form .ds-field.is-uncertain .ds-textarea {
   outline: 2px solid #e3b15a;
   outline-offset: 1px;
   background: #fff8ef;
 }
 
-.photo-review-form .field-note {
-  display: block;
-  margin-top: 6px;
+.photo-review-form .ds-field.is-uncertain .ds-hint {
   color: #8a6a28;
-  font-size: 0.85rem;
 }
 
 .photo-import-banner {
