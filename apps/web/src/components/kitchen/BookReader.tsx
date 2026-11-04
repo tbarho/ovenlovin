@@ -3,6 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui";
 import type { ReaderBook } from "@/lib/book-reader";
 import { BookPage } from "./BookPage";
 import { BookPrint } from "./BookPrint";
@@ -64,13 +65,14 @@ function BookReaderHead({
       )}
       {shared ? null : (
         <>
-          <button
-            className="btn book-settings-open"
-            type="button"
+          <Button
+            variant="secondary"
+            className="book-settings-open"
+            style={{ marginLeft: "auto", flex: "none" }}
             onClick={() => setSettingsOpen(true)}
           >
             Make it yours
-          </button>
+          </Button>
           <BookSettingsSheet
             bookId={book.id}
             name={book.name ?? book.title}
@@ -151,7 +153,10 @@ export function BookReader({
         <div className="empty-card book-reader-empty">
           <p>This book has no recipes yet.</p>
           {shared ? null : (
-            <Link className="btn primary" href={`/recipes?cookbook=${book.id}`}>
+            <Link
+              className="ds-button ds-button--default ds-button--md"
+              href={`/recipes?cookbook=${book.id}`}
+            >
               Add recipes
             </Link>
           )}
