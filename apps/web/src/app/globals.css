@@ -2285,8 +2285,7 @@ select {
   align-items: end;
 }
 
-.kitchen-switcher label,
-.invite-create label {
+.kitchen-switcher label {
   display: grid;
   gap: 6px;
   font-size: 13px;
@@ -2294,8 +2293,6 @@ select {
 }
 
 .kitchen-switcher select,
-.invite-create select,
-.invite-create input,
 .member-actions select {
   min-height: 44px;
   padding: 0 12px;
@@ -2309,8 +2306,8 @@ select {
   min-width: min(100%, 16rem);
 }
 
-.invite-create .btn {
-  min-height: 44px;
+.invite-create [data-slot="field"] {
+  min-width: min(100%, 8rem);
 }
 
 .invite-created {
@@ -2392,8 +2389,8 @@ select {
   }
 
   .member-actions .btn,
-  .invite-row .btn,
-  .invite-create .btn,
+  .invite-row [data-slot="button"],
+  .invite-create [data-slot="button"],
   .invite-auth .btn {
     width: 100%;
   }

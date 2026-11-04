@@ -20,15 +20,14 @@ test.describe("kitchen invites", () => {
     const invitePanel = page.locator('[aria-labelledby="kitchen-invites-heading"]');
     await expect(invitePanel.getByRole("heading", { name: "Invite links" })).toBeVisible();
     await expect(invitePanel.getByText("No pending invite links.")).toBeVisible();
-    await invitePanel.getByRole("button", { name: "Create invite link" }).click();
+    await invitePanel.getByRole("button", { name: "Create Invite Link" }).click();
     const created = invitePanel.getByTestId("invite-created");
     await expect(created.getByText("Copy this link and send it yourself")).toBeVisible();
     await expect(created.getByRole("button", { name: "Copy" })).toBeInViewport();
     const revoke = invitePanel.getByRole("button", { name: "Revoke" });
     await expect(revoke).toHaveCount(1);
-    // The Revoke button immediately becomes "Revoking…", so a name:"Revoke"
-    // count of 0 is not "revoke finished". CI 39290782455 still showed the
-    // invite row and a disabled Revoking button after the 5s empty-state wait.
+    // Revoke stays named "Revoke" while the DELETE is in flight (loading
+    // spinner), so a name:"Revoke" count of 0 is not "revoke finished".
     const revoked = page.waitForResponse(
       (response) =>
         response.url().includes("/api/v1/households/invites/") &&
