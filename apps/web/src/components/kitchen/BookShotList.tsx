@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // The contents-map subpath, not the jobs barrel: this is a client component.
 import { groupCandidates, searchCandidates } from "@ovenlovin/core/contents-map";
 import type { TriageRow } from "@ovenlovin/core/jobs";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import type { BookShotView } from "@/lib/book-shot-view";
 import {
@@ -224,32 +225,28 @@ export function BookShotList({ initial }: { initial: BookShotView }) {
             />
           </label>
           <div className="book-contents-bar">
-            <button
-              className="btn"
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => savePicks(candidates.map((candidate) => candidate.id))}
             >
               Select all
-            </button>
-            <button className="btn" type="button" onClick={() => savePicks([])}>
+            </Button>
+            <Button variant="secondary" onClick={() => savePicks([])}>
               Select none
-            </button>
+            </Button>
             <span className="muted" role="status" aria-live="polite">
               {saving === "saving" ? "Saving" : null}
               {saving === "saved" ? "Saved" : null}
               {saving === "error" ? "Could not save. Try again." : null}
             </span>
           </div>
-          <button
-            className="btn primary"
-            type="button"
+          <Button
             disabled={picks.length === 0 || starting}
+            loading={starting}
             onClick={confirmPicks}
           >
-            {starting
-              ? "Making"
-              : `Make a shot list for ${picks.length} ${picks.length === 1 ? "recipe" : "recipes"}`}
-          </button>
+            Make a shot list for {picks.length} {picks.length === 1 ? "recipe" : "recipes"}
+          </Button>
           {groups.map((group) => (
             <section key={group.name} className="book-contents-group" aria-label={group.name}>
               <h2>{group.name}</h2>
@@ -287,13 +284,13 @@ export function BookShotList({ initial }: { initial: BookShotView }) {
                 {toShoot.map((row) => (
                   <li key={row.candidateId} className="book-contents-row book-triage-row">
                     <span>{shotRowLabel(row)}</span>
-                    <button
-                      className="btn compact"
-                      type="button"
+                    <Button
+                      variant="tertiary"
+                      size="sm"
                       onClick={() => setShoot({ phase: "pick", row, files: [] })}
                     >
                       Photograph
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -317,7 +314,10 @@ export function BookShotList({ initial }: { initial: BookShotView }) {
           ) : null}
 
           {view.cookbookId ? (
-            <Link className="btn" href={`/recipes?cookbook=${view.cookbookId}`}>
+            <Link
+              className="ds-button ds-button--secondary ds-button--md"
+              href={`/recipes?cookbook=${view.cookbookId}`}
+            >
               Open the cookbook
             </Link>
           ) : null}
@@ -348,14 +348,12 @@ export function BookShotList({ initial }: { initial: BookShotView }) {
               files={shoot.files}
               onChange={(files) => setShoot({ phase: "pick", row: shoot.row, files })}
             />
-            <button
-              className="btn primary"
-              type="button"
+            <Button
               disabled={shoot.files.length === 0}
               onClick={() => readPages(shoot.row, shoot.files)}
             >
               Read {shoot.files.length > 1 ? `${shoot.files.length} pages` : "the page"}
-            </button>
+            </Button>
           </div>
         ) : null}
         {shoot?.phase === "working" ? (
@@ -368,9 +366,9 @@ export function BookShotList({ initial }: { initial: BookShotView }) {
               enhanced={shoot.enhanced}
             />
             <div className="sheet-actions">
-              <button type="button" className="btn compact" onClick={closeShoot}>
+              <Button type="button" variant="tertiary" size="sm" onClick={closeShoot}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </>
         ) : null}
@@ -380,29 +378,30 @@ export function BookShotList({ initial }: { initial: BookShotView }) {
               {shoot.message}
             </p>
             <div className="sheet-actions photo-import-error-actions">
-              <button
+              <Button
                 type="button"
-                className="btn compact"
+                variant="tertiary"
+                size="sm"
                 onClick={() => setShoot({ phase: "pick", row: shoot.row, files: [] })}
               >
                 Choose pages again
-              </button>
+              </Button>
               {!shoot.enhanced && shoot.kind === "blurry" ? (
-                <button
+                <Button
                   type="button"
-                  className="btn primary compact"
+                  size="sm"
                   onClick={() => readPages(shoot.row, shoot.files, true)}
                 >
                   {PHOTO_IMPORT_SHARPER}
-                </button>
+                </Button>
               ) : shoot.kind !== "cancelled" ? (
-                <button
+                <Button
                   type="button"
-                  className="btn primary compact"
+                  size="sm"
                   onClick={() => readPages(shoot.row, shoot.files, shoot.enhanced)}
                 >
                   Try again
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
