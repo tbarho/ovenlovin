@@ -1,6 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
+import "@/components/ui/ui.css";
+
+/** Nav density matches the 14px nav links, so these CTAs use the medium control. */
+const navCtaClass = "ds-button ds-button--secondary ds-button--md";
 
 export function SiteHeader({
   signedIn,
@@ -39,20 +43,20 @@ export function SiteHeader({
         </ul>
         <div className="nav-cta">
           {demoUrl ? (
-            <a className="btn" href={demoUrl}>
+            <a className={navCtaClass} href={demoUrl}>
               Try the demo
             </a>
           ) : null}
           {signedIn ? (
-            <Link className="btn" href="/recipes">
+            <Link className={navCtaClass} href="/recipes">
               Open kitchen
             </Link>
           ) : clerkEnabled ? (
-            <Link className="btn" href="/sign-in">
+            <Link className={navCtaClass} href="/sign-in">
               Sign in
             </Link>
           ) : (
-            <span className="btn">Clerk not configured</span>
+            <span className={navCtaClass}>Clerk not configured</span>
           )}
         </div>
       </div>
