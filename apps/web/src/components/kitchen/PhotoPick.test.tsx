@@ -83,13 +83,8 @@ describe("PhotoPick", () => {
       expect(button).toHaveAttribute("data-variant", "secondary");
       expect(button).toHaveAttribute("data-size", "sm");
       expect(button).toHaveAttribute("type", "button");
-      expect(button).toHaveClass(
-        "ds-button",
-        "ds-button--secondary",
-        "ds-button--sm",
-        "btn",
-        "compact"
-      );
+      expect(button).toHaveClass("ds-button", "ds-button--secondary", "ds-button--sm");
+      expect(button).not.toHaveClass("btn", "compact");
       expect(button).not.toHaveAttribute("href");
       expect(button.closest(".photo-page-actions")).not.toBeNull();
     }
@@ -117,7 +112,8 @@ describe("PhotoPick", () => {
     expect(screen.getByText("Page 2 removed.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Move page/ })).not.toBeInTheDocument();
     const remove = screen.getByRole("button", { name: "Remove page 1" });
-    expect(remove).toHaveClass("ds-button--secondary", "ds-button--sm", "btn", "compact");
+    expect(remove).toHaveClass("ds-button--secondary", "ds-button--sm");
+    expect(remove).not.toHaveClass("btn", "compact");
   });
 
   it("ignores a non-image pick and caps pages at the limit", async () => {

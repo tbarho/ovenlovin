@@ -58,7 +58,6 @@ function PhotoTile({
               type="button"
               variant="secondary"
               size="sm"
-              className="btn compact"
               aria-label={`Move page ${page} earlier`}
               disabled={index === 0}
               onClick={() => onMove(index - 1)}
@@ -69,7 +68,6 @@ function PhotoTile({
               type="button"
               variant="secondary"
               size="sm"
-              className="btn compact"
               aria-label={`Move page ${page} later`}
               disabled={index === count - 1}
               onClick={() => onMove(index + 1)}
@@ -82,7 +80,6 @@ function PhotoTile({
           type="button"
           variant="secondary"
           size="sm"
-          className="btn compact"
           aria-label={`Remove page ${page}`}
           onClick={onRemove}
         >
