@@ -1,0 +1,332 @@
+/* Shared Button / Badge / Avatar primitives. Colors, space, radius, and type
+   come from --ds-* tokens (ds-tokens.css + ds-skin.css). */
+
+.ds-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2x);
+  margin: 0;
+  border-style: solid;
+  border-width: var(--ds-border-width-default);
+  border-radius: var(--ds-radius-base);
+  font-family: var(--ds-font-sans);
+  font-weight: var(--ds-font-weight-medium);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: var(--ds-duration-micro);
+  transition-timing-function: var(--ds-ease-standard);
+}
+
+.ds-button:focus {
+  outline: none;
+}
+
+.ds-button:focus-visible {
+  box-shadow: var(--ds-focus-ring);
+}
+
+.ds-button--sm {
+  height: var(--ds-size-control-small);
+  padding: 0 var(--ds-space-2x);
+  font: var(--ds-type-button-12);
+  letter-spacing: var(--ds-tracking-button-12);
+}
+
+.ds-button--md {
+  height: var(--ds-size-control-medium);
+  padding: 0 var(--ds-space-3x);
+  font: var(--ds-type-button-14);
+  letter-spacing: var(--ds-tracking-button-14);
+}
+
+.ds-button--lg {
+  height: var(--ds-size-control-large);
+  padding: 0 var(--ds-space-3x);
+  font: var(--ds-type-button-16);
+  letter-spacing: var(--ds-tracking-button-16);
+}
+
+.ds-button--svg-only {
+  padding: 0;
+}
+
+.ds-button--svg-only.ds-button--sm {
+  width: var(--ds-size-control-small);
+}
+
+.ds-button--svg-only.ds-button--md {
+  width: var(--ds-size-control-medium);
+}
+
+.ds-button--svg-only.ds-button--lg {
+  width: var(--ds-size-control-large);
+}
+
+.ds-button--circle {
+  border-radius: var(--ds-radius-full);
+}
+
+.ds-button svg {
+  width: var(--ds-size-icon);
+  height: var(--ds-size-icon);
+  flex-shrink: 0;
+}
+
+.ds-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: inherit;
+}
+
+.ds-button__content[data-hidden] {
+  visibility: hidden;
+}
+
+.ds-button__spinner {
+  position: absolute;
+  width: var(--ds-size-icon);
+  height: var(--ds-size-icon);
+  border: var(--ds-border-width-focus) solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--ds-radius-full);
+  animation: ds-button-spin calc(var(--ds-duration-overlay) * 3) linear infinite;
+}
+
+.ds-button--loading {
+  cursor: progress;
+}
+
+@keyframes ds-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ds-button--default {
+  background: var(--ds-color-interactive-primary-bg);
+  color: var(--ds-color-interactive-primary-fg);
+  border-color: var(--ds-color-interactive-primary-bg);
+}
+
+.ds-button--default:hover {
+  background: var(--ds-color-interactive-accent-fill);
+  border-color: var(--ds-color-interactive-accent-fill);
+}
+
+.ds-button--default:active {
+  background: var(--ds-color-interactive-primary-bg);
+  border-color: var(--ds-color-interactive-primary-bg);
+  transform: translateY(var(--ds-border-width-default));
+}
+
+.ds-button--secondary {
+  background: var(--ds-color-interactive-secondary-bg);
+  color: var(--ds-color-text-primary);
+  border-color: var(--ds-color-interactive-secondary-border);
+}
+
+.ds-button--secondary:hover {
+  background: var(--ds-color-surface-component-hover);
+  border-color: var(--ds-color-border-hover);
+}
+
+.ds-button--secondary:active {
+  background: var(--ds-color-surface-component-active);
+  border-color: var(--ds-color-border-active);
+  transform: translateY(var(--ds-border-width-default));
+}
+
+.ds-button--tertiary {
+  background: transparent;
+  color: var(--ds-color-text-primary);
+  border-color: transparent;
+}
+
+.ds-button--tertiary:hover {
+  background: var(--ds-color-surface-component-hover);
+}
+
+.ds-button--tertiary:active {
+  background: var(--ds-color-surface-component-active);
+  transform: translateY(var(--ds-border-width-default));
+}
+
+.ds-button--error {
+  background: var(--ds-color-status-danger-solid);
+  color: var(--ds-color-text-on-accent);
+  border-color: var(--ds-color-status-danger-solid);
+}
+
+.ds-button--error:hover {
+  background: var(--ds-color-status-danger-fg);
+  border-color: var(--ds-color-status-danger-fg);
+}
+
+.ds-button--error:active {
+  background: var(--ds-color-status-danger-solid);
+  border-color: var(--ds-color-status-danger-solid);
+  transform: translateY(var(--ds-border-width-default));
+}
+
+.ds-button--warning {
+  background: var(--ds-color-status-warning-solid);
+  color: var(--ds-color-text-on-accent);
+  border-color: var(--ds-color-status-warning-solid);
+}
+
+.ds-button--warning:hover {
+  background: var(--ds-color-status-warning-fg);
+  border-color: var(--ds-color-status-warning-fg);
+}
+
+.ds-button--warning:active {
+  background: var(--ds-color-status-warning-solid);
+  border-color: var(--ds-color-status-warning-solid);
+  transform: translateY(var(--ds-border-width-default));
+}
+
+.ds-button:disabled,
+.ds-button:disabled:hover,
+.ds-button:disabled:active {
+  background: var(--ds-color-surface-component);
+  color: var(--ds-color-text-disabled);
+  border-color: var(--ds-color-border-default);
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1x);
+  height: var(--ds-size-control-tiny);
+  padding: 0 var(--ds-space-2x);
+  border: var(--ds-border-width-default) solid transparent;
+  font: var(--ds-type-label-12);
+  font-weight: var(--ds-font-weight-medium);
+  letter-spacing: var(--ds-tracking-label-12);
+  white-space: nowrap;
+}
+
+.ds-badge--pill {
+  border-radius: var(--ds-radius-full);
+}
+
+.ds-badge--rounded {
+  border-radius: var(--ds-radius-xs);
+}
+
+.ds-badge__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+.ds-badge__icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+.ds-badge--neutral {
+  background: var(--ds-color-surface-component);
+  color: var(--ds-color-text-secondary);
+  border-color: var(--ds-color-border-default);
+}
+
+.ds-badge--accent {
+  background: var(--ds-color-surface-component);
+  color: var(--ds-color-interactive-accent-fill);
+  border-color: var(--ds-color-interactive-accent-slot);
+}
+
+.ds-badge--ok {
+  background: var(--ds-color-status-success-bg);
+  color: var(--ds-color-status-success-fg);
+  border-color: var(--ds-color-status-success-border);
+}
+
+.ds-badge--warn {
+  background: var(--ds-color-status-warning-bg);
+  color: var(--ds-color-status-warning-fg);
+  border-color: var(--ds-color-status-warning-border);
+}
+
+.ds-badge--bad {
+  background: var(--ds-color-status-danger-bg);
+  color: var(--ds-color-status-danger-fg);
+  border-color: var(--ds-color-status-danger-border);
+}
+
+.ds-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-color-surface-component);
+  color: var(--ds-color-text-secondary);
+  font-family: var(--ds-font-sans);
+  font-weight: var(--ds-font-weight-medium);
+  line-height: 1;
+  user-select: none;
+}
+
+.ds-avatar--16 {
+  width: var(--ds-size-avatar-16);
+  height: var(--ds-size-avatar-16);
+  font: var(--ds-type-label-12);
+  letter-spacing: var(--ds-tracking-label-12);
+}
+
+.ds-avatar--24 {
+  width: var(--ds-size-avatar-24);
+  height: var(--ds-size-avatar-24);
+  font: var(--ds-type-label-12);
+  letter-spacing: var(--ds-tracking-label-12);
+}
+
+.ds-avatar--32 {
+  width: var(--ds-size-avatar-32);
+  height: var(--ds-size-avatar-32);
+  font: var(--ds-type-label-14);
+  letter-spacing: var(--ds-tracking-label-14);
+}
+
+.ds-avatar--48 {
+  width: var(--ds-size-avatar-48);
+  height: var(--ds-size-avatar-48);
+  font: var(--ds-type-label-16);
+  letter-spacing: var(--ds-tracking-label-16);
+}
+
+.ds-avatar__fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-avatar__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  opacity: 0;
+}
+
+.ds-avatar__img[data-loaded] {
+  opacity: 1;
+}
