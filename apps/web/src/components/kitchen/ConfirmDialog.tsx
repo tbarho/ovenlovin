@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, Hint } from "@/components/ui";
 import { BottomSheet } from "./BottomSheet";
 
 export function ConfirmDialog({
@@ -26,19 +27,19 @@ export function ConfirmDialog({
   return (
     <BottomSheet open={open} title={title} onClose={onCancel}>
       <p className="sheet-lead">{body}</p>
-      {error ? <p className="muted">{error}</p> : null}
+      {error ? <Hint tone="error">{error}</Hint> : null}
       <div className="sheet-actions">
-        <button type="button" className="btn" onClick={onCancel} disabled={pending}>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className={`btn ${danger ? "danger" : "primary"}`}
+          variant={danger ? "error" : "default"}
           onClick={onConfirm}
-          disabled={pending}
+          loading={pending}
         >
-          {pending ? "Working…" : confirmLabel}
-        </button>
+          {confirmLabel}
+        </Button>
       </div>
     </BottomSheet>
   );
