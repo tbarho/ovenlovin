@@ -5,12 +5,16 @@ import { describe, expect, it } from "vitest";
 describe("ui primitive tokens", () => {
   const css = readFileSync(path.resolve(__dirname, "./ui.css"), "utf8");
 
-  it("styles button, badge, and avatar with --ds-* custom properties", () => {
+  it("styles button, badge, avatar, and form controls with --ds-* custom properties", () => {
     expect(css).toContain("--ds-color-interactive-primary-bg");
     expect(css).toContain("--ds-color-interactive-secondary-bg");
+    expect(css).toContain("--ds-color-interactive-switch-knob");
     expect(css).toContain("--ds-color-status-danger-solid");
     expect(css).toContain("--ds-color-status-warning-solid");
     expect(css).toContain("--ds-color-status-success-bg");
+    expect(css).toContain("--ds-color-status-danger-fg");
+    expect(css).toContain("--ds-color-border-error");
+    expect(css).toContain("--ds-size-control-tiny");
     expect(css).toContain("--ds-size-control-small");
     expect(css).toContain("--ds-size-control-medium");
     expect(css).toContain("--ds-size-control-large");
@@ -21,6 +25,9 @@ describe("ui primitive tokens", () => {
     expect(css).toContain("--ds-radius-base");
     expect(css).toContain("--ds-radius-full");
     expect(css).toContain("--ds-type-button-14");
+    expect(css).toContain("--ds-type-label-14");
+    expect(css).toContain("--ds-type-copy-14");
+    expect(css).toContain("--ds-space-24x");
     expect(css).toContain("--ds-duration-micro");
     expect(css).toContain("--ds-focus-ring");
   });
