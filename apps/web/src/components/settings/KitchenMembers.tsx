@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/kitchen/ConfirmDialog";
+import { Badge, Button, Hint, Select } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { useVisibleRefresh } from "@/lib/use-visible-refresh";
 
@@ -15,6 +16,13 @@ export type KitchenMember = {
 };
 
 const ROLES: KitchenMember["role"][] = ["owner", "admin", "member", "viewer"];
+
+const ROLE_LABELS: Record<KitchenMember["role"], string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+  viewer: "Viewer",
+};
 
 type MemberConfirm = { kind: "remove"; userId: string; label: string } | { kind: "leave" } | null;
 
@@ -102,7 +110,7 @@ export function KitchenMembers({
         Signed-in people who share this kitchen. People on the People tab are dietary profiles, not
         accounts.
       </p>
-      {error ? <p className="muted">{error}</p> : null}
+      {error ? <Hint tone="error">{error}</Hint> : null}
       {members.length === 0 ? (
         <p className="empty-note">No members loaded yet.</p>
       ) : (
@@ -127,7 +135,7 @@ export function KitchenMembers({
                   {canManage ? (
                     <label>
                       <span className="sr-only">Role for {label}</span>
-                      <select
+                      <Select
                         value={member.role}
                         disabled={pendingId === member.userId}
                         onChange={(event) =>
@@ -139,23 +147,24 @@ export function KitchenMembers({
                       >
                         {ROLES.map((role) => (
                           <option key={role} value={role}>
-                            {role}
+                            {ROLE_LABELS[role]}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                   ) : (
-                    <span className="member-role">{member.role}</span>
+                    <Badge variant="neutral">{ROLE_LABELS[member.role]}</Badge>
                   )}
                   {canManage && !isSelf ? (
-                    <button
-                      className="btn ghost"
+                    <Button
+                      variant="tertiary"
                       type="button"
+                      loading={pendingId === member.userId}
                       disabled={pendingId === member.userId}
                       onClick={() => setConfirm({ kind: "remove", userId: member.userId, label })}
                     >
-                      {pendingId === member.userId ? "Removing…" : "Remove"}
-                    </button>
+                      Remove
+                    </Button>
                   ) : null}
                 </div>
               </li>
@@ -164,14 +173,15 @@ export function KitchenMembers({
         </ul>
       )}
       {canLeave ? (
-        <button
-          className="btn ghost"
+        <Button
+          variant="tertiary"
           type="button"
+          loading={leaving}
           disabled={leaving}
           onClick={() => setConfirm({ kind: "leave" })}
         >
-          {leaving ? "Leaving…" : "Leave this kitchen"}
-        </button>
+          Leave This Kitchen
+        </Button>
       ) : null}
       <ConfirmDialog
         open={confirm?.kind === "remove"}
