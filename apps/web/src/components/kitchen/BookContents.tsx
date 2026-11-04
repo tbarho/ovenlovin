@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { groupCandidates, searchCandidates } from "@ovenlovin/core/contents-map";
+import { Button, Field, Input } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import type { BookContentsView } from "@/lib/book-import-view";
 import { BookShotDoor } from "./BookShotDoor";
@@ -131,38 +132,30 @@ export function BookContents({ initial }: { initial: BookContentsView }) {
           {scannedNote(view.map.scannedPages.length) ? (
             <p className="muted">{scannedNote(view.map.scannedPages.length)}</p>
           ) : null}
-          <label className="field">
-            <span className="field-label">Search the contents</span>
-            <input
+          <Field label="Search the contents">
+            <Input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Soup, pancakes, baking…"
             />
-          </label>
+          </Field>
           <div className="book-contents-bar">
-            <button className="btn" type="button" onClick={all}>
+            <Button variant="secondary" onClick={all}>
               Select all
-            </button>
-            <button className="btn" type="button" onClick={none}>
+            </Button>
+            <Button variant="secondary" onClick={none}>
               Select none
-            </button>
+            </Button>
             <span className="muted" role="status" aria-live="polite">
               {saving === "saving" ? "Saving" : null}
               {saving === "saved" ? "Saved" : null}
               {saving === "error" ? "Could not save. Try again." : null}
             </span>
           </div>
-          <button
-            className="btn primary"
-            type="button"
-            disabled={picks.length === 0 || starting}
-            onClick={pull}
-          >
-            {starting
-              ? "Starting"
-              : `Pull ${picks.length} ${picks.length === 1 ? "recipe" : "recipes"}`}
-          </button>
+          <Button disabled={picks.length === 0 || starting} loading={starting} onClick={pull}>
+            Pull {picks.length} {picks.length === 1 ? "recipe" : "recipes"}
+          </Button>
           {groups.length === 0 ? <p className="muted">No recipes match that search.</p> : null}
           {groups.map((group) => (
             <section key={group.name} className="book-contents-group" aria-label={group.name}>
