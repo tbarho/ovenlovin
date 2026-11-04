@@ -29,19 +29,25 @@ function contrast(foreground: string, background: string): number {
 
 function cssVar(source: string, name: string): string {
   const match = source.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`));
-  if (!match?.[1]) throw new Error(`missing ${name} in globals.css`);
+  if (!match?.[1]) throw new Error(`missing ${name} in ds-skin.css`);
   return match[1].toLowerCase();
 }
 
 describe("public design contrast", () => {
-  const css = readFileSync(path.resolve(__dirname, "../app/globals.css"), "utf8");
+  const css = readFileSync(path.resolve(__dirname, "../styles/ds-skin.css"), "utf8");
+  const globals = readFileSync(path.resolve(__dirname, "../app/globals.css"), "utf8");
+
+  it("imports fundamentals tokens and the OvenLovin skin", () => {
+    expect(globals).toContain('@import "../styles/ds-tokens.css"');
+    expect(globals).toContain('@import "../styles/ds-skin.css"');
+  });
 
   it("keeps CSS tokens aligned with brandTokens", () => {
-    expect(cssVar(css, "--orange-press")).toBe(brandTokens.orangePress);
+    expect(cssVar(css, "--ds-color-interactive-primary-bg")).toBe(brandTokens.orangePress);
     expect(cssVar(css, "--orange-press-hover")).toBe(brandTokens.orangePressHover);
-    expect(cssVar(css, "--muted")).toBe(brandTokens.muted);
-    expect(cssVar(css, "--panel")).toBe(brandTokens.panel);
-    expect(cssVar(css, "--bg")).toBe(brandTokens.bg);
+    expect(cssVar(css, "--ds-color-text-secondary")).toBe(brandTokens.muted);
+    expect(cssVar(css, "--ds-color-surface-raised")).toBe(brandTokens.panel);
+    expect(cssVar(css, "--ds-color-surface-base")).toBe(brandTokens.bg);
   });
 
   it("keeps primary fill, step labels, and footer at or above 4.5:1", () => {

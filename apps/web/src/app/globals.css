@@ -1,42 +1,5 @@
-:root {
-  --bg: #ffffff;
-  --bg-soft: #fffaf4;
-  --ink: #161310;
-  --muted: #5c564c;
-  --faint: #8a8376;
-  --line: #efe6d8;
-  --border: var(--line);
-  --line-2: #e0d4c2;
-  --panel: #fffdf9;
-  --code: #1a1817;
-  --code-ink: #f7f5ef;
-  --orange: #e07a3d;
-  --orange-2: #ff8001;
-  --orange-deep: #c45d28;
-  --orange-press: #b85420;
-  --orange-press-hover: #9a4519;
-  --cream: #fff1de;
-  --ok: #2f9e62;
-  --warn: #c46a1b;
-  --bad: #c4473a;
-  --sans: var(--font-geist-sans, "Geist"), ui-sans-serif, system-ui, sans-serif;
-  --mono: var(--font-geist-mono, ui-monospace), "SFMono-Regular", Menlo, monospace;
-  --display: var(--font-display, "Fascinate Inline"), cursive;
-  --max: 1080px;
-  --gut: 24px;
-  --r: 14px;
-  --r-sm: 8px;
-  --shadow: 0 18px 50px rgba(196, 93, 40, 0.08);
-  --text-xs: 0.8125rem;
-  --text-sm: 0.875rem;
-  --text-md: 1rem;
-  --text-lg: 1.125rem;
-  --text-input: var(--text-md);
-  --motion-fast: 120ms;
-  --motion-base: 180ms;
-  --motion-sheet: 220ms;
-  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-}
+@import "../styles/ds-tokens.css";
+@import "../styles/ds-skin.css";
 
 * {
   box-sizing: border-box;

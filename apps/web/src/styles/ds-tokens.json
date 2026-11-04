@@ -1,0 +1,1689 @@
+{
+  "$description": "Fundamentals v1 tokens. DTCG-style. Values per mode. peer = source. No brand skin.",
+  "$extensions": {
+    "generated": "2026-11-03",
+    "sources": [
+      "https://vercel.com/geist/colors.md",
+      "vercel.com live CSS --ds-*",
+      "https://cursor.com live CSS",
+      "/workspace/sop/dropfast-instruction.css"
+    ]
+  },
+  "primitive": {
+    "color": {
+      "$type": "color",
+      "background": {
+        "100": {
+          "$value": {
+            "light": "#ffffff",
+            "dark": "#0a0a0a"
+          },
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#fafafa",
+            "dark": "#000000"
+          },
+          "peer": "Geist"
+        }
+      },
+      "gray": {
+        "100": {
+          "$value": {
+            "light": "#f2f2f2",
+            "dark": "#1a1a1a"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#ebebeb",
+            "dark": "#1f1f1f"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#e6e6e6",
+            "dark": "#292929"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#ebebeb",
+            "dark": "#2e2e2e"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#c9c9c9",
+            "dark": "#454545"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#a8a8a8",
+            "dark": "#878787"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#8f8f8f",
+            "dark": "#8f8f8f"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#7d7d7d",
+            "dark": "#7d7d7d"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#4c4c4c",
+            "dark": "#a1a1a1"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#171717",
+            "dark": "#ededed"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "gray-alpha": {
+        "100": {
+          "$value": {
+            "light": "#0000000d",
+            "dark": "#ffffff0f"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#00000014",
+            "dark": "#ffffff17"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#0000001a",
+            "dark": "#ffffff21"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#00000014",
+            "dark": "#ffffff24"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#00000036",
+            "dark": "#ffffff3d"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#00000057",
+            "dark": "#ffffff82"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#00000070",
+            "dark": "#ffffff8a"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#00000082",
+            "dark": "#ffffff78"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#000000b3",
+            "dark": "#ffffff9c"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#000000e8",
+            "dark": "#ffffffeb"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "blue": {
+        "100": {
+          "$value": {
+            "light": "#f0f7ff",
+            "dark": "#06193a"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#eaf4ff",
+            "dark": "#022248"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#e0efff",
+            "dark": "#002f62"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#cce7ff",
+            "dark": "#003771"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#97ccff",
+            "dark": "#004287"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#51aeff",
+            "dark": "#0090ff"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#0070f7",
+            "dark": "#0071f6"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#005edc",
+            "dark": "#005fd8"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#0064e2",
+            "dark": "#50a8ff"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#002453",
+            "dark": "#ebf6ff"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "red": {
+        "100": {
+          "$value": {
+            "light": "#ffeef0",
+            "dark": "#330a11"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#ffe9ea",
+            "dark": "#440d13"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#ffe4e5",
+            "dark": "#5d0e17"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#ffd8d7",
+            "dark": "#6f101b"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#ffb5b6",
+            "dark": "#88151f"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#ff6a6e",
+            "dark": "#f32e40"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#fc0035",
+            "dark": "#f13242"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#e70022",
+            "dark": "#e2162a"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#d60020",
+            "dark": "#ff5e63"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#46000c",
+            "dark": "#ffeaed"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "amber": {
+        "100": {
+          "$value": {
+            "light": "#fff6e1",
+            "dark": "#291800"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#fff4d4",
+            "dark": "#331b00"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#fff1c8",
+            "dark": "#4f2900"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#ffdd84",
+            "dark": "#573200"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#ffc85e",
+            "dark": "#6c4100"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#ffaa00",
+            "dark": "#e99c00"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#ffb200",
+            "dark": "#ffb200"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#ff9900",
+            "dark": "#ff9900"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#a64f00",
+            "dark": "#ff9900"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#541c00",
+            "dark": "#fff3d9"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "green": {
+        "100": {
+          "$value": {
+            "light": "#ecfdec",
+            "dark": "#00250a"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#e5fce7",
+            "dark": "#003110"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#d3fad1",
+            "dark": "#003814"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#b9f5bc",
+            "dark": "#004616"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#82eb8d",
+            "dark": "#00661d"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#4ce15e",
+            "dark": "#009431"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#28a948",
+            "dark": "#00ab3e"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#279141",
+            "dark": "#009335"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#107d32",
+            "dark": "#00ca52"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#00370d",
+            "dark": "#daffe5"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "teal": {
+        "100": {
+          "$value": {
+            "light": "#dffffb",
+            "dark": "#00211b"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#ddfef6",
+            "dark": "#002922"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#ccf9f1",
+            "dark": "#003b33"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#b1f7ec",
+            "dark": "#003f35"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#52f0db",
+            "dark": "#005f53"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#00e2c4",
+            "dark": "#009885"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#00a694",
+            "dark": "#00a794"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#008d7d",
+            "dark": "#008d7d"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#007a6e",
+            "dark": "#00c9b5"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#003d34",
+            "dark": "#cefff5"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "purple": {
+        "100": {
+          "$value": {
+            "light": "#f9f0ff",
+            "dark": "#290c33"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#f9f1ff",
+            "dark": "#341142"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#f5e8ff",
+            "dark": "#47185e"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#f1d9ff",
+            "dark": "#541a76"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#dda9ff",
+            "dark": "#642290"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#c77dff",
+            "dark": "#9440d5"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#9f00f4",
+            "dark": "#9440d5"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#8400cd",
+            "dark": "#7d2bba"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#7c00c9",
+            "dark": "#c472fb"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#2e004d",
+            "dark": "#faedff"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      },
+      "pink": {
+        "100": {
+          "$value": {
+            "light": "#ffeaf5",
+            "dark": "#310d1e"
+          },
+          "$description": "default background",
+          "peer": "Geist"
+        },
+        "200": {
+          "$value": {
+            "light": "#ffeaf2",
+            "dark": "#420c25"
+          },
+          "$description": "hover background",
+          "peer": "Geist"
+        },
+        "300": {
+          "$value": {
+            "light": "#ffe0eb",
+            "dark": "#571032"
+          },
+          "$description": "active background",
+          "peer": "Geist"
+        },
+        "400": {
+          "$value": {
+            "light": "#ffd5e1",
+            "dark": "#5d0c34"
+          },
+          "$description": "default border",
+          "peer": "Geist"
+        },
+        "500": {
+          "$value": {
+            "light": "#fdb3cc",
+            "dark": "#76063f"
+          },
+          "$description": "hover border",
+          "peer": "Geist"
+        },
+        "600": {
+          "$value": {
+            "light": "#f97ea7",
+            "dark": "#b90056"
+          },
+          "$description": "active border",
+          "peer": "Geist"
+        },
+        "700": {
+          "$value": {
+            "light": "#f22782",
+            "dark": "#f12b82"
+          },
+          "$description": "high contrast background",
+          "peer": "Geist"
+        },
+        "800": {
+          "$value": {
+            "light": "#e4106e",
+            "dark": "#e6006e"
+          },
+          "$description": "hover high contrast background",
+          "peer": "Geist"
+        },
+        "900": {
+          "$value": {
+            "light": "#c41562",
+            "dark": "#ff518d"
+          },
+          "$description": "secondary text and icons",
+          "peer": "Geist"
+        },
+        "1000": {
+          "$value": {
+            "light": "#460523",
+            "dark": "#ffeaf4"
+          },
+          "$description": "primary text and icons",
+          "peer": "Geist"
+        }
+      }
+    }
+  },
+  "semantic": {
+    "color": {
+      "$type": "color",
+      "surface": {
+        "base": "{primitive.color.background.100}",
+        "sunken": "{primitive.color.background.200}",
+        "raised": "{primitive.color.background.100}",
+        "inverse": "{primitive.color.gray.1000}",
+        "component": "{primitive.color.gray.100}",
+        "component-hover": "{primitive.color.gray.200}",
+        "component-active": "{primitive.color.gray.300}"
+      },
+      "text": {
+        "primary": "{primitive.color.gray.1000}",
+        "secondary": "{primitive.color.gray.900}",
+        "tertiary": "{primitive.color.gray.700}",
+        "disabled": "{primitive.color.gray.700}",
+        "inverse": "{primitive.color.background.100}",
+        "on-accent": "#ffffff"
+      },
+      "border": {
+        "default": "{primitive.color.gray.400}",
+        "hover": "{primitive.color.gray.500}",
+        "active": "{primitive.color.gray.600}",
+        "subtle": "{primitive.color.gray-alpha.400}",
+        "error": "{primitive.color.red.900}"
+      },
+      "interactive": {
+        "primary-bg": "{primitive.color.gray.1000}",
+        "primary-fg": "{primitive.color.background.100}",
+        "secondary-bg": "{primitive.color.background.100}",
+        "secondary-border": "{primitive.color.gray-alpha.400}",
+        "link": "{primitive.color.gray.1000}",
+        "accent-slot": "{primitive.color.blue.700}",
+        "danger-bg": "{primitive.color.red.800}",
+        "accent-fill": "{primitive.color.blue.800}",
+        "switch-knob": {
+          "light": "{primitive.color.background.100}",
+          "dark": "{primitive.color.gray.1000}"
+        }
+      },
+      "status": {
+        "success": {
+          "fg": "{primitive.color.green.900}",
+          "bg": "{primitive.color.green.100}",
+          "border": "{primitive.color.green.400}",
+          "solid": "{primitive.color.green.700}"
+        },
+        "warning": {
+          "fg": "{primitive.color.amber.900}",
+          "bg": "{primitive.color.amber.100}",
+          "border": "{primitive.color.amber.400}",
+          "solid": "{primitive.color.amber.700}"
+        },
+        "danger": {
+          "fg": "{primitive.color.red.900}",
+          "bg": "{primitive.color.red.100}",
+          "border": "{primitive.color.red.400}",
+          "solid": "{primitive.color.red.700}"
+        },
+        "info": {
+          "fg": "{primitive.color.blue.900}",
+          "bg": "{primitive.color.blue.100}",
+          "border": "{primitive.color.blue.400}",
+          "solid": "{primitive.color.blue.700}"
+        }
+      },
+      "focus": {
+        "color": {
+          "light": "{primitive.color.blue.700}",
+          "dark": "{primitive.color.blue.900}"
+        }
+      },
+      "overlay": {
+        "backdrop": {
+          "light": "{primitive.color.gray.100}",
+          "dark": "{primitive.color.background.200}"
+        },
+        "backdrop-opacity": 0.8
+      },
+      "peer": "Geist"
+    }
+  },
+  "focus": {
+    "ring": {
+      "$value": "0 0 0 2px var(--ds-background-100), 0 0 0 4px var(--ds-focus-color)",
+      "peer": "Geist"
+    },
+    "outline": {
+      "$value": "2px solid var(--ds-focus-color)",
+      "peer": "Geist"
+    }
+  },
+  "font": {
+    "sans": {
+      "$value": "Geist Sans slot (skin); DropFast uses Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+      "peer": "Geist / Grok Bot"
+    },
+    "mono": {
+      "$value": "Geist Mono, ui-monospace, SFMono-Regular, Menlo, monospace",
+      "peer": "Geist"
+    },
+    "weight": {
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700,
+      "peer": "Geist"
+    }
+  },
+  "typography": {
+    "heading-72": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "72px",
+        "lineHeight": "72px",
+        "fontWeight": 600,
+        "letterSpacing": "-4.32px"
+      },
+      "peer": "Geist"
+    },
+    "heading-64": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "64px",
+        "lineHeight": "64px",
+        "fontWeight": 600,
+        "letterSpacing": "-3.84px"
+      },
+      "peer": "Geist"
+    },
+    "heading-56": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "56px",
+        "lineHeight": "56px",
+        "fontWeight": 600,
+        "letterSpacing": "-3.36px"
+      },
+      "peer": "Geist"
+    },
+    "heading-48": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "48px",
+        "lineHeight": "56px",
+        "fontWeight": 600,
+        "letterSpacing": "-2.88px"
+      },
+      "peer": "Geist"
+    },
+    "heading-40": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "40px",
+        "lineHeight": "48px",
+        "fontWeight": 600,
+        "letterSpacing": "-2.4px"
+      },
+      "peer": "Geist"
+    },
+    "heading-32": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "32px",
+        "lineHeight": "40px",
+        "fontWeight": 600,
+        "letterSpacing": "-1.28px"
+      },
+      "peer": "Geist"
+    },
+    "heading-24": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "24px",
+        "lineHeight": "32px",
+        "fontWeight": 600,
+        "letterSpacing": "-0.96px"
+      },
+      "peer": "Geist"
+    },
+    "heading-20": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "fontWeight": 600,
+        "letterSpacing": "-0.4px"
+      },
+      "peer": "Geist"
+    },
+    "heading-16": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "16px",
+        "lineHeight": "24px",
+        "fontWeight": 600,
+        "letterSpacing": "-0.32px"
+      },
+      "peer": "Geist"
+    },
+    "heading-14": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 600,
+        "letterSpacing": "-0.28px"
+      },
+      "peer": "Geist"
+    },
+    "button-16": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "16px",
+        "lineHeight": "20px",
+        "fontWeight": 500,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "button-14": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 500,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "button-12": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": 500,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-20": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "20px",
+        "lineHeight": "32px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-18": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "18px",
+        "lineHeight": "20px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-16": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "16px",
+        "lineHeight": "20px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-14": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-13": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "13px",
+        "lineHeight": "16px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-12": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-14-mono": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.mono}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-13-mono": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.mono}",
+        "fontSize": "13px",
+        "lineHeight": "20px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "label-12-mono": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.mono}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "copy-24": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "24px",
+        "lineHeight": "36px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "copy-20": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "20px",
+        "lineHeight": "36px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "copy-18": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "18px",
+        "lineHeight": "28px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "copy-16": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "16px",
+        "lineHeight": "24px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "copy-14": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "copy-13": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.sans}",
+        "fontSize": "13px",
+        "lineHeight": "18px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    },
+    "copy-13-mono": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.mono}",
+        "fontSize": "13px",
+        "lineHeight": "18px",
+        "fontWeight": 400,
+        "letterSpacing": "0px"
+      },
+      "peer": "Geist"
+    }
+  },
+  "typography-density": {
+    "compact": {
+      "product-sm": "11px",
+      "product-base": "12px",
+      "product-lg": "13px",
+      "peer": "Cursor"
+    },
+    "default": {
+      "body": "copy-14",
+      "peer": "Geist"
+    },
+    "comfortable": {
+      "body": "16px/1.75",
+      "h1": "48px/1.1 500 -0.025em",
+      "h2": "24px/1.33",
+      "h3": "20px/1.4",
+      "lead": "18px/1.75",
+      "measure": "48rem",
+      "peer": "Grok Bot"
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "base": {
+      "$value": "4px",
+      "peer": "Geist"
+    },
+    "1x": {
+      "$value": "4px",
+      "peer": "Geist"
+    },
+    "2x": {
+      "$value": "8px",
+      "peer": "Geist"
+    },
+    "3x": {
+      "$value": "12px",
+      "peer": "Geist"
+    },
+    "4x": {
+      "$value": "16px",
+      "peer": "Geist"
+    },
+    "6x": {
+      "$value": "24px",
+      "peer": "Geist"
+    },
+    "8x": {
+      "$value": "32px",
+      "peer": "Geist"
+    },
+    "10x": {
+      "$value": "40px",
+      "peer": "Geist"
+    },
+    "16x": {
+      "$value": "64px",
+      "peer": "Geist"
+    },
+    "24x": {
+      "$value": "96px",
+      "peer": "Geist"
+    },
+    "32x": {
+      "$value": "128px",
+      "peer": "Geist"
+    },
+    "48x": {
+      "$value": "192px",
+      "peer": "Geist"
+    },
+    "64x": {
+      "$value": "256px",
+      "peer": "Geist"
+    },
+    "gap": {
+      "$value": "24px",
+      "peer": "Geist"
+    },
+    "gap-half": {
+      "$value": "12px",
+      "peer": "Geist"
+    },
+    "gap-quarter": {
+      "$value": "8px",
+      "peer": "Geist"
+    },
+    "page-margin": {
+      "$value": "24px",
+      "peer": "Geist"
+    },
+    "cursor-g": {
+      "$value": "10px",
+      "peer": "Cursor (compact density grid)"
+    }
+  },
+  "size": {
+    "$type": "dimension",
+    "control-tiny": {
+      "$value": "24px",
+      "peer": "Geist (button-12 in input)"
+    },
+    "control-small": {
+      "$value": "32px",
+      "peer": "Geist"
+    },
+    "control-medium": {
+      "$value": "36px",
+      "peer": "Geist"
+    },
+    "control-large": {
+      "$value": "40px",
+      "peer": "Geist"
+    },
+    "icon": {
+      "$value": "16px",
+      "peer": "Geist"
+    },
+    "avatar": {
+      "$value": [14, 16, 24, 32, 48, 90],
+      "peer": "Geist"
+    },
+    "page-width": {
+      "$value": "1400px",
+      "peer": "Geist"
+    },
+    "docs-measure": {
+      "$value": "48rem",
+      "peer": "Grok Bot"
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "none": {
+      "$value": "0"
+    },
+    "xs": {
+      "$value": "4px",
+      "peer": "Grok Bot code / Cursor xs"
+    },
+    "base": {
+      "$value": "6px",
+      "peer": "Geist material-base/small/tooltip"
+    },
+    "medium": {
+      "$value": "12px",
+      "peer": "Geist material-medium/large/menu/modal"
+    },
+    "fullscreen": {
+      "$value": "16px",
+      "peer": "Geist material-fullscreen; Grok Bot doc cards"
+    },
+    "full": {
+      "$value": "9999px"
+    },
+    "popover-row": {
+      "$value": "6px",
+      "peer": "Geist"
+    }
+  },
+  "border-width": {
+    "default": {
+      "$value": "1px",
+      "peer": "Geist"
+    },
+    "focus": {
+      "$value": "2px",
+      "peer": "Geist"
+    }
+  },
+  "shadow": {
+    "2xs": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 1px 1px #0000000a",
+        "dark": "0px 1px 1px #00000029"
+      },
+      "peer": "Geist"
+    },
+    "xs": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 1px 2px #0000000a",
+        "dark": "0px 1px 2px #00000029"
+      },
+      "peer": "Geist"
+    },
+    "small": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 2px 2px #0000000a",
+        "dark": "0px 1px 2px #00000029"
+      },
+      "peer": "Geist"
+    },
+    "medium": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 2px 2px #0000000a, 0px 8px 8px -8px #0000000a",
+        "dark": "0px 2px 2px #00000052, 0px 8px 8px -8px #00000029"
+      },
+      "peer": "Geist"
+    },
+    "large": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 2px 2px #0000000a, 0px 8px 16px -4px #0000000a",
+        "dark": "0px 2px 2px #0000000a, 0px 8px 16px -4px #0000000a"
+      },
+      "peer": "Geist"
+    },
+    "xl": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 1px 1px #00000005, 0px 4px 8px -4px #0000000a, 0px 16px 24px -8px #0000000f",
+        "dark": "0px 1px 1px #00000005, 0px 4px 8px -4px #0000000a, 0px 16px 24px -8px #0000000f"
+      },
+      "peer": "Geist"
+    },
+    "2xl": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 1px 1px #00000005, 0px 8px 16px -4px #0000000a, 0px 24px 32px -8px #0000000f",
+        "dark": "0px 1px 1px #00000005, 0px 8px 16px -4px #0000000a, 0px 24px 32px -8px #0000000f"
+      },
+      "peer": "Geist"
+    },
+    "border-base": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0 0 0 1px #00000014",
+        "dark": "0 0 0 1px #ffffff25"
+      },
+      "peer": "Geist"
+    },
+    "border": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "border-small": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), var(--ds-shadow-small), var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), var(--ds-shadow-small), var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "border-medium": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), var(--ds-shadow-medium), var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), var(--ds-shadow-medium), var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "border-large": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), var(--ds-shadow-large), var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), var(--ds-shadow-large), var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "tooltip": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 4px 8px #0000000a, var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 4px 8px #0000000a, var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "menu": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 4px 8px -4px #0000000a, 0px 16px 24px -8px #0000000f, var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 4px 8px -4px #0000000a, 0px 16px 24px -8px #0000000f, var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "modal": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 8px 16px -4px #0000000a, 0px 24px 32px -8px #0000000f, var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 8px 16px -4px #0000000a, 0px 24px 32px -8px #0000000f, var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "fullscreen": {
+      "$type": "shadow",
+      "$value": {
+        "light": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 8px 16px -4px #0000000a, 0px 24px 32px -8px #0000000f, var(--ds-shadow-background-border)",
+        "dark": "var(--ds-shadow-border-base), 0px 1px 1px #00000005, 0px 8px 16px -4px #0000000a, 0px 24px 32px -8px #0000000f, var(--ds-shadow-background-border)"
+      },
+      "peer": "Geist"
+    },
+    "modal-elevated": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0px 0px 0px 1px #00000014, 0px 32px 72px -12px #0000000f, 0px 8px 32px -12px #00000014, 0px 8px 24px -12px #0000001f",
+        "dark": "0 0 0 1px var(--ds-gray-alpha-400), 0px 32px 72px -12px #0000000f, 0px 8px 32px -12px #00000014, 0px 8px 24px -12px #0000001f"
+      },
+      "peer": "Geist"
+    },
+    "background-border": {
+      "$type": "shadow",
+      "$value": {
+        "light": "0 0 0 0 transparent",
+        "dark": "0 0 0 0 transparent"
+      },
+      "$description": "Closes the dangling var(--ds-shadow-background-border) reference used by shadow.border/menu/modal. Neutral no op ring until a Geist peer value is confirmed.",
+      "peer": "Geist-aligned (added 2026-11-03 by gallery build)"
+    }
+  },
+  "material": {
+    "base": {
+      "radius": "6px",
+      "shadow": "border",
+      "peer": "Geist"
+    },
+    "small": {
+      "radius": "6px",
+      "shadow": "border-small",
+      "peer": "Geist"
+    },
+    "medium": {
+      "radius": "12px",
+      "shadow": "border-medium",
+      "peer": "Geist"
+    },
+    "large": {
+      "radius": "12px",
+      "shadow": "border-large",
+      "peer": "Geist"
+    },
+    "tooltip": {
+      "radius": "6px",
+      "shadow": "tooltip",
+      "peer": "Geist"
+    },
+    "menu": {
+      "radius": "12px",
+      "shadow": "menu",
+      "peer": "Geist"
+    },
+    "modal": {
+      "radius": "12px",
+      "shadow": "modal",
+      "peer": "Geist"
+    },
+    "fullscreen": {
+      "radius": "16px",
+      "shadow": "fullscreen",
+      "peer": "Geist"
+    }
+  },
+  "z": {
+    "base": {
+      "$value": 0
+    },
+    "raised": {
+      "$value": 1,
+      "peer": "Std (stacking a focused segment above its siblings)"
+    },
+    "sticky": {
+      "$value": 100,
+      "peer": "TBD, need peer"
+    },
+    "drawer": {
+      "$value": 200,
+      "peer": "Geist"
+    },
+    "modal": {
+      "$value": 300,
+      "peer": "Geist"
+    },
+    "menu": {
+      "$value": 2001,
+      "peer": "Geist"
+    },
+    "toast": {
+      "$value": 5000,
+      "peer": "Geist"
+    },
+    "tooltip": {
+      "$value": 99999,
+      "peer": "Geist"
+    }
+  },
+  "motion": {
+    "duration": {
+      "micro": {
+        "$value": "150ms",
+        "peer": "Geist (Cursor 140ms)"
+      },
+      "popover": {
+        "$value": "200ms",
+        "peer": "Geist"
+      },
+      "slow": {
+        "$value": "250ms",
+        "peer": "Cursor"
+      },
+      "overlay": {
+        "$value": "300ms",
+        "peer": "Geist"
+      },
+      "tooltip-delay": {
+        "$value": "150ms",
+        "peer": "Geist"
+      }
+    },
+    "easing": {
+      "standard": {
+        "$value": "cubic-bezier(.4,0,.2,1)",
+        "peer": "Geist"
+      },
+      "enter": {
+        "$value": "cubic-bezier(0,0,.2,1)",
+        "peer": "Geist"
+      },
+      "exit": {
+        "$value": "cubic-bezier(.4,0,1,1)",
+        "peer": "Geist"
+      },
+      "swift": {
+        "$value": "cubic-bezier(.175,.885,.32,1.1)",
+        "peer": "Geist"
+      },
+      "spring-out": {
+        "$value": "cubic-bezier(.25,1,.5,1)",
+        "peer": "Cursor"
+      }
+    },
+    "overlay-scale": {
+      "$value": 0.96,
+      "peer": "Geist"
+    }
+  },
+  "opacity": {
+    "backdrop": {
+      "$value": 0.8,
+      "peer": "Geist"
+    },
+    "disabled": {
+      "$value": "none: use gray-100 bg / gray-700 fg",
+      "peer": "Geist"
+    }
+  },
+  "breakpoint": {
+    "sm": {
+      "$value": "0px"
+    },
+    "md": {
+      "$value": "601px",
+      "peer": "Geist"
+    },
+    "lg": {
+      "$value": "961px",
+      "peer": "Geist"
+    },
+    "xl": {
+      "$value": "1200px",
+      "peer": "Geist"
+    },
+    "2xl": {
+      "$value": "1400px",
+      "peer": "Geist"
+    },
+    "docs": {
+      "$value": "640px",
+      "peer": "Grok Bot"
+    },
+    "$description": "Cursor dissent: 660 / 900 / 1140"
+  },
+  "guide-surface": {
+    "bg": "#ffffff",
+    "fg": "#0a0a0a",
+    "muted": "#7c8088",
+    "card": "#f8f6f2",
+    "border": "#d5d9e3",
+    "hair": "rgba(10,10,10,0.08)",
+    "peer": "Grok Bot (dropfast-instruction.css)"
+  }
+}
