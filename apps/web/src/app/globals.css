@@ -4142,21 +4142,21 @@ label.photo-page-add-target:focus-visible {
   color: #161310;
 }
 
-.demo-banner-dismiss,
-.demo-banner-reset {
-  appearance: none;
-  border: 0;
-  background: transparent;
+.demo-banner .ds-button--tertiary {
   color: rgba(255, 248, 238, 0.78);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
 }
 
-.demo-banner-reset {
+.demo-banner .ds-button--tertiary:hover {
+  background: rgba(255, 248, 238, 0.08);
+  color: #fff8ee;
+}
+
+.demo-banner .ds-button--tertiary:active {
+  background: rgba(255, 248, 238, 0.14);
+}
+
+.demo-banner .demo-banner-reset {
   order: 3;
-  font-size: 12px;
   color: rgba(255, 248, 238, 0.55);
 }
 
@@ -4182,11 +4182,12 @@ label.photo-page-add-target:focus-visible {
     white-space: nowrap;
   }
 
-  .demo-banner-cta.btn.primary {
+  .demo-banner-cta.ds-button {
     background: transparent;
     border-color: rgba(255, 248, 238, 0.35);
     color: #fff8ee;
     box-shadow: none;
+    height: auto;
     padding: 4px 8px;
     font-size: 12px;
     white-space: nowrap;
