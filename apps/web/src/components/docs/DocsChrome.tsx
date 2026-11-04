@@ -1,6 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { brandPublicPath } from "@ovenlovin/brand";
+import "@/components/ui/ui.css";
+
+/** Nav density matches the 14px nav links, so this CTA uses the medium control. */
+const apiKeyCtaClass = "ds-button ds-button--secondary ds-button--md";
+const apiKeyCtaOnConnectClass = "ds-button ds-button--default ds-button--md";
 
 export function DocsChrome({
   children,
@@ -46,7 +51,10 @@ export function DocsChrome({
             </li>
           </ul>
           <div className="nav-cta">
-            <Link className={current === "connect" ? "btn primary" : "btn"} href="/#connect">
+            <Link
+              className={current === "connect" ? apiKeyCtaOnConnectClass : apiKeyCtaClass}
+              href="/#connect"
+            >
               Get an API key
             </Link>
           </div>
