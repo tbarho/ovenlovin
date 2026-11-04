@@ -1,5 +1,6 @@
 import { createDbClient } from "@ovenlovin/db";
 import { seedE2eKitchen, seedE2eShotBook, seedE2eTriageBook } from "../src/lib/e2e-kitchen";
+import { seedE2eKitchenFull } from "../src/lib/e2e-kitchen-full";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -9,6 +10,8 @@ async function main() {
   const db = createDbClient(url);
   try {
     const result = await seedE2eKitchen(db);
+    // E2E_KITCHEN_FULL=1: the larger local-only fixture. Never set for pnpm e2e:kitchen.
+    if (process.env.E2E_KITCHEN_FULL === "1") await seedE2eKitchenFull(db, result);
     // --fresh-book: start the triage book over so the e2e can save it again.
     if (process.argv.includes("--fresh-book"))
       await seedE2eTriageBook(db, result.householdId, true);

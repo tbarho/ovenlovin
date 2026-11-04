@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import "./ingredient-mapping";
-import { phraseMatchesAny, phraseMatchesLine, stemWord } from "./phrase-match";
+import {
+  findPhraseStarts,
+  findPhraseStartsInTokens,
+  phraseMatchesAny,
+  phraseMatchesLine,
+  phraseTokens,
+  stemWord,
+} from "./phrase-match";
 
 describe("phraseMatchesLine", () => {
   it("matches a word case-insensitively inside an ingredient line", () => {
@@ -63,5 +70,24 @@ describe("phraseMatchesAny", () => {
   it("returns true when any line matches", () => {
     expect(phraseMatchesAny("spicy", ["mild soup", "spicy tacos"])).toBe(true);
     expect(phraseMatchesAny("spicy", ["mild soup"])).toBe(false);
+  });
+});
+
+describe("findPhraseStartsInTokens", () => {
+  it("returns exactly what findPhraseStarts returns for pre-tokenized input", () => {
+    const cases: Array<[string, string]> = [
+      ["olive", "2 tbsp olive oil"],
+      ["olive", "1/2 cup kalamata olives"],
+      ["peanut", "peanut-free chocolate chips"],
+      ["pine nut", "1/4 cup toasted pine nuts"],
+      ["chestnut", "1 can water chestnuts"],
+      ["almond", "no almonds, use almond extract-free vanilla"],
+      ["egg", "2 eggs plus 1 egg yolk"],
+    ];
+    for (const [phrase, line] of cases) {
+      expect(
+        findPhraseStartsInTokens(phrase, phraseTokens(phrase), line, phraseTokens(line))
+      ).toEqual(findPhraseStarts(phrase, line));
+    }
   });
 });

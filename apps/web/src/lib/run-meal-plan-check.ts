@@ -19,6 +19,7 @@ import {
   type PersonWithRules,
 } from "@ovenlovin/allergens";
 import { NotFoundError, requireResourceId } from "@/lib/api/errors";
+import { warmIngredientMatches } from "@/lib/ingredient-match-store";
 
 export async function persistMealPlanCheck(planId: string, householdId: string) {
   const report = await runMealPlanCheck(planId, householdId);
@@ -105,6 +106,13 @@ export async function runMealPlanCheck(planId: string, householdId: string) {
     people: peopleWithRules,
   };
 
+  await warmIngredientMatches(
+    entryInputs.flatMap((entry) =>
+      entry.recipeId
+        ? [{ recipeId: entry.recipeId, lines: entry.ingredients.map((item) => item.name) }]
+        : []
+    )
+  );
   const checkResult = checkMealPlan(checkInput);
   const checkedAt = new Date().toISOString();
   return {
