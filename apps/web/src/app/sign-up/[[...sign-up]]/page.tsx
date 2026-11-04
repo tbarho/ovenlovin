@@ -6,6 +6,9 @@ import { clerkUnavailableCopy } from "@/lib/clerk-unavailable";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
 import { authRedirectOrigins } from "@/lib/auth-redirect-origins";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
+import "@/components/ui/ui.css";
+
+const unavailableCtaClass = "ds-button ds-button--default ds-button--md";
 
 export default async function SignUpPage({
   searchParams,
@@ -36,7 +39,7 @@ export default async function SignUpPage({
           <>
             <h1>{unavailable.title}</h1>
             <p className="empty-note">{unavailable.body}</p>
-            <Link className="btn primary" href={unavailable.href}>
+            <Link className={unavailableCtaClass} href={unavailable.href}>
               {unavailable.linkLabel}
             </Link>
           </>
