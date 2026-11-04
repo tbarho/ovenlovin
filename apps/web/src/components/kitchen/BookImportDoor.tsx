@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type InputHTMLAttributes } from "react";
+import { Button, Field } from "@/components/ui";
 import {
   addBook,
   bookDoneLabel,
@@ -48,6 +49,14 @@ function BookProgress({ step }: { step: BookStep }) {
   );
 }
 
+/** Native file control. Input has no file type; Field still wires the label. */
+function CookbookPdfInput({
+  invalid: _invalid,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
+  return <input type="file" accept="application/pdf,.pdf" {...props} />;
+}
+
 /** `blocked` (the public demo) disables the door up front; the sentence lives at `#books-blocked`. */
 export function BookImportDoor({
   deps,
@@ -74,15 +83,14 @@ export function BookImportDoor({
   return (
     <>
       <p>
-        <button
-          className="btn"
-          type="button"
+        <Button
+          variant="secondary"
           disabled={Boolean(blocked)}
           aria-describedby={blocked ? "books-blocked" : undefined}
           onClick={() => setOpen(true)}
         >
           Add a whole cookbook
-        </button>
+        </Button>
       </p>
       <BottomSheet
         open={open}
@@ -98,7 +106,10 @@ export function BookImportDoor({
             <p className="sheet-lead" role="status">
               {bookDoneLabel(result)}
             </p>
-            <Link className="btn primary" href={`/recipes/books/${result.jobId}`}>
+            <Link
+              className="ds-button ds-button--default ds-button--md"
+              href={`/recipes/books/${result.jobId}`}
+            >
               Pick recipes
             </Link>
           </div>
@@ -108,14 +119,9 @@ export function BookImportDoor({
             <p className="sheet-lead">
               Drop in a PDF of the book. We&apos;ll read the contents first.
             </p>
-            <label className="field">
-              <span className="field-label">Cookbook PDF</span>
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                onChange={(event) => pick(event.target.files?.[0])}
-              />
-            </label>
+            <Field label="Cookbook PDF">
+              <CookbookPdfInput onChange={(event) => pick(event.target.files?.[0])} />
+            </Field>
           </div>
         ) : null}
         {error ? (

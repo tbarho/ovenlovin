@@ -29,6 +29,8 @@ describe("ImportFromDevice", () => {
     );
     const add = screen.getByRole("link", { name: "Add the OvenLovin Shortcut" });
     expect(add).toHaveAttribute("href", "https://www.icloud.com/shortcuts/example");
+    expect(add).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(add).not.toHaveClass("btn");
   });
 
   it("puts drag and copy code under Advanced", async () => {
