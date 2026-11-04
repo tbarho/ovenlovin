@@ -2282,8 +2282,7 @@ select {
   color: var(--muted);
 }
 
-.kitchen-switcher select,
-.member-actions select {
+.kitchen-switcher select {
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line-2);
@@ -2347,11 +2346,6 @@ select {
   align-items: center;
 }
 
-.member-role {
-  text-transform: capitalize;
-  font-size: 14px;
-}
-
 .invite-page {
   display: grid;
   justify-items: start;
@@ -2378,7 +2372,7 @@ select {
     flex-direction: column;
   }
 
-  .member-actions .btn,
+  .member-actions [data-slot="button"],
   .invite-row [data-slot="button"],
   .invite-create [data-slot="button"],
   .invite-auth .btn {
