@@ -15,7 +15,8 @@ describe("RecipeDetail default servings", () => {
 
     const stepper = container.querySelector(".servings-stepper");
     expect(stepper).not.toBeNull();
-    expect(stepper?.querySelectorAll(".btn.compact")).toHaveLength(2);
+    expect(stepper?.querySelectorAll(".btn")).toHaveLength(0);
+    expect(stepper?.querySelectorAll("[data-slot='button']")).toHaveLength(2);
 
     for (const name of ["Fewer servings", "More servings"]) {
       const button = screen.getByRole("button", { name });
@@ -24,13 +25,9 @@ describe("RecipeDetail default servings", () => {
       expect(button).toHaveAttribute("data-variant", "secondary");
       expect(button).toHaveAttribute("data-size", "sm");
       expect(button).toHaveAttribute("type", "button");
-      expect(button).toHaveClass(
-        "ds-button",
-        "ds-button--secondary",
-        "ds-button--sm",
-        "btn",
-        "compact"
-      );
+      expect(button).toHaveClass("ds-button", "ds-button--secondary", "ds-button--sm");
+      expect(button).not.toHaveClass("btn");
+      expect(button).not.toHaveClass("compact");
       expect(button).not.toHaveAttribute("href");
       expect(stepper).toContainElement(button);
     }
