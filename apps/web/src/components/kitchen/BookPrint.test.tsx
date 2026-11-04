@@ -27,6 +27,50 @@ afterEach(() => {
   vi.mocked(api).mockReset();
 });
 
+describe("BookPrint primitives", () => {
+  it("uses secondary Print / Make another Buttons, a default Make the PDF Button, and a ds-button download link", async () => {
+    vi.mocked(api).mockResolvedValueOnce(
+      view({
+        status: "ready",
+        done: 4,
+        bytes: 3 * 1024 * 1024,
+        downloadUrl: "/dl",
+      })
+    );
+    render(<BookPrint bookId={BOOK} />);
+
+    const print = screen.getByRole("button", { name: "Print" });
+    expect(print).toHaveAttribute("data-slot", "button");
+    expect(print).toHaveAttribute("data-variant", "secondary");
+    expect(print).not.toHaveClass("btn");
+    fireEvent.click(print);
+
+    const make = screen.getByRole("button", { name: "Make the PDF" });
+    expect(make).toHaveAttribute("data-slot", "button");
+    expect(make).toHaveAttribute("data-variant", "default");
+    expect(make).not.toHaveClass("btn");
+    expect(screen.getByRole("radiogroup", { name: "Where to print" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /at home/i })).toHaveClass("choice");
+
+    await act(async () => {
+      fireEvent.click(make);
+    });
+
+    const download = screen.getByRole("link", { name: /download pdf 3.0 mb/i });
+    expect(download).toHaveAttribute("href", "/dl");
+    expect(download).toHaveAttribute("download");
+    expect(download).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(download).not.toHaveClass("btn");
+
+    const again = screen.getByRole("button", { name: "Make another" });
+    expect(again).toHaveAttribute("data-slot", "button");
+    expect(again).toHaveAttribute("data-variant", "secondary");
+    expect(again).not.toHaveClass("btn");
+
+    expect(document.querySelector(".btn")).toBeNull();
+  });
+});
+
 describe("BookPrint", () => {
   it("in the demo, Make the PDF is off up front and says why", () => {
     render(<BookPrint bookId={BOOK} blocked="Print PDFs are turned off in the public demo." />);
@@ -36,6 +80,29 @@ describe("BookPrint", () => {
     expect(make).toHaveAccessibleDescription("Print PDFs are turned off in the public demo.");
     fireEvent.click(make);
     expect(api).not.toHaveBeenCalled();
+  });
+
+  it("shows Make the PDF as a loading Button while the job starts", async () => {
+    let resolveStart: (value: ReturnType<typeof view>) => void = () => {};
+    vi.mocked(api).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStart = resolve;
+        })
+    );
+    render(<BookPrint bookId={BOOK} />);
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    const make = screen.getByRole("button", { name: /make the pdf/i });
+    fireEvent.click(make);
+
+    expect(make).toHaveAttribute("aria-busy", "true");
+    expect(make.querySelector(".ds-button__spinner")).not.toBeNull();
+    expect(make).toHaveTextContent("Make the PDF");
+
+    await act(async () => {
+      resolveStart(view());
+    });
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "25");
   });
 
   it("starts the chosen mode, shows progress, then the download", async () => {
@@ -83,7 +150,10 @@ describe("BookPrint", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /make the pdf/i }));
     });
-    expect(screen.getByRole("alert")).toHaveTextContent("The book changed");
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("The book changed");
+    expect(alert).toHaveAttribute("data-slot", "hint");
+    expect(alert).toHaveClass("ds-hint--error");
     expect(screen.getByRole("button", { name: /make the pdf/i })).toBeEnabled();
   });
 
