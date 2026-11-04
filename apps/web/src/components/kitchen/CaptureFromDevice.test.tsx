@@ -62,10 +62,16 @@ describe("CaptureFromDevice", () => {
 
     render(<CaptureFromDevice />);
     expect(await screen.findByText(/already imported/)).toBeVisible();
-    expect(screen.getByRole("link", { name: "Open that recipe" })).toHaveAttribute(
-      "href",
-      "/recipes/00000000-0000-4000-8000-000000000021"
-    );
+    const open = screen.getByRole("link", { name: "Open that recipe" });
+    expect(open.tagName).toBe("A");
+    expect(open).toHaveAttribute("href", "/recipes/00000000-0000-4000-8000-000000000021");
+    expect(open).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(open).not.toHaveClass("btn");
+    const back = screen.getByRole("link", { name: "Back to recipes" });
+    expect(back.tagName).toBe("A");
+    expect(back).toHaveAttribute("href", "/recipes");
+    expect(back).toHaveClass("ds-button", "ds-button--secondary", "ds-button--md");
+    expect(back).not.toHaveClass("btn");
   });
 
   it("explains an empty hash", async () => {
@@ -73,5 +79,11 @@ describe("CaptureFromDevice", () => {
     render(<CaptureFromDevice />);
     expect(await screen.findByText(/No page was sent/)).toBeVisible();
     expect(api).not.toHaveBeenCalled();
+    const back = screen.getByRole("link", { name: "Back to recipes" });
+    expect(back.tagName).toBe("A");
+    expect(back).toHaveAttribute("href", "/recipes");
+    expect(back).toHaveClass("ds-button", "ds-button--secondary", "ds-button--md");
+    expect(back).not.toHaveClass("btn");
+    expect(screen.queryByRole("link", { name: "Open that recipe" })).not.toBeInTheDocument();
   });
 });
