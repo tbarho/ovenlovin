@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 
@@ -73,18 +74,18 @@ export function ShareCookbookSheet({
               onFocus={(event) => event.currentTarget.select()}
             />
             <div className="recipe-actions" style={{ margin: 0 }}>
-              <button className="btn primary" type="button" onClick={copy}>
+              <Button type="button" onClick={copy}>
                 {copied ? "Copied" : "Copy link"}
-              </button>
-              <button className="btn" type="button" disabled={pending} onClick={revoke}>
+              </Button>
+              <Button type="button" variant="secondary" disabled={pending} onClick={revoke}>
                 {pending ? "Stopping…" : "Stop sharing"}
-              </button>
+              </Button>
             </div>
           </>
         ) : (
-          <button className="btn primary" type="button" disabled={pending} onClick={create}>
-            {pending ? "Making link…" : "Create link"}
-          </button>
+          <Button type="button" loading={pending} disabled={pending} onClick={create}>
+            Create link
+          </Button>
         )}
         {error ? (
           <p className="muted" role="alert">
