@@ -282,7 +282,6 @@ export function RecipeDetail({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="btn compact"
                 aria-label="Fewer servings"
                 onClick={() => setServings(clampServings(servings - 1, 1, servingsMax))}
               >
@@ -305,7 +304,6 @@ export function RecipeDetail({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="btn compact"
                 aria-label="More servings"
                 onClick={() => setServings(clampServings(servings + 1, 1, servingsMax))}
               >
