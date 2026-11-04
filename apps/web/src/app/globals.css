@@ -2136,16 +2136,12 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: end;
   margin-top: 12px;
 }
 
-.key-create input {
-  min-width: min(100%, 240px);
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--line-2);
-  border-radius: 999px;
-  background: #fff;
+.key-create [data-slot="field"] {
+  min-width: min(100%, 16rem);
 }
 
 .key-secret {
@@ -2198,12 +2194,6 @@ select {
 .key-table code {
   font-family: var(--mono);
   font-size: 12.5px;
-}
-
-.key-table .btn {
-  height: 34px;
-  padding: 0 12px;
-  font-size: 13px;
 }
 
 .key-table tr.is-revoked td {
