@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { VERCEL_DEPLOY_URL } from "@ovenlovin/brand";
 import { ConfirmDialog } from "@/components/kitchen/ConfirmDialog";
+import { Button } from "@/components/ui";
 
 const STORAGE_KEY = "ovenlovin.demo-banner.dismissed";
 const RESET_FAILED = "Could not reset this kitchen. Try again.";
@@ -46,26 +47,28 @@ export function DemoBanner() {
         <span className="demo-banner-copy"> Your sandbox lasts about 24 hours.</span>
       </span>
       <div className="demo-banner-actions">
-        <a className="btn primary demo-banner-cta" href={VERCEL_DEPLOY_URL}>
+        <a
+          className="ds-button ds-button--default ds-button--md demo-banner-cta"
+          href={VERCEL_DEPLOY_URL}
+        >
           Deploy your own
         </a>
-        <button
-          type="button"
-          className="demo-banner-dismiss hit44-y"
+        <Button
+          variant="tertiary"
           onClick={() => {
             window.sessionStorage.setItem(STORAGE_KEY, "1");
             setHidden(true);
           }}
         >
           Dismiss
-        </button>
-        <button
-          type="button"
-          className="demo-banner-reset hit44-y"
+        </Button>
+        <Button
+          variant="tertiary"
+          className="demo-banner-reset"
           onClick={() => setConfirmReset(true)}
         >
           Reset kitchen
-        </button>
+        </Button>
       </div>
       <ConfirmDialog
         open={confirmReset}
