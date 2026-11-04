@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Cookbook, RecipeDetails } from "@ovenlovin/core";
 import { keepMainRecipeImages, recipeMainImage } from "@ovenlovin/core/media";
 import { clampServings, servingsRangeMax } from "@ovenlovin/core/scaling";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 
@@ -45,12 +46,12 @@ function RecipeSheet({
         <div className="sheet-discard" data-testid="discard-changes">
           <p className="sheet-lead">Discard unsaved changes?</p>
           <div className="sheet-actions">
-            <button type="button" className="btn" onClick={() => setConfirm(false)}>
+            <Button type="button" variant="secondary" onClick={() => setConfirm(false)}>
               Keep editing
-            </button>
-            <button type="button" className="btn danger" onClick={onClose}>
+            </Button>
+            <Button type="button" variant="error" onClick={onClose}>
               Discard
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -195,9 +196,9 @@ export function DetailsSheet({
           />
         </label>
         {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save details"}
-        </button>
+        <Button type="submit" loading={pending} disabled={pending}>
+          Save details
+        </Button>
       </form>
     </RecipeSheet>
   );
@@ -297,9 +298,9 @@ export function PhotosSheet({
             placeholder="https://example.com/pasta.jpg"
           />
         </label>
-        <button className="btn primary" type="submit" disabled={pending || !imageUrl}>
-          {pending ? "Saving…" : "Use this URL"}
-        </button>
+        <Button type="submit" loading={pending} disabled={pending || !imageUrl}>
+          Use this URL
+        </Button>
         <label>
           Choose file
           <input
@@ -312,14 +313,14 @@ export function PhotosSheet({
           />
         </label>
         {currentImage ? (
-          <button
-            className="btn"
+          <Button
             type="button"
+            variant="secondary"
             disabled={pending}
             onClick={() => void removePhoto()}
           >
             Remove photo
-          </button>
+          </Button>
         ) : null}
         {error ? <p className="muted">{error}</p> : null}
       </form>
@@ -378,9 +379,9 @@ export function IngredientsSheet({
           />
         </label>
         {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save ingredients"}
-        </button>
+        <Button type="submit" loading={pending} disabled={pending}>
+          Save ingredients
+        </Button>
       </form>
     </RecipeSheet>
   );
@@ -424,9 +425,9 @@ export function StepsSheet({
           <textarea value={stepText} onChange={(event) => setStepText(event.target.value)} />
         </label>
         {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save steps"}
-        </button>
+        <Button type="submit" loading={pending} disabled={pending}>
+          Save steps
+        </Button>
       </form>
     </RecipeSheet>
   );
@@ -486,9 +487,9 @@ export function CookbooksSheet({
           ))
         )}
         {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save cookbooks"}
-        </button>
+        <Button type="submit" loading={pending} disabled={pending}>
+          Save cookbooks
+        </Button>
       </form>
     </RecipeSheet>
   );
