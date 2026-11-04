@@ -8,6 +8,10 @@ import { safeAuthRedirect } from "@/lib/auth-redirect";
 import { DEMO_ENTER_PATH, safeDemoEnterNext } from "@/lib/demo/enter";
 import { isDemoModeEnabled } from "@/lib/demo/mode";
 import { getSessionContext } from "@/lib/session";
+import "@/components/ui/ui.css";
+
+const secondaryCtaClass = "ds-button ds-button--secondary ds-button--md";
+const primaryCtaClass = "ds-button ds-button--default ds-button--md";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +42,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           <>
             <h1>Invite not found</h1>
             <p className="muted">This link is invalid or the kitchen is gone.</p>
-            <Link className="btn" href="/">
+            <Link className={secondaryCtaClass} href="/">
               Back home
             </Link>
           </>
@@ -50,7 +54,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
                 ? `${preview.householdName} revoked this link.`
                 : `This link for ${preview.householdName} has expired.`}
             </p>
-            <Link className="btn" href="/">
+            <Link className={secondaryCtaClass} href="/">
               Back home
             </Link>
           </>
@@ -68,7 +72,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
               <InviteAccept token={token} householdName={preview.householdName} />
             ) : isDemoModeEnabled() ? (
               <Link
-                className="btn primary"
+                className={primaryCtaClass}
                 href={`${DEMO_ENTER_PATH}?next=${encodeURIComponent(safeDemoEnterNext(returnTo))}`}
               >
                 Enter demo to join
@@ -76,13 +80,13 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
             ) : (
               <div className="invite-auth">
                 <Link
-                  className="btn primary"
+                  className={primaryCtaClass}
                   href={`/sign-in?redirect_url=${encodeURIComponent(returnTo)}`}
                 >
                   Sign in to join
                 </Link>
                 <Link
-                  className="btn"
+                  className={secondaryCtaClass}
                   href={`/sign-up?redirect_url=${encodeURIComponent(returnTo)}`}
                 >
                   Create an account
