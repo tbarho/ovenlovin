@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { normalizeIngredientName } from "@ovenlovin/core/parsing";
 import { cookForPeopleLabel, shopItemDisplayName } from "@ovenlovin/core/scaling";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { groupShopItemsByAisle, shopItemQuantity } from "@/lib/shop-aisles";
 import type { ShopItem, ShoppingExtra, ShoppingTripState } from "@/lib/week-plan-view";
@@ -161,9 +162,15 @@ export function ShoppingList({
       <ShopAdd value={draft} onChange={setDraft} onSubmit={addExtra} pending={pending} />
       {checked.length > 0 ? (
         <div className="shop-toolbar">
-          <button type="button" className="btn compact" onClick={clearChecked} disabled={pending}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={clearChecked}
+            disabled={pending}
+          >
             Clear checked
-          </button>
+          </Button>
         </div>
       ) : null}
       {groups.map((group) => (
@@ -257,9 +264,9 @@ function ShopAdd({
           placeholder="Milk, paper towels…"
         />
       </label>
-      <button className="btn" type="submit" disabled={!value.trim() || pending}>
+      <Button type="submit" disabled={!value.trim() || pending}>
         Add item
-      </button>
+      </Button>
     </form>
   );
 }
