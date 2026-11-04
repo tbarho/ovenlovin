@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
 import type { CookbookCard, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
+import { Button, Field, Hint, Input } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { filterRecipesByQuery } from "@/lib/cookbook-recipes";
 import { recipeCardMeta } from "@/lib/recipe-card-meta";
@@ -75,16 +76,18 @@ function NewCookbookSheet({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <BottomSheet open={open} title="New cookbook" onClose={onClose}>
       <form className="form-card" style={{ margin: 0 }} onSubmit={createCookbook}>
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Sunday soup, snacks…"
-          required
-        />
-        {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending || !name.trim()}>
-          {pending ? "Creating…" : "Create cookbook"}
-        </button>
+        <Field label="Name">
+          <Input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Sunday soup, snacks…"
+            required
+          />
+        </Field>
+        {error ? <Hint tone="error">{error}</Hint> : null}
+        <Button type="submit" loading={pending} disabled={pending || !name.trim()}>
+          Create cookbook
+        </Button>
       </form>
     </BottomSheet>
   );
@@ -158,9 +161,7 @@ export function RecipesKitchen({
           </p>
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
-          <button
-            className="btn primary"
-            type="button"
+          <Button
             aria-expanded={showImport}
             aria-controls="add-recipe-panel"
             onClick={() => {
@@ -168,10 +169,10 @@ export function RecipesKitchen({
             }}
           >
             Add recipe
-          </button>
-          <button className="btn" type="button" onClick={() => setOpen(true)}>
+          </Button>
+          <Button variant="secondary" onClick={() => setOpen(true)}>
             New cookbook
-          </button>
+          </Button>
         </div>
       </div>
       {showImport ? (
@@ -187,14 +188,13 @@ export function RecipesKitchen({
 
       {emptyKitchen ? null : (
         <div className="recipe-browse">
-          <label className="field">
-            <span className="field-label">Search recipes</span>
-            <input
+          <Field label="Search recipes">
+            <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Pesto, soup, cookies…"
             />
-          </label>
+          </Field>
           {cookbooks.length > 0 ? (
             <div className="tabs recipe-scope" role="tablist" aria-label="Recipe shelf">
               <button
