@@ -5,6 +5,50 @@ import { testCookbook, testPerson, testRecipeDetails } from "@/test/fixtures";
 import { RecipeDetail } from "./RecipeDetail";
 
 describe("RecipeDetail default servings", () => {
+  it("uses compact secondary Buttons for the servings stepper", () => {
+    const { container } = render(
+      <RecipeDetail
+        recipe={testRecipeDetails({ title: "Weeknight pesto pasta", servings: 4 })}
+        cookbooks={[testCookbook()]}
+      />
+    );
+
+    const stepper = container.querySelector(".servings-stepper");
+    expect(stepper).not.toBeNull();
+    expect(stepper?.querySelectorAll(".btn.compact")).toHaveLength(2);
+
+    for (const name of ["Fewer servings", "More servings"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.tagName).toBe("BUTTON");
+      expect(button).toHaveAttribute("data-slot", "button");
+      expect(button).toHaveAttribute("data-variant", "secondary");
+      expect(button).toHaveAttribute("data-size", "sm");
+      expect(button).toHaveAttribute("type", "button");
+      expect(button).toHaveClass(
+        "ds-button",
+        "ds-button--secondary",
+        "ds-button--sm",
+        "btn",
+        "compact"
+      );
+      expect(button).not.toHaveAttribute("href");
+      expect(stepper).toContainElement(button);
+    }
+
+    for (const name of [
+      "Edit details",
+      "Delete recipe",
+      "Edit image",
+      "Edit ingredients",
+      "Edit steps",
+    ]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.tagName).toBe("BUTTON");
+      expect(button).toHaveClass("section-edit");
+      expect(button).not.toHaveAttribute("data-slot");
+    }
+  });
+
   it("opens a 4-serving recipe at family size and can reset to the card yield", async () => {
     const user = userEvent.setup();
     const people = Array.from({ length: 8 }, (_, index) =>
