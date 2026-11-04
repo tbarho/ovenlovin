@@ -194,7 +194,13 @@ describe("ImportRecipeForm photo import", () => {
     await user.click(within(dialog).getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByText("Import in progress")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Open" }));
+    const reopen = screen.getByRole("button", { name: "Open" });
+    expect(reopen).toHaveAttribute("data-variant", "tertiary");
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveAttribute(
+      "data-variant",
+      "tertiary"
+    );
+    await user.click(reopen);
     expect(await screen.findByRole("dialog")).toBeVisible();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
   });
@@ -357,6 +363,40 @@ describe("ImportRecipeForm photo import", () => {
   });
 });
 
+describe("ImportRecipeForm primitives", () => {
+  beforeEach(() => {
+    vi.mocked(api).mockReset();
+  });
+
+  it("uses shared Input, Textarea, and default Buttons; tabs stay native", async () => {
+    const user = userEvent.setup();
+    render(<ImportRecipeForm />);
+
+    const urlTab = screen.getByRole("tab", { name: "URL" });
+    expect(urlTab).toHaveClass("tab");
+    expect(urlTab).not.toHaveAttribute("data-slot", "button");
+
+    const url = screen.getByPlaceholderText(/example.com/i);
+    expect(url).toHaveAttribute("data-slot", "input");
+    const submit = screen.getByRole("button", { name: "Import" });
+    expect(submit).toHaveAttribute("data-slot", "button");
+    expect(submit).toHaveAttribute("data-variant", "default");
+    expect(submit).toHaveClass("import-submit");
+
+    await user.click(screen.getByRole("tab", { name: "Paste" }));
+    expect(screen.getByPlaceholderText(/weeknight tomato pasta/i)).toHaveAttribute(
+      "data-slot",
+      "textarea"
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Photo" }));
+    const photoSubmit = screen.getByRole("button", { name: "Import recipe" });
+    expect(photoSubmit).toHaveAttribute("data-slot", "button");
+    expect(photoSubmit).toHaveAttribute("data-variant", "default");
+    expect(photoSubmit).toHaveClass("import-submit");
+  });
+});
+
 describe("ImportRecipeForm url and paste validation", () => {
   beforeEach(() => {
     vi.mocked(api).mockReset();
@@ -438,8 +478,11 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://example.com/chocolate-chip-cookies"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByText(NOT_A_RECIPE_COPY)).toBeVisible();
-    expect(document.querySelector(".import-error")?.textContent).not.toMatch(/blocked/i);
+    const failure = screen.getByText(NOT_A_RECIPE_COPY);
+    expect(failure).toBeVisible();
+    expect(failure).toHaveAttribute("data-slot", "hint");
+    expect(failure).toHaveClass("ds-hint--error");
+    expect(failure).not.toHaveTextContent(/blocked/i);
     expect(api).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Paste the recipe text" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
@@ -454,7 +497,9 @@ describe("ImportRecipeForm url and paste validation", () => {
     await user.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByText(NOT_A_RECIPE_COPY)).toBeVisible();
     expect(screen.queryByText(/busy right now/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    const retry = screen.getByRole("button", { name: "Try again" });
+    expect(retry).toBeVisible();
+    expect(retry).toHaveAttribute("data-variant", "secondary");
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
   });
 
@@ -497,10 +542,15 @@ describe("ImportRecipeForm url and paste validation", () => {
       "https://www.budgetbytes.com/beef-stroganoff/"
     );
     await user.click(screen.getByRole("button", { name: "Import" }));
-    expect(await screen.findByText(BLOCKED_IMPORT_COPY)).toBeVisible();
-    expect(screen.getByText(BLOCKED_IMPORT_COPY)).not.toHaveTextContent(/bookmarklet/i);
+    const blocked = await screen.findByText(BLOCKED_IMPORT_COPY);
+    expect(blocked).toBeVisible();
+    expect(blocked).toHaveAttribute("data-slot", "hint");
+    expect(blocked).toHaveClass("ds-hint--error");
+    expect(blocked).not.toHaveTextContent(/bookmarklet/i);
     const pasteHelp = screen.getByRole("button", { name: "Paste the recipe text" });
     const photoHelp = screen.getByRole("button", { name: "Add a photo" });
+    expect(pasteHelp).toHaveAttribute("data-variant", "secondary");
+    expect(photoHelp).toHaveAttribute("data-variant", "secondary");
     expect(pasteHelp.compareDocumentPosition(photoHelp) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
