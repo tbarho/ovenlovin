@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DefaultServingsMode } from "@ovenlovin/core";
 import { cookForServingsLabel, SERVINGS_HARD_MAX } from "@ovenlovin/core/scaling";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import {
   applyDinnerToDays,
@@ -216,21 +217,35 @@ function DayEditor({
             </div>
             <div className="week-editor-actions">
               {current ? (
-                <button type="button" className="btn compact hit44-y" onClick={onClear}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="hit44-y"
+                  onClick={onClear}
+                >
                   Clear night
-                </button>
+                </Button>
               ) : null}
-              <button
+              <Button
                 type="button"
-                className="btn compact hit44-y"
+                variant="secondary"
+                size="sm"
+                className="hit44-y"
                 disabled={current?.isNoCook}
                 onClick={onNoCook}
               >
                 No-cook night
-              </button>
-              <button type="button" className="btn compact hit44-y" onClick={onClose}>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="hit44-y"
+                onClick={onClose}
+              >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
 
