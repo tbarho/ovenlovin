@@ -61,7 +61,15 @@ describe("LandingPage", () => {
     expect(screen.getByRole("link", { name: "Connect an agent" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Try the demo" })).not.toBeInTheDocument();
     expect(screen.getByText(/Always read the label/)).toBeInTheDocument();
-    expect(document.querySelectorAll(".hero-ctas .btn")).toHaveLength(2);
+    const heroCtas = document.querySelectorAll(".hero-ctas a");
+    expect(heroCtas).toHaveLength(2);
+    expect(heroCtas[0]).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(heroCtas[0]).not.toHaveClass("btn");
+    expect(heroCtas[0]).toHaveAttribute("href", "/sign-in");
+    expect(heroCtas[0]).toHaveTextContent("Sign in / start cooking");
+    expect(heroCtas[1]).toHaveClass("ds-button", "ds-button--secondary", "ds-button--md");
+    expect(heroCtas[1]).not.toHaveClass("btn");
+    expect(heroCtas[1]).toHaveAttribute("href", "/docs");
     expect(
       screen
         .getAllByRole("link", { name: /Read the docs/ })
@@ -75,6 +83,12 @@ describe("LandingPage", () => {
     const demos = screen.getAllByRole("link", { name: "Try the demo" });
     expect(demos.length).toBeGreaterThan(0);
     expect(demos.every((link) => link.getAttribute("href") === "https://demo.example")).toBe(true);
+    const heroCtas = document.querySelectorAll(".hero-ctas a");
+    expect(heroCtas[0]).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(heroCtas[0]).toHaveAttribute("href", "https://demo.example");
+    expect(heroCtas[1]).toHaveClass("ds-button", "ds-button--secondary", "ds-button--md");
+    expect(heroCtas[1]).toHaveAttribute("href", "/sign-in");
+    expect(heroCtas[1]).toHaveTextContent("Sign in");
   });
 
   it("shows owner internals after sign-in", () => {
@@ -88,6 +102,14 @@ describe("LandingPage", () => {
     expect(screen.getByRole("link", { name: "Project dashboard" })).toBeInTheDocument();
     expect(screen.getByTestId("owner-status")).toBeInTheDocument();
     expect(screen.getAllByText(/abc1234/).length).toBeGreaterThan(0);
+    const heroCtas = document.querySelectorAll(".hero-ctas a");
+    expect(heroCtas).toHaveLength(2);
+    expect(heroCtas[0]).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(heroCtas[0]).not.toHaveClass("btn");
+    expect(heroCtas[0]).toHaveAttribute("href", "/recipes");
+    expect(heroCtas[0]).toHaveTextContent("Start cooking");
+    expect(heroCtas[1]).toHaveClass("ds-button", "ds-button--secondary", "ds-button--md");
+    expect(heroCtas[1]).toHaveAttribute("href", "/docs");
   });
 
   it("shows the short build SHA in the footer for testers", () => {

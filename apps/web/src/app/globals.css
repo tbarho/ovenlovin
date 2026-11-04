@@ -2436,6 +2436,7 @@ select {
     align-items: stretch;
   }
 
+  .hero-ctas .ds-button,
   .hero-ctas .btn,
   .docs-page .hero-ctas .btn {
     width: 100%;

@@ -4,6 +4,7 @@ import { brandPublicPath } from "@ovenlovin/brand";
 import type { ConfigStatus, DeployInfo } from "@ovenlovin/core/onboarding";
 import { formatDeployedAt } from "@ovenlovin/core/onboarding";
 import { OVENLOVIN_PITCH } from "@/lib/llms-txt";
+import "@/components/ui/ui.css";
 import { ConnectAgentSection } from "./ConnectAgentSection";
 import { SiteHeader } from "./SiteHeader";
 import { StatusStrip } from "./StatusStrip";
@@ -94,28 +95,28 @@ export function LandingPage({
             ) : null}
             <div className="hero-ctas" id="start">
               {signedIn ? (
-                <Link className="btn primary" href="/recipes">
+                <Link className="ds-button ds-button--default ds-button--md" href="/recipes">
                   Start cooking
                 </Link>
               ) : demoUrl ? (
-                <a className="btn primary" href={demoUrl}>
+                <a className="ds-button ds-button--default ds-button--md" href={demoUrl}>
                   Try the demo
                 </a>
               ) : clerkEnabled ? (
-                <Link className="btn primary" href="/sign-in">
+                <Link className="ds-button ds-button--default ds-button--md" href="/sign-in">
                   Sign in / start cooking
                 </Link>
               ) : (
-                <a className="btn primary" href="#status">
+                <a className="ds-button ds-button--default ds-button--md" href="#status">
                   Finish setup to sign in
                 </a>
               )}
               {!signedIn && demoUrl && clerkEnabled ? (
-                <Link className="btn" href="/sign-in">
+                <Link className="ds-button ds-button--secondary ds-button--md" href="/sign-in">
                   Sign in
                 </Link>
               ) : (
-                <Link className="btn" href="/docs">
+                <Link className="ds-button ds-button--secondary ds-button--md" href="/docs">
                   Read the docs
                 </Link>
               )}
