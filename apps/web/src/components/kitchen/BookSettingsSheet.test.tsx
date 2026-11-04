@@ -51,6 +51,74 @@ describe("bookSettingsBody", () => {
 });
 
 describe("BookSettingsSheet", () => {
+  it("uses secondary order-move Buttons and a default Save book Button", async () => {
+    let finish: (value: unknown) => void = () => {};
+    vi.mocked(api).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    const onClose = vi.fn();
+    render(
+      <BookSettingsSheet
+        bookId={BOOK}
+        name="Household 1 kitchen"
+        settings={{}}
+        recipes={RECIPES}
+        open
+        onClose={onClose}
+      />
+    );
+
+    const sheet = screen.getByRole("dialog", { name: "Make it yours" });
+    expect(sheet.querySelector(".book-settings")).not.toBeNull();
+    expect(sheet.querySelector(".btn")).toBeNull();
+
+    const cover = screen.getByRole("radio", { name: "Pie" });
+    expect(cover.tagName).toBe("BUTTON");
+    expect(cover).not.toHaveAttribute("data-slot", "button");
+    expect(cover).not.toHaveClass("ds-button");
+
+    const up = screen.getByRole("button", { name: "Move Pancakes up" });
+    const down = screen.getByRole("button", { name: "Move Pancakes down" });
+    expect(up).toHaveAttribute("data-slot", "button");
+    expect(up).toHaveAttribute("data-variant", "secondary");
+    expect(up).toHaveAttribute("data-size", "md");
+    expect(up).toHaveAttribute("type", "button");
+    expect(up).toHaveClass("book-order-move");
+    expect(up).not.toHaveClass("btn");
+    expect(up).toBeDisabled();
+    expect(down).toHaveAttribute("data-variant", "secondary");
+    expect(down).toHaveClass("book-order-move");
+    expect(down).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Move Pie down" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Soup up" })).toBeEnabled();
+
+    const save = screen.getByRole("button", { name: "Save book" });
+    expect(save).toHaveAttribute("data-slot", "button");
+    expect(save).toHaveAttribute("data-variant", "default");
+    expect(save).toHaveAttribute("data-size", "md");
+    expect(save).toHaveAttribute("type", "submit");
+    expect(save).not.toHaveClass("btn");
+
+    await act(async () => {
+      fireEvent.click(save);
+    });
+    expect(save).toHaveAttribute("aria-busy", "true");
+    expect(save).toBeDisabled();
+    expect(save.querySelector(".ds-button__spinner")).not.toBeNull();
+    expect(save).toHaveTextContent("Save book");
+    expect(save).not.toHaveTextContent("Saving");
+    expect(onClose).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finish({});
+    });
+    expect(onClose).toHaveBeenCalled();
+    expect(refresh).toHaveBeenCalled();
+  });
+
   it("saves dedication, cover, cards, and order, then refreshes the reader", async () => {
     vi.mocked(api).mockResolvedValueOnce({});
     const onClose = vi.fn();
