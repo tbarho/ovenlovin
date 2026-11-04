@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PersonLove } from "@ovenlovin/allergens";
 import type { Cookbook, Recipe } from "@ovenlovin/core";
 import { recipeMainImage } from "@ovenlovin/core/media";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { DEMO_SHARE_OFF } from "@/lib/demo/mode";
 import { recipeCardMeta } from "@/lib/recipe-card-meta";
@@ -97,9 +98,9 @@ function RenameCookbookSheet({
       <form className="form-card" style={{ margin: 0 }} onSubmit={rename}>
         <input value={name} onChange={(event) => setName(event.target.value)} required />
         {error ? <p className="muted">{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save name"}
-        </button>
+        <Button type="submit" loading={pending} disabled={pending}>
+          Save name
+        </Button>
       </form>
     </BottomSheet>
   );
@@ -225,35 +226,38 @@ export function CookbookRecipes({
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
           {booksEnabled ? (
-            <Link className="btn primary" href={`/cookbooks/${cookbook.id}/book`}>
+            <Link
+              className="ds-button ds-button--default ds-button--md"
+              href={`/cookbooks/${cookbook.id}/book`}
+            >
               Open book
             </Link>
           ) : null}
           {shareState ? (
-            <button
-              className="btn"
+            <Button
               type="button"
+              variant="secondary"
               disabled={Boolean(shareState.blocked)}
               aria-describedby={shareState.blocked ? "share-blocked" : undefined}
               onClick={() => setShareOpen(true)}
             >
               Share
-            </button>
+            </Button>
           ) : null}
-          <button className="btn" type="button" onClick={() => setAddOpen(true)}>
+          <Button type="button" variant="secondary" onClick={() => setAddOpen(true)}>
             Add recipes
-          </button>
-          <button className="btn" type="button" onClick={() => setRenameOpen(true)}>
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setRenameOpen(true)}>
             Rename
-          </button>
-          <button
-            className="btn"
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => setDeleteOpen(true)}
             disabled={pending}
           >
             Delete
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -269,9 +273,9 @@ export function CookbookRecipes({
       {recipes.length === 0 ? (
         <div className="empty-card">
           <p>This cookbook is empty.</p>
-          <button className="btn primary" type="button" onClick={() => setAddOpen(true)}>
+          <Button type="button" onClick={() => setAddOpen(true)}>
             Add recipes
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="recipe-grid">

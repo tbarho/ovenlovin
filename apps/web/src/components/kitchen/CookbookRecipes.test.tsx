@@ -1,10 +1,91 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
 import { testCookbook, testRecipe } from "@/test/fixtures";
 import { typeFullWordAndKeepFocus } from "@/test/sheet-focus";
 import { CookbookRecipes } from "./CookbookRecipes";
+
+const COOKBOOK_ID = "00000000-0000-4000-8000-000000000020";
+
+describe("CookbookRecipes primitives", () => {
+  beforeEach(() => {
+    vi.mocked(api).mockReset();
+  });
+
+  it("uses secondary opener Buttons, a default empty-state Button, and a ds-button book Link", () => {
+    const { container } = render(
+      <CookbookRecipes
+        cookbook={testCookbook()}
+        recipes={[]}
+        catalog={[]}
+        booksEnabled
+        share={{ path: null, blocked: null }}
+      />
+    );
+
+    const book = screen.getByRole("link", { name: "Open book" });
+    expect(book.tagName).toBe("A");
+    expect(book).toHaveAttribute("href", `/cookbooks/${COOKBOOK_ID}/book`);
+    expect(book).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(book).not.toHaveClass("btn");
+
+    const actions = container.querySelector(".recipe-actions");
+    expect(actions).not.toBeNull();
+    for (const name of ["Share", "Add recipes", "Rename", "Delete"]) {
+      const button = within(actions as HTMLElement).getByRole("button", { name });
+      expect(button).toHaveAttribute("data-slot", "button");
+      expect(button).toHaveAttribute("data-variant", "secondary");
+      expect(button).toHaveAttribute("type", "button");
+      expect(button).not.toHaveClass("btn");
+    }
+
+    const empty = container.querySelector(".empty-card");
+    expect(empty).not.toBeNull();
+    const add = within(empty as HTMLElement).getByRole("button", { name: "Add recipes" });
+    expect(add).toHaveAttribute("data-slot", "button");
+    expect(add).toHaveAttribute("data-variant", "default");
+    expect(add).not.toHaveClass("btn");
+    expect(container.querySelector(".btn")).toBeNull();
+  });
+
+  it("keeps Save name on the default Button while a rename is pending", async () => {
+    const user = userEvent.setup();
+    let resolveRename: (value: unknown) => void = () => undefined;
+    vi.mocked(api).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRename = resolve;
+        })
+    );
+
+    render(<CookbookRecipes cookbook={testCookbook()} recipes={[]} />);
+    await user.click(screen.getByRole("button", { name: "Rename" }));
+    const dialog = screen.getByRole("dialog", { name: "Rename cookbook" });
+    const save = within(dialog).getByRole("button", { name: "Save name" });
+    expect(save).toHaveAttribute("data-slot", "button");
+    expect(save).toHaveAttribute("data-variant", "default");
+    expect(save).toHaveAttribute("type", "submit");
+    expect(dialog.querySelector(".btn")).toBeNull();
+
+    await user.click(save);
+    expect(save).toBeDisabled();
+    expect(save).toHaveAttribute("aria-busy", "true");
+    expect(save).toHaveAttribute("data-loading", "true");
+    expect(save.querySelector(".ds-button__spinner")).not.toBeNull();
+    expect(save).toHaveTextContent("Save name");
+    expect(save).not.toHaveTextContent("Saving");
+    expect(api).toHaveBeenCalledWith(`/api/v1/cookbooks/${COOKBOOK_ID}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: "Weeknight dinners" }),
+    });
+
+    resolveRename({});
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Rename cookbook" })).not.toBeInTheDocument()
+    );
+  });
+});
 
 describe("CookbookRecipes add and remove", () => {
   beforeEach(() => {
