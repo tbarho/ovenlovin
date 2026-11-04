@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { RecipeDetails } from "@ovenlovin/core";
+import "@/components/ui/ui.css";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import { parseCaptureHash } from "@/lib/import-captured";
 
@@ -49,7 +50,7 @@ export function CaptureFromDevice() {
           <p className="muted import-error">{error}</p>
           {existingRecipeUrl ? (
             <p>
-              <Link className="btn primary" href={existingRecipeUrl}>
+              <Link className="ds-button ds-button--default ds-button--md" href={existingRecipeUrl}>
                 Open that recipe
               </Link>
             </p>
@@ -59,7 +60,7 @@ export function CaptureFromDevice() {
             </p>
           )}
           <p>
-            <Link className="btn" href="/recipes">
+            <Link className="ds-button ds-button--secondary ds-button--md" href="/recipes">
               Back to recipes
             </Link>
           </p>
