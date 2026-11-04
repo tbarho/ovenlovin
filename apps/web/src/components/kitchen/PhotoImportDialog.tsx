@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IMPORT_AI_UNAVAILABLE_MESSAGE } from "@ovenlovin/core/import-ai-unavailable";
+import { Button, Field, Hint, Input, Textarea } from "@/components/ui";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import {
   PHOTO_IMPORT_REPLACE_EDITS,
@@ -220,12 +221,12 @@ export function ImportReviewForm({
       {replacePrompt ? (
         <div className="import-warn photo-sharper" role="group" aria-label="New read">
           <span>{PHOTO_IMPORT_REPLACE_EDITS}</span>
-          <button type="button" className="btn primary compact" onClick={replacePrompt.onReplace}>
+          <Button type="button" size="sm" onClick={replacePrompt.onReplace}>
             Replace
-          </button>
-          <button type="button" className="btn compact" onClick={replacePrompt.onKeep}>
+          </Button>
+          <Button type="button" variant="tertiary" size="sm" onClick={replacePrompt.onKeep}>
             Keep mine
-          </button>
+          </Button>
         </div>
       ) : null}
       {notice ? (
@@ -239,9 +240,9 @@ export function ImportReviewForm({
             {uncertain.join(", ")}.
           </span>
           {onSharperRead ? (
-            <button type="button" className="btn compact" onClick={onSharperRead}>
+            <Button type="button" variant="tertiary" size="sm" onClick={onSharperRead}>
               {PHOTO_IMPORT_SHARPER}
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : (
@@ -253,138 +254,98 @@ export function ImportReviewForm({
         // eslint-disable-next-line @next/next/no-img-element
         <img className="photo-review-hero" src={heroSrc} alt="Selected recipe photo" />
       ) : null}
-      <div className="review-field">
-        <label className={isUncertainReviewField(uncertain, "title") ? "is-uncertain" : undefined}>
-          Title
-          <input
-            value={draft.title}
-            onChange={(event) => onChange({ ...draft, title: event.target.value })}
-            aria-describedby={titleNote ? "photo-note-title" : undefined}
-            required
-          />
-        </label>
-        {titleNote ? (
-          <span id="photo-note-title" className="field-note">
-            {titleNote}
-          </span>
-        ) : null}
-      </div>
+      <Field
+        label="Title"
+        className={isUncertainReviewField(uncertain, "title") ? "is-uncertain" : undefined}
+        hint={titleNote}
+      >
+        <Input
+          value={draft.title}
+          onChange={(event) => onChange({ ...draft, title: event.target.value })}
+          required
+        />
+      </Field>
       <div className="photo-review-meta">
-        <div className="review-field">
-          <label
-            className={isUncertainReviewField(uncertain, "servings") ? "is-uncertain" : undefined}
-          >
-            Servings
-            <input
-              type="number"
-              min={1}
-              value={draft.servings}
-              onChange={(event) => onChange({ ...draft, servings: event.target.value })}
-              aria-describedby={servingsNote ? "photo-note-servings" : undefined}
-            />
-          </label>
-          {servingsNote ? (
-            <span id="photo-note-servings" className="field-note">
-              {servingsNote}
-            </span>
-          ) : null}
-        </div>
-        <div className="review-field">
-          <label
-            className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
-          >
-            Prep (min)
-            <input
-              type="number"
-              min={0}
-              value={draft.prepTimeMinutes}
-              onChange={(event) => onChange({ ...draft, prepTimeMinutes: event.target.value })}
-              aria-describedby={timesNote ? "photo-note-prep" : undefined}
-            />
-          </label>
-          {timesNote ? (
-            <span id="photo-note-prep" className="field-note">
-              {timesNote}
-            </span>
-          ) : null}
-        </div>
-        <div className="review-field">
-          <label
-            className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
-          >
-            Cook (min)
-            <input
-              type="number"
-              min={0}
-              value={draft.cookTimeMinutes}
-              onChange={(event) => onChange({ ...draft, cookTimeMinutes: event.target.value })}
-              aria-describedby={timesNote ? "photo-note-cook" : undefined}
-            />
-          </label>
-          {timesNote ? (
-            <span id="photo-note-cook" className="field-note">
-              {timesNote}
-            </span>
-          ) : null}
-        </div>
+        <Field
+          label="Servings"
+          className={isUncertainReviewField(uncertain, "servings") ? "is-uncertain" : undefined}
+          hint={servingsNote}
+        >
+          <Input
+            type="number"
+            min={1}
+            value={draft.servings}
+            onChange={(event) => onChange({ ...draft, servings: event.target.value })}
+          />
+        </Field>
+        <Field
+          label="Prep (min)"
+          className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
+          hint={timesNote}
+        >
+          <Input
+            type="number"
+            min={0}
+            value={draft.prepTimeMinutes}
+            onChange={(event) => onChange({ ...draft, prepTimeMinutes: event.target.value })}
+          />
+        </Field>
+        <Field
+          label="Cook (min)"
+          className={isUncertainReviewField(uncertain, "times") ? "is-uncertain" : undefined}
+          hint={timesNote}
+        >
+          <Input
+            type="number"
+            min={0}
+            value={draft.cookTimeMinutes}
+            onChange={(event) => onChange({ ...draft, cookTimeMinutes: event.target.value })}
+          />
+        </Field>
       </div>
-      <label>
-        Notes
-        <textarea
+      <Field label="Notes">
+        <Textarea
           rows={2}
           value={draft.notes}
           onChange={(event) => onChange({ ...draft, notes: event.target.value })}
         />
-      </label>
-      <label>
-        Source
-        <input
+      </Field>
+      <Field label="Source">
+        <Input
           value={draft.sourceAttribution}
           onChange={(event) => onChange({ ...draft, sourceAttribution: event.target.value })}
           placeholder="Cookbook, author, or URL if you saw one"
         />
-      </label>
-      <div className="review-field">
-        <label
-          className={isUncertainReviewField(uncertain, "ingredients") ? "is-uncertain" : undefined}
-        >
-          Ingredients
-          <textarea
-            id="review-ingredients"
-            rows={6}
-            value={draft.ingredientsText}
-            onChange={(event) => {
-              event.currentTarget.setCustomValidity("");
-              onChange({ ...draft, ingredientsText: event.target.value });
-            }}
-            aria-describedby={ingredientsNote ? "photo-note-ingredients" : undefined}
-            required
-          />
-        </label>
-        {ingredientsNote ? (
-          <span id="photo-note-ingredients" className="field-note">
-            {ingredientsNote}
-          </span>
-        ) : null}
-      </div>
-      <div className="review-field">
-        <label className={isUncertainReviewField(uncertain, "steps") ? "is-uncertain" : undefined}>
-          Steps
-          <textarea
-            rows={6}
-            value={draft.stepsText}
-            onChange={(event) => onChange({ ...draft, stepsText: event.target.value })}
-            aria-describedby={stepsNote ? "photo-note-steps" : undefined}
-          />
-        </label>
-        {stepsNote ? (
-          <span id="photo-note-steps" className="field-note">
-            {stepsNote}
-          </span>
-        ) : null}
-      </div>
+      </Field>
+      <Field
+        label="Ingredients"
+        className={isUncertainReviewField(uncertain, "ingredients") ? "is-uncertain" : undefined}
+        hint={ingredientsNote}
+      >
+        <Textarea
+          id="review-ingredients"
+          rows={6}
+          value={draft.ingredientsText}
+          onChange={(event) => {
+            event.currentTarget.setCustomValidity("");
+            onChange({ ...draft, ingredientsText: event.target.value });
+          }}
+          required
+        />
+      </Field>
+      <Field
+        label="Steps"
+        className={isUncertainReviewField(uncertain, "steps") ? "is-uncertain" : undefined}
+        hint={stepsNote}
+      >
+        <Textarea
+          rows={6}
+          value={draft.stepsText}
+          onChange={(event) => onChange({ ...draft, stepsText: event.target.value })}
+        />
+      </Field>
       {error ? (
-        <p className="import-warn">
+        <Hint tone="error">
           {error}
           {existingRecipeUrl ? (
             <>
@@ -392,7 +353,7 @@ export function ImportReviewForm({
               <a href={existingRecipeUrl}>Open that recipe</a>
             </>
           ) : null}
-        </p>
+        </Hint>
       ) : null}
       {pending ? (
         <p className="muted" role="status" aria-live="polite">
@@ -400,13 +361,13 @@ export function ImportReviewForm({
         </p>
       ) : null}
       {savedRecipeId ? (
-        <button type="button" className="btn primary" onClick={onOpenSaved}>
+        <Button type="button" onClick={onOpenSaved}>
           Open recipe
-        </button>
+        </Button>
       ) : (
-        <button className="btn primary" type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : "Save recipe"}
-        </button>
+        </Button>
       )}
     </form>
   );
@@ -538,9 +499,9 @@ export function PhotoImportDialog({
             enhanced={job?.enhanced ?? false}
           />
           <div className="sheet-actions">
-            <button type="button" className="btn compact" onClick={cancelImport}>
+            <Button type="button" variant="tertiary" size="sm" onClick={cancelImport}>
               Cancel
-            </button>
+            </Button>
           </div>
         </>
       ) : null}
@@ -552,37 +513,38 @@ export function PhotoImportDialog({
           </p>
           {job?.errorKind === "blurry" ? (
             <div className="sheet-actions photo-import-error-actions">
-              <button type="button" className="btn compact" onClick={onTypeOrPaste}>
+              <Button type="button" variant="tertiary" size="sm" onClick={onTypeOrPaste}>
                 Type or paste instead
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className={offerSharper ? "btn compact" : "btn primary compact"}
+                variant={offerSharper ? "tertiary" : "default"}
+                size="sm"
                 onClick={cancelImport}
               >
                 Retake photo
-              </button>
+              </Button>
               {offerSharper ? (
-                <button type="button" className="btn primary compact" onClick={sharperRead}>
+                <Button type="button" size="sm" onClick={sharperRead}>
                   {PHOTO_IMPORT_SHARPER}
-                </button>
+                </Button>
               ) : null}
             </div>
           ) : (
             <div className="sheet-actions photo-import-error-actions">
-              <button type="button" className="btn compact" onClick={onTypeOrPaste}>
+              <Button type="button" variant="tertiary" size="sm" onClick={onTypeOrPaste}>
                 Type or paste instead
-              </button>
-              <button type="button" className="btn compact" onClick={cancelImport}>
+              </Button>
+              <Button type="button" variant="tertiary" size="sm" onClick={cancelImport}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="btn primary compact"
+                size="sm"
                 onClick={() => retryPhotoImportJob({ enhanced: job?.enhanced })}
               >
                 {job?.errorMessage === IMPORT_AI_UNAVAILABLE_MESSAGE ? "Try again" : "Retry"}
-              </button>
+              </Button>
             </div>
           )}
         </div>
