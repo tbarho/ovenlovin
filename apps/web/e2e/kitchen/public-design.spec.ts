@@ -228,7 +228,10 @@ test.describe("public design sign-off", () => {
           const screenBox = await page.locator(".auth-screen").boundingBox();
           const brandBox = await page.locator(".auth-screen .brand").boundingBox();
           const headingBox = await heading.boundingBox();
-          const btnBox = await page.locator(".auth-screen .btn").first().boundingBox();
+          const btnBox = await page
+            .locator(".auth-screen")
+            .getByRole("link", { name: /Back (home|to recipes)/i })
+            .boundingBox();
           expect(viewport && screenBox && brandBox && headingBox && btnBox).toBeTruthy();
           if (viewport && screenBox && brandBox && headingBox && btnBox) {
             if (width === 390) {

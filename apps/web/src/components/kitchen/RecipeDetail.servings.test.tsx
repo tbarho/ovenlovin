@@ -1,8 +1,15 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { testCookbook, testPerson, testRecipeDetails } from "@/test/fixtures";
 import { RecipeDetail } from "./RecipeDetail";
+
+const kitchenCss = readFileSync(path.resolve(__dirname, "../../app/globals.css"), "utf8");
+const servingsStepperHitArea = kitchenCss.match(
+  /\.servings-stepper \.ds-button\s*\{([^}]+)\}/
+)?.[1];
 
 describe("RecipeDetail default servings", () => {
   it("uses compact secondary Buttons for the servings stepper", () => {
@@ -31,6 +38,13 @@ describe("RecipeDetail default servings", () => {
       expect(button).not.toHaveAttribute("href");
       expect(stepper).toContainElement(button);
     }
+
+    expect(servingsStepperHitArea, "servings stepper ds-button rule").toBeTruthy();
+    expect(servingsStepperHitArea).toMatch(/width:\s*44px/);
+    expect(servingsStepperHitArea).toMatch(/min-width:\s*44px/);
+    expect(servingsStepperHitArea).toMatch(/height:\s*44px/);
+    expect(servingsStepperHitArea).toMatch(/min-height:\s*44px/);
+    expect(kitchenCss).not.toMatch(/\.servings-stepper \.btn\s*\{/);
 
     for (const name of [
       "Edit details",

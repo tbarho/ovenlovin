@@ -1,8 +1,12 @@
+import "@sparticuz/chromium";
 import { after, NextRequest, NextResponse } from "next/server";
 import { runNext } from "@ovenlovin/core/jobs";
 import { cronAuthorized } from "@/lib/cron-auth";
 import { jobHandlers } from "@/lib/job-handlers";
 import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
+
+/** One chunk must finish inside this window; Chromium launch + 40 pages needs room. */
+export const maxDuration = 180;
 
 /** Answers at once, runs one item after the response, then chains itself while work remains. */
 export async function POST(request: NextRequest) {
@@ -14,10 +18,11 @@ export async function POST(request: NextRequest) {
   }
 
   const origin = request.nextUrl.origin;
+  const cookie = request.headers.get("cookie");
   after(async () => {
     const result = await runNext(jobQueue(), jobHandlers);
     if (result.status === "idle") return;
-    await kickWorker(origin);
+    await kickWorker(origin, process.env, cookie);
   });
 
   return NextResponse.json({ ok: true }, { status: 202 });

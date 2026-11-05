@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { BOOK_METRICS, fit, lineCount, paginate } from "./paginate";
+import {
+  BOOK_METRICS,
+  INDEX_PAGE_FULL_ENTRIES,
+  fit,
+  lineCount,
+  pageTypePx,
+  paginate,
+} from "./paginate";
 import { readBookSettings } from "./settings";
 
 const ingredient = (name: string, rawText = `1 cup ${name}`) => ({ name, rawText });
@@ -172,6 +179,25 @@ describe("paginate", () => {
     expect(cover({ cover: { kind: "recipe", recipeId: "d" } }).image).toBe("https://img/d.jpg");
   });
 
+  it("packs a dense index to a full page under the rematched line budget", () => {
+    const many = {
+      name: "Dense",
+      recipes: Array.from({ length: 40 }, (_, i) =>
+        recipe(`r${i}`, {
+          ingredients: Array.from({ length: 4 }, (_, j) => ingredient(`spice ${i * 4 + j}`)),
+        })
+      ),
+    };
+    const fullest = Math.max(
+      ...paginate(many, {})
+        .filter((p) => p.kind === "index")
+        .map((p) => p.entries.length)
+    );
+    expect(INDEX_PAGE_FULL_ENTRIES).toBe(Math.floor((BOOK_METRICS.indexLines * 2) / 3));
+    expect(fullest).toBeGreaterThanOrEqual(INDEX_PAGE_FULL_ENTRIES);
+    expect(fullest).toBeLessThanOrEqual(BOOK_METRICS.indexLines);
+  });
+
   it("spills contents and index across pages with numbers still matching", () => {
     const many = {
       name: "Big",
@@ -213,6 +239,19 @@ describe("fit", () => {
         { type: "notes", lines: 6 },
       ])
     ).toHaveLength(2);
+  });
+});
+
+describe("pageTypePx", () => {
+  it("keeps desktop recipe body at Jony's 11.75px floor on a 1440 page", () => {
+    // UAT ~568×768, and fitBook(1440, 780) height-caps around 764.
+    for (const height of [768, 764]) {
+      const type = pageTypePx(height);
+      expect(type.body).toBeGreaterThanOrEqual(11.75);
+      expect(type.title).toBeGreaterThan(type.body);
+      expect(type.index).toBeGreaterThan(type.body * 0.75);
+      expect(type.title).toBeGreaterThan(type.index);
+    }
   });
 });
 

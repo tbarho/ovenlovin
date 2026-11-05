@@ -3,6 +3,7 @@ import { paginate, PRINT_MODES, type PrintMode } from "@ovenlovin/core/book";
 import { z } from "zod";
 import { NotFoundError } from "@/lib/api/errors";
 import { loadReaderBook, type ReaderBook } from "@/lib/book-reader";
+import { cronSecretRequired } from "@/lib/cron-auth";
 import { isE2eAuthBypassEnabled } from "@/lib/e2e-auth";
 import { PRINT_FIXTURE_ID, printFixtureCookbook } from "@/test/print-fixture";
 
@@ -17,10 +18,11 @@ export function printMode(value: unknown): PrintMode {
   return PRINT_MODES.includes(value as PrintMode) ? (value as PrintMode) : "home";
 }
 
-function secret(env: EnvLike) {
+/** Print HMAC key. Production still needs CRON_SECRET; preview may omit it. */
+export function printSigningSecret(env: EnvLike = process.env) {
   const value = env.CRON_SECRET?.trim();
   if (value) return value;
-  if (env.NODE_ENV === "production") return null;
+  if (cronSecretRequired(env)) return null;
   return "ovenlovin-dev-print";
 }
 
@@ -36,7 +38,7 @@ export function printToken(
   now = Date.now(),
   env: EnvLike = process.env
 ) {
-  const key = secret(env);
+  const key = printSigningSecret(env);
   if (!key) throw new Error("CRON_SECRET is required to print books");
   const body = `${cookbookId}.${householdId}.${now + PRINT_TOKEN_MS}`;
   return `${body}.${sign(key, body)}`;
@@ -49,7 +51,7 @@ export function readPrintToken(
   now = Date.now(),
   env: EnvLike = process.env
 ) {
-  const key = secret(env);
+  const key = printSigningSecret(env);
   if (!key || typeof token !== "string") return null;
   const [id, householdId, expires, mac] = token.split(".");
   if (!id || !householdId || !expires || !mac || id !== cookbookId) return null;

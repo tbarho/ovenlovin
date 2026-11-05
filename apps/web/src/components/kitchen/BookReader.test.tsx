@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PAGE_TYPE_DIVISOR, pageTypePx } from "@ovenlovin/core/book";
 import type { ReaderBook } from "@/lib/book-reader";
 import { fitBook, spreadOf, BookReader } from "./BookReader";
 
@@ -142,6 +143,7 @@ describe("fitBook", () => {
     expect(size.single).toBe(false);
     expect(size.w).toBeGreaterThanOrEqual(540);
     expect(size.h).toBeLessThanOrEqual(780 - 16 + 4);
+    expect(pageTypePx(size.h).body).toBeGreaterThanOrEqual(11.75);
   });
 
   it("waits for a stage big enough to read", () => {
@@ -166,6 +168,15 @@ describe("BookReader", () => {
     mock.current = 0;
     mock.props = null;
     setStageSize(900, 700);
+  });
+
+  it("uses the shared page-type divisor on the laid-out page", async () => {
+    setStageSize(1440, 780);
+    render(<BookReader book={bookFixture()} />);
+    await screen.findByTestId("flipbook");
+    const page = document.querySelector(".book-page-in") as HTMLElement;
+    const size = fitBook(1440, 780)!;
+    expect(parseFloat(page.style.fontSize)).toBeCloseTo(size.h / PAGE_TYPE_DIVISOR, 5);
   });
 
   it("renders the cover first with the page indicator and edge arrows", async () => {

@@ -8,7 +8,7 @@ import { createdResponse, jsonResponse } from "@/lib/api/response";
 import { bookUploadPath, isBookBlobUrl } from "@/lib/book-import";
 import { bookBlobAccess, deleteBookBlobs } from "@/lib/books-blob";
 import { DEMO_BOOKS_OFF, isDemoModeEnabled } from "@/lib/demo/mode";
-import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
+import { isBooksEnabled, jobQueue, kickFromRequest } from "@/lib/jobs";
 
 const body = z.object({
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       verified: false,
     };
     const jobId = await queue.enqueue(householdId, "book_import", jobInput, [{ step: "verify" }]);
-    await kickWorker(request.nextUrl.origin);
+    await kickFromRequest(request);
     return createdResponse({ status: "started", jobId });
   } catch (error) {
     return handleApiError(error, request.url);

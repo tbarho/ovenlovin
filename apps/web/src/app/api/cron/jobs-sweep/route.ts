@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/cron-auth";
-import { isBooksEnabled, jobQueue, kickWorker } from "@/lib/jobs";
+import { isBooksEnabled, jobQueue, kickFromRequest } from "@/lib/jobs";
 
-/** Parks items that ran out of attempts and restarts the worker chain if anything is left. */
+/** Fails jobs that stopped progressing, parks spent leases, and restarts the worker chain. */
 export async function GET(request: NextRequest) {
   if (!isBooksEnabled()) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -12,9 +12,10 @@ export async function GET(request: NextRequest) {
   }
 
   const queue = jobQueue();
+  const stale = await queue.failStale();
   const parked = await queue.park();
   const claimable = await queue.claimable();
-  if (claimable > 0) await kickWorker(request.nextUrl.origin);
+  if (claimable > 0) await kickFromRequest(request);
 
-  return NextResponse.json({ ok: true, parked, claimable, at: new Date().toISOString() });
+  return NextResponse.json({ ok: true, stale, parked, claimable, at: new Date().toISOString() });
 }

@@ -6,6 +6,7 @@ import {
   bookFingerprint,
   printCookbookId,
   printMode,
+  printSigningSecret,
   printToken,
   readPrintToken,
 } from "./book-print";
@@ -30,7 +31,27 @@ describe("print token", () => {
   });
 
   it("will not sign in production without a secret", () => {
-    expect(() => printToken(BOOK, HOUSEHOLD, 1_000, { NODE_ENV: "production" })).toThrow();
+    expect(printSigningSecret({ NODE_ENV: "production" })).toBeNull();
+    expect(printSigningSecret({ VERCEL_ENV: "production", NODE_ENV: "production" })).toBeNull();
+    expect(() => printToken(BOOK, HOUSEHOLD, 1_000, { NODE_ENV: "production" })).toThrow(
+      /CRON_SECRET is required/
+    );
+    expect(() =>
+      printToken(BOOK, HOUSEHOLD, 1_000, { VERCEL_ENV: "production", NODE_ENV: "production" })
+    ).toThrow(/CRON_SECRET is required/);
+  });
+
+  it("mints on Vercel preview without CRON_SECRET", () => {
+    const preview = { VERCEL_ENV: "preview", NODE_ENV: "production" };
+    expect(printSigningSecret(preview)).toBe("ovenlovin-dev-print");
+    const token = printToken(BOOK, HOUSEHOLD, 1_000, preview);
+    expect(readPrintToken(token, BOOK, 2_000, preview)).toBe(HOUSEHOLD);
+  });
+
+  it("signs with CRON_SECRET on production", () => {
+    expect(printSigningSecret(env)).toBe("shh");
+    const token = printToken(BOOK, HOUSEHOLD, 1_000, env);
+    expect(readPrintToken(token, BOOK, 2_000, env)).toBe(HOUSEHOLD);
   });
 });
 

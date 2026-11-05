@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "prebuild": "tsx scripts/export-openapi.ts",
+    "prebuild": "tsx scripts/copy-chromium-bin.ts && tsx scripts/export-openapi.ts",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

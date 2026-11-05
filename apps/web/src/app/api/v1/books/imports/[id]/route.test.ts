@@ -15,12 +15,16 @@ const queue = {
     async (_id: string, payloads: unknown[], _now?: Date, _uniqueBy?: string) => payloads.length
   ),
 };
-const kickWorker = vi.fn(async (_origin: string) => undefined);
+const kickFromRequest = vi.fn(async (_request: Request) => undefined);
 
 vi.mock("@ovenlovin/db", () => ({ getDatabase: () => ({}) }));
 vi.mock("@/lib/jobs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/jobs")>();
-  return { ...actual, jobQueue: () => queue, kickWorker: (origin: string) => kickWorker(origin) };
+  return {
+    ...actual,
+    jobQueue: () => queue,
+    kickFromRequest: (request: Request) => kickFromRequest(request),
+  };
 });
 vi.mock("@/lib/api/middleware", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/middleware")>();
@@ -133,7 +137,7 @@ describe("/books/imports/{id}", () => {
       { candidateId: "1-lemon-bars", pageStart: 4, pageEnd: 4 },
       { candidateId: "3-ginger-snaps", pageStart: 6, pageEnd: 6 },
     ]);
-    expect(kickWorker).toHaveBeenCalled();
+    expect(kickFromRequest).toHaveBeenCalled();
   });
 
   it("reports recipe progress on the view", async () => {

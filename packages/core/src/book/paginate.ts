@@ -2,28 +2,65 @@
 import type { BookSettings } from "./settings";
 
 /**
+ * Reader and print set `.book-page-in` to `pageHeight / PAGE_TYPE_DIVISOR`.
+ * Recipe body is 0.72 (page body) × 1.2 (recipe blocks) × 0.85 (ingredients/steps).
+ * 47 keeps that body at ≥ 11.75px on a 1440 desktop page (height-capped
+ * ~764px, or UAT's ~768px / ~568px-wide spread).
+ */
+export const PAGE_TYPE_DIVISOR = 47;
+
+export const PAGE_TYPE = {
+  divisor: PAGE_TYPE_DIVISOR,
+  body: 0.72,
+  recipe: 1.2,
+  recipeText: 0.85,
+  recipeTitle: 1.05,
+  index: 0.85,
+} as const;
+
+/** Computed px at a laid-out page height. Same math the reader CSS applies. */
+export function pageTypePx(pageHeight: number) {
+  const root = pageHeight / PAGE_TYPE.divisor;
+  const recipeRoot = root * PAGE_TYPE.body * PAGE_TYPE.recipe;
+  return {
+    root,
+    body: recipeRoot * PAGE_TYPE.recipeText,
+    title: recipeRoot * PAGE_TYPE.recipeTitle,
+    index: root * PAGE_TYPE.body * PAGE_TYPE.index,
+  };
+}
+
+/**
  * Fixed type metrics for the house book at US Letter. Reader, PDF, contents
  * and index all read page numbers from the one list `paginate` returns, so
  * these numbers only need to be stable, not pixel exact. Recipe pages set
  * type 1.2x the page body (`.book-recipe-blocks` in globals.css), so their
- * line and character counts are the body counts divided by 1.2.
+ * line and character counts are the body counts divided by 1.2. Counts were
+ * rematched when PAGE_TYPE_DIVISOR moved from 56 to 47 (scale 47/56, floored)
+ * so larger type does not clip.
  */
 export const BOOK_METRICS = {
-  bodyLines: 38,
-  fullChars: 65,
-  stepChars: 60,
-  columnChars: 30,
-  titleChars: 23,
+  bodyLines: 31,
+  fullChars: 54,
+  stepChars: 50,
+  columnChars: 25,
+  titleChars: 19,
   titleLineHeight: 2,
   metaLines: 2,
   contLines: 2,
-  notesLines: 6,
-  contentsLines: 36,
-  indexLines: 56,
-  indexChars: 18,
-  wordsChars: 420,
+  notesLines: 5,
+  contentsLines: 30,
+  indexLines: 47,
+  indexChars: 15,
+  wordsChars: 352,
   notesPages: 2,
 };
+
+/**
+ * A packed index page has fewer <li>s than `indexLines` because names wrap at
+ * `indexChars`. Two-thirds of the line budget is still a full page.
+ */
+export const INDEX_PAGE_FULL_ENTRIES = Math.floor((BOOK_METRICS.indexLines * 2) / 3);
 
 export function lineCount(text: any, width: number) {
   const words = String(text ?? "")
