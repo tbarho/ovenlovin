@@ -11,6 +11,12 @@ export {
   buildIngredientMap,
   normalizeIngredientName,
   matchIngredient,
+  evictIngredientMatches,
+  clearIngredientMatchCache,
+  ingredientMatchCacheStats,
+  ingredientMatchRefs,
+  missingIngredientMatches,
+  primeIngredientMatches,
   type IngredientAllergenMapping,
 } from "./ingredient-mapping";
 

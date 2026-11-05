@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { TriageRow } from "@ovenlovin/core/jobs";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import type { BookContentsView } from "@/lib/book-import-view";
 import {
@@ -119,16 +120,13 @@ export function BookTriage({
               </li>
             ))}
           </ul>
-          <button
-            className="btn primary"
-            type="button"
+          <Button
             disabled={pending}
+            loading={pending}
             onClick={() => save(ready.map((row) => ({ candidateId: row.candidateId })))}
           >
-            {pending
-              ? "Saving"
-              : `Save ${ready.length} ready ${ready.length === 1 ? "recipe" : "recipes"}`}
-          </button>
+            Save {ready.length} ready {ready.length === 1 ? "recipe" : "recipes"}
+          </Button>
         </section>
       ) : null}
 
@@ -143,9 +141,9 @@ export function BookTriage({
                   <span className="muted book-triage-reason">{row.reasons.join(" ")}</span>
                 </span>
                 {page(row)}
-                <button className="btn compact" type="button" onClick={() => openReview(row)}>
+                <Button variant="tertiary" size="sm" onClick={() => openReview(row)}>
                   Review
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -164,7 +162,10 @@ export function BookTriage({
             ))}
           </ul>
           {view.cookbookId ? (
-            <Link className="btn" href={`/recipes?cookbook=${view.cookbookId}`}>
+            <Link
+              className="ds-button ds-button--secondary ds-button--md"
+              href={`/recipes?cookbook=${view.cookbookId}`}
+            >
               Open the cookbook
             </Link>
           ) : null}

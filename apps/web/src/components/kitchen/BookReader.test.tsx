@@ -183,6 +183,10 @@ describe("BookReader", () => {
     render(<BookReader book={bookFixture()} />);
     const flip = await screen.findByTestId("flipbook");
     expect(within(flip).getByText("The family book")).toBeVisible();
+    const back = screen.getByRole("link", { name: "← Test book" });
+    expect(back).toHaveAttribute("href", "/recipes?cookbook=00000000-0000-4000-8000-000000000020");
+    expect(back).toHaveClass("back-link");
+    expect(back).not.toHaveClass("ds-button");
     expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled();
     expect(screen.getByText("Page 1")).toBeVisible();
@@ -303,15 +307,22 @@ describe("BookReader", () => {
       />
     );
     expect(screen.getByText("This book has no recipes yet.")).toBeVisible();
-    expect(screen.getByRole("link", { name: "Add recipes" })).toHaveAttribute(
-      "href",
-      "/recipes?cookbook=00000000-0000-4000-8000-000000000020"
-    );
+    const add = screen.getByRole("link", { name: "Add recipes" });
+    expect(add).toHaveAttribute("href", "/recipes?cookbook=00000000-0000-4000-8000-000000000020");
+    expect(add).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(add).not.toHaveClass("btn");
+    expect(add.tagName).toBe("A");
   });
 
   it("opens Make it yours from the header", async () => {
     render(<BookReader book={bookFixture()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Make it yours" }));
+    const open = screen.getByRole("button", { name: "Make it yours" });
+    expect(open).toHaveAttribute("data-slot", "button");
+    expect(open).toHaveAttribute("data-variant", "secondary");
+    expect(open).toHaveClass("book-settings-open");
+    expect(open).not.toHaveClass("btn");
+    expect(open).toHaveStyle({ marginLeft: "auto", flex: "none" });
+    fireEvent.click(open);
     expect(screen.getByRole("dialog", { name: "Make it yours" })).toBeVisible();
     expect(screen.getByLabelText("Dedication")).toHaveAttribute(
       "placeholder",

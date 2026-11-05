@@ -73,7 +73,44 @@ export const E2E_TY_LOVES = [
   "chocolate",
 ] as const;
 
-const RECIPE_IMAGE = (slug: string) => `/e2e-kitchen/${slug}.svg`;
+/**
+ * Real food photos (Unsplash, hotlinked) for local dev when E2E_KITCHEN_PHOTOS=1.
+ * Off by default so CI and the e2e harness never depend on the network.
+ */
+export const KITCHEN_PHOTOS: Record<string, string> = {
+  "pesto-pasta": "1473093295043-cdd812d0e601",
+  "kung-pao-chicken": "1605704922285-e82455dba38b",
+  "sheet-pan-salmon": "1560717845-968823efbee1",
+  "roast-chicken": "1606728035253-49e8a23146de",
+  "veggie-tacos": "1690874684451-92358e91b14c",
+  "tomato-soup": "1762647420988-5080acf33988",
+  "beef-chili": "1729450412050-6c00ec592e34",
+  "saturday-pancakes": "1528207776546-365bb710ee93",
+  "chocolate-chip-cookies": "1499636136210-6f4ee915583e",
+  // E2E_KITCHEN_FULL dishes (e2e-kitchen-full.ts); no local SVGs, so they are imageless without photos.
+  "thai-green-curry": "1716959669858-11d415bdead6",
+  "shrimp-pad-thai": "1676300185004-c31cf62d3bc8",
+  "lamb-kofta": "1777716003985-68fed08d0c7e",
+  "honey-mustard-salmon": "1519708227418-c8fd9a32b7a2",
+  "lentil-dal": "1638378545909-d78bd9b4271c",
+  "caprese-salad": "1769458313937-b5ad8f84942e",
+  shakshuka: "1757972367524-5272633a75df",
+  "miso-soup": "1763470260582-894ae15f43bb",
+  "mac-and-cheese": "1667499989723-c4ab9549d63c",
+  "cauliflower-tikka-masala": "1603894584373-5ac82b2ae398",
+  "apple-pie": "1535920527002-b35e96722eb9",
+  "chicken-noodle-soup": "1612966948332-81d747414a8f",
+  "eggplant-parmesan": "1792354079048-dd65bc74a9b8",
+  "pork-dumplings": "1496116218417-1a781b1c416c",
+  shortbread: "1630782622114-613e6e9c5dc6",
+};
+
+const USE_KITCHEN_PHOTOS = process.env.E2E_KITCHEN_PHOTOS === "1";
+
+const RECIPE_IMAGE = (slug: string) =>
+  USE_KITCHEN_PHOTOS && KITCHEN_PHOTOS[slug]
+    ? `https://images.unsplash.com/photo-${KITCHEN_PHOTOS[slug]}?w=1200&q=80&auto=format&fit=crop`
+    : `/e2e-kitchen/${slug}.svg`;
 
 /**
  * Raster dish photos in three shapes so the book can prove it shows photos
@@ -97,7 +134,7 @@ type KitchenRecipe = RecipeImportDraft & { slug: string; cookbook?: "weeknight" 
 function draft(partial: Omit<RecipeImportDraft, "source"> & { slug: string }): KitchenRecipe {
   return {
     ...partial,
-    images: [E2E_BOOK_PHOTOS[partial.slug] ?? RECIPE_IMAGE(partial.slug)],
+    images: [(!USE_KITCHEN_PHOTOS && E2E_BOOK_PHOTOS[partial.slug]) || RECIPE_IMAGE(partial.slug)],
     source: {
       type: "manual",
       importerName: "e2e-kitchen",
@@ -486,11 +523,21 @@ export async function seedE2eKitchen(db: DbClient = getDatabase()): Promise<E2eK
   if (pesto && pesto.images.length < 3) {
     await recipes.updateRecipe(pesto.id, { images: PESTO_GALLERY });
   }
-  for (const recipe of E2E_RECIPES) {
-    const photo = E2E_BOOK_PHOTOS[recipe.slug];
-    const existing = existingRecipes.items.find((item) => item.title === recipe.title);
-    if (photo && existing && existing.images[0] !== photo) {
-      await recipes.updateRecipe(existing.id, { images: [photo] });
+  // This runs on every bypassed request, so only swap untouched fixture images and never ones someone changed.
+  if (USE_KITCHEN_PHOTOS) {
+    for (const existing of existingRecipes.items) {
+      const images = E2E_RECIPES.find((recipe) => recipe.title === existing.title)?.images;
+      if (images && existing.images.some((image) => image.startsWith("/e2e-kitchen/"))) {
+        await recipes.updateRecipe(existing.id, { images });
+      }
+    }
+  } else {
+    for (const recipe of E2E_RECIPES) {
+      const photo = E2E_BOOK_PHOTOS[recipe.slug];
+      const existing = existingRecipes.items.find((item) => item.title === recipe.title);
+      if (photo && existing && existing.images[0] !== photo) {
+        await recipes.updateRecipe(existing.id, { images: [photo] });
+      }
     }
   }
   if (existingRecipes.items.length === 0) {

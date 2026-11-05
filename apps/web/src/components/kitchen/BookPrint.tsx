@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button, Hint } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 
@@ -81,9 +82,9 @@ export function BookPrint({ bookId, blocked = null }: { bookId: string; blocked?
 
   return (
     <>
-      <button className="btn book-print-open" type="button" onClick={() => setOpen(true)}>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
         Print
-      </button>
+      </Button>
       <BottomSheet open={open} title="Print this book" onClose={() => setOpen(false)}>
         {choosing ? (
           <div className="sheet-stack">
@@ -103,15 +104,14 @@ export function BookPrint({ bookId, blocked = null }: { bookId: string; blocked?
                 </button>
               ))}
             </div>
-            <button
-              className="btn primary"
-              type="button"
+            <Button
+              loading={busy}
               disabled={busy || Boolean(blocked)}
               aria-describedby={blocked ? "print-blocked" : undefined}
               onClick={make}
             >
               Make the PDF
-            </button>
+            </Button>
             {blocked ? (
               <p className="muted" id="print-blocked">
                 {blocked}
@@ -148,26 +148,30 @@ export function BookPrint({ bookId, blocked = null }: { bookId: string; blocked?
                     {[...new Set(view.lowRes.map((item: any) => item.page))].join(", ")}).
                   </p>
                 ) : null}
-                <a className="btn primary" href={view.downloadUrl} download>
+                <a
+                  className="ds-button ds-button--default ds-button--md"
+                  href={view.downloadUrl}
+                  download
+                >
                   Download PDF {megabytes(view.bytes)}
                 </a>
-                <button className="btn" type="button" onClick={reset}>
+                <Button variant="secondary" onClick={reset}>
                   Make another
-                </button>
+                </Button>
               </>
             ) : null}
           </div>
         ) : null}
 
         {view?.status === "failed" ? (
-          <p className="muted import-error" role="alert">
+          <Hint tone="error" role="alert">
             {view.error}
-          </p>
+          </Hint>
         ) : null}
         {error ? (
-          <p className="muted import-error" role="alert">
+          <Hint tone="error" role="alert">
             {error}
-          </p>
+          </Hint>
         ) : null}
       </BottomSheet>
     </>

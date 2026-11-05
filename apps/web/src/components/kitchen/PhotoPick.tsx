@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { Button } from "@/components/ui";
 import {
   PHOTO_IMPORT_MAX_PAGES,
   PHOTO_PICK_LEAD,
@@ -53,34 +54,37 @@ function PhotoTile({
       <div className="photo-page-actions">
         {count > 1 ? (
           <>
-            <button
+            <Button
               type="button"
-              className="btn compact"
+              variant="secondary"
+              size="sm"
               aria-label={`Move page ${page} earlier`}
               disabled={index === 0}
               onClick={() => onMove(index - 1)}
             >
               <span aria-hidden="true">←</span>
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="btn compact"
+              variant="secondary"
+              size="sm"
               aria-label={`Move page ${page} later`}
               disabled={index === count - 1}
               onClick={() => onMove(index + 1)}
             >
               <span aria-hidden="true">→</span>
-            </button>
+            </Button>
           </>
         ) : null}
-        <button
+        <Button
           type="button"
-          className="btn compact"
+          variant="secondary"
+          size="sm"
           aria-label={`Remove page ${page}`}
           onClick={onRemove}
         >
           <span aria-hidden="true">×</span>
-        </button>
+        </Button>
       </div>
     </li>
   );
@@ -146,10 +150,10 @@ export function PhotoPick({
         <p>{PHOTO_PICK_LEAD}</p>
         {files.length === 0 ? (
           <div className="photo-pick-actions">
-            <label className="btn" htmlFor={cameraId}>
+            <label className="ds-button ds-button--secondary ds-button--md" htmlFor={cameraId}>
               Take photo
             </label>
-            <label className="btn" htmlFor={libraryId}>
+            <label className="ds-button ds-button--secondary ds-button--md" htmlFor={libraryId}>
               Choose photos
             </label>
           </div>

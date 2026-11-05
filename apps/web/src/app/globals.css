@@ -1,42 +1,5 @@
-:root {
-  --bg: #ffffff;
-  --bg-soft: #fffaf4;
-  --ink: #161310;
-  --muted: #5c564c;
-  --faint: #8a8376;
-  --line: #efe6d8;
-  --border: var(--line);
-  --line-2: #e0d4c2;
-  --panel: #fffdf9;
-  --code: #1a1817;
-  --code-ink: #f7f5ef;
-  --orange: #e07a3d;
-  --orange-2: #ff8001;
-  --orange-deep: #c45d28;
-  --orange-press: #b85420;
-  --orange-press-hover: #9a4519;
-  --cream: #fff1de;
-  --ok: #2f9e62;
-  --warn: #c46a1b;
-  --bad: #c4473a;
-  --sans: var(--font-geist-sans, "Geist"), ui-sans-serif, system-ui, sans-serif;
-  --mono: var(--font-geist-mono, ui-monospace), "SFMono-Regular", Menlo, monospace;
-  --display: var(--font-display, "Fascinate Inline"), cursive;
-  --max: 1080px;
-  --gut: 24px;
-  --r: 14px;
-  --r-sm: 8px;
-  --shadow: 0 18px 50px rgba(196, 93, 40, 0.08);
-  --text-xs: 0.8125rem;
-  --text-sm: 0.875rem;
-  --text-md: 1rem;
-  --text-lg: 1.125rem;
-  --text-input: var(--text-md);
-  --motion-fast: 120ms;
-  --motion-base: 180ms;
-  --motion-sheet: 220ms;
-  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-}
+@import "../styles/ds-tokens.css";
+@import "../styles/ds-skin.css";
 
 * {
   box-sizing: border-box;
@@ -2173,16 +2136,12 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: end;
   margin-top: 12px;
 }
 
-.key-create input {
-  min-width: min(100%, 240px);
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--line-2);
-  border-radius: 999px;
-  background: #fff;
+.key-create [data-slot="field"] {
+  min-width: min(100%, 16rem);
 }
 
 .key-secret {
@@ -2235,12 +2194,6 @@ select {
 .key-table code {
   font-family: var(--mono);
   font-size: 12.5px;
-}
-
-.key-table .btn {
-  height: 34px;
-  padding: 0 12px;
-  font-size: 13px;
 }
 
 .key-table tr.is-revoked td {
@@ -2322,20 +2275,14 @@ select {
   align-items: end;
 }
 
-.kitchen-name-form label,
-.kitchen-switcher label,
-.invite-create label {
+.kitchen-switcher label {
   display: grid;
   gap: 6px;
   font-size: 13px;
   color: var(--muted);
 }
 
-.kitchen-name-form input,
-.kitchen-switcher select,
-.invite-create select,
-.invite-create input,
-.member-actions select {
+.kitchen-switcher select {
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line-2);
@@ -2344,13 +2291,12 @@ select {
   max-width: 100%;
 }
 
-.kitchen-name-form input {
+.kitchen-name-form [data-slot="field"] {
   min-width: min(100%, 16rem);
 }
 
-.kitchen-name-form .btn,
-.invite-create .btn {
-  min-height: 44px;
+.invite-create [data-slot="field"] {
+  min-width: min(100%, 8rem);
 }
 
 .invite-created {
@@ -2400,11 +2346,6 @@ select {
   align-items: center;
 }
 
-.member-role {
-  text-transform: capitalize;
-  font-size: 14px;
-}
-
 .invite-page {
   display: grid;
   justify-items: start;
@@ -2431,9 +2372,9 @@ select {
     flex-direction: column;
   }
 
-  .member-actions .btn,
-  .invite-row .btn,
-  .invite-create .btn,
+  .member-actions [data-slot="button"],
+  .invite-row [data-slot="button"],
+  .invite-create [data-slot="button"],
   .invite-auth .btn {
     width: 100%;
   }
@@ -2495,6 +2436,7 @@ select {
     align-items: stretch;
   }
 
+  .hero-ctas .ds-button,
   .hero-ctas .btn,
   .docs-page .hero-ctas .btn {
     width: 100%;
@@ -3243,18 +3185,15 @@ label.photo-page-add-target:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.photo-review-form label.is-uncertain input,
-.photo-review-form label.is-uncertain textarea {
+.photo-review-form .ds-field.is-uncertain .ds-input,
+.photo-review-form .ds-field.is-uncertain .ds-textarea {
   outline: 2px solid #e3b15a;
   outline-offset: 1px;
   background: #fff8ef;
 }
 
-.photo-review-form .field-note {
-  display: block;
-  margin-top: 6px;
+.photo-review-form .ds-field.is-uncertain .ds-hint {
   color: #8a6a28;
-  font-size: 0.85rem;
 }
 
 .photo-import-banner {
@@ -4201,21 +4140,21 @@ label.photo-page-add-target:focus-visible {
   color: #161310;
 }
 
-.demo-banner-dismiss,
-.demo-banner-reset {
-  appearance: none;
-  border: 0;
-  background: transparent;
+.demo-banner .ds-button--tertiary {
   color: rgba(255, 248, 238, 0.78);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
 }
 
-.demo-banner-reset {
+.demo-banner .ds-button--tertiary:hover {
+  background: rgba(255, 248, 238, 0.08);
+  color: #fff8ee;
+}
+
+.demo-banner .ds-button--tertiary:active {
+  background: rgba(255, 248, 238, 0.14);
+}
+
+.demo-banner .demo-banner-reset {
   order: 3;
-  font-size: 12px;
   color: rgba(255, 248, 238, 0.55);
 }
 
@@ -4241,11 +4180,12 @@ label.photo-page-add-target:focus-visible {
     white-space: nowrap;
   }
 
-  .demo-banner-cta.btn.primary {
+  .demo-banner-cta.ds-button {
     background: transparent;
     border-color: rgba(255, 248, 238, 0.35);
     color: #fff8ee;
     box-shadow: none;
+    height: auto;
     padding: 4px 8px;
     font-size: 12px;
     white-space: nowrap;

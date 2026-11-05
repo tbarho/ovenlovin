@@ -15,8 +15,16 @@ describe("dirty recipe edit sheets", () => {
     await user.keyboard("{Escape}");
     expect(screen.getByTestId("discard-changes")).toHaveTextContent("Discard unsaved changes?");
     expect(screen.getByRole("dialog", { name: "Edit steps" })).toBeVisible();
+    expect(dialog.querySelector(".btn")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Keep editing" }));
+    const keep = screen.getByRole("button", { name: "Keep editing" });
+    expect(keep).toHaveAttribute("data-slot", "button");
+    expect(keep).toHaveAttribute("data-variant", "secondary");
+    const discard = screen.getByRole("button", { name: "Discard" });
+    expect(discard).toHaveAttribute("data-slot", "button");
+    expect(discard).toHaveAttribute("data-variant", "error");
+
+    await user.click(keep);
     expect(screen.queryByTestId("discard-changes")).not.toBeInTheDocument();
     expect((within(dialog).getByRole("textbox") as HTMLTextAreaElement).value).toContain("CHANGED");
 
@@ -39,7 +47,14 @@ describe("dirty recipe edit sheets", () => {
       "src",
       "https://example.com/pasta.jpg"
     );
-    expect(within(dialog).getByRole("button", { name: "Remove photo" })).toBeVisible();
+    const remove = within(dialog).getByRole("button", { name: "Remove photo" });
+    expect(remove).toBeVisible();
+    expect(remove).toHaveAttribute("data-variant", "secondary");
+    const useUrl = within(dialog).getByRole("button", { name: "Use this URL" });
+    expect(useUrl).toHaveAttribute("data-slot", "button");
+    expect(useUrl).toHaveAttribute("data-variant", "default");
+    expect(useUrl).toBeDisabled();
+    expect(dialog.querySelector(".btn")).toBeNull();
     expect(within(dialog).getByText(/JPEG, PNG, or WebP/i)).toBeVisible();
   });
 
@@ -50,7 +65,11 @@ describe("dirty recipe edit sheets", () => {
     await user.click(screen.getByRole("button", { name: "Edit steps" }));
     const dialog = screen.getByRole("dialog", { name: "Edit steps" });
     await user.clear(within(dialog).getByRole("textbox"));
-    await user.click(within(dialog).getByRole("button", { name: "Save steps" }));
+    const save = within(dialog).getByRole("button", { name: "Save steps" });
+    expect(save).toHaveAttribute("data-slot", "button");
+    expect(save).toHaveAttribute("data-variant", "default");
+    expect(save).toHaveAttribute("type", "submit");
+    await user.click(save);
     await waitFor(() => expect(api).toHaveBeenCalled());
     expect(JSON.parse(String(vi.mocked(api).mock.calls[0]?.[1]?.body))).toEqual({ steps: [] });
   });
@@ -68,7 +87,9 @@ describe("dirty recipe edit sheets", () => {
     const dialog = screen.getByRole("dialog", { name: "Edit details" });
     await user.clear(within(dialog).getByLabelText("Title"));
     await user.type(within(dialog).getByLabelText("Title"), "Parent A noodles");
-    await user.click(within(dialog).getByRole("button", { name: "Save details" }));
+    const save = within(dialog).getByRole("button", { name: "Save details" });
+    expect(save).toHaveAttribute("data-variant", "default");
+    await user.click(save);
     expect(await screen.findByRole("status")).toHaveTextContent("Saved");
   });
 
@@ -84,7 +105,33 @@ describe("dirty recipe edit sheets", () => {
     await user.click(screen.getByRole("button", { name: /cookbooks/i }));
     const dialog = screen.getByRole("dialog", { name: "Cookbooks" });
     await user.click(within(dialog).getByLabelText("Weekend treats"));
-    await user.click(within(dialog).getByRole("button", { name: "Save cookbooks" }));
+    const save = within(dialog).getByRole("button", { name: "Save cookbooks" });
+    expect(save).toHaveAttribute("data-variant", "default");
+    await user.click(save);
     expect(await screen.findByRole("status")).toHaveTextContent("Saved");
+  });
+
+  it("marks the save button loading and disabled while a patch is in flight", async () => {
+    const user = userEvent.setup();
+    let resolveSave: (value: unknown) => void = () => {};
+    vi.mocked(api).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        })
+    );
+    render(<RecipeDetail recipe={testRecipeDetails()} cookbooks={[testCookbook()]} />);
+    await user.click(screen.getByRole("button", { name: "Edit ingredients" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit ingredients" });
+    const save = within(dialog).getByRole("button", { name: "Save ingredients" });
+    expect(save).toHaveAttribute("data-variant", "default");
+    await user.click(save);
+    expect(save).toHaveAttribute("aria-busy", "true");
+    expect(save).toBeDisabled();
+    expect(save.querySelector(".ds-button__spinner")).not.toBeNull();
+    resolveSave({});
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Edit ingredients" })).not.toBeInTheDocument()
+    );
   });
 });

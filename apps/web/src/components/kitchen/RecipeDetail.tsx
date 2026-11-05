@@ -21,6 +21,7 @@ import {
   scaleIngredientDisplay,
   servingsRangeMax,
 } from "@ovenlovin/core/scaling";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { loveHitsForRecipe } from "@/lib/household-loves";
 import { recipeDeleteConfirmCopy, writeRecipeDeleteToast } from "@/lib/recipe-delete";
@@ -277,14 +278,15 @@ export function RecipeDetail({
               <span>{servings}</span>
             </header>
             <div className="servings-stepper">
-              <button
+              <Button
                 type="button"
-                className="btn compact"
+                variant="secondary"
+                size="sm"
                 aria-label="Fewer servings"
                 onClick={() => setServings(clampServings(servings - 1, 1, servingsMax))}
               >
                 −
-              </button>
+              </Button>
               <input
                 type="range"
                 min={1}
@@ -298,14 +300,15 @@ export function RecipeDetail({
                   setServings(clampServings(Number(event.target.value), 1, servingsMax))
                 }
               />
-              <button
+              <Button
                 type="button"
-                className="btn compact"
+                variant="secondary"
+                size="sm"
                 aria-label="More servings"
                 onClick={() => setServings(clampServings(servings + 1, 1, servingsMax))}
               >
                 +
-              </button>
+              </Button>
             </div>
             <p className="muted">
               <span data-testid="scaled-servings-note">

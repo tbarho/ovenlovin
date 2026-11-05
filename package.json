@@ -23,7 +23,9 @@
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "e2e:kitchen": "pnpm --filter @ovenlovin/web e2e:kitchen",
     "e2e:kitchen:seed": "pnpm --filter @ovenlovin/web e2e:kitchen:seed",
-    "db:migrate": "pnpm --filter @ovenlovin/db db:migrate:deploy"
+    "db:migrate": "pnpm --filter @ovenlovin/db db:migrate:deploy",
+    "setup:local": "pnpm install && ([ -f apps/web/.env.local ] || cp .env.example apps/web/.env.local) && E2E_KITCHEN_PHOTOS=1 E2E_KITCHEN_FULL=1 ./scripts/e2e-kitchen-up.sh",
+    "dev:local": "E2E_AUTH_BYPASS=1 E2E_KITCHEN_PHOTOS=1 DATABASE_URL=\"${DATABASE_URL:-postgresql://ovenlovin:ovenlovin@localhost:5432/ovenlovin}\" pnpm --filter @ovenlovin/web dev"
   },
   "devDependencies": {
     "@turbo/gen": "^2.3.3",

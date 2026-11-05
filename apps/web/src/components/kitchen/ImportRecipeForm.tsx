@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Hint, Input, Textarea } from "@/components/ui";
 import { api, apiErrorRecipeUrl } from "@/lib/browser-api";
 import type { RecipeDetails } from "@ovenlovin/core";
 import {
@@ -71,15 +72,11 @@ export function ImportRecipeForm({
   const [reviewPreview, setReviewPreview] = useState<unknown>(null);
   const importKeyRef = useRef("");
   const previewAbortRef = useRef<AbortController | null>(null);
-  const pasteRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     importKeyRef.current = "";
     setReview(null);
     setReviewPreview(null);
   }, [source, url, paste]);
-  useEffect(() => {
-    if (source === "paste") pasteRef.current?.focus();
-  }, [source]);
   const fieldValue = source === "paste" ? paste : url;
   const canSubmit = source === "photo" ? photoFiles.length > 0 : Boolean(fieldValue.trim());
   const jobBusy = photoJob?.phase === "uploading" || photoJob?.phase === "reading";
@@ -272,31 +269,27 @@ export function ImportRecipeForm({
               <p className="muted">{PHOTO_IMPORT_ESTIMATE}.</p>
             </div>
             <div className="photo-import-banner-actions">
-              <button type="button" className="btn compact" onClick={() => setPhotoOpen(true)}>
+              <Button variant="tertiary" type="button" onClick={() => setPhotoOpen(true)}>
                 Open
-              </button>
-              <button type="button" className="btn compact" onClick={() => cancelPhotoImportJob()}>
+              </Button>
+              <Button variant="tertiary" type="button" onClick={() => cancelPhotoImportJob()}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         ) : null}
         {source === "photo" ? (
           <>
             <PhotoPick files={photoFiles} onChange={changePhotos} />
-            <button
-              className="btn primary import-submit"
-              type="submit"
-              disabled={!canSubmit || jobBusy}
-            >
+            <Button className="import-submit" type="submit" disabled={!canSubmit || jobBusy}>
               {photoImportButtonLabel(photoFiles.length)}
-            </button>
+            </Button>
           </>
         ) : (
           <div className="import-row">
             <div className="import-field">
               {source === "url" ? (
-                <input
+                <Input
                   value={url}
                   onChange={(event) => {
                     setUrl(event.target.value);
@@ -307,8 +300,8 @@ export function ImportRecipeForm({
                   required
                 />
               ) : (
-                <textarea
-                  ref={pasteRef}
+                <Textarea
+                  autoFocus
                   value={paste}
                   onChange={(event) => {
                     setPaste(event.target.value);
@@ -326,21 +319,21 @@ export function ImportRecipeForm({
               <div data-testid="import-progress">
                 <PhotoImportProgress phase="reading" percent={100} previewUrls={[]} />
                 <div className="sheet-actions">
-                  <button type="button" className="btn compact" onClick={cancelPreview}>
+                  <Button variant="tertiary" type="button" onClick={cancelPreview}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <button className="btn primary import-submit" type="submit" disabled={!canSubmit}>
+              <Button className="import-submit" type="submit" disabled={!canSubmit}>
                 Import
-              </button>
+              </Button>
             )}
           </div>
         )}
         {error ? (
           <div className="import-blocked" role="status">
-            <p className="muted import-error">
+            <Hint tone="error">
               {displayImportFailure(error)}
               {existingRecipeUrl ? (
                 <>
@@ -348,37 +341,37 @@ export function ImportRecipeForm({
                   <a href={existingRecipeUrl}>Open that recipe</a>
                 </>
               ) : null}
-            </p>
+            </Hint>
             {!existingRecipeUrl ? (
               <div className="import-blocked-actions">
                 {retryable ? (
-                  <button type="submit" className="btn" disabled={pending || !canSubmit}>
+                  <Button type="submit" variant="secondary" disabled={pending || !canSubmit}>
                     Try again
-                  </button>
+                  </Button>
                 ) : null}
                 {source !== "paste" ? (
-                  <button
+                  <Button
                     type="button"
-                    className="btn"
+                    variant="secondary"
                     onClick={() => {
                       setSource("paste");
                       setError(null);
                     }}
                   >
                     Paste the recipe text
-                  </button>
+                  </Button>
                 ) : null}
                 {source !== "photo" ? (
-                  <button
+                  <Button
                     type="button"
-                    className="btn"
+                    variant="secondary"
                     onClick={() => {
                       setSource("photo");
                       setError(null);
                     }}
                   >
                     Add a photo
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             ) : null}

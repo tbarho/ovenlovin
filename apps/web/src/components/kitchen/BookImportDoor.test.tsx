@@ -99,6 +99,10 @@ describe("BookImportDoor", () => {
       await screen.findByText("You already added this book. We'll pick up where it left off.")
     ).toBeVisible();
     expect(upload).not.toHaveBeenCalled();
+    const pick = screen.getByRole("link", { name: "Pick recipes" });
+    expect(pick).toHaveAttribute("href", "/recipes/books/job-1");
+    expect(pick).toHaveClass("ds-button", "ds-button--default", "ds-button--md");
+    expect(pick).not.toHaveClass("btn");
   });
 
   it("shows the plain refusal when the book is over a limit", async () => {
@@ -122,5 +126,21 @@ describe("BookImportDoor", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(BOOK_NOT_PDF);
     expect(api).not.toHaveBeenCalled();
+  });
+});
+
+describe("BookImportDoor primitives", () => {
+  it("uses a secondary Button opener and Field for the PDF", async () => {
+    render(<BookImportDoor deps={{ upload: vi.fn(), hash }} />);
+
+    const opener = screen.getByRole("button", { name: "Add a whole cookbook" });
+    expect(opener).toHaveAttribute("data-slot", "button");
+    expect(opener).toHaveAttribute("data-variant", "secondary");
+
+    await userEvent.click(opener);
+    const file = screen.getByLabelText("Cookbook PDF");
+    expect(file).toHaveAttribute("type", "file");
+    expect(file).toHaveAttribute("accept", "application/pdf,.pdf");
+    expect(file.closest("[data-slot='field']")).toHaveClass("ds-field");
   });
 });

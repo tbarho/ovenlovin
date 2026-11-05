@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { recheckBannerDetail, type PlanBlockNight } from "@/lib/plan-final";
 
@@ -40,14 +41,15 @@ export function RecheckBanner({
   return (
     <div className="week-recheck" role="status">
       <p>This plan needs a recheck. {detail}</p>
-      <button
+      <Button
         type="button"
-        className="btn compact"
+        variant="secondary"
+        size="sm"
         disabled={pending}
         onClick={() => void recheck()}
       >
         {pending ? "Rechecking…" : "Recheck now"}
-      </button>
+      </Button>
       {error ? <p>{error}</p> : null}
     </div>
   );

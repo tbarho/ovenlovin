@@ -2,6 +2,9 @@ import Link from "next/link";
 import { ShoppingList } from "@/components/kitchen/ShoppingList";
 import { requireKitchenContext } from "@/lib/kitchen-session";
 import { loadWeekKitchen } from "@/lib/week-plan";
+import "@/components/ui/ui.css";
+
+const planCtaClass = "ds-button ds-button--secondary ds-button--md";
 
 export default async function ShoppingListPage() {
   const context = await requireKitchenContext();
@@ -22,7 +25,7 @@ export default async function ShoppingListPage() {
           </p>
         </div>
         <div className="recipe-actions" style={{ margin: 0 }}>
-          <Link className="btn" href="/plans">
+          <Link className={planCtaClass} href="/plans">
             ← Plan
           </Link>
         </div>

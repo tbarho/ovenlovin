@@ -180,7 +180,7 @@ test.describe("public design sign-off", () => {
           const pathWrap = await pathCard.evaluate((el) => getComputedStyle(el).textWrap);
           expect(pathWrap, "path-card wrap").toMatch(/pretty/);
           await expect(pathCard, "path 01 sign-in").toContainText("\u2011");
-          const heroBtns = page.locator(".hero-ctas .btn");
+          const heroBtns = page.locator(".hero-ctas .ds-button");
           await expect(heroBtns).toHaveCount(2);
           if (width === 390) {
             const wrapBox = await page.locator(".hero .wrap").boundingBox();
@@ -212,7 +212,10 @@ test.describe("public design sign-off", () => {
           }
           if (width === 1440) {
             const heading = await page.locator(".docs-page h1").boundingBox();
-            const cta = await page.locator(".docs-page .hero-ctas .btn").first().boundingBox();
+            const cta = await page
+              .locator(".docs-page .hero-ctas .ds-button")
+              .first()
+              .boundingBox();
             expect(heading && cta).toBeTruthy();
             if (heading && cta) {
               expect(cta.x).toBeLessThanOrEqual(heading.x + 2);

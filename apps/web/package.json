@@ -30,6 +30,7 @@
     "@ovenlovin/mcp": "workspace:*",
     "@sparticuz/chromium": "^153.0.0",
     "@vercel/blob": "^2.8.1",
+    "@vercel/functions": "^3.10.6",
     "drizzle-orm": "^0.38.3",
     "framer-motion": "^14.2.0",
     "next": "^15.1.4",

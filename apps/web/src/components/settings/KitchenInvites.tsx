@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CopyBox } from "@/components/landing/CopyBox";
 import { ConfirmDialog } from "@/components/kitchen/ConfirmDialog";
+import { Button, Field, Hint, Input, Select } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { useVisibleRefresh } from "@/lib/use-visible-refresh";
 
@@ -96,32 +97,30 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
         email.
       </p>
       <div className="invite-create">
-        <label>
-          <span>Role</span>
-          <select value={role} onChange={(event) => setRole(event.target.value as Invite["role"])}>
-            <option value="member">member</option>
-            <option value="admin">admin</option>
-            <option value="viewer">viewer</option>
-          </select>
-        </label>
-        <label>
-          <span>Expires in days</span>
-          <input
+        <Field label="Role">
+          <Select value={role} onChange={(event) => setRole(event.target.value as Invite["role"])}>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </Select>
+        </Field>
+        <Field label="Expires In Days">
+          <Input
             type="number"
             min={1}
             max={30}
             value={expiresInDays}
             onChange={(event) => setExpiresInDays(Number(event.target.value) || 7)}
           />
-        </label>
-        <button
-          className="btn primary"
+        </Field>
+        <Button
           type="button"
-          onClick={() => void createInvite()}
+          loading={pending}
           disabled={pending}
+          onClick={() => void createInvite()}
         >
-          {pending ? "Creating…" : "Create invite link"}
-        </button>
+          Create Invite Link
+        </Button>
         {createdUrl ? (
           <div className="invite-created" ref={createdRef} data-testid="invite-created">
             <p>Copy this link and send it yourself.</p>
@@ -129,7 +128,7 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
           </div>
         ) : null}
       </div>
-      {error ? <p className="muted">{error}</p> : null}
+      {error ? <Hint tone="error">{error}</Hint> : null}
       {invites.length === 0 ? (
         <p className="empty-note">No pending invite links.</p>
       ) : (
@@ -143,14 +142,15 @@ export function KitchenInvites({ canManage }: { canManage: boolean }) {
                   <CopyBox label="Invite link" content={invite.url} />
                 ) : null}
               </div>
-              <button
-                className="btn ghost"
+              <Button
+                variant="tertiary"
                 type="button"
+                loading={revokingId === invite.id}
                 disabled={revokingId === invite.id}
                 onClick={() => setConfirmRevokeId(invite.id)}
               >
-                {revokingId === invite.id ? "Revoking…" : "Revoke"}
-              </button>
+                Revoke
+              </Button>
             </li>
           ))}
         </ul>

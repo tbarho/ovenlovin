@@ -4,6 +4,12 @@ import { headers } from "next/headers";
 import { DocsChrome } from "@/components/docs/DocsChrome";
 import { OVENLOVIN_PITCH } from "@/lib/llms-txt";
 import { resolveOrigin } from "@/lib/origin";
+import "@/components/ui/ui.css";
+
+const connectCtaClass = "ds-button ds-button--default ds-button--md";
+const llmsCtaClass = "ds-button ds-button--secondary ds-button--md";
+/** Legacy `.btn.ghost` has no shared ghost token; tertiary is the transparent stand-in. */
+const referenceCtaClass = "ds-button ds-button--tertiary ds-button--md";
 
 export const metadata: Metadata = {
   title: "Docs · OvenLovin",
@@ -47,13 +53,17 @@ export default async function DocsIndexPage() {
         </li>
       </ul>
       <div className="hero-ctas">
-        <Link className="btn primary" href="/docs/connect-your-agent">
+        <Link className={connectCtaClass} href="/docs/connect-your-agent">
           Connect your agent
         </Link>
-        <a className="btn" href="/llms.txt">
+        <a className={llmsCtaClass} href="/llms.txt">
           llms.txt
         </a>
-        <a className="btn ghost" href="https://tbarho.github.io/ovenlovin/" rel="noreferrer">
+        <a
+          className={referenceCtaClass}
+          href="https://tbarho.github.io/ovenlovin/"
+          rel="noreferrer"
+        >
           Full reference
         </a>
       </div>

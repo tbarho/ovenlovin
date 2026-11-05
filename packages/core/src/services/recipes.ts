@@ -25,6 +25,7 @@ import {
 } from "../media/prepare-import-draft";
 import { normalizeSourceUrl } from "../media/source-url";
 import { BaseService } from "./base";
+import { emitRecipeIngredientsRemoved } from "./recipe-events";
 import { HouseholdAccessError } from "./kitchen-access";
 import { CookbookService } from "./cookbooks";
 import { ImportDedupeService } from "./import-dedupe";
@@ -227,10 +228,11 @@ export class RecipeService extends BaseService {
 
     if (data.ingredients) {
       const now = new Date();
-      await this._db
+      const removed = await this._db
         .update(recipeIngredient)
         .set({ deletedAt: now, updatedAt: now })
-        .where(and(eq(recipeIngredient.recipeId, id), isNull(recipeIngredient.deletedAt)));
+        .where(and(eq(recipeIngredient.recipeId, id), isNull(recipeIngredient.deletedAt)))
+        .returning({ rawText: recipeIngredient.rawText });
 
       if (data.ingredients.length > 0) {
         await this._db.insert(recipeIngredient).values(
@@ -259,6 +261,11 @@ export class RecipeService extends BaseService {
           })
         );
       }
+      const kept = new Set(data.ingredients.map((ingredient) => ingredient.rawText));
+      emitRecipeIngredientsRemoved(
+        id,
+        removed.map((row) => row.rawText).filter((line) => !kept.has(line))
+      );
     }
 
     if (data.steps) {
@@ -294,6 +301,16 @@ export class RecipeService extends BaseService {
       .where(and(eq(recipe.id, id), isNull(recipe.deletedAt)))
       .returning();
 
+    if (deleted) {
+      const lines = await this._db
+        .select({ rawText: recipeIngredient.rawText })
+        .from(recipeIngredient)
+        .where(and(eq(recipeIngredient.recipeId, id), isNull(recipeIngredient.deletedAt)));
+      emitRecipeIngredientsRemoved(
+        id,
+        lines.map((row) => row.rawText)
+      );
+    }
     return !!deleted;
   }
 

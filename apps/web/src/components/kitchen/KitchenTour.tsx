@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui";
 
 const STORAGE_KEY = "ovenlovin.first-run-v1";
 
@@ -28,16 +29,17 @@ export function KitchenTour() {
           </li>
         </ol>
       </div>
-      <button
+      <Button
         type="button"
-        className="btn compact"
+        variant="secondary"
+        size="sm"
         onClick={() => {
           window.localStorage.setItem(STORAGE_KEY, "1");
           setOpen(false);
         }}
       >
         Got it
-      </button>
+      </Button>
     </aside>
   );
 }

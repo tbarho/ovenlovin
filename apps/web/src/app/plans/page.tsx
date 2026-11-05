@@ -8,6 +8,9 @@ import { requireKitchenContext } from "@/lib/kitchen-session";
 import { blockNightsFromDays, recheckNightsFromDays } from "@/lib/plan-final";
 import { loadWeekKitchen } from "@/lib/week-plan";
 import { startOfWeekMonday } from "@/lib/week-plan-view";
+import "@/components/ui/ui.css";
+
+const listCtaClass = "ds-button ds-button--secondary ds-button--md";
 
 function statusLabel(status: string): string {
   if (status === "empty") return "No plan";
@@ -54,7 +57,7 @@ export default async function PlansPage({
               blockNights={blockNights}
             />
           ) : null}
-          <Link className="btn" href="/list">
+          <Link className={listCtaClass} href="/list">
             Shopping list
           </Link>
         </div>

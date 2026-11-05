@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/browser-api";
@@ -304,5 +304,67 @@ describe("ShoppingList", () => {
     await user.click(screen.getByRole("checkbox", { name: /milk/i }));
     await user.click(screen.getByRole("button", { name: "Clear checked" }));
     expect(screen.queryByText("Milk")).not.toBeInTheDocument();
+  });
+
+  it("uses Button for add item and clear checked, and disables both while a save is pending", async () => {
+    let release: (value: unknown) => void = () => {};
+    vi.mocked(api).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    );
+    const user = userEvent.setup();
+    const { container } = render(
+      <ShoppingList
+        planId="plan-1"
+        checkedKeys={["pasta"]}
+        items={[
+          { key: "pasta", name: "12 oz pasta", recipes: ["Pasta"], warnings: [] },
+          { key: "salt", name: "salt", recipes: ["Pasta"], warnings: [] },
+        ]}
+      />
+    );
+
+    const add = screen.getByRole("button", { name: "Add item" });
+    expect(add.tagName).toBe("BUTTON");
+    expect(add).toHaveAttribute("type", "submit");
+    expect(add).toHaveAttribute("data-slot", "button");
+    expect(add).toHaveAttribute("data-variant", "default");
+    expect(add).toHaveAttribute("data-size", "md");
+    expect(add).toBeDisabled();
+    expect(add).not.toHaveAttribute("href");
+
+    const clear = screen.getByRole("button", { name: "Clear checked" });
+    expect(clear.tagName).toBe("BUTTON");
+    expect(clear).toHaveAttribute("type", "button");
+    expect(clear).toHaveAttribute("data-slot", "button");
+    expect(clear).toHaveAttribute("data-variant", "secondary");
+    expect(clear).toHaveAttribute("data-size", "sm");
+    expect(clear).toBeEnabled();
+    expect(clear).not.toHaveAttribute("href");
+    expect(container.querySelector(".btn")).toBeNull();
+    expect(container.querySelector(".compact")).toBeNull();
+
+    await user.type(screen.getByPlaceholderText("Milk, paper towels…"), "Milk");
+    expect(add).toBeEnabled();
+
+    await user.click(screen.getByRole("checkbox", { name: /^salt/i }));
+    expect(add).toBeDisabled();
+    expect(clear).toBeDisabled();
+    expect(screen.getByTestId("shopping-list")).toHaveAttribute("aria-busy", "true");
+
+    release({ checkedKeys: ["pasta", "salt"], extras: [] });
+    await waitFor(() => {
+      expect(add).toBeEnabled();
+      expect(clear).toBeEnabled();
+    });
+    expect(screen.getByTestId("shopping-list")).toHaveAttribute("aria-busy", "false");
+
+    await user.click(clear);
+    expect(screen.queryByRole("button", { name: "Clear checked" })).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /12 oz pasta/i })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /^salt/i })).not.toBeChecked();
+    expect(screen.queryByRole("checkbox", { name: /^milk$/i })).not.toBeInTheDocument();
   });
 });

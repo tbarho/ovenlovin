@@ -31,10 +31,50 @@ describe("KitchenInvites", () => {
       expect(screen.getByText("No pending invite links.")).toBeVisible();
     });
 
-    await user.click(screen.getByRole("button", { name: "Create invite link" }));
+    const role = screen.getByLabelText("Role");
+    expect(role.tagName).toBe("SELECT");
+    expect(role).toHaveAttribute("data-slot", "select");
+    expect(role).toHaveValue("member");
+    expect(screen.getByText("Role").closest("[data-slot='field']")).toHaveClass("ds-field");
+    const expires = screen.getByLabelText("Expires In Days");
+    expect(expires).toHaveAttribute("data-slot", "input");
+    expect(expires).toHaveAttribute("type", "number");
+    expect(expires).toHaveValue(7);
+    const create = screen.getByRole("button", { name: "Create Invite Link" });
+    expect(create).toHaveAttribute("data-slot", "button");
+    expect(create).toHaveAttribute("data-variant", "default");
+
+    await user.click(create);
+    await waitFor(() => {
+      expect(api).toHaveBeenCalledWith("/api/v1/households/invites", {
+        method: "POST",
+        body: JSON.stringify({ role: "member", expiresInDays: 7 }),
+      });
+    });
     const created = await screen.findByTestId("invite-created");
     expect(within(created).getByText("Copy this link and send it yourself.")).toBeVisible();
     expect(within(created).getByRole("button", { name: "Copy" })).toBeVisible();
+  });
+
+  it("shows a Hint error when creating an invite fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api).mockImplementation(async (_path, init) => {
+      if (init?.method === "POST") {
+        throw new Error("Could not create an invite");
+      }
+      return { items: [] };
+    });
+
+    render(<KitchenInvites canManage />);
+    await waitFor(() => {
+      expect(screen.getByText("No pending invite links.")).toBeVisible();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Create Invite Link" }));
+    const error = await screen.findByText("Could not create an invite");
+    expect(error).toHaveAttribute("data-slot", "hint");
+    expect(error).toHaveClass("ds-hint--error");
+    expect(screen.queryByTestId("invite-created")).not.toBeInTheDocument();
   });
 
   it("shows the empty invite state in the panel after revoke succeeds", async () => {
@@ -67,9 +107,12 @@ describe("KitchenInvites", () => {
       expect(screen.getByText("No pending invite links.")).toBeVisible();
     });
 
-    await user.click(screen.getByRole("button", { name: "Create invite link" }));
+    await user.click(screen.getByRole("button", { name: "Create Invite Link" }));
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Revoke" })).toBeVisible();
+      const revoke = screen.getByRole("button", { name: "Revoke" });
+      expect(revoke).toBeVisible();
+      expect(revoke).toHaveAttribute("data-slot", "button");
+      expect(revoke).toHaveAttribute("data-variant", "tertiary");
     });
 
     await user.click(screen.getByRole("button", { name: "Revoke" }));

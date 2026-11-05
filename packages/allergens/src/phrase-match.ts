@@ -75,6 +75,13 @@ function phraseTokenKey(phrase: string): string {
 const negationCompounds: string[][] = [];
 const seenNegationCompounds = new Set<string>();
 
+let negationCompoundsVersion = 0;
+
+/** Bumps whenever a new compound is registered, so match caches know to drop old results. */
+export function getNegationCompoundsVersion(): number {
+  return negationCompoundsVersion;
+}
+
 export function registerNegationCompounds(phrases: Iterable<string>): void {
   for (const phrase of phrases) {
     const tokens = phraseTokens(phrase);
@@ -83,6 +90,7 @@ export function registerNegationCompounds(phrases: Iterable<string>): void {
     if (seenNegationCompounds.has(key)) continue;
     seenNegationCompounds.add(key);
     negationCompounds.push(tokens);
+    negationCompoundsVersion++;
   }
 }
 
@@ -203,8 +211,17 @@ export function findPhraseStarts(
   line: string,
   options: PhraseMatchOptions = {}
 ): number[] {
-  const needle = phraseTokens(phrase);
-  const haystack = phraseTokens(line);
+  return findPhraseStartsInTokens(phrase, phraseTokens(phrase), line, phraseTokens(line), options);
+}
+
+/** findPhraseStarts for callers that already hold the tokens, so hot loops skip re-tokenizing. */
+export function findPhraseStartsInTokens(
+  phrase: string,
+  needle: string[],
+  line: string,
+  haystack: string[],
+  options: PhraseMatchOptions = {}
+): number[] {
   return tokenSequenceStarts(haystack, needle).filter((start) =>
     shouldKeepOccurrence(phrase, line, start, options)
   );

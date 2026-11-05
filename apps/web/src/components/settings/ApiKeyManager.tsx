@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/browser-api";
 import { CopyBox } from "@/components/landing/CopyBox";
+import { Badge, Button, Field, Hint, Input } from "@/components/ui";
 
 export type PublicApiKey = {
   id: string;
@@ -86,21 +87,25 @@ export function ApiKeyManager({ onCreated }: { onCreated?: (plaintext: string) =
           a masked prefix, when they were created, and when they were last used.
         </p>
         <div className="key-create">
-          <label>
-            <span className="sr-only">Key name</span>
-            <input
+          <Field label="Key Name">
+            <Input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Key name"
               maxLength={255}
             />
-          </label>
-          <button className="btn primary" type="button" onClick={createKey} disabled={pending}>
-            {pending ? "Creating…" : "Create API key"}
-          </button>
+          </Field>
+          <Button
+            type="button"
+            loading={pending}
+            disabled={pending}
+            onClick={() => void createKey()}
+          >
+            Create API Key
+          </Button>
         </div>
-        {error ? <p className="muted">{error}</p> : null}
+        {error ? <Hint tone="error">{error}</Hint> : null}
       </div>
 
       {plaintext ? (
@@ -138,17 +143,22 @@ export function ApiKeyManager({ onCreated }: { onCreated?: (plaintext: string) =
                     </td>
                     <td>{formatWhen(key.createdAt)}</td>
                     <td>{formatWhen(key.lastUsedAt)}</td>
-                    <td>{revoked ? "Revoked" : "Active"}</td>
+                    <td>
+                      <Badge variant={revoked ? "neutral" : "ok"}>
+                        {revoked ? "Revoked" : "Active"}
+                      </Badge>
+                    </td>
                     <td>
                       {revoked ? null : (
-                        <button
-                          className="btn ghost"
+                        <Button
+                          variant="tertiary"
                           type="button"
-                          onClick={() => revokeKey(key.id)}
+                          loading={revokingId === key.id}
                           disabled={revokingId === key.id}
+                          onClick={() => void revokeKey(key.id)}
                         >
-                          {revokingId === key.id ? "Revoking…" : "Revoke"}
-                        </button>
+                          Revoke
+                        </Button>
                       )}
                     </td>
                   </tr>

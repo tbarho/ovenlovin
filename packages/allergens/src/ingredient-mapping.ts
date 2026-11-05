@@ -10,7 +10,13 @@
 
 import type { AllergenRelation } from "@ovenlovin/core";
 import { lineNegatesAllergen } from "./negation";
-import { findPhraseStarts, phraseTokens, registerNegationCompounds } from "./phrase-match";
+import { LruCache } from "./lru-cache";
+import {
+  findPhraseStartsInTokens,
+  getNegationCompoundsVersion,
+  phraseTokens,
+  registerNegationCompounds,
+} from "./phrase-match";
 
 export interface IngredientAllergenMapping {
   /** Canonical ingredient name */
@@ -563,13 +569,6 @@ export const ingredientAllergenMappings: IngredientAllergenMapping[] = [
     relation: "contains",
     notes: "Thai noodle dish often containing peanuts",
   },
-  {
-    name: "dukkah",
-    aliases: ["duqqa", "dukka"],
-    allergenCode: "tree_nut",
-    relation: "contains",
-    notes: "Egyptian spice blend containing nuts",
-  },
 
   // ===== MILK =====
   {
@@ -1052,6 +1051,83 @@ function skipPestoPineNutHeuristic(line: string, mapping: IngredientAllergenMapp
 }
 
 /**
+ * Cache of default-catalog matches, keyed by the exact ingredient line. The
+ * result depends only on the line text and the catalog, so an edited line is a
+ * new key and can never read a stale result; eviction only frees memory.
+ */
+const MATCH_CACHE_MAX_ENTRIES = 5000;
+/** Longer lines are rare (pasted paragraphs); skip them so the cache stays small. */
+const MATCH_CACHE_MAX_KEY_LENGTH = 500;
+// On globalThis: Next gives every route bundle its own copy of this module, and
+// warming and eviction run in different bundles from the checker.
+const matchStore = globalThis as {
+  __ovenlovinMatchCache?: {
+    cache: LruCache<string, IngredientAllergenMapping[]>;
+    version: number;
+  };
+};
+const matchState = (matchStore.__ovenlovinMatchCache ??= {
+  cache: new LruCache(MATCH_CACHE_MAX_ENTRIES),
+  version: -1,
+});
+const matchCache = matchState.cache;
+
+function dropMatchesFromOldCatalog(): void {
+  if (matchState.version === getNegationCompoundsVersion()) return;
+  matchCache.clear();
+  matchState.version = getNegationCompoundsVersion();
+}
+
+/** Drops cached matches for these lines, e.g. the old ingredient lines of an edited recipe. */
+export function evictIngredientMatches(ingredientLines: Iterable<string>): void {
+  for (const line of ingredientLines) matchCache.delete(line);
+}
+
+/** Drops every cached match. Call when the allergen catalog or mappings change. */
+export function clearIngredientMatchCache(): void {
+  matchCache.clear();
+}
+
+export function ingredientMatchCacheStats() {
+  return matchCache.stats();
+}
+
+/** The lines a check would have to compute, skipping lines too long to cache. */
+export function missingIngredientMatches(ingredientLines: string[]): string[] {
+  dropMatchesFromOldCatalog();
+  return ingredientLines.filter(
+    (line) => line.length <= MATCH_CACHE_MAX_KEY_LENGTH && !matchCache.has(line)
+  );
+}
+
+/** A line's matches as catalog ids, small enough to store outside this process. */
+export function ingredientMatchRefs(ingredientName: string): string[] {
+  return matchIngredient(ingredientName).map(mappingIdentity);
+}
+
+let mappingsByIdentity: Map<string, IngredientAllergenMapping> | undefined;
+
+/**
+ * Loads stored refs into the cache. `refsByLine` comes from outside this
+ * process, so any line that does not fully resolve is skipped and recomputed:
+ * a partial result could drop an allergen.
+ */
+export function primeIngredientMatches(refsByLine: unknown): void {
+  if (typeof refsByLine !== "object" || refsByLine === null) return;
+  mappingsByIdentity ??= new Map(
+    ingredientAllergenMappings.map((mapping) => [mappingIdentity(mapping), mapping])
+  );
+  dropMatchesFromOldCatalog();
+  for (const [line, refs] of Object.entries(refsByLine)) {
+    if (line.length > MATCH_CACHE_MAX_KEY_LENGTH || !Array.isArray(refs)) continue;
+    const mappings = refs.map((ref) => mappingsByIdentity!.get(ref));
+    if (mappings.every((mapping) => mapping !== undefined)) {
+      matchCache.set(line, mappings as IngredientAllergenMapping[]);
+    }
+  }
+}
+
+/**
  * Match an ingredient line to allergen mappings.
  * Exact lookup first, then word-boundary / plural phrase scan on raw text
  * (so "1/2 cup roasted peanuts" matches peanut). Longer phrases win so
@@ -1059,7 +1135,25 @@ function skipPestoPineNutHeuristic(line: string, mapping: IngredientAllergenMapp
  */
 export function matchIngredient(
   ingredientName: string,
-  map: Map<string, IngredientAllergenMapping[]> = defaultIngredientMap()
+  map?: Map<string, IngredientAllergenMapping[]>
+): IngredientAllergenMapping[] {
+  const defaultMap = defaultIngredientMap();
+  if ((map && map !== defaultMap) || ingredientName.length > MATCH_CACHE_MAX_KEY_LENGTH) {
+    return matchIngredientUncached(ingredientName, map ?? defaultMap);
+  }
+  dropMatchesFromOldCatalog();
+  let cached = matchCache.get(ingredientName);
+  if (!cached) {
+    cached = matchIngredientUncached(ingredientName, defaultMap);
+    matchCache.set(ingredientName, cached);
+  }
+  // Copy so a caller that mutates its result can never poison the cache.
+  return [...cached];
+}
+
+function matchIngredientUncached(
+  ingredientName: string,
+  map: Map<string, IngredientAllergenMapping[]>
 ): IngredientAllergenMapping[] {
   const keep = (mappings: IngredientAllergenMapping[]) =>
     dedupeMappings(mappings).filter(
@@ -1080,7 +1174,7 @@ export function matchIngredient(
   const found: IngredientAllergenMapping[] = [];
 
   for (const entry of phrases) {
-    const starts = findPhraseStarts(entry.phrase, ingredientName);
+    const starts = findPhraseStartsInTokens(entry.phrase, entry.tokens, ingredientName, haystack);
     for (const start of starts) {
       const alreadyUsed = entry.tokens.some((_, offset) => used[start + offset]);
       if (alreadyUsed) continue;

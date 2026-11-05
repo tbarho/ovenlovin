@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   E2E_PEOPLE,
   E2E_RECIPES,
@@ -63,5 +63,20 @@ describe("e2e kitchen fixture", () => {
     expect(soup?.servings).toBe(5);
     expect(soup?.ingredients.some((item) => item.rawText === "0.6666666667 cup celery")).toBe(true);
     expect(soup?.ingredients.some((item) => item.rawText === "0.6666666667 cup carrot")).toBe(true);
+  });
+
+  it("uses hotlinked photos only when E2E_KITCHEN_PHOTOS=1", async () => {
+    vi.resetModules();
+    vi.stubEnv("E2E_KITCHEN_PHOTOS", "1");
+    try {
+      const { E2E_RECIPES: photoRecipes } = await import("./e2e-kitchen");
+      expect(
+        photoRecipes.every((recipe) =>
+          recipe.images?.[0]?.startsWith("https://images.unsplash.com/")
+        )
+      ).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

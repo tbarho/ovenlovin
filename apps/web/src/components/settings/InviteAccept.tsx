@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Hint } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 
 export function InviteAccept({ token, householdName }: { token: string; householdName: string }) {
@@ -21,15 +22,10 @@ export function InviteAccept({ token, householdName }: { token: string; househol
 
   return (
     <div className="invite-accept">
-      <button
-        className="btn primary"
-        type="button"
-        disabled={pending}
-        onClick={() => void accept()}
-      >
-        {pending ? "Joining…" : `Join ${householdName}`}
-      </button>
-      {error ? <p className="muted">{error}</p> : null}
+      <Button type="button" loading={pending} disabled={pending} onClick={() => void accept()}>
+        Join {householdName}
+      </Button>
+      {error ? <Hint tone="error">{error}</Hint> : null}
     </div>
   );
 }

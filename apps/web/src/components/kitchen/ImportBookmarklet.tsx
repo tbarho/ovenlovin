@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui";
 import { buildImportBookmarklet, importBookmarkletTitle } from "@/lib/import-bookmarklet";
 
 export function ImportBookmarklet({ origin }: { origin?: string }) {
@@ -33,15 +34,15 @@ export function ImportBookmarklet({ origin }: { origin?: string }) {
       <div className="import-row">
         <a
           ref={linkRef}
-          className="btn primary"
+          className="ds-button ds-button--default ds-button--md"
           href="#"
           onClick={(event) => event.preventDefault()}
         >
           {title}
         </a>
-        <button type="button" className="btn" onClick={() => void copyHref()}>
+        <Button variant="secondary" type="button" onClick={() => void copyHref()}>
           {copied ? "Copied" : "Copy code"}
-        </button>
+        </Button>
       </div>
       <p className="muted">
         Safari on iPhone can use an API key from Settings with the steps above.

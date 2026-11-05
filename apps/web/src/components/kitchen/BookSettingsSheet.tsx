@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { BookSettings, BookSettingsInput } from "@ovenlovin/core/book";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/browser-api";
 import { BottomSheet } from "./BottomSheet";
 
@@ -205,24 +206,26 @@ export function BookSettingsSheet({
                 return (
                   <li key={id} data-recipe-id={id}>
                     <span className="book-order-title">{recipe.title}</span>
-                    <button
+                    <Button
                       type="button"
-                      className="btn book-order-move"
+                      variant="secondary"
+                      className="book-order-move"
                       aria-label={`Move ${recipe.title} up`}
                       disabled={i === 0}
                       onClick={() => setOrder((ids) => moveId(ids, id, -1))}
                     >
                       ↑
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className="btn book-order-move"
+                      variant="secondary"
+                      className="book-order-move"
                       aria-label={`Move ${recipe.title} down`}
                       disabled={i === order.length - 1}
                       onClick={() => setOrder((ids) => moveId(ids, id, 1))}
                     >
                       ↓
-                    </button>
+                    </Button>
                   </li>
                 );
               })}
@@ -235,9 +238,9 @@ export function BookSettingsSheet({
             {error}
           </p>
         ) : null}
-        <button className="btn primary" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save book"}
-        </button>
+        <Button type="submit" disabled={pending} loading={pending}>
+          Save book
+        </Button>
       </form>
     </BottomSheet>
   );
