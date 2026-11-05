@@ -5,6 +5,12 @@ async function expectHit44(locator: Locator, label: string, axis: "both" | "y" =
   const box = await locator.evaluate((el, axis) => {
     const rect = el.getBoundingClientRect();
     const after = getComputedStyle(el, "::after");
+    const afterW = Number.parseFloat(after.width);
+    const afterH = Number.parseFloat(after.height);
+    // shortcut: ::after is optional; a 44px box already is the tap target
+    const afterCounts = after.content !== "none" && after.pointerEvents !== "none";
+    const hitWidth = Math.max(rect.width, afterCounts && Number.isFinite(afterW) ? afterW : 0);
+    const hitHeight = Math.max(rect.height, afterCounts && Number.isFinite(afterH) ? afterH : 0);
     const cx = rect.x + rect.width / 2;
     const cy = rect.y + rect.height / 2;
     const inset = 0.5;
@@ -21,18 +27,11 @@ async function expectHit44(locator: Locator, label: string, axis: "both" | "y" =
             { name: "top", x: cx, y: cy - half + inset },
             { name: "bottom", x: cx, y: cy + half - inset },
           ];
-    const points = raw
-      .map((point) => ({
-        ...point,
-        x: Math.min(window.innerWidth - inset, Math.max(inset, point.x)),
-        y: Math.min(window.innerHeight - inset, Math.max(inset, point.y)),
-      }))
-      .filter((point) => {
-        if (point.name === "top" || point.name === "bottom") {
-          return point.y < rect.top - 0.25 || point.y > rect.bottom + 0.25;
-        }
-        return point.x < rect.left - 0.25 || point.x > rect.right + 0.25;
-      });
+    const points = raw.map((point) => ({
+      ...point,
+      x: Math.min(window.innerWidth - inset, Math.max(inset, point.x)),
+      y: Math.min(window.innerHeight - inset, Math.max(inset, point.y)),
+    }));
     const hits = points.map((point) => {
       const node = document.elementFromPoint(point.x, point.y);
       return {
@@ -44,15 +43,15 @@ async function expectHit44(locator: Locator, label: string, axis: "both" | "y" =
     });
     return {
       inView: rect.y >= 0 && rect.bottom <= window.innerHeight,
-      afterWidth: Number.parseFloat(after.width),
-      afterHeight: Number.parseFloat(after.height),
+      hitWidth,
+      hitHeight,
       hits,
     };
   }, axis);
   expect(box.inView, `${label} in viewport`).toBe(true);
-  expect(box.afterHeight, `${label} ::after height`).toBeGreaterThanOrEqual(44);
+  expect(box.hitHeight, `${label} hit height`).toBeGreaterThanOrEqual(44);
   if (axis === "both") {
-    expect(box.afterWidth, `${label} ::after width`).toBeGreaterThanOrEqual(44);
+    expect(box.hitWidth, `${label} hit width`).toBeGreaterThanOrEqual(44);
   }
   expect(box.hits.length, `${label} edge probes`).toBeGreaterThan(0);
   for (const hit of box.hits) {
@@ -84,6 +83,12 @@ test("kitchen hit areas are at least 44px at 390", async ({ page }) => {
     page.locator(".recipe-layout").getByRole("heading", { name: /pesto pasta/i })
   ).toBeVisible();
   await expect(page).toHaveURL(/\/recipes\/[^/]+/);
+  const fewer = page.getByRole("button", { name: "Fewer servings" });
+  const more = page.getByRole("button", { name: "More servings" });
+  await expect(fewer).toBeVisible();
+  await expect(more).toBeVisible();
+  await expectHit44(fewer, "fewer servings", "both");
+  await expectHit44(more, "more servings", "both");
   const slider = page.locator(".servings-stepper input[type='range']");
   await expect(slider).toBeVisible();
   await slider.scrollIntoViewIfNeeded();
