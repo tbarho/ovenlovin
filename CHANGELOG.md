@@ -17,6 +17,10 @@ Recipe pages on a laptop or desktop now sit at book size: body type holds around
 
 If Make the PDF never finishes, tap it again. A stuck job no longer blocks a new one. The print starts making pages as soon as you tap, including on a signed-in preview.
 
+### Servings plus and minus you can tap
+
+On a recipe, the servings plus and minus stay large enough to tap with a thumb.
+
 ### Make the book yours
 
 Tap Make it yours in the book reader to set the cover (your first photo, type only, or any recipe photo in the book), the title and subtitle, a dedication like "For Mom, Christmas 2026", whether original recipe cards are included, and the order of the recipes. The book changes as soon as you save, and the PDF prints the same pages. Agents can do the same over REST and MCP.

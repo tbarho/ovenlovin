@@ -84,6 +84,13 @@ test("kitchen hit areas are at least 44px at 390", async ({ page }) => {
     page.locator(".recipe-layout").getByRole("heading", { name: /pesto pasta/i })
   ).toBeVisible();
   await expect(page).toHaveURL(/\/recipes\/[^/]+/);
+  const fewer = page.getByRole("button", { name: "Fewer servings" });
+  const more = page.getByRole("button", { name: "More servings" });
+  await expect(fewer).toBeVisible();
+  await expect(more).toBeVisible();
+  await expectHit44(fewer, "fewer servings", "both");
+  await expectHit44(more, "more servings", "both");
+
   const slider = page.locator(".servings-stepper input[type='range']");
   await expect(slider).toBeVisible();
   await slider.scrollIntoViewIfNeeded();
